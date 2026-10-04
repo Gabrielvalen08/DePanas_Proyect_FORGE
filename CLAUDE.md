@@ -31,15 +31,15 @@ React 18 + Vite 5 + react-router-dom 6, en JavaScript (JSX) sin TypeScript. Íco
 
 ## Diseño (obligatorio)
 
-`DESIGN_DECISIONS.md` (raíz) define el sistema visual y **toda pantalla nueva debe seguirlo**. Lo esencial:
+`DESIGN_DECISIONS.md` (raíz) define la marca para la web a partir del *Brandbook DE PANAS (mayo 2026)* y **toda pantalla nueva debe seguirlo**. Precedencia: las skills de `.claude/skills/` (`ui-ux-pro-max`, `brand`, `design-system`) mandan sobre `DESIGN_DECISIONS.md`. Los valores de marca (hex, tipografías, logotipo) salen solo del brandbook. Lo esencial:
 
-- Usar los tokens CSS de `src/index.css` (`--primary` naranja, `--brown`, `--gold` solo como acento, `--cream`, radios `--radius-*`, `--shadow-solid`). No escribir colores literales.
-- Tipografía Nunito Sans. Botones principales en forma de pill con borde negro de 2px y sombra sólida `3px 4px 0 #000`.
-- Las tablas van sobrias (fondo claro, encabezado crema, bordes discretos), con los montos alineados. La legibilidad financiera está por encima de la estética.
-- Layout de escritorio: Sidebar + Header + contenido. En mobile se usa drawer o bottom nav, con una sola columna.
-- Si estética y funcionalidad chocan, gana la funcionalidad.
+- Paleta: Rojo Vinotinto `#911C0D`, Naranja Sazón `#EF7D05`, Amarillo Criollo `#F8A914`, Verde Fresco `#6DAD28`, Verde Ávila `#144428`, Crema y Trigo `#FEEECC`. Sin negro puro. Nunca texto blanco o crema sobre naranja, amarillo o verde fresco.
+- Tipografía: Josefin Sans para titulares e interfaz (titulares en mayúsculas) y Cardo para textos extensos.
+- Las tablas van sobrias, con los montos alineados a la derecha. Contraste WCAG AA en todo.
 
-Los estilos globales y de componentes están en `src/index.css`. Las páginas además usan bastantes `style={{...}}` en línea.
+**Migración pendiente:** `src/index.css` todavía usa el sistema anterior (Nunito Sans, `--brown #651A0C`, bordes y sombras negras). No lo tomes como referencia de marca. Los estilos globales están ahí y las páginas usan bastantes `style={{...}}` en línea.
+
+Las skills ejecutan scripts desde la raíz del repo, p. ej. `python .claude/skills/ui-ux-pro-max/scripts/search.py "<consulta>" --domain ux`.
 
 ## Convenciones
 
