@@ -42,7 +42,7 @@ Escala de espaciado `--space-1` … `--space-12` (base 4px, en `rem`). Radios: i
 
 - **Modal:** portal, `aria-modal`, trampa de foco, Escape, retorno del foco y bloqueo del scroll. Las confirmaciones usan `alertdialog`, con foco inicial en "Cancelar" y sin cerrar con clic en el scrim.
 - **Combobox** (`AutocompleteInput`): patrón WAI-ARIA APG con `aria-activedescendant`. Las opciones son `div role="option"`, porque el modo strict de `jsx-a11y` no admite `li` con rol interactivo. El clic en la opción lleva un `eslint-disable` justificado: el teclado se maneja desde el input.
-- **Validación:** al salir del campo, con el error enlazado por `aria-describedby`. Si el envío falla, aparece un resumen `role="alert"` que recibe el foco y enlaza a cada campo.
+- **Validación:** solo al intentar guardar. Hay un error por campo enlazado con `aria-describedby` y un resumen `role="alert"` que recibe el foco y enlaza a cada campo. Tras el primer intento, los errores se revalidan en vivo y al salir del campo. Las filas completamente vacías se ignoran. (`apple-design` sugiere validar en línea; el equipo prefirió no interrumpir mientras se llena la compra.)
 - **Regiones vivas:** los toasts usan `status` (éxito) y `alert` (error); el autocompletado anuncia cuántas sugerencias hay.
 - **Navegación:** enlace "Saltar al contenido"; al cambiar de ruta, el foco va al `<main>` y se actualiza `document.title`.
 - `scroll-margin` en controles para que lo enfocado no quede bajo el header translúcido ni bajo la barra inferior.

@@ -34,6 +34,11 @@ function filasDesde(productos) {
   }))
 }
 
+// Una fila sin producto, cantidad ni precio no cuenta: se ignora al guardar
+function estaVacia(fila) {
+  return !fila.producto.trim() && !fila.cantidad && !fila.precio
+}
+
 function validarFila(fila) {
   const errores = {}
   if (!fila.producto.trim()) errores.producto = 'Escribe el producto'
@@ -81,6 +86,8 @@ export default function BloqueCompra({
   const [filas, setFilas] = useState(() => filasDesde(inicial?.productos))
   const [errores, setErrores] = useState({})
   const [guardando, setGuardando] = useState(false)
+  // Los errores solo se muestran a partir del primer intento de guardar
+  const [intentoGuardar, setIntentoGuardar] = useState(false)
 
   const resumenRef = useRef(null)
   const enfocarResumen = useRef(false)
@@ -125,6 +132,11 @@ export default function BloqueCompra({
     if (errores[campo]) fijarError(campo, validarEncabezado(campo, valor))
   }
 
+  function salirDeEncabezado(campo) {
+    if (!intentoGuardar) return
+    fijarError(campo, validarEncabezado(campo, campo === 'proveedor' ? proveedor : fecha))
+  }
+
   // --- Filas ---
   function cambiarFila(filaId, campo, valor) {
     const actualizada = { ...filas.find(f => f.id === filaId), [campo]: valor }
@@ -133,9 +145,11 @@ export default function BloqueCompra({
     if (errores[clave(filaId, campo)]) fijarError(clave(filaId, campo), validarFila(actualizada)[campo])
   }
 
+  // Antes de intentar guardar no se marca nada; las filas vacías nunca se marcan
   function salirDeCampoFila(filaId, campo) {
+    if (!intentoGuardar) return
     const fila = filas.find(f => f.id === filaId)
-    if (fila) fijarError(clave(filaId, campo), validarFila(fila)[campo])
+    if (fila && !estaVacia(fila)) fijarError(clave(filaId, campo), validarFila(fila)[campo])
   }
 
   function agregarFila() {
@@ -156,12 +170,16 @@ export default function BloqueCompra({
 
   async function guardar(e) {
     e.preventDefault()
+    setIntentoGuardar(true)
     const nuevos = {}
     ;['proveedor', 'fecha'].forEach(campo => {
       const mensaje = validarEncabezado(campo, campo === 'proveedor' ? proveedor : fecha)
       if (mensaje) nuevos[campo] = mensaje
     })
-    filas.forEach(f => {
+    // Las filas completamente vacías se ignoran; si todas lo están, se exige la primera
+    const filasConDatos = filas.filter(f => !estaVacia(f))
+    const aValidar = filasConDatos.length > 0 ? filasConDatos : [filas[0]]
+    aValidar.forEach(f => {
       Object.entries(validarFila(f)).forEach(([campo, mensaje]) => { nuevos[clave(f.id, campo)] = mensaje })
     })
 
@@ -174,7 +192,7 @@ export default function BloqueCompra({
     const lista = {
       proveedor,
       fecha,
-      productos: filas.map(({ producto, cantidad, unidad, precio }) => ({ producto, cantidad, unidad, precio })),
+      productos: filasConDatos.map(({ producto, cantidad, unidad, precio }) => ({ producto, cantidad, unidad, precio })),
     }
     setGuardando(true)
     try {
@@ -218,7 +236,7 @@ export default function BloqueCompra({
                 etiqueta="Proveedor"
                 value={proveedor}
                 onChange={valor => cambiarEncabezado('proveedor', valor)}
-                onBlur={() => fijarError('proveedor', validarEncabezado('proveedor', proveedor))}
+                onBlur={() => salirDeEncabezado('proveedor')}
                 placeholder="Súper Selectos…"
                 getSuggestions={sugerirProveedores}
                 error={errores.proveedor}
@@ -230,7 +248,7 @@ export default function BloqueCompra({
               tipo="date"
               value={fecha}
               onChange={e => cambiarEncabezado('fecha', e.target.value)}
-              onBlur={() => fijarError('fecha', validarEncabezado('fecha', fecha))}
+              onBlur={() => salirDeEncabezado('fecha')}
               error={errores.fecha}
               className={estilos.campoFecha}
             />

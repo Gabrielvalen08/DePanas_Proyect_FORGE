@@ -256,7 +256,7 @@ Se toma de `apple-design`. Un elemento se siente vivo cuando responde al instant
 
 **Formularios**
 - Label visible encima de cada campo; el placeholder no sustituye al label.
-- Error específico debajo del campo, en Vinotinto con ícono, enlazado con `aria-describedby`. Se valida en línea al salir del campo, no solo al enviar.
+- Error específico debajo del campo, en Vinotinto con ícono, enlazado con `aria-describedby`. **Los errores solo aparecen al intentar guardar** (decisión del equipo: llenar o agregar filas no debe interrumpir). Después de un intento fallido se revalidan en vivo y desaparecen al corregirlos. Las filas que quedaron completamente vacías se ignoran al guardar.
 - Si el envío falla, mostrar un resumen de errores arriba que reciba el foco y enlace a cada campo.
 
 **Notificaciones (toasts)**

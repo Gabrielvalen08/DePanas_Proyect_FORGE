@@ -41,13 +41,40 @@ describe('AgregarCompra', () => {
     expect(screen.getByLabelText('Fecha')).toHaveValue(fechaHoyISO())
   })
 
-  it('valida al salir del campo y enlaza el error', async () => {
+  it('no muestra errores al salir de los campos ni al agregar filas antes de guardar', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    const precio = screen.getByLabelText('Precio, fila 1')
-    await usuario.click(precio)
+    await usuario.click(screen.getByRole('combobox', { name: 'Producto, fila 1' }))
+    await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
+    await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
     await usuario.tab()
+
+    expect(screen.queryByRole('alert', { name: /revisa estos campos/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Producto, fila 1' })).not.toHaveAttribute('aria-invalid')
+    expect(screen.getByRole('combobox', { name: 'Producto, fila 2' })).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('tras intentar guardar, el error queda enlazado al campo y desaparece al corregirlo', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+    const precio = screen.getByLabelText('Precio, fila 1')
     expect(precio).toHaveAccessibleDescription('Ingresa un precio mayor a 0')
+    await usuario.type(precio, '5')
+    expect(precio).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('las filas que quedaron vacías se ignoran al guardar', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await llenarCompraValida(usuario)
+    await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
+    await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
+    await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+
+    await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(guardarLista).mock.calls[0][0].productos).toHaveLength(1)
+    expect(screen.queryByRole('alert', { name: /revisa estos campos/i })).not.toBeInTheDocument()
   })
 
   it('guardar con errores muestra el resumen con foco y no guarda', async () => {
