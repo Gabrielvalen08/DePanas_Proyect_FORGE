@@ -100,7 +100,7 @@ export default function PantallaMaestra() {
 
   return (
     <>
-      <Header title="Compras" badge="Listas de compra" />
+      <Header title="Compras" />
 
       <main id="contenido" tabIndex={-1}>
         <div className={estilos.toolbar}>
