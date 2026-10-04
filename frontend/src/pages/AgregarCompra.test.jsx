@@ -50,7 +50,11 @@ describe('AgregarCompra', () => {
 
     const resumen = await screen.findByRole('alert', { name: /revisa estos campos/i })
     await waitFor(() => expect(resumen).toHaveFocus())
-    expect(screen.getByRole('link', { name: /Fila 1 · Precio/ })).toHaveAttribute('href', '#precio-' + screen.getByLabelText('Precio, fila 1').id.split('-')[1])
+    const precio = screen.getByLabelText('Precio, fila 1')
+    const enlace = screen.getByRole('link', { name: /Fila 1 · Precio/ })
+    expect(enlace).toHaveAttribute('href', `#${precio.id}`)
+    await usuario.click(enlace)
+    expect(precio).toHaveFocus()
     expect(guardarCompras).not.toHaveBeenCalled()
   })
 
