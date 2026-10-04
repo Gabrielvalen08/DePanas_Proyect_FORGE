@@ -3,8 +3,10 @@
   position: absolute;
   top: calc(100% + var(--space-1));
   left: 0;
-  right: 0;
   z-index: 15;
+  width: max-content;
+  min-width: 100%;
+  max-width: min(22rem, calc(100vw - var(--space-8)));
   max-height: 16rem;
   overflow-y: auto;
   padding: var(--space-1);

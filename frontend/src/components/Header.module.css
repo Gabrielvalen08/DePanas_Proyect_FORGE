@@ -55,6 +55,8 @@
   font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
+  white-space: nowrap;
+  flex-shrink: 0;
   padding: 0.3em 0.6em 0.15em;
   border-radius: var(--radio-pildora);
   background: var(--color-primary);
@@ -93,7 +95,8 @@
 }
 
 @media (max-width: 479px) {
-  .fecha {
+  .fecha,
+  .insignia {
     display: none;
   }
 }

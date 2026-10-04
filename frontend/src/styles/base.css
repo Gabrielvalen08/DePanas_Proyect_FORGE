@@ -87,6 +87,25 @@ p {
   outline-offset: 2px;
 }
 
+/* Lo que recibe foco o scroll programático no queda bajo el header translúcido */
+input,
+select,
+textarea,
+[tabindex='-1'] {
+  scroll-margin-top: calc(var(--alto-header) + var(--space-4));
+  scroll-margin-bottom: var(--space-12);
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea,
+  [tabindex='-1'] {
+    /* deja libre la barra inferior y el pie fijo de acciones */
+    scroll-margin-bottom: calc(var(--alto-barra-inferior) + 6rem);
+  }
+}
+
 /* ---------- Utilidades de accesibilidad ---------- */
 .solo-lector {
   position: absolute;

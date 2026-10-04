@@ -122,7 +122,7 @@ export default function AutocompleteInput({
                 onPointerDown={e => e.preventDefault()} // el input no pierde el foco
                 onClick={() => seleccionar(s)}
               >
-                <Resaltado texto={s} busqueda={value} />
+                <span><Resaltado texto={s} busqueda={value} /></span>
               </div>
             ))}
           </motion.div>

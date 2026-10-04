@@ -219,130 +219,129 @@ export default function AgregarCompra() {
         <Tarjeta
           titulo="Detalle de compras"
           accion={`${filas.length} fila${filas.length !== 1 ? 's' : ''}`}
+          className={estilos.tarjetaTabla}
         >
-          <div className={estilos.desplazable}>
-            <table className={estilos.tabla}>
-              <caption className="solo-lector">Compras por registrar</caption>
-              <thead>
-                <tr>
-                  <th scope="col" className={estilos.colTexto}>Proveedor</th>
-                  <th scope="col" className={estilos.colTexto}>Producto</th>
-                  <th scope="col" className={estilos.colCantidad}>Cantidad</th>
-                  <th scope="col" className={estilos.colPrecio}>Precio</th>
-                  <th scope="col" className={estilos.colFecha}>Fecha</th>
-                  <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                <AnimatePresence initial={false}>
-                  {filas.map((fila, i) => {
-                    const n = i + 1
-                    return (
-                      <motion.tr
-                        key={fila.id}
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={springSuave}
-                      >
-                        <td>
-                          <AutocompleteInput
-                            id={`proveedor-${fila.id}`}
-                            etiqueta={`Proveedor, fila ${n}`}
-                            etiquetaOculta
-                            value={fila.proveedor}
-                            onChange={val => updateFila(fila.id, 'proveedor', val)}
-                            onBlur={() => alSalirDeCampo(fila.id, 'proveedor')}
-                            placeholder="Súper Selectos…"
-                            getSuggestions={suggestProveedores}
-                            error={fieldError(fila.id, 'proveedor')}
-                          />
-                        </td>
-                        <td>
-                          <AutocompleteInput
-                            id={`producto-${fila.id}`}
-                            etiqueta={`Producto, fila ${n}`}
-                            etiquetaOculta
-                            value={fila.producto}
-                            onChange={val => updateFila(fila.id, 'producto', val)}
-                            onBlur={() => alSalirDeCampo(fila.id, 'producto')}
-                            placeholder="Pollo, arroz…"
-                            getSuggestions={suggestProductos}
-                            error={fieldError(fila.id, 'producto')}
-                          />
-                        </td>
-                        <td>
-                          <div className={estilos.cantidadGrupo}>
-                            <Campo
-                              id={`cantidad-${fila.id}`}
-                              etiqueta={`Cantidad, fila ${n}`}
-                              etiquetaOculta
-                              tipo="number"
-                              inputMode="decimal"
-                              min="0"
-                              step="any"
-                              placeholder="3"
-                              value={fila.cantidad}
-                              onChange={e => updateFila(fila.id, 'cantidad', e.target.value)}
-                              onBlur={() => alSalirDeCampo(fila.id, 'cantidad')}
-                              error={fieldError(fila.id, 'cantidad')}
-                              className={estilos.cantidad}
-                            />
-                            <Selector
-                              id={`unidad-${fila.id}`}
-                              etiqueta={`Unidad, fila ${n}`}
-                              etiquetaOculta
-                              opciones={UNIDADES}
-                              value={fila.unidad}
-                              onChange={e => updateFila(fila.id, 'unidad', e.target.value)}
-                              className={estilos.unidad}
-                            />
-                          </div>
-                        </td>
-                        <td>
+          <table className={estilos.tabla}>
+            <caption className="solo-lector">Compras por registrar</caption>
+            <thead>
+              <tr>
+                <th scope="col" className={estilos.colTexto}>Proveedor</th>
+                <th scope="col" className={estilos.colTexto}>Producto</th>
+                <th scope="col" className={estilos.colCantidad}>Cantidad</th>
+                <th scope="col" className={estilos.colPrecio}>Precio</th>
+                <th scope="col" className={estilos.colFecha}>Fecha</th>
+                <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <AnimatePresence initial={false}>
+                {filas.map((fila, i) => {
+                  const n = i + 1
+                  return (
+                    <motion.tr
+                      key={fila.id}
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={springSuave}
+                    >
+                      <td>
+                        <AutocompleteInput
+                          id={`proveedor-${fila.id}`}
+                          etiqueta={`Proveedor, fila ${n}`}
+                          etiquetaOculta
+                          value={fila.proveedor}
+                          onChange={val => updateFila(fila.id, 'proveedor', val)}
+                          onBlur={() => alSalirDeCampo(fila.id, 'proveedor')}
+                          placeholder="Súper Selectos…"
+                          getSuggestions={suggestProveedores}
+                          error={fieldError(fila.id, 'proveedor')}
+                        />
+                      </td>
+                      <td>
+                        <AutocompleteInput
+                          id={`producto-${fila.id}`}
+                          etiqueta={`Producto, fila ${n}`}
+                          etiquetaOculta
+                          value={fila.producto}
+                          onChange={val => updateFila(fila.id, 'producto', val)}
+                          onBlur={() => alSalirDeCampo(fila.id, 'producto')}
+                          placeholder="Pollo, arroz…"
+                          getSuggestions={suggestProductos}
+                          error={fieldError(fila.id, 'producto')}
+                        />
+                      </td>
+                      <td>
+                        <div className={estilos.cantidadGrupo}>
                           <Campo
-                            id={`precio-${fila.id}`}
-                            etiqueta={`Precio, fila ${n}`}
+                            id={`cantidad-${fila.id}`}
+                            etiqueta={`Cantidad, fila ${n}`}
                             etiquetaOculta
                             tipo="number"
                             inputMode="decimal"
                             min="0"
-                            step="0.01"
-                            prefijo="$"
-                            placeholder="0.00"
-                            value={fila.precio}
-                            onChange={e => updateFila(fila.id, 'precio', e.target.value)}
-                            onBlur={() => alSalirDeCampo(fila.id, 'precio')}
-                            error={fieldError(fila.id, 'precio')}
+                            step="any"
+                            placeholder="3"
+                            value={fila.cantidad}
+                            onChange={e => updateFila(fila.id, 'cantidad', e.target.value)}
+                            onBlur={() => alSalirDeCampo(fila.id, 'cantidad')}
+                            error={fieldError(fila.id, 'cantidad')}
+                            className={estilos.cantidad}
                           />
-                        </td>
-                        <td>
-                          <Campo
-                            id={`fecha-${fila.id}`}
-                            etiqueta={`Fecha, fila ${n}`}
+                          <Selector
+                            id={`unidad-${fila.id}`}
+                            etiqueta={`Unidad, fila ${n}`}
                             etiquetaOculta
-                            tipo="date"
-                            value={fila.fecha}
-                            onChange={e => updateFila(fila.id, 'fecha', e.target.value)}
+                            opciones={UNIDADES}
+                            value={fila.unidad}
+                            onChange={e => updateFila(fila.id, 'unidad', e.target.value)}
+                            className={estilos.unidad}
                           />
-                        </td>
-                        <td className={estilos.colAcciones}>
-                          <Boton
-                            variante="icono"
-                            icono={<Trash2 />}
-                            aria-label={`Eliminar fila ${n}`}
-                            onClick={() => removeFila(fila.id)}
-                            disabled={filas.length === 1}
-                            className={estilos.eliminar}
-                          />
-                        </td>
-                      </motion.tr>
-                    )
-                  })}
-                </AnimatePresence>
-              </tbody>
-            </table>
-          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <Campo
+                          id={`precio-${fila.id}`}
+                          etiqueta={`Precio, fila ${n}`}
+                          etiquetaOculta
+                          tipo="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="0.01"
+                          prefijo="$"
+                          placeholder="0.00"
+                          value={fila.precio}
+                          onChange={e => updateFila(fila.id, 'precio', e.target.value)}
+                          onBlur={() => alSalirDeCampo(fila.id, 'precio')}
+                          error={fieldError(fila.id, 'precio')}
+                        />
+                      </td>
+                      <td>
+                        <Campo
+                          id={`fecha-${fila.id}`}
+                          etiqueta={`Fecha, fila ${n}`}
+                          etiquetaOculta
+                          tipo="date"
+                          value={fila.fecha}
+                          onChange={e => updateFila(fila.id, 'fecha', e.target.value)}
+                        />
+                      </td>
+                      <td className={estilos.colAcciones}>
+                        <Boton
+                          variante="icono"
+                          icono={<Trash2 />}
+                          aria-label={`Eliminar fila ${n}`}
+                          onClick={() => removeFila(fila.id)}
+                          disabled={filas.length === 1}
+                          className={estilos.eliminar}
+                        />
+                      </td>
+                    </motion.tr>
+                  )
+                })}
+              </AnimatePresence>
+            </tbody>
+          </table>
 
           <div className={estilos.agregarFila}>
             <Boton variante="secundario" ancho icono={<Plus />} onClick={addFila} id="add-row-btn" className={estilos.botonPunteado}>

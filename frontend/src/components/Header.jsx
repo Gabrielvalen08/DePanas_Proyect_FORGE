@@ -16,7 +16,7 @@ export default function Header({ title, badge }) {
         <div className={estilos.izquierda}>
           <span className={estilos.logoMovil} aria-hidden="true">DE PANAS</span>
           <h1 className={estilos.titulo}>{title}</h1>
-          {badge && <Insignia tono="marca">{badge}</Insignia>}
+          {badge && <Insignia tono="marca" className={estilos.insignia}>{badge}</Insignia>}
         </div>
         <p className={estilos.fecha}>
           <Calendar size={16} aria-hidden="true" />
