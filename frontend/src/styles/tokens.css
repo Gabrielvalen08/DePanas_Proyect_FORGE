@@ -1,0 +1,90 @@
+/* =========================================================
+   CAPA 1 — PRIMITIVOS (Brandbook DE PANAS, mayo 2026)
+   No usar directamente en componentes: usar la capa 2.
+   ========================================================= */
+:root {
+  --rojo-vinotinto:   #911C0D;
+  --naranja-sazon:    #EF7D05;
+  --amarillo-criollo: #F8A914;
+  --verde-fresco:     #6DAD28;
+  --verde-avila:      #144428;
+  --crema-trigo:      #FEEECC;
+  --blanco:           #FFFFFF;
+
+  /* Derivados documentados en DESIGN_DECISIONS.md */
+  --crema-claro:      #FFF8EB;
+  --avila-75:         #4F735E;
+  --avila-borde:      #728F7E;
+  --borde-suave:      #C4C4A3;
+  --tinte-exito:      #E2EFD4;
+  --tinte-aviso:      #FDE5B8;
+  --tinte-error:      #F4E8E7;
+
+  /* Espaciado (base 4px, en rem) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  /* Radios */
+  --radio-input: 12px;
+  --radio-tarjeta: 20px;
+  --radio-modal: 24px;
+  --radio-pildora: 999px;
+
+  /* Tipografía */
+  --fuente-titulos: 'Josefin Sans', system-ui, sans-serif;
+  --fuente-texto: 'Cardo', Georgia, serif;
+
+  /* Medidas de layout */
+  --ancho-sidebar: 15rem;
+  --alto-header: 4rem;
+  --alto-barra-inferior: 4rem;
+  --alto-control: 2.75rem; /* 44px: área táctil mínima */
+}
+
+/* =========================================================
+   CAPA 2 — SEMÁNTICOS (qué significa cada color)
+   ========================================================= */
+:root {
+  --color-bg:            var(--crema-trigo);
+  --color-surface:       var(--blanco);
+  --color-surface-soft:  var(--crema-claro);
+  --color-text:          var(--verde-avila);
+  --color-text-muted:    var(--avila-75);
+  --color-border:        var(--borde-suave);
+  --color-border-input:  var(--avila-borde);
+  --color-primary:       var(--verde-avila);
+  --color-on-primary:    var(--crema-trigo);
+  --color-brand:         var(--naranja-sazon);
+  --color-accent:        var(--amarillo-criollo);
+  --color-danger:        var(--rojo-vinotinto);
+  --color-on-danger:     var(--blanco);
+  --color-success:       var(--verde-fresco);
+  --color-warning:       var(--amarillo-criollo);
+  --color-focus:         var(--rojo-vinotinto);
+
+  /* Estados hover: mezclas de la paleta, sin colores nuevos */
+  --color-primary-hover: color-mix(in srgb, var(--verde-avila) 85%, var(--blanco));
+  --color-danger-hover:  color-mix(in srgb, var(--rojo-vinotinto) 85%, var(--verde-avila));
+
+  --sombra-marca:    3px 4px 0 var(--rojo-vinotinto);
+  --sombra-modal:    0 24px 48px rgb(20 68 40 / 0.18);
+  --sombra-flotante: 0 8px 24px rgb(20 68 40 / 0.12);
+  --scrim:           rgb(20 68 40 / 0.4);
+  --material-header: rgb(254 238 204 / 0.8);
+}
+
+/* =========================================================
+   CAPA 3 — COMPONENTES
+   Cada *.module.css define sus tokens locales (p. ej. --boton-fondo)
+   a partir de la capa 2. Aquí solo van los compartidos.
+   ========================================================= */
+:root {
+  --campo-alto: var(--alto-control);
+  --campo-borde: var(--color-border-input);
+  --campo-radio: var(--radio-input);
+}
