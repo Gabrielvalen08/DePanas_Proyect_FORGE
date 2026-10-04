@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { SlidersHorizontal, Plus, Trash2, ShoppingCart } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Loader2, Plus, ShoppingCart, SlidersHorizontal, Trash2 } from 'lucide-react'
 import Header from '../components/Header'
 import FilterModal from '../components/FilterModal'
 import ConfirmModal from '../components/ConfirmModal'
+import { Boton, EstadoVacio, Insignia, Tarjeta } from '../components/common'
 import { fetchCompras, eliminarCompra } from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { formatearFecha, formatearPrecio } from '../utils/formato'
+import estilos from './PantallaMaestra.module.css'
 
 const EMPTY_FILTERS = {
   proveedor: '',
@@ -14,199 +16,159 @@ const EMPTY_FILTERS = {
   fechaHasta: '',
 }
 
-function hasActiveFilters(filters) {
-  return Object.values(filters).some(v => v !== '')
-}
-
-function formatPrice(price) {
-  return new Intl.NumberFormat('es-SV', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(price)
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  const [y, m, d] = dateStr.split('-')
-  return `${d}/${m}/${y}`
+function contarFiltrosActivos(filters) {
+  return Object.values(filters).filter(v => v !== '').length
 }
 
 export default function PantallaMaestra() {
-  const navigate = useNavigate()
   const { addToast } = useToast()
 
   const [compras, setCompras] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
+  const [version, setVersion] = useState(0) // sube para recargar tras eliminar
   const [filterOpen, setFilterOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
 
-  const loadCompras = useCallback(async (f) => {
-    setLoading(true)
-    try {
-      const data = await fetchCompras(f)
-      setCompras(data)
-    } catch (err) {
-      addToast('Error al cargar las compras', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }, [addToast])
-
   useEffect(() => {
-    loadCompras(filters)
-  }, [filters, loadCompras])
+    let vigente = true
+    fetchCompras(filters)
+      .then(data => { if (vigente) setCompras(data) })
+      .catch(() => { if (vigente) addToast('Error al cargar las compras', 'error') })
+      .finally(() => { if (vigente) setLoading(false) })
+    return () => { vigente = false } // descarta respuestas viejas si cambian los filtros
+  }, [filters, version, addToast])
 
-  function handleApplyFilters(newFilters) {
-    setFilters(newFilters)
+  function cambiarFiltros(nuevos) {
+    setLoading(true)
+    setFilters(nuevos)
+  }
+
+  function recargar() {
+    setLoading(true)
+    setVersion(v => v + 1)
   }
 
   async function handleDelete(id) {
     try {
       await eliminarCompra(id)
       addToast('Compra eliminada correctamente')
-      loadCompras(filters)
+      recargar()
     } catch {
       addToast('Error al eliminar la compra', 'error')
     }
   }
 
-  const activeFilters = hasActiveFilters(filters)
+  const filtrosActivos = contarFiltrosActivos(filters)
+  const hayFiltros = filtrosActivos > 0
+  const compraPorEliminar = compras.find(c => c.id === deleteTarget)
+
+  function contenidoTabla() {
+    if (loading) {
+      return <EstadoVacio cargando icono={<Loader2 />} titulo="Cargando compras…" />
+    }
+    if (compras.length === 0 && hayFiltros) {
+      return (
+        <EstadoVacio
+          icono={<SlidersHorizontal />}
+          titulo="Sin resultados"
+          texto="Prueba con otros filtros"
+          accion={<Boton variante="fantasma" onClick={() => cambiarFiltros(EMPTY_FILTERS)}>Limpiar filtros</Boton>}
+        />
+      )
+    }
+    if (compras.length === 0) {
+      return (
+        <EstadoVacio
+          icono={<ShoppingCart />}
+          titulo="Todavía no hay compras."
+          texto="¡Agreguemos la primera!"
+          accion={<Boton variante="primario" icono={<Plus />} a="/agregar-compra">Agregar compra</Boton>}
+        />
+      )
+    }
+    return (
+      <div className={estilos.desplazable}>
+        <table className={estilos.tabla}>
+          <caption className="solo-lector">Compras registradas</caption>
+          <thead>
+            <tr>
+              <th scope="col">Proveedor</th>
+              <th scope="col">Producto</th>
+              <th scope="col">Cantidad</th>
+              <th scope="col" className={estilos.numerico}>Precio</th>
+              <th scope="col">Fecha</th>
+              <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {compras.map(compra => (
+              <tr key={compra.id}>
+                <td data-etiqueta="Proveedor"><Insignia tono="neutro">{compra.proveedor}</Insignia></td>
+                <td data-etiqueta="Producto" className={estilos.producto}>{compra.producto}</td>
+                <td data-etiqueta="Cantidad">{compra.cantidad} {compra.unidad}</td>
+                <td data-etiqueta="Precio" className={estilos.numerico}>{formatearPrecio(compra.precio)}</td>
+                <td data-etiqueta="Fecha" className={estilos.fecha}>{formatearFecha(compra.fecha)}</td>
+                <td className={estilos.colAcciones}>
+                  <Boton
+                    variante="icono"
+                    icono={<Trash2 />}
+                    aria-label={`Eliminar compra de ${compra.producto}`}
+                    className={estilos.eliminar}
+                    onClick={() => setDeleteTarget(compra.id)}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
 
   return (
     <>
-      <Header title="Pantalla Maestra" badge="Compras" />
+      <Header title="Compras" badge="Pantalla maestra" />
 
-      <main className="content" id="pantalla-maestra-content">
-        {/* Toolbar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <button
+      <main id="contenido" tabIndex={-1}>
+        <div className={estilos.toolbar}>
+          <div className={estilos.filtros}>
+            <Boton
               id="open-filter-btn"
-              className={`btn btn-sm ${activeFilters ? 'btn-brown' : 'btn-ghost'}`}
+              variante={hayFiltros ? 'primario' : 'secundario'}
+              icono={<SlidersHorizontal />}
               onClick={() => setFilterOpen(true)}
+              aria-label={hayFiltros ? `Filtrar, ${filtrosActivos} filtro${filtrosActivos !== 1 ? 's' : ''} activo${filtrosActivos !== 1 ? 's' : ''}` : undefined}
             >
-              <SlidersHorizontal size={15} />
               Filtrar
-              {activeFilters && (
-                <span style={{
-                  background: 'var(--gold)',
-                  color: 'var(--brown)',
-                  borderRadius: '999px',
-                  padding: '1px 7px',
-                  fontSize: 11,
-                  fontWeight: 800,
-                  marginLeft: 2,
-                }}>
-                  {Object.values(filters).filter(Boolean).length}
-                </span>
-              )}
-            </button>
-
-            {activeFilters && (
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setFilters(EMPTY_FILTERS)}
-                id="clear-filters-btn"
-              >
+              {hayFiltros && <Insignia tono="marca" className={estilos.contador}>{filtrosActivos}</Insignia>}
+            </Boton>
+            {hayFiltros && (
+              <Boton id="clear-filters-btn" variante="fantasma" onClick={() => cambiarFiltros(EMPTY_FILTERS)}>
                 Limpiar filtros
-              </button>
+              </Boton>
             )}
           </div>
 
-          <button
-            id="go-agregar-compra-btn"
-            className="btn btn-primary"
-            onClick={() => navigate('/agregar-compra')}
-          >
-            <Plus size={16} />
-            Agregar Compra
-          </button>
+          <Boton id="go-agregar-compra-btn" variante="primario" sombra icono={<Plus />} a="/agregar-compra">
+            Agregar compra
+          </Boton>
         </div>
 
-        {/* Tabla */}
-        <div className="card">
-          <div className="card-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <ShoppingCart size={18} color="var(--brown)" />
-              <span className="card-title">Registro de Compras</span>
-            </div>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-500)' }}>
-              {loading ? '...' : `${compras.length} registro${compras.length !== 1 ? 's' : ''}`}
-            </span>
-          </div>
-
-          <div className="table-wrapper" style={{ margin: '0', borderRadius: 0, border: 'none' }}>
-            {loading ? (
-              <div className="empty-state">
-                <div style={{ fontSize: 32 }}>⏳</div>
-                <p className="empty-state__title">Cargando...</p>
-              </div>
-            ) : compras.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state__icon">🛒</div>
-                <p className="empty-state__title">
-                  {activeFilters ? 'Sin resultados' : 'No hay compras registradas'}
-                </p>
-                <p className="empty-state__sub">
-                  {activeFilters
-                    ? 'Intenta con otros filtros'
-                    : 'Agrega tu primera compra con el botón de arriba'}
-                </p>
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table className="data-table" aria-label="Tabla de compras">
-                  <thead>
-                    <tr>
-                      <th>Proveedor</th>
-                      <th>Producto</th>
-                      <th>Cantidad</th>
-                      <th>Precio al que se compró</th>
-                      <th>Fecha en que se compró</th>
-                      <th style={{ width: 50 }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {compras.map(compra => (
-                      <tr key={compra.id}>
-                        <td>
-                          <span className="proveedor-chip">{compra.proveedor}</span>
-                        </td>
-                        <td style={{ fontWeight: 600 }}>{compra.producto}</td>
-                        <td className="qty">
-                          <span className="qty-badge">
-                            {compra.cantidad} {compra.unidad}
-                          </span>
-                        </td>
-                        <td className="price">{formatPrice(compra.precio)}</td>
-                        <td className="date">{formatDate(compra.fecha)}</td>
-                        <td>
-                          <button
-                            className="remove-row-btn"
-                            title="Eliminar compra"
-                            aria-label={`Eliminar compra de ${compra.producto}`}
-                            onClick={() => setDeleteTarget(compra.id)}
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
+        <Tarjeta
+          titulo="Registro de compras"
+          icono={<ShoppingCart />}
+          accion={loading ? '…' : `${compras.length} registro${compras.length !== 1 ? 's' : ''}`}
+        >
+          {contenidoTabla()}
+        </Tarjeta>
       </main>
 
-      {/* Modales */}
       <FilterModal
         isOpen={filterOpen}
         onClose={() => setFilterOpen(false)}
         filters={filters}
-        onApply={handleApplyFilters}
+        onApply={cambiarFiltros}
       />
 
       <ConfirmModal
@@ -214,7 +176,7 @@ export default function PantallaMaestra() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => handleDelete(deleteTarget)}
         title="Eliminar compra"
-        message="¿Seguro que deseas eliminar este registro? Esta acción no se puede deshacer."
+        message={`¿Seguro que deseas eliminar ${compraPorEliminar ? `la compra de ${compraPorEliminar.producto}` : 'este registro'}? Esta acción no se puede deshacer.`}
         confirmLabel="Eliminar"
         danger
       />

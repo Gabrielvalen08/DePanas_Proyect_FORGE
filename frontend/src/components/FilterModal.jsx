@@ -1,113 +1,96 @@
-import React, { useState } from 'react'
-import { X, SlidersHorizontal } from 'lucide-react'
+import { useState } from 'react'
+import { SlidersHorizontal } from 'lucide-react'
+import { Boton, Campo, CuerpoModal, Modal, PieModal } from './common'
+import estilos from './FilterModal.module.css'
+
+const FILTROS_VACIOS = { proveedor: '', producto: '', fechaDesde: '', fechaHasta: '' }
 
 /**
  * FilterModal
- * Modal para filtrar la pantalla maestra de compras.
- * Props:
- *  - isOpen, onClose
- *  - filters: { proveedor, producto, fechaDesde, fechaHasta }
- *  - onApply(filters)
+ * Props: isOpen, onClose, filters ({ proveedor, producto, fechaDesde, fechaHasta }), onApply(filters)
  */
 export default function FilterModal({ isOpen, onClose, filters, onApply }) {
+  return (
+    <Modal
+      abierto={isOpen}
+      alCerrar={onClose}
+      titulo="Filtrar compras"
+      icono={<SlidersHorizontal />}
+      anchoMax="md"
+    >
+      {/* Se monta en cada apertura: el estado local siempre parte de los filtros actuales */}
+      <FormularioFiltros filters={filters} onApply={onApply} onClose={onClose} />
+    </Modal>
+  )
+}
+
+function FormularioFiltros({ filters, onApply, onClose }) {
   const [local, setLocal] = useState({ ...filters })
 
-  if (!isOpen) return null
+  const errorFechas =
+    local.fechaDesde && local.fechaHasta && local.fechaDesde > local.fechaHasta
+      ? 'La fecha final debe ser igual o posterior a la inicial'
+      : undefined
 
-  function handleChange(field, value) {
-    setLocal(prev => ({ ...prev, [field]: value }))
+  function cambiar(campo, valor) {
+    setLocal(prev => ({ ...prev, [campo]: valor }))
   }
 
-  function handleApply() {
+  function aplicar(e) {
+    e.preventDefault()
+    if (errorFechas) return
     onApply(local)
     onClose()
   }
 
-  function handleClear() {
-    const empty = { proveedor: '', producto: '', fechaDesde: '', fechaHasta: '' }
-    setLocal(empty)
-    onApply(empty)
+  function limpiar() {
+    onApply(FILTROS_VACIOS)
     onClose()
   }
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="filter-modal-title">
-      <div className="modal">
-        <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <SlidersHorizontal size={20} color="var(--brown)" />
-            <span className="modal-title" id="filter-modal-title">Filtrar Compras</span>
-          </div>
-          <button
-            className="btn btn-ghost btn-icon"
-            onClick={onClose}
-            aria-label="Cerrar filtros"
-          >
-            <X size={18} />
-          </button>
+    <form onSubmit={aplicar} noValidate>
+      <CuerpoModal>
+        <div className={estilos.rejilla}>
+          <Campo
+            id="filter-proveedor"
+            etiqueta="Proveedor"
+            placeholder="Ej: Súper Selectos"
+            value={local.proveedor}
+            onChange={e => cambiar('proveedor', e.target.value)}
+          />
+          <Campo
+            id="filter-producto"
+            etiqueta="Producto"
+            placeholder="Ej: Pollo"
+            value={local.producto}
+            onChange={e => cambiar('producto', e.target.value)}
+          />
+          <Campo
+            id="filter-fecha-desde"
+            etiqueta="Fecha desde"
+            tipo="date"
+            value={local.fechaDesde}
+            onChange={e => cambiar('fechaDesde', e.target.value)}
+          />
+          <Campo
+            id="filter-fecha-hasta"
+            etiqueta="Fecha hasta"
+            tipo="date"
+            value={local.fechaHasta}
+            onChange={e => cambiar('fechaHasta', e.target.value)}
+            error={errorFechas}
+          />
         </div>
-
-        <div className="modal-body">
-          <div className="filter-form">
-            {/* Proveedor */}
-            <div className="input-group">
-              <label className="input-label" htmlFor="filter-proveedor">Proveedor</label>
-              <input
-                id="filter-proveedor"
-                className="input"
-                placeholder="Ej: Súper Selectos"
-                value={local.proveedor}
-                onChange={e => handleChange('proveedor', e.target.value)}
-              />
-            </div>
-
-            {/* Producto */}
-            <div className="input-group">
-              <label className="input-label" htmlFor="filter-producto">Producto</label>
-              <input
-                id="filter-producto"
-                className="input"
-                placeholder="Ej: Pollo"
-                value={local.producto}
-                onChange={e => handleChange('producto', e.target.value)}
-              />
-            </div>
-
-            {/* Fecha desde */}
-            <div className="input-group">
-              <label className="input-label" htmlFor="filter-fecha-desde">Fecha desde</label>
-              <input
-                id="filter-fecha-desde"
-                type="date"
-                className="input"
-                value={local.fechaDesde}
-                onChange={e => handleChange('fechaDesde', e.target.value)}
-              />
-            </div>
-
-            {/* Fecha hasta */}
-            <div className="input-group">
-              <label className="input-label" htmlFor="filter-fecha-hasta">Fecha hasta</label>
-              <input
-                id="filter-fecha-hasta"
-                type="date"
-                className="input"
-                value={local.fechaHasta}
-                onChange={e => handleChange('fechaHasta', e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="modal-footer">
-          <button className="btn btn-ghost btn-sm" onClick={handleClear} id="filter-clear-btn">
-            Limpiar
-          </button>
-          <button className="btn btn-brown btn-sm" onClick={handleApply} id="filter-apply-btn">
-            Aplicar filtros
-          </button>
-        </div>
-      </div>
-    </div>
+      </CuerpoModal>
+      <PieModal>
+        <Boton variante="fantasma" onClick={limpiar} id="filter-clear-btn">
+          Limpiar
+        </Boton>
+        <Boton type="submit" variante="primario" disabled={Boolean(errorFechas)} id="filter-apply-btn">
+          Aplicar filtros
+        </Boton>
+      </PieModal>
+    </form>
   )
 }
