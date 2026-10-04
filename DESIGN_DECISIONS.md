@@ -5,8 +5,10 @@
 Este documento define las decisiones de marca para la interfaz web del aplicativo de contabilidad de **DE PANAS**.
 
 - **Fuente única de marca:** *DE PANAS – Brandbook, mayo 2026*. Colores, tipografías, logotipo, gráfica y tono salen solo de ahí.
-- **Adaptación web:** el brandbook no cubre interfaces. Lo marcado como **[Adaptación web]** se deriva de la marca aplicando las skills de `.claude/skills/` (`brand`, `design-system`, `ui-ux-pro-max`).
-- **Precedencia:** si una regla de este documento choca con una skill de `.claude/skills/`, **prevalece la skill**. Los valores de marca (hex, familias tipográficas, logotipo) no se reemplazan por recomendaciones genéricas de estilo o paleta de las skills.
+- **Adaptación web:** el brandbook no cubre interfaces. Lo marcado como **[Adaptación web]** se deriva de la marca aplicando las skills de `.claude/skills/`. `apple-design` guía proporciones, interacción, movimiento y materiales; `brand`, `design-system` y `ui-ux-pro-max` guían tokens, accesibilidad y UX.
+- **Precedencia:** **Brandbook > skills de `.claude/skills/` > este documento.**
+  - Si una regla de este documento choca con una skill, prevalece la skill.
+  - Si una skill choca con el brandbook, prevalece el brandbook. Por ejemplo, `apple-design` recomienda la fuente del sistema, pero la marca exige Josefin Sans y Cardo. Los valores de marca (hex, familias tipográficas, logotipo, tono) nunca se reemplazan por recomendaciones de una skill.
 
 > Estas son decisiones nuevas. El frontend actual (`frontend/src/index.css`) todavía usa la paleta y tipografía anteriores (Nunito Sans, marrón `#651A0C`, bordes negros) y se migrará aparte.
 
@@ -36,7 +38,7 @@ La paleta combina tonos cálidos y vibrantes con verdes para dar contraste, dina
 | `--verde-avila`    | Verde Ávila        | `#144428` | 20, 68, 40    |
 | `--crema-trigo`    | Crema y Trigo      | `#FEEECC` | 254, 238, 204 |
 
-> El brandbook lista nombres y códigos en páginas separadas. La correspondencia entre Verde Fresco y Verde Ávila se dedujo por el tono (claro y oscuro) y debe confirmarse con quien diseñó la marca.
+> **Confirmado contra el brandbook** (revisión visual página por página, no solo el texto extraído): en la página de nombres los cuatro bloques de color y en la página de códigos los seis círculos con hex coinciden uno a uno por tono. Verde Fresco es el verde claro/oliva `#6DAD28` y Verde Ávila es el verde oscuro `#144428`.
 
 La marca no define negro, grises ni blanco. **No usar `#000000`.**
 
@@ -108,17 +110,21 @@ Josefin Sans es geométrica, limpia y moderna. Cardo es humana, clásica y edito
 
 Ambas familias están en Google Fonts. Cargar solo los pesos usados (Josefin 400/600/700; Cardo 400/400i/700) con `display=swap`.
 
-| Elemento                         | Familia      | Peso | Tamaño (desktop / mobile) | Notas                          |
-| -------------------------------- | ------------ | ---- | ------------------------- | ------------------------------ |
-| Título de página (H1)            | Josefin Sans | 700  | 32px / 26px               | MAYÚSCULAS, `letter-spacing: 0.05em` |
-| H2 / título de card              | Josefin Sans | 700  | 24px / 20px               | MAYÚSCULAS                     |
-| H3                               | Josefin Sans | 600  | 20px / 18px               |                                |
-| Navegación, botones, labels      | Josefin Sans | 600  | 16px                      | Botones en MAYÚSCULAS          |
-| Métricas destacadas (KPIs)       | Josefin Sans | 700  | 32–40px                   | La cifra domina sobre su etiqueta |
-| Tablas y valores monetarios      | Josefin Sans | 400  | 16px                      | Montos alineados a la derecha  |
-| Párrafos, descripciones, ayudas  | Cardo        | 400  | 16–18px                   | `line-height: 1.6`, máx. 65ch   |
-| Citas y frases de marca          | Cardo        | 400i | 18–24px                   | Bienvenida y estados vacíos    |
+Tamaños en `rem` (base 1rem = 16px) para respetar el tamaño de texto que elija el usuario. Interlineado y tracking dependen del tamaño, según `apple-design`: interlineado ajustado en títulos grandes y más holgado en el cuerpo; nunca un único `letter-spacing` para todo.
 
+| Elemento                         | Familia      | Peso | Tamaño (desktop / mobile)  | Interlineado | Tracking  | Notas                          |
+| -------------------------------- | ------------ | ---- | -------------------------- | ------------ | --------- | ------------------------------ |
+| Título de página (H1)            | Josefin Sans | 700  | 2rem / 1.625rem            | 1.1          | `0.02em`  | MAYÚSCULAS                     |
+| H2 / título de card              | Josefin Sans | 700  | 1.5rem / 1.25rem           | 1.2          | `0.03em`  | MAYÚSCULAS                     |
+| H3                               | Josefin Sans | 600  | 1.25rem / 1.125rem         | 1.3          | `0`       |                                |
+| Navegación, botones, labels      | Josefin Sans | 600  | 1rem                       | 1.25         | `0.04em`  | Botones en MAYÚSCULAS          |
+| Métricas destacadas (KPIs)       | Josefin Sans | 700  | `clamp(2rem, 4vw, 2.5rem)` | 1.05         | `-0.02em` | La cifra domina sobre su etiqueta |
+| Tablas y valores monetarios      | Josefin Sans | 400  | 1rem                       | 1.4          | `0`       | Montos alineados a la derecha  |
+| Párrafos, descripciones, ayudas  | Cardo        | 400  | 1–1.125rem                 | 1.6          | `0`       | Máx. 65ch                      |
+| Citas y frases de marca          | Cardo        | 400i | 1.125–1.5rem               | 1.4          | `0`       | Bienvenida y estados vacíos    |
+
+- Las mayúsculas, que pide la marca, llevan tracking positivo que se reduce al crecer el tamaño. Las cifras grandes en caja mixta llevan tracking negativo.
+- La jerarquía se arma con peso, tamaño e interlineado juntos. Para enfatizar se usa peso antes que tamaño.
 - Base de 16px. Nada de texto de interfaz por debajo de 14px.
 - Las variantes Delgada y Ultradelgada de Josefin solo se usan en display de 32px o más, nunca en texto de interfaz.
 - Las mayúsculas son para titulares, botones y etiquetas cortas, nunca para párrafos.
@@ -140,7 +146,9 @@ El brandbook define dos expresiones:
 | Login, bienvenida, pantallas de carga amplias | Badge ilustrado (mínimo 120px de ancho)     |
 | Sidebar, header, barras compactas           | Tipográfico "DE PANAS" en Josefin Sans 700    |
 | Junto a tablas, gráficos o datos            | Solo tipográfico                              |
-| Favicon / ícono de app                      | **Pendiente:** el brandbook no define isotipo  |
+| Favicon / ícono de app                      | Badge ilustrado 1:1: `frontend/public/favicon.ico` (16/32/48) y `frontend/public/brand/` (`favicon-16/32/48.png`, `apple-touch-icon-180.png`, `icon-192.png`, `icon-512.png`). Conectados en `frontend/index.html` y en `frontend/public/site.webmanifest`. |
+
+**Assets de marca** en `frontend/public/brand/`: `logo-badge.png` (1197×1197, con transparencia) y los íconos de arriba. Referenciarlos con rutas absolutas desde la raíz pública (`/brand/logo-badge.png`).
 
 - Espacio libre alrededor del badge igual a la altura de "DE PANAS" en el logo.
 - No deformar, rotar, recolorear fuera de la paleta ni añadir efectos al badge.
@@ -161,13 +169,59 @@ El brandbook incluye un set de íconos e ilustraciones de productos (arepas, emp
 
 ---
 
-## Formas, bordes y sombras [Adaptación web]
+## Proporciones y espaciado [Adaptación web]
+
+El brandbook no define proporciones. Se aplica `apple-design`: cada medida es una decisión defendible, en `rem` para que el layout escale con el texto.
+
+- **Escala de espaciado** (base de 4px): `--space-1: 0.25rem`, `--space-2: 0.5rem`, `--space-3: 0.75rem`, `--space-4: 1rem`, `--space-6: 1.5rem`, `--space-8: 2rem`, `--space-12: 3rem`. No se permiten valores sueltos fuera de la escala.
+- **Agrupación por proximidad:** dentro de un grupo (label e input, filas relacionadas) `--space-2`/`--space-3`; entre grupos `--space-6`; entre secciones `--space-8`/`--space-12`. Cada control va junto a lo que afecta.
+- **Controles:** alto mínimo de 44px (2.75rem) y zona táctil de 44×44px aunque el ícono sea menor.
+- **Layout:** sidebar de 15rem; header de 4rem; contenido con ancho máximo legible (texto 65ch, tablas al 100% del contenedor); gutter de `--space-6` en desktop y `--space-4` en mobile.
+
+## Formas, bordes y profundidad [Adaptación web]
 
 El brandbook no define radios ni sombras. Se derivan del logotipo, que es un círculo con letras redondeadas y sombra sólida desplazada en Vinotinto:
 
 - **Radios:** inputs 12px, cards 20px, modales 24px, botones y chips con forma de píldora (999px).
 - **Sombra de marca:** sólida y desplazada, en Vinotinto, como en el lettering del logo: `box-shadow: 3px 4px 0 var(--rojo-vinotinto)`. Solo en elementos destacados (botón principal, cards de métricas, badge), nunca en filas de tabla ni en inputs.
 - **Bordes:** `--color-border` para divisores y `--color-border-input` para controles. Nada de bordes negros.
+
+### Materiales (según `apple-design`)
+
+- **Header como capa translúcida:** fondo Crema y Trigo al 80% con `backdrop-filter: blur(20px) saturate(180%)`, y el contenido se desplaza por debajo. En lugar de un borde de 1px, un borde inferior suave de desvanecido aparece solo cuando hay contenido debajo.
+- **El peso del material marca la jerarquía.** La sidebar es una región estructural y va sólida (Verde Ávila). Los elementos interactivos van más ligeros. Nunca se apila una superficie translúcida clara sobre otra.
+- **El texto sobre material translúcido** usa Verde Ávila con un peso más y un poco de tracking extra. Nunca `--color-text-muted`.
+- **Modales:** scrim de Verde Ávila al 40% que atenúa el fondo; el modal es sólido (blanco). Un panel paralelo que no bloquea va sin scrim.
+- **Superficies grandes más "gruesas":** los modales llevan sombra difusa más profunda que las cards (`0 24px 48px rgb(20 68 40 / 0.18)`). La sombra de marca sólida es aparte y solo para elementos destacados.
+- **Accesibilidad:** con `prefers-reduced-transparency: reduce` el header es sólido y sin blur. Con `prefers-contrast: more` los fondos son sólidos y se usa un borde `--color-border-input`.
+
+---
+
+## Movimiento e interacción [Adaptación web]
+
+Se toma de `apple-design`. Un elemento se siente vivo cuando responde al instante, el movimiento parte del valor actual en pantalla y puede interrumpirse en cualquier momento.
+
+### Respuesta inmediata
+- El feedback va en el `pointerdown` o `:active`, no al soltar. Botón sin sombra: `transform: scale(0.97)` en 100ms ease-out. Botón con sombra de marca: se desplaza hacia la sombra (`translate(3px, 4px)` y la sombra a 0) en 100ms, como si se hundiera.
+- Nada de debounces, timers ni esperas artificiales en el camino del input. El `delay()` del mock de `api.js` simula red; no se suma otra espera en la UI.
+- Durante la interacción el feedback es continuo: hover visible, el campo de autocompletado filtra mientras se escribe y el drawer sigue al dedo 1:1.
+
+### Springs y valores
+- Lo que el usuario puede tocar o arrastrar (drawer mobile, sheets, reordenar) se anima con **springs**, no con transiciones CSS ni `@keyframes`, porque solo así se puede interrumpir. Librería recomendada: **Motion** (`motion`), que habrá que agregar al implementar.
+- **Spring por defecto:** sin rebote. Damping 1.0 y response 0.35 s, que en Motion es `{ type: 'spring', bounce: 0, duration: 0.35 }`.
+- **Con inercia** (soltar o lanzar el drawer): damping 0.8 y response 0.3 s (`bounce: 0.2, duration: 0.3`). Solo hay rebote cuando el gesto traía impulso; un menú que solo aparece nunca rebota.
+- **Al soltar un gesto:** se pasa la velocidad del dedo al spring y el destino (abrir o cerrar) se decide por la proyección del impulso y el signo de la velocidad, no solo por la posición.
+- **Bordes elásticos:** al arrastrar más allá del límite hay resistencia progresiva, nunca un tope seco.
+- Las transiciones que no son gestos (hover, cambio de color, aparición de un toast) pueden usar CSS: 150–250ms, solo `transform` y `opacity`.
+
+### Consistencia espacial
+- **Se entra y se sale por el mismo camino.** El drawer entra y sale por la izquierda. Los toasts aparecen y se van por el mismo borde. El modal crece y se encoge desde el mismo punto.
+- **Anclar al origen:** popovers, el menú de autocompletado y los menús contextuales nacen del elemento que los abrió (`transform-origin` en el disparador).
+- Nunca se bloquea el input durante una transición. Un modal que se está cerrando puede reabrirse y la animación parte del valor actual.
+
+### Movimiento reducido
+- Con `prefers-reduced-motion: reduce` los slides y springs se cambian por fundidos de opacidad de 200ms, sin rebotes. Los cambios de color u opacidad que ayudan a entender se mantienen.
+- Nada de fondos en movimiento, bucles lentos ni saltos bruscos de brillo.
 
 ---
 
@@ -179,10 +233,12 @@ El brandbook no define radios ni sombras. Se derivan del logotipo, que es un cí
 - Destructivo: fondo Rojo Vinotinto y texto blanco, siempre con confirmación.
 - Estados `hover`, `focus-visible` (anillo Vinotinto) y `disabled` visibles. Área táctil mínima de 44×44px.
 - Mientras una acción async está en curso, el botón queda deshabilitado y con indicador de carga.
+- La confirmación es solo para acciones destructivas e irreversibles. Si una acción se puede deshacer, se prefiere ofrecer "Deshacer" a confirmar.
 
 **Navegación (sidebar)**
 - Fondo Verde Ávila con texto Crema y Trigo. Ítem activo como píldora Amarillo Criollo con texto Verde Ávila.
 - Logotipo tipográfico arriba. El naranja aparece como franja o acento de identidad.
+- Cada pantalla responde a dónde estoy (ítem activo y título), a dónde puedo ir y cómo salgo (volver o cancelar visible). Los ítems se nombran por su contenido ("Compras", "Agregar compra") y no con etiquetas genéricas.
 
 **Cards y métricas**
 - Fondo blanco sobre crema, radio de 20px. Las cards de KPI pueden llevar la sombra de marca.
@@ -195,7 +251,7 @@ El brandbook no define radios ni sombras. Se derivan del logotipo, que es un cí
 
 **Formularios**
 - Label visible encima de cada campo; el placeholder no sustituye al label.
-- Error específico debajo del campo, en Vinotinto con ícono, enlazado con `aria-describedby`.
+- Error específico debajo del campo, en Vinotinto con ícono, enlazado con `aria-describedby`. Se valida en línea al salir del campo, no solo al enviar.
 - Si el envío falla, mostrar un resumen de errores arriba que reciba el foco y enlace a cada campo.
 
 **Notificaciones (toasts)**
@@ -244,12 +300,15 @@ Mensajes de marca: "Tu antojo venezolano en El Salvador", "Aquí se viene a come
 6. Tablas y cifras sobrias: la marca nunca dificulta la lectura financiera.
 7. Toda pantalla nueva debe parecer parte del mismo sistema.
 8. Si estética y funcionalidad chocan, gana la funcionalidad.
-9. Ante un conflicto con una skill de `.claude/skills/`, prevalece la skill.
+9. Precedencia: brandbook > skills de `.claude/skills/` > este documento.
+10. Todo lo tocable responde al instante, se puede interrumpir y respeta `prefers-reduced-motion`.
 
 ---
 
 ## Pendientes de marca
 
-- Confirmar qué verde es Fresco y cuál Ávila.
-- Isotipo o versión reducida del logo para favicon e ícono de app.
-- Archivos fuente del logotipo (SVG/PNG con transparencia) y del set de ilustraciones para incorporarlos a `frontend/public/`.
+Todos resueltos:
+
+- **Verdes:** confirmado que Verde Fresco es `#6DAD28` y Verde Ávila es `#144428` (ver nota en la paleta).
+- **Favicon e ícono de app:** se usa el badge ilustrado en 1:1, conectado en `frontend/index.html` y `site.webmanifest`.
+- **Assets del logotipo:** `frontend/public/brand/logo-badge.png` (1197×1197, transparente), sacado de las imágenes incrustadas en el brandbook.

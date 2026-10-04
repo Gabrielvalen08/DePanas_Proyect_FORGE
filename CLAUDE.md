@@ -31,11 +31,13 @@ React 18 + Vite 5 + react-router-dom 6, en JavaScript (JSX) sin TypeScript. Íco
 
 ## Diseño (obligatorio)
 
-`DESIGN_DECISIONS.md` (raíz) define la marca para la web a partir del *Brandbook DE PANAS (mayo 2026)* y **toda pantalla nueva debe seguirlo**. Precedencia: las skills de `.claude/skills/` (`ui-ux-pro-max`, `brand`, `design-system`) mandan sobre `DESIGN_DECISIONS.md`. Los valores de marca (hex, tipografías, logotipo) salen solo del brandbook. Lo esencial:
+`DESIGN_DECISIONS.md` (raíz) define la marca para la web a partir del *Brandbook DE PANAS (mayo 2026)* y **toda pantalla nueva debe seguirlo**. Precedencia: **brandbook > skills de `.claude/skills/` > `DESIGN_DECISIONS.md`**. `apple-design` guía proporciones, interacción, animaciones y materiales; `ui-ux-pro-max`, `brand` y `design-system` guían tokens, accesibilidad y UX. Lo esencial:
 
 - Paleta: Rojo Vinotinto `#911C0D`, Naranja Sazón `#EF7D05`, Amarillo Criollo `#F8A914`, Verde Fresco `#6DAD28`, Verde Ávila `#144428`, Crema y Trigo `#FEEECC`. Sin negro puro. Nunca texto blanco o crema sobre naranja, amarillo o verde fresco.
 - Tipografía: Josefin Sans para titulares e interfaz (titulares en mayúsculas) y Cardo para textos extensos.
 - Las tablas van sobrias, con los montos alineados a la derecha. Contraste WCAG AA en todo.
+- Movimiento: feedback al presionar, springs interrumpibles para lo arrastrable y `prefers-reduced-motion` siempre respetado.
+- Assets de marca en `frontend/public/brand/` (logo y los íconos de favicon/PWA, conectados en `index.html` y `public/site.webmanifest`).
 
 **Migración pendiente:** `src/index.css` todavía usa el sistema anterior (Nunito Sans, `--brown #651A0C`, bordes y sombras negras). No lo tomes como referencia de marca. Los estilos globales están ahí y las páginas usan bastantes `style={{...}}` en línea.
 
