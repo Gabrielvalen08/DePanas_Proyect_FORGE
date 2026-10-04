@@ -1,58 +1,81 @@
-import React, { useState, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Save, ArrowLeft, CalendarDays } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { AlertCircle, ArrowLeft, CalendarDays, Plus, Save, Trash2 } from 'lucide-react'
 import Header from '../components/Header'
 import AutocompleteInput from '../components/AutocompleteInput'
+import { Boton, Campo, Selector, Tarjeta } from '../components/common'
 import { guardarCompras, getProveedores, getProductos } from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { fechaHoyISO, formatearFechaTexto } from '../utils/formato'
+import { springSuave } from '../styles/movimiento'
+import estilos from './AgregarCompra.module.css'
 
 const UNIDADES = ['lb', 'kg', 'g', 'oz', 'galon', 'litro', 'ml', 'unidad', 'caja', 'bolsa']
 
-function getTodayISO() {
-  return new Date().toISOString().split('T')[0]
-}
+// Campos validados, en el orden en que aparecen en la fila
+const CAMPOS = [
+  { clave: 'proveedor', nombre: 'Proveedor' },
+  { clave: 'producto', nombre: 'Producto' },
+  { clave: 'cantidad', nombre: 'Cantidad' },
+  { clave: 'precio', nombre: 'Precio' },
+]
 
-function formatDateDisplay(isoDate) {
-  if (!isoDate) return ''
-  const [y, m, d] = isoDate.split('-')
-  const meses = [
-    'enero','febrero','marzo','abril','mayo','junio',
-    'julio','agosto','septiembre','octubre','noviembre','diciembre',
-  ]
-  return `${parseInt(d)} de ${meses[parseInt(m) - 1]} de ${y}`
-}
+let siguienteId = 1
 
 function emptyFila() {
   return {
-    id: Date.now() + Math.random(),
+    id: siguienteId++,
     proveedor: '',
     producto: '',
     cantidad: '',
     unidad: 'lb',
     precio: '',
-    fecha: getTodayISO(),
+    fecha: fechaHoyISO(),
   }
 }
 
 function validateFila(fila) {
   const errors = {}
-  if (!fila.proveedor.trim()) errors.proveedor = 'Requerido'
-  if (!fila.producto.trim()) errors.producto = 'Requerido'
+  if (!fila.proveedor.trim()) errors.proveedor = 'Escribe el proveedor'
+  if (!fila.producto.trim()) errors.producto = 'Escribe el producto'
   if (!fila.cantidad || isNaN(fila.cantidad) || Number(fila.cantidad) <= 0)
-    errors.cantidad = 'Inválido'
+    errors.cantidad = 'Ingresa una cantidad mayor a 0'
   if (!fila.precio || isNaN(fila.precio) || Number(fila.precio) <= 0)
-    errors.precio = 'Inválido'
+    errors.precio = 'Ingresa un precio mayor a 0'
   return errors
 }
+
+const clave = (filaId, campo) => `${filaId}-${campo}`
 
 export default function AgregarCompra() {
   const navigate = useNavigate()
   const { addToast } = useToast()
-  const today = getTodayISO()
+  const today = fechaHoyISO()
 
-  const [filas, setFilas] = useState([emptyFila()])
+  const [filas, setFilas] = useState(() => [emptyFila()])
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
+
+  const resumenRef = useRef(null)
+  const enfocarResumen = useRef(false)
+  const filaPorEnfocar = useRef(null)
+
+  // Tras un envío fallido, el foco va al resumen de errores
+  useEffect(() => {
+    if (enfocarResumen.current && resumenRef.current) {
+      resumenRef.current.focus()
+      enfocarResumen.current = false
+    }
+  }, [errors])
+
+  // Una fila recién agregada recibe el foco en su campo Proveedor
+  useEffect(() => {
+    if (filaPorEnfocar.current !== null) {
+      document.getElementById(`proveedor-${filaPorEnfocar.current}`)?.focus()
+      filaPorEnfocar.current = null
+    }
+  }, [filas])
 
   // Sugerencias para autocompletado
   const suggestProveedores = useCallback((text) => {
@@ -65,44 +88,56 @@ export default function AgregarCompra() {
     return lista.filter(p => p.toLowerCase().includes(text.toLowerCase()))
   }, [])
 
-  function updateFila(id, field, value) {
-    setFilas(prev =>
-      prev.map(f => f.id === id ? { ...f, [field]: value } : f)
-    )
-    // Limpiar error del campo
+  function validarCampo(fila, campo) {
+    const mensaje = validateFila(fila)[campo]
     setErrors(prev => {
       const next = { ...prev }
-      delete next[`${id}-${field}`]
+      if (mensaje) next[clave(fila.id, campo)] = mensaje
+      else delete next[clave(fila.id, campo)]
       return next
     })
   }
 
+  function updateFila(id, field, value) {
+    const actual = filas.find(f => f.id === id)
+    const actualizada = { ...actual, [field]: value }
+    setFilas(prev => prev.map(f => (f.id === id ? actualizada : f)))
+    // Si el campo ya tenía error, se revalida en vivo para que desaparezca al corregirlo
+    if (errors[clave(id, field)]) validarCampo(actualizada, field)
+  }
+
+  function alSalirDeCampo(id, field) {
+    const fila = filas.find(f => f.id === id)
+    if (fila) validarCampo(fila, field)
+  }
+
   function addFila() {
-    setFilas(prev => [...prev, emptyFila()])
+    const nueva = emptyFila()
+    filaPorEnfocar.current = nueva.id
+    setFilas(prev => [...prev, nueva])
   }
 
   function removeFila(id) {
     if (filas.length === 1) return // siempre al menos 1 fila
     setFilas(prev => prev.filter(f => f.id !== id))
+    setErrors(prev => {
+      const next = { ...prev }
+      CAMPOS.forEach(({ clave: campo }) => delete next[clave(id, campo)])
+      return next
+    })
   }
 
   async function handleGuardar() {
-    // Validar todas las filas
     const newErrors = {}
-    let hasErrors = false
     filas.forEach(f => {
-      const ferrors = validateFila(f)
-      if (Object.keys(ferrors).length > 0) {
-        hasErrors = true
-        Object.entries(ferrors).forEach(([field, msg]) => {
-          newErrors[`${f.id}-${field}`] = msg
-        })
-      }
+      Object.entries(validateFila(f)).forEach(([field, msg]) => {
+        newErrors[clave(f.id, field)] = msg
+      })
     })
 
-    if (hasErrors) {
+    if (Object.keys(newErrors).length > 0) {
+      enfocarResumen.current = true
       setErrors(newErrors)
-      addToast('Corrige los campos en rojo antes de guardar', 'error')
       return
     }
 
@@ -127,227 +162,209 @@ export default function AgregarCompra() {
   }
 
   function fieldError(filaId, field) {
-    return errors[`${filaId}-${field}`]
+    return errors[clave(filaId, field)]
+  }
+
+  // Resumen en el orden visual: fila por fila, campo por campo
+  const resumen = filas.flatMap((fila, i) =>
+    CAMPOS.filter(({ clave: campo }) => fieldError(fila.id, campo)).map(({ clave: campo, nombre }) => ({
+      id: `${campo}-${fila.id}`,
+      texto: `Fila ${i + 1} · ${nombre}: ${fieldError(fila.id, campo)}`,
+    }))
+  )
+
+  function irACampo(e, idCampo) {
+    e.preventDefault()
+    document.getElementById(idCampo)?.focus()
   }
 
   return (
     <>
-      <Header title="Agregar Compra" />
+      <Header title="Agregar compra" />
 
-      <main className="content" id="agregar-compra-content">
-        {/* Page header con fecha */}
-        <div className="page-header">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => navigate('/compras')}
-              id="back-to-maestra-btn"
-              style={{ alignSelf: 'flex-start', marginBottom: 4 }}
-            >
-              <ArrowLeft size={14} />
-              Volver
-            </button>
-            <h2 className="page-title">Agregar Compra</h2>
-          </div>
+      <main id="contenido" tabIndex={-1}>
+        <div className={estilos.encabezado}>
+          <Boton variante="fantasma" tamano="sm" icono={<ArrowLeft />} a="/compras" id="back-to-maestra-btn">
+            Volver a compras
+          </Boton>
 
-          {/* Indicador de fecha */}
-          <div className="date-indicator">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <CalendarDays size={14} color="var(--brown)" />
-              <span className="date-indicator__label">Fecha del día de hoy</span>
-            </div>
-            <div className="date-indicator__value">{formatDateDisplay(today)}</div>
-            <div className="date-indicator__note">
-              Esta fecha aparece en todo lo que se agregue en esta compra.
-            </div>
-          </div>
+          <Tarjeta className={estilos.fechaHoy}>
+            <span className={estilos.fechaEtiqueta}>
+              <CalendarDays size={16} aria-hidden="true" />
+              Fecha de hoy
+            </span>
+            <span className={estilos.fechaValor}>{formatearFechaTexto(today)}</span>
+            <p className={estilos.fechaNota}>
+              Esta fecha se aplica a todo lo que agregues ahora; puedes cambiarla por fila.
+            </p>
+          </Tarjeta>
         </div>
 
-        {/* Tabla editable */}
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">Detalle de compras</span>
-            <span style={{ fontSize: 13, color: 'var(--gray-500)', fontWeight: 600 }}>
-              {filas.length} fila{filas.length !== 1 ? 's' : ''}
-            </span>
+        {resumen.length > 0 && (
+          <div ref={resumenRef} role="alert" tabIndex={-1} className={estilos.resumen} aria-labelledby="resumen-titulo">
+            <h2 id="resumen-titulo" className={estilos.resumenTitulo}>
+              <AlertCircle size={20} aria-hidden="true" />
+              Revisa estos campos
+            </h2>
+            <ul className={estilos.resumenLista}>
+              {resumen.map(item => (
+                <li key={item.id}>
+                  <a href={`#${item.id}`} onClick={e => irACampo(e, item.id)}>{item.texto}</a>
+                </li>
+              ))}
+            </ul>
           </div>
+        )}
 
-          <div style={{ overflowX: 'auto' }}>
-            <table className="editable-table" aria-label="Tabla de ingreso de compras">
+        <Tarjeta
+          titulo="Detalle de compras"
+          accion={`${filas.length} fila${filas.length !== 1 ? 's' : ''}`}
+        >
+          <div className={estilos.desplazable}>
+            <table className={estilos.tabla}>
+              <caption className="solo-lector">Compras por registrar</caption>
               <thead>
                 <tr>
-                  <th style={{ minWidth: 180 }}>Proveedor</th>
-                  <th style={{ minWidth: 180 }}>Producto</th>
-                  <th style={{ minWidth: 160 }}>Cantidad</th>
-                  <th style={{ minWidth: 130 }}>Precio al que se compró</th>
-                  <th style={{ minWidth: 150 }}>Fecha en que se compró</th>
-                  <th style={{ width: 44 }}></th>
+                  <th scope="col" className={estilos.colTexto}>Proveedor</th>
+                  <th scope="col" className={estilos.colTexto}>Producto</th>
+                  <th scope="col" className={estilos.colCantidad}>Cantidad</th>
+                  <th scope="col" className={estilos.colPrecio}>Precio</th>
+                  <th scope="col" className={estilos.colFecha}>Fecha</th>
+                  <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
                 </tr>
               </thead>
               <tbody>
-                {filas.map((fila) => (
-                  <tr key={fila.id}>
-                    {/* Proveedor */}
-                    <td>
-                      <AutocompleteInput
-                        id={`proveedor-${fila.id}`}
-                        value={fila.proveedor}
-                        onChange={val => updateFila(fila.id, 'proveedor', val)}
-                        placeholder="Súper Selectos..."
-                        getSuggestions={suggestProveedores}
-                        className={fieldError(fila.id, 'proveedor') ? 'error' : ''}
-                      />
-                      {fieldError(fila.id, 'proveedor') && (
-                        <span style={{ color: 'var(--error)', fontSize: 11, fontWeight: 600 }}>
-                          {fieldError(fila.id, 'proveedor')}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Producto */}
-                    <td>
-                      <AutocompleteInput
-                        id={`producto-${fila.id}`}
-                        value={fila.producto}
-                        onChange={val => updateFila(fila.id, 'producto', val)}
-                        placeholder="Pollo, arroz..."
-                        getSuggestions={suggestProductos}
-                        className={fieldError(fila.id, 'producto') ? 'error' : ''}
-                      />
-                      {fieldError(fila.id, 'producto') && (
-                        <span style={{ color: 'var(--error)', fontSize: 11, fontWeight: 600 }}>
-                          {fieldError(fila.id, 'producto')}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Cantidad + Unidad */}
-                    <td>
-                      <div
-                        className={`input-with-unit ${fieldError(fila.id, 'cantidad') ? 'error' : ''}`}
-                        style={fieldError(fila.id, 'cantidad') ? { borderColor: 'var(--error)' } : {}}
+                <AnimatePresence initial={false}>
+                  {filas.map((fila, i) => {
+                    const n = i + 1
+                    return (
+                      <motion.tr
+                        key={fila.id}
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={springSuave}
                       >
-                        <input
-                          id={`cantidad-${fila.id}`}
-                          className="input"
-                          type="number"
-                          min="0"
-                          step="any"
-                          placeholder="3"
-                          value={fila.cantidad}
-                          onChange={e => updateFila(fila.id, 'cantidad', e.target.value)}
-                        />
-                        <select
-                          id={`unidad-${fila.id}`}
-                          className="unit-select"
-                          value={fila.unidad}
-                          onChange={e => updateFila(fila.id, 'unidad', e.target.value)}
-                          aria-label="Unidad de medida"
-                        >
-                          {UNIDADES.map(u => (
-                            <option key={u} value={u}>{u}</option>
-                          ))}
-                        </select>
-                      </div>
-                      {fieldError(fila.id, 'cantidad') && (
-                        <span style={{ color: 'var(--error)', fontSize: 11, fontWeight: 600 }}>
-                          {fieldError(fila.id, 'cantidad')}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Precio */}
-                    <td>
-                      <div style={{ position: 'relative' }}>
-                        <span style={{
-                          position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
-                          fontSize: 13, fontWeight: 700, color: 'var(--gray-500)',
-                        }}>$</span>
-                        <input
-                          id={`precio-${fila.id}`}
-                          className={`input ${fieldError(fila.id, 'precio') ? 'error' : ''}`}
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={fila.precio}
-                          onChange={e => updateFila(fila.id, 'precio', e.target.value)}
-                          style={{ paddingLeft: 26 }}
-                        />
-                      </div>
-                      {fieldError(fila.id, 'precio') && (
-                        <span style={{ color: 'var(--error)', fontSize: 11, fontWeight: 600 }}>
-                          {fieldError(fila.id, 'precio')}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Fecha — autocompleta con hoy */}
-                    <td>
-                      <input
-                        id={`fecha-${fila.id}`}
-                        className="input"
-                        type="date"
-                        value={fila.fecha}
-                        onChange={e => updateFila(fila.id, 'fecha', e.target.value)}
-                        aria-label="Fecha de compra (autocompleta con hoy)"
-                      />
-                    </td>
-
-                    {/* Eliminar fila */}
-                    <td>
-                      <button
-                        className="remove-row-btn"
-                        onClick={() => removeFila(fila.id)}
-                        disabled={filas.length === 1}
-                        title="Eliminar fila"
-                        aria-label="Eliminar esta fila"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        <td>
+                          <AutocompleteInput
+                            id={`proveedor-${fila.id}`}
+                            etiqueta={`Proveedor, fila ${n}`}
+                            etiquetaOculta
+                            value={fila.proveedor}
+                            onChange={val => updateFila(fila.id, 'proveedor', val)}
+                            onBlur={() => alSalirDeCampo(fila.id, 'proveedor')}
+                            placeholder="Súper Selectos…"
+                            getSuggestions={suggestProveedores}
+                            error={fieldError(fila.id, 'proveedor')}
+                          />
+                        </td>
+                        <td>
+                          <AutocompleteInput
+                            id={`producto-${fila.id}`}
+                            etiqueta={`Producto, fila ${n}`}
+                            etiquetaOculta
+                            value={fila.producto}
+                            onChange={val => updateFila(fila.id, 'producto', val)}
+                            onBlur={() => alSalirDeCampo(fila.id, 'producto')}
+                            placeholder="Pollo, arroz…"
+                            getSuggestions={suggestProductos}
+                            error={fieldError(fila.id, 'producto')}
+                          />
+                        </td>
+                        <td>
+                          <div className={estilos.cantidadGrupo}>
+                            <Campo
+                              id={`cantidad-${fila.id}`}
+                              etiqueta={`Cantidad, fila ${n}`}
+                              etiquetaOculta
+                              tipo="number"
+                              inputMode="decimal"
+                              min="0"
+                              step="any"
+                              placeholder="3"
+                              value={fila.cantidad}
+                              onChange={e => updateFila(fila.id, 'cantidad', e.target.value)}
+                              onBlur={() => alSalirDeCampo(fila.id, 'cantidad')}
+                              error={fieldError(fila.id, 'cantidad')}
+                              className={estilos.cantidad}
+                            />
+                            <Selector
+                              id={`unidad-${fila.id}`}
+                              etiqueta={`Unidad, fila ${n}`}
+                              etiquetaOculta
+                              opciones={UNIDADES}
+                              value={fila.unidad}
+                              onChange={e => updateFila(fila.id, 'unidad', e.target.value)}
+                              className={estilos.unidad}
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <Campo
+                            id={`precio-${fila.id}`}
+                            etiqueta={`Precio, fila ${n}`}
+                            etiquetaOculta
+                            tipo="number"
+                            inputMode="decimal"
+                            min="0"
+                            step="0.01"
+                            prefijo="$"
+                            placeholder="0.00"
+                            value={fila.precio}
+                            onChange={e => updateFila(fila.id, 'precio', e.target.value)}
+                            onBlur={() => alSalirDeCampo(fila.id, 'precio')}
+                            error={fieldError(fila.id, 'precio')}
+                          />
+                        </td>
+                        <td>
+                          <Campo
+                            id={`fecha-${fila.id}`}
+                            etiqueta={`Fecha, fila ${n}`}
+                            etiquetaOculta
+                            tipo="date"
+                            value={fila.fecha}
+                            onChange={e => updateFila(fila.id, 'fecha', e.target.value)}
+                          />
+                        </td>
+                        <td className={estilos.colAcciones}>
+                          <Boton
+                            variante="icono"
+                            icono={<Trash2 />}
+                            aria-label={`Eliminar fila ${n}`}
+                            onClick={() => removeFila(fila.id)}
+                            disabled={filas.length === 1}
+                            className={estilos.eliminar}
+                          />
+                        </td>
+                      </motion.tr>
+                    )
+                  })}
+                </AnimatePresence>
               </tbody>
             </table>
           </div>
 
-          {/* Agregar fila */}
-          <div style={{ padding: '12px 16px 16px' }}>
-            <button
-              className="add-row-btn"
-              onClick={addFila}
-              id="add-row-btn"
-            >
-              <Plus size={16} />
+          <div className={estilos.agregarFila}>
+            <Boton variante="secundario" ancho icono={<Plus />} onClick={addFila} id="add-row-btn" className={estilos.botonPunteado}>
               Agregar otra fila
-            </button>
+            </Boton>
           </div>
-        </div>
+        </Tarjeta>
 
-        {/* Footer de acciones */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: 12,
-          paddingBottom: 8,
-        }}>
-          <button
-            className="btn btn-ghost"
-            onClick={() => navigate('/compras')}
-            id="cancel-compra-btn"
-          >
+        <div className={estilos.pie}>
+          <Boton variante="fantasma" a="/compras" id="cancel-compra-btn">
             Cancelar
-          </button>
-          <button
-            className="btn btn-brown"
+          </Boton>
+          <Boton
+            variante="primario"
+            sombra
+            icono={<Save />}
             onClick={handleGuardar}
-            disabled={saving}
+            cargando={saving}
             id="guardar-compra-btn"
           >
-            <Save size={16} />
-            {saving ? 'Guardando...' : 'Guardar compra'}
-          </button>
+            {saving ? 'Guardando…' : 'Guardar compra'}
+          </Boton>
         </div>
       </main>
     </>

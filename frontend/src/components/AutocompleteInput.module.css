@@ -1,0 +1,42 @@
+/* La lista nace del campo: se ancla arriba y crece hacia abajo */
+.lista {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  z-index: 15;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-input);
+  background: var(--color-surface);
+  box-shadow: var(--sombra-flotante);
+  transform-origin: top center;
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  min-height: var(--alto-control);
+  padding: 0.15em var(--space-3) 0;
+  border-radius: calc(var(--radio-input) - 4px);
+  font-family: var(--fuente-titulos);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.opcion:hover,
+.resaltada {
+  background: var(--color-surface-soft);
+}
+
+.resaltada {
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.coincidencia {
+  background: none;
+  color: inherit;
+  font-weight: 700;
+}

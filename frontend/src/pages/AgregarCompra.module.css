@@ -1,0 +1,248 @@
+/* ---------- Encabezado de página ---------- */
+.encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.fechaHoy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 22rem;
+  padding: var(--space-4) var(--space-6);
+}
+
+.fechaEtiqueta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--fuente-titulos);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.fechaValor {
+  font-family: var(--fuente-titulos);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.fechaNota {
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+/* ---------- Resumen de errores ---------- */
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+  border-left: 4px solid var(--color-danger);
+  border-radius: var(--radio-input);
+  background: var(--tinte-error);
+  color: var(--color-danger);
+}
+
+.resumen:focus-visible {
+  outline-offset: 4px;
+}
+
+.resumenTitulo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 1.125rem;
+}
+
+.resumenLista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-left: var(--space-8);
+  font-family: var(--fuente-titulos);
+  font-weight: 600;
+}
+
+.resumenLista a {
+  color: var(--color-danger);
+  text-underline-offset: 3px;
+}
+
+/* ---------- Tabla editable ---------- */
+.desplazable {
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla th {
+  padding: var(--space-3) var(--space-2);
+  background: var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tabla th:first-child,
+.tabla td:first-child {
+  padding-left: var(--space-6);
+}
+
+.tabla th:last-child,
+.tabla td:last-child {
+  padding-right: var(--space-4);
+}
+
+.tabla td {
+  padding: var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.colTexto { min-width: 11rem; }
+.colCantidad { min-width: 11rem; }
+.colPrecio { min-width: 8.5rem; }
+.colFecha { min-width: 10rem; }
+
+.colAcciones {
+  width: 1%;
+}
+
+.cantidadGrupo {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.cantidad {
+  flex: 1 1 5rem;
+}
+
+.unidad {
+  flex: 0 0 6.5rem;
+}
+
+.eliminar:hover:not(:disabled) {
+  --boton-texto: var(--color-danger);
+}
+
+.agregarFila {
+  padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+.botonPunteado {
+  border-style: dashed;
+}
+
+/* ---------- Pie de acciones ---------- */
+.pie {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+/* ---------- Móvil: cada fila es una tarjeta con etiquetas visibles ---------- */
+@media (max-width: 767px) {
+  .fechaHoy {
+    max-width: none;
+    width: 100%;
+  }
+
+  .tabla thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .tabla,
+  .tabla tbody,
+  .tabla tr,
+  .tabla td {
+    display: block;
+  }
+
+  .tabla tr {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .tabla td,
+  .tabla td:first-child,
+  .tabla td:last-child {
+    padding: 0;
+    border-bottom: none;
+  }
+
+  /* Las etiquetas ocultas en desktop se muestran en la tarjeta */
+  .tabla :global([data-etiqueta-oculta]) {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .tabla .colAcciones {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    width: auto;
+  }
+
+  .tabla td:first-child {
+    padding-right: var(--space-12);
+  }
+
+  .agregarFila {
+    padding: var(--space-4);
+  }
+
+  /* Acciones fijas sobre la barra inferior */
+  .pie {
+    position: sticky;
+    bottom: calc(var(--alto-barra-inferior) + env(safe-area-inset-bottom) + var(--space-2));
+    z-index: 10;
+    padding: var(--space-3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--material-header);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--sombra-flotante);
+  }
+
+  .pie > * {
+    flex: 1;
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-transparency: reduce) {
+  .pie {
+    background: var(--crema-trigo);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
