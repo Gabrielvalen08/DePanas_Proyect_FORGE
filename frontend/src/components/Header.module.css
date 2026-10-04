@@ -92,6 +92,11 @@
   .logoMovil {
     display: inline-block;
   }
+
+  /* El título de página compite con el logo: se reduce para no truncarse */
+  .titulo {
+    font-size: 1.25rem;
+  }
 }
 
 @media (max-width: 479px) {
