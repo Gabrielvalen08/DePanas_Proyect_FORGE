@@ -1,0 +1,143 @@
+.boton {
+  --boton-fondo: transparent;
+  --boton-texto: var(--color-primary);
+  --boton-borde: transparent;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--alto-control);
+  padding: 0 var(--space-6);
+  border: 2px solid var(--boton-borde);
+  border-radius: var(--radio-pildora);
+  background: var(--boton-fondo);
+  color: var(--boton-texto);
+  font-family: var(--fuente-titulos);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 100ms ease-out,
+    box-shadow 100ms ease-out,
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+}
+
+/* Josefin Sans asienta los glifos altos: compensa para centrar ópticamente */
+.texto {
+  padding-top: 0.15em;
+}
+
+.icono {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.icono svg,
+svg.icono {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ---------- Variantes ---------- */
+.primario {
+  --boton-fondo: var(--color-primary);
+  --boton-texto: var(--color-on-primary);
+  --boton-borde: var(--color-primary);
+}
+
+.primario:hover:not(:disabled) {
+  --boton-fondo: var(--color-primary-hover);
+  --boton-borde: var(--color-primary-hover);
+}
+
+.secundario {
+  --boton-fondo: var(--color-surface);
+  --boton-borde: var(--color-primary);
+}
+
+.secundario:hover:not(:disabled),
+.fantasma:hover:not(:disabled) {
+  --boton-fondo: var(--color-surface-soft);
+}
+
+.peligro {
+  --boton-fondo: var(--color-danger);
+  --boton-texto: var(--color-on-danger);
+  --boton-borde: var(--color-danger);
+}
+
+.peligro:hover:not(:disabled) {
+  --boton-fondo: var(--color-danger-hover);
+  --boton-borde: var(--color-danger-hover);
+}
+
+.soloIcono {
+  width: var(--alto-control);
+  padding: 0;
+  --boton-texto: var(--color-text);
+}
+
+.soloIcono:hover:not(:disabled) {
+  --boton-fondo: var(--color-surface-soft);
+}
+
+.soloIcono .icono svg,
+.soloIcono svg.icono {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* ---------- Tamaños ---------- */
+.sm {
+  min-height: 2.25rem;
+  padding: 0 var(--space-4);
+  font-size: 0.875rem;
+}
+
+/* Mantiene el área táctil de 44px aunque el botón se vea más bajo */
+.sm::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+
+.ancho {
+  width: 100%;
+}
+
+/* ---------- Sombra de marca y feedback al presionar ---------- */
+.conSombra {
+  box-shadow: var(--sombra-marca);
+}
+
+.boton:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.conSombra:active:not(:disabled) {
+  transform: translate(3px, 4px);
+  box-shadow: 0 0 0 transparent;
+}
+
+.boton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Cargando ---------- */
+.girando {
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}

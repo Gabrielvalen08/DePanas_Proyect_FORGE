@@ -1,0 +1,39 @@
+.insignia {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.3em 0.75em 0.15em; /* compensa el asentamiento alto de Josefin */
+  border-radius: var(--radio-pildora);
+  font-family: var(--fuente-titulos);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Todas las combinaciones cumplen WCAG AA (ver DESIGN_DECISIONS.md) */
+.neutro {
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.marca {
+  background: var(--color-accent);
+  color: var(--color-text);
+}
+
+.exito {
+  background: var(--tinte-exito);
+  color: var(--color-text);
+}
+
+.aviso {
+  background: var(--tinte-aviso);
+  color: var(--color-text);
+}
+
+.error {
+  background: var(--tinte-error);
+  color: var(--color-danger);
+}

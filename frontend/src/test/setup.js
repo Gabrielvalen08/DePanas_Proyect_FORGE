@@ -1,4 +1,8 @@
 import '@testing-library/jest-dom/vitest'
+import { MotionGlobalConfig } from 'motion/react'
+
+// Las animaciones terminan al instante: los tests no esperan exits de Motion
+MotionGlobalConfig.skipAnimations = true
 
 // Motion consulta matchMedia (movimiento reducido) y jsdom no lo implementa
 window.matchMedia = window.matchMedia || ((query) => ({
