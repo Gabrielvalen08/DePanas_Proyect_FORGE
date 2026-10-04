@@ -1,0 +1,116 @@
+.centinela {
+  height: 1px;
+  margin-bottom: -1px;
+}
+
+/* Material translúcido (apple-design): el contenido se desplaza por debajo */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--alto-header);
+  padding: var(--space-3) var(--space-8);
+  background: var(--material-header);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Borde de desvanecido: solo aparece cuando hay contenido debajo */
+.header::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -12px 0;
+  height: 12px;
+  background: linear-gradient(rgb(20 68 40 / 0.08), transparent);
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+  pointer-events: none;
+}
+
+.header[data-scroll='true']::after {
+  opacity: 1;
+}
+
+.izquierda {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.titulo {
+  padding-top: 0.15em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logoMovil {
+  display: none;
+  font-family: var(--fuente-titulos);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.3em 0.6em 0.15em;
+  border-radius: var(--radio-pildora);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+/* Texto sobre material translúcido: un peso más y algo de tracking */
+.fecha {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  font-family: var(--fuente-titulos);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text);
+}
+
+.fechaTexto {
+  padding-top: 0.15em;
+}
+
+.fechaTexto::first-letter {
+  text-transform: uppercase;
+}
+
+@media (max-width: 767px) {
+  .header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .logoMovil {
+    display: inline-block;
+  }
+}
+
+@media (max-width: 479px) {
+  .fecha {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .header {
+    background: var(--crema-trigo);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .header {
+    background: var(--crema-trigo);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-bottom: 1px solid var(--color-border-input);
+  }
+}

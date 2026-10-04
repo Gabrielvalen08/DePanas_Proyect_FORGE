@@ -1,17 +1,35 @@
-import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ToastProvider } from './context/ToastContext'
 import Sidebar from './components/Sidebar'
+import BarraInferior from './components/BarraInferior'
+import { tituloDeRuta } from './components/navegacion'
 import Inicio from './pages/Inicio'
 import PantallaMaestra from './pages/PantallaMaestra'
 import AgregarCompra from './pages/AgregarCompra'
+import estilos from './App.module.css'
 
 export default function App() {
+  const { pathname } = useLocation()
+  const primeraCarga = useRef(true)
+
+  // Al cambiar de ruta: actualiza el título y lleva el foco al contenido
+  useEffect(() => {
+    document.title = `${tituloDeRuta(pathname)} | De Panas SV`
+    if (primeraCarga.current) {
+      primeraCarga.current = false
+      return
+    }
+    document.getElementById('contenido')?.focus({ preventScroll: true })
+    window.scrollTo(0, 0)
+  }, [pathname])
+
   return (
     <ToastProvider>
-      <div className="layout">
+      <a href="#contenido" className="saltar-contenido">Saltar al contenido</a>
+      <div className={estilos.layout}>
         <Sidebar />
-        <div className="main-area">
+        <div className={estilos.areaPrincipal}>
           <Routes>
             <Route path="/" element={<Inicio />} />
             <Route path="/compras" element={<PantallaMaestra />} />
@@ -20,6 +38,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
+        <BarraInferior />
       </div>
     </ToastProvider>
   )

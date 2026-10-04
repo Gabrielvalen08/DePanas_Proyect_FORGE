@@ -1,45 +1,31 @@
-import React from 'react'
 import { NavLink } from 'react-router-dom'
-import {
-  ShoppingCart,
-  LayoutDashboard,
-  Package,
-  BarChart2,
-  Settings,
-  UtensilsCrossed,
-} from 'lucide-react'
-
-const navItems = [
-  { to: '/', icon: <LayoutDashboard size={18} />, label: 'Inicio' },
-  { to: '/compras', icon: <ShoppingCart size={18} />, label: 'Compras' },
-  { to: '/agregar-compra', icon: <Package size={18} />, label: 'Agregar Compra' },
-]
+import { itemsNavegacion } from './navegacion'
+import estilos from './Sidebar.module.css'
 
 export default function Sidebar() {
   return (
-    <aside className="sidebar" role="navigation" aria-label="Menú principal">
-      {/* Logo */}
-      <div className="sidebar__logo">
-        <div className="sidebar__logo-icon">🍽️</div>
-        <div>
-          <div className="sidebar__logo-text">De Panas</div>
-          <div className="sidebar__logo-sub">Gestión SV</div>
-        </div>
+    <aside className={estilos.sidebar}>
+      <div className={estilos.logo}>
+        <span className={estilos.logoTexto}>DE PANAS</span>
+        <span className={estilos.franja} aria-hidden="true" />
       </div>
 
-      {/* Nav */}
-      <span className="sidebar__section-label">Menú</span>
-      {navItems.map(item => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          end={item.to === '/'}
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          {item.icon}
-          {item.label}
-        </NavLink>
-      ))}
+      <nav aria-label="Menú principal">
+        <ul className={estilos.lista}>
+          {itemsNavegacion.map(({ a, Icono, etiqueta }) => (
+            <li key={a}>
+              <NavLink
+                to={a}
+                end={a === '/'}
+                className={({ isActive }) => [estilos.item, isActive && estilos.activo].filter(Boolean).join(' ')}
+              >
+                <Icono size={20} aria-hidden="true" />
+                <span className={estilos.etiqueta}>{etiqueta}</span>
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </aside>
   )
 }
