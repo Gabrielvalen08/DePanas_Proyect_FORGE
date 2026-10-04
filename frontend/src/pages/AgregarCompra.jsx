@@ -1,0 +1,84 @@
+import { useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { Plus } from 'lucide-react'
+import Header from '../components/Header'
+import BloqueCompra from '../components/BloqueCompra'
+import { Boton } from '../components/common'
+import { guardarLista } from '../services/api'
+import { useToast } from '../context/ToastContext'
+import { springSuave } from '../styles/movimiento'
+import estilos from './AgregarCompra.module.css'
+
+/**
+ * Página principal. Cada bloque es una compra distinta (un proveedor y una
+ * fecha) y se guarda por separado. "Nueva compra" agrega otro bloque debajo.
+ */
+export default function AgregarCompra() {
+  const { addToast } = useToast()
+  const siguiente = useRef(2)
+  // Cada bloque se identifica por una clave; cambiarla lo vuelve a montar vacío
+  const [bloques, setBloques] = useState([{ clave: 1, enfocar: false }])
+
+  function nuevaCompra() {
+    setBloques(prev => [...prev, { clave: siguiente.current++, enfocar: true }])
+  }
+
+  // Con un solo bloque se vacía; con varios, se quita
+  function retirarBloque(claveBloque) {
+    setBloques(prev =>
+      prev.length > 1
+        ? prev.filter(b => b.clave !== claveBloque)
+        : [{ clave: siguiente.current++, enfocar: false }]
+    )
+  }
+
+  async function guardar(lista) {
+    try {
+      return await guardarLista(lista)
+    } catch (error) {
+      addToast('Error al guardar la compra', 'error')
+      throw error
+    }
+  }
+
+  function alGuardado(claveBloque, lista) {
+    const n = lista.productos.length
+    addToast(`Compra en ${lista.proveedor} guardada (${n} producto${n !== 1 ? 's' : ''})`)
+    retirarBloque(claveBloque)
+  }
+
+  return (
+    <>
+      <Header title="Agregar compra" />
+
+      <main id="contenido" tabIndex={-1}>
+        {/* popLayout: la compra que sale no empuja a la que entra */}
+        <AnimatePresence initial={false} mode="popLayout">
+          {bloques.map((bloque, i) => (
+            <motion.div
+              key={bloque.clave}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              transition={springSuave}
+            >
+              <BloqueCompra
+                titulo={bloques.length > 1 ? `Detalle de compra ${i + 1}` : 'Detalle de compra'}
+                alGuardar={guardar}
+                alGuardado={lista => alGuardado(bloque.clave, lista)}
+                alCancelar={() => retirarBloque(bloque.clave)}
+                enfocarAlMontar={bloque.enfocar}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        <div className={estilos.nuevaCompra}>
+          <Boton variante="secundario" icono={<Plus />} onClick={nuevaCompra} className={estilos.botonNueva}>
+            Nueva compra
+          </Boton>
+        </div>
+      </main>
+    </>
+  )
+}

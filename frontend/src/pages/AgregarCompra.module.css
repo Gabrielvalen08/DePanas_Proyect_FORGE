@@ -1,0 +1,17 @@
+/* El botón separa visualmente esta compra de la siguiente */
+.nuevaCompra {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-4);
+  border-top: 2px dashed var(--color-border);
+}
+
+.botonNueva {
+  min-width: 14rem;
+}
+
+@media (max-width: 767px) {
+  .botonNueva {
+    width: 100%;
+  }
+}

@@ -1,0 +1,179 @@
+/* ---------- Toolbar: Filtrar + panel en línea | Agregar compra ---------- */
+.toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.filtros {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.agregar {
+  flex-shrink: 0;
+}
+
+.contador {
+  margin-left: var(--space-1);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ---------- Tabla de listas ---------- */
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--fuente-titulos);
+}
+
+.tabla th {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tabla td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+.tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Toda la fila abre el detalle: el botón del proveedor se estira sobre ella */
+.fila {
+  position: relative;
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+
+.fila:hover,
+.fila:has(.abrir:focus-visible) {
+  background: var(--color-surface-soft);
+}
+
+.fila:has(.abrir:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.fila:active {
+  background: var(--tinte-aviso);
+}
+
+.abrir {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.abrir::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.abrir:focus-visible {
+  outline: none;
+}
+
+.tabla .numerico {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.gasto {
+  font-weight: 700;
+}
+
+.fecha {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.colAbrir {
+  width: 1%;
+  color: var(--color-text-muted);
+}
+
+.fila:hover .colAbrir {
+  color: var(--color-text);
+}
+
+/* ---------- Móvil: cada lista se vuelve una tarjeta ---------- */
+@media (max-width: 767px) {
+  .toolbar {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .tabla thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .tabla,
+  .tabla tbody,
+  .tabla tr,
+  .tabla td {
+    display: block;
+  }
+
+  .tabla tbody tr {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .tabla tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .tabla td {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-1) 0;
+    border-bottom: none;
+  }
+
+  .tabla td[data-etiqueta]::before {
+    content: attr(data-etiqueta);
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .tabla .colAbrir {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    width: auto;
+    padding: 0;
+  }
+
+  .tabla td:first-child {
+    padding-right: var(--space-8);
+  }
+}

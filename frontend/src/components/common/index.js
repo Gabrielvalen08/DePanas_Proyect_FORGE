@@ -1,0 +1,7 @@
+export { default as Boton } from './Boton'
+export { default as Campo } from './Campo'
+export { default as Selector } from './Selector'
+export { default as Tarjeta } from './Tarjeta'
+export { default as Insignia } from './Insignia'
+export { default as Modal, CuerpoModal, PieModal } from './Modal'
+export { default as EstadoVacio } from './EstadoVacio'

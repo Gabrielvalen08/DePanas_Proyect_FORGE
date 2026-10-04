@@ -1,0 +1,88 @@
+/* Material "pesado" y estructural: Naranja Sazón sólido, texto en Ávila profundo (5.03:1) */
+.sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  height: 100dvh;
+  padding: var(--space-8) var(--space-4);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.logo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+}
+
+.logoTexto {
+  font-family: var(--fuente-titulos);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  /* Logotipo como en el badge: letras claras con sombra Vinotinto.
+     Los logotipos están exentos del criterio de contraste WCAG 1.4.3. */
+  color: var(--crema-trigo);
+  text-shadow: 2px 2px 0 var(--rojo-vinotinto);
+}
+
+.franja {
+  width: 3rem;
+  height: 4px;
+  border-radius: var(--radio-pildora);
+  background: var(--crema-trigo);
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--alto-control);
+  padding: 0 var(--space-4);
+  border-radius: var(--radio-pildora);
+  color: var(--color-on-primary);
+  font-weight: 600;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease-out, transform 100ms ease-out;
+}
+
+.item:hover {
+  background: rgb(254 238 204 / 0.2);
+}
+
+.item:active {
+  transform: scale(0.97);
+}
+
+.item:focus-visible {
+  outline-color: var(--color-on-primary);
+}
+
+.etiqueta {
+  padding-top: 0.15em;
+}
+
+.activo,
+.activo:hover {
+  background: var(--crema-trigo);
+  color: var(--verde-avila);
+  box-shadow: 0 2px 8px rgb(145 28 13 / 0.2);
+}
+
+@media (max-width: 767px) {
+  .sidebar {
+    display: none;
+  }
+}

@@ -1,249 +1,319 @@
 # DESIGN_DECISIONS.md
 
-## Propósito
+## Propósito y fuentes
 
-Este documento define las decisiones visuales obligatorias del aplicativo de contabilidad para restaurante. La interfaz debe inspirarse en el estilo visual de **DEPANAS SV**, adaptándolo a un sistema administrativo profesional.
+Este documento define las decisiones de marca para la interfaz web del aplicativo de contabilidad de **DE PANAS**.
 
-La referencia define la **identidad visual**, no la estructura de navegación.
+- **Fuente única de marca:** *DE PANAS – Brandbook, mayo 2026*. Colores, tipografías, logotipo, gráfica y tono salen solo de ahí.
+- **Adaptación web:** el brandbook no cubre interfaces. Lo marcado como **[Adaptación web]** se deriva de la marca aplicando las skills de `.claude/skills/`. `apple-design` guía proporciones, interacción, movimiento y materiales; `brand`, `design-system` y `ui-ux-pro-max` guían tokens, accesibilidad y UX.
+- **Precedencia:** **Brandbook > skills de `.claude/skills/` > este documento.**
+  - Si una regla de este documento choca con una skill, prevalece la skill.
+  - Si una skill choca con el brandbook, prevalece el brandbook. Por ejemplo, `apple-design` recomienda la fuente del sistema, pero la marca exige Josefin Sans y Cardo. Los valores de marca (hex, familias tipográficas, logotipo, tono) nunca se reemplazan por recomendaciones de una skill.
 
----
-
-## Identidad Visual
-
-La interfaz debe transmitir:
-
-* Cálida
-* Gastronómica
-* Moderna
-* Amigable
-* Profesional
-* Clara
-
-Debe evitar sentirse como un dashboard corporativo genérico o una aplicación financiera fría.
+> El frontend ya implementa estas decisiones: tokens en `frontend/src/styles/tokens.css` y componentes base en `frontend/src/components/common/`. Las decisiones técnicas de esa implementación están en [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
-## Paleta
+## Esencia de marca
 
-| Token          | Color     | Uso                                      |
-| -------------- | --------- | ---------------------------------------- |
-| `primary`      | `#EF7D05` | Identidad principal, headers, navegación |
-| `primary-dark` | `#A85804` | Fondos secundarios                       |
-| `brown`        | `#651A0C` | Botones, cards y elementos de contraste  |
-| `gold`         | `#F8A914` | Acentos y métricas destacadas            |
-| `cream`        | `#FFE0A3` | Fondos suaves, badges                    |
-| `white`        | `#FFFFFF` | Superficies y texto sobre fondos oscuros |
-| `black`        | `#000000` | Bordes y sombras                         |
+DE PANAS comparte el auténtico sabor y sazón tradicional venezolano con recetas caseras y familiares (tequeños, empanadas andinas, arepas), recién hechos y en formato congelado.
 
-### Reglas
+- **Lema:** "La verdadera sazón venezolana". El logotipo usa "Auténtico sabor venezolano".
+- **Personalidad:** cercana, auténtica, venezolana, sutilmente nostálgica, amigable y vibrante (caribeña).
 
-* Priorizar naranja + marrón como combinación principal.
-* Utilizar dorado únicamente como acento.
-* No saturar las pantallas utilizando todos los colores simultáneamente.
-* Los colores semánticos de éxito, error y advertencia pueden utilizarse cuando sean necesarios.
-* Priorizar contraste y legibilidad sobre fidelidad absoluta a la paleta.
+**[Adaptación web]** En un sistema contable la marca acompaña y no compite con los datos. La personalidad vive en el branding, las bienvenidas, los estados vacíos y el microcopy. Tablas, cifras y formularios se mantienen sobrios.
+
+---
+
+## Paleta de color
+
+La paleta combina tonos cálidos y vibrantes con verdes para dar contraste, dinamismo y equilibrio.
+
+| Token             | Nombre (brandbook) | Hex       | RGB           |
+| ----------------- | ------------------ | --------- | ------------- |
+| `--rojo-vinotinto` | Rojo Vinotinto     | `#911C0D` | 145, 28, 13   |
+| `--naranja-sazon`  | Naranja Sazón      | `#EF7D05` | 239, 125, 5   |
+| `--amarillo-criollo` | Amarillo Criollo | `#F8A914` | 248, 169, 20  |
+| `--verde-fresco`   | Verde Fresco       | `#6DAD28` | 109, 173, 40  |
+| `--verde-avila`    | Verde Ávila        | `#144428` | 20, 68, 40    |
+| `--crema-trigo`    | Crema y Trigo      | `#FEEECC` | 254, 238, 204 |
+
+> **Confirmado contra el brandbook** (revisión visual página por página, no solo el texto extraído): en la página de nombres los cuatro bloques de color y en la página de códigos los seis círculos con hex coinciden uno a uno por tono. Verde Fresco es el verde claro/oliva `#6DAD28` y Verde Ávila es el verde oscuro `#144428`.
+
+La marca no define negro, grises ni blanco. **No usar `#000000`.**
+
+### Contraste entre colores de marca (WCAG 2.1)
+
+AA exige 4.5:1 para texto normal y 3:1 para texto grande (≥ 24px, o ≥ 18.66px en negrita) y para componentes de UI.
+
+| Combinación (texto / fondo)       | Ratio  | Uso permitido               |
+| --------------------------------- | ------ | --------------------------- |
+| Verde Ávila / Blanco              | 11.13  | Cualquier texto             |
+| Verde Ávila / Crema y Trigo       | 9.71   | Cualquier texto             |
+| Blanco / Rojo Vinotinto           | 8.84   | Cualquier texto             |
+| Crema y Trigo / Rojo Vinotinto    | 7.71   | Cualquier texto             |
+| Verde Ávila / Amarillo Criollo    | 5.66   | Cualquier texto             |
+| Ávila profundo `#0F331E` / Naranja Sazón | 5.03 | Cualquier texto (texto sobre naranja) |
+| Verde Ávila / Naranja Sazón       | 4.03   | Solo texto grande e íconos  |
+| Rojo Vinotinto / Naranja Sazón    | 3.20   | Solo texto grande           |
+| Blanco / Naranja Sazón            | 2.76   | **Nunca para texto**        |
+| Blanco o Crema / Amarillo Criollo | ≤ 1.97 | **Nunca para texto**        |
+| Blanco o Crema / Verde Fresco     | ≤ 2.74 | **Nunca para texto**        |
+
+### Roles semánticos [Adaptación web]
+
+Capas de tokens según la skill `design-system`: primitivos (tabla de arriba), semánticos (esta tabla) y luego componentes.
+
+| Token semántico         | Valor                        | Uso                                                              |
+| ----------------------- | ---------------------------- | ---------------------------------------------------------------- |
+| `--color-bg`            | Crema y Trigo `#FEEECC`      | Fondo de página                                                  |
+| `--color-surface`       | `#FFFFFF`                    | Cards, tablas, modales, inputs                                   |
+| `--color-surface-soft`  | `#FFF8EB` (crema 40% sobre blanco) | Encabezados de tabla, zonas suaves                         |
+| `--color-text`          | Verde Ávila `#144428`        | Texto principal y cifras                                          |
+| `--color-text-muted`    | `#4F735E` (Ávila 75%)        | Texto secundario (5.32:1 sobre blanco, 4.64:1 sobre crema)       |
+| `--color-border`        | `#C4C4A3`                    | Divisores decorativos (no es límite de un control)               |
+| `--color-border-input`  | `#728F7E`                    | Borde de inputs y controles (3.53:1 sobre blanco)                |
+| `--color-primary`       | Naranja Sazón `#EF7D05`      | Acción principal, sidebar y barra inferior                        |
+| `--color-on-primary`    | Ávila profundo `#0F331E` (Verde Ávila al 75% de luminosidad) | Texto e íconos sobre naranja (5.03:1, AA en cualquier tamaño) |
+| `--color-brand`         | Naranja Sazón `#EF7D05`      | Superficie de identidad: sidebar, franja de header, badge, ilustraciones  |
+| `--color-accent`        | Amarillo Criollo `#F8A914`   | Acentos secundarios y avisos (con texto Verde Ávila)             |
+| `--color-danger`        | Rojo Vinotinto `#911C0D`     | Acciones destructivas y errores                                  |
+| `--color-success`       | Verde Fresco `#6DAD28`       | Indicadores de éxito, solo como fondo/tinte o ícono; texto en Ávila |
+| `--color-warning`       | Amarillo Criollo `#F8A914`   | Avisos, como fondo con texto Verde Ávila                          |
+| `--color-focus`         | Rojo Vinotinto `#911C0D`     | Anillo de foco de 2px con separación (8.84:1 sobre blanco)       |
+
+Tintes para fondos de estado: éxito `#E2EFD4`, aviso `#FDE5B8`, error `#F4E8E7`. Todos llevan texto Verde Ávila, o Vinotinto en el caso del error.
+
+### Reglas de color
+
+- **Colores protagonistas:** **Crema y Trigo (`#FEEECC`)** y **Naranja Sazón (`#EF7D05`)** son los colores principales y más visibles de la aplicación, aportando calidez venezolana y vibrancia caribeña.
+- **Contraste y legibilidad:** **Verde Ávila (`#144428`)** es el color del texto y cifras. Aporta contraste absoluto (11.13:1 sobre blanco y 9.71:1 sobre crema), garantizando que las tablas, montos financieros y formularios sean 100% legibles sin cansar la vista.
+- **Texto sobre naranja:** Verde Ávila sobre Naranja Sazón da 4.03:1, que solo cumple AA en texto grande. Por eso todo texto sobre naranja usa **Ávila profundo `#0F331E`**, el mismo verde con menos luz (5.03:1, AA en cualquier tamaño).
+- **Acciones principales:** El botón primario usa **Naranja Sazón `#EF7D05`** con texto en **Ávila profundo** y la sombra de marca Vinotinto. El secundario es blanco con borde y texto Verde Ávila, porque el naranja sobre blanco (2.76:1) no marca el límite de un control.
+- **Navegación:** La barra lateral y la barra inferior usan Naranja Sazón como superficie de identidad, con texto en Ávila profundo y el ítem activo como píldora **Crema y Trigo** con texto **Verde Ávila** (9.71:1).
+- **Logotipo tipográfico:** sobre naranja va en Crema y Trigo con sombra sólida Vinotinto, como el lettering del badge. Los logotipos están exentos del criterio de contraste (WCAG 1.4.3).
+- El Rojo Vinotinto queda para lo destructivo, los errores y la sombra sólida de marca.
+- El color nunca es el único portador de significado: los estados llevan siempre ícono o texto.
 
 ---
 
 ## Tipografía
 
-Usar preferentemente:
+| Rol          | Familia          | Pesos del brandbook                                  | Uso según la marca                                                         |
+| ------------ | ---------------- | ---------------------------------------------------- | -------------------------------------------------------------------------- |
+| Principal    | **Josefin Sans** | Negrita, Seminegrita, Regular, Delgada, Ultradelgada | Titulares y elementos destacados, de preferencia **en mayúsculas**          |
+| Secundaria   | **Cardo**        | Negrita, Regular, Regular itálica                    | Textos más extensos; aporta calidez, tradición y carácter editorial         |
 
-**Nunito Sans**
+Josefin Sans es geométrica, limpia y moderna. Cardo es humana, clásica y editorial. La combinación equilibra modernidad con hogar y tradición.
 
-Pesos:
-
-* `400` — texto
-* `500` — labels
-* `600` — navegación
-* `700` — títulos
-* `800` — métricas importantes
-
-La tipografía debe sentirse **bold, redondeada, moderna y amigable**.
-
----
-
-## Formas
-
-### Border Radius
-
-* Inputs: `12–16px`
-* Cards: `18–24px`
-* Modales: `20–24px`
-* Botones: `999px`
-
-Los botones tipo **pill** son una característica importante del lenguaje visual.
-
-### Bordes
-
-Utilizar bordes oscuros visibles en componentes destacados:
+### Aplicación web [Adaptación web]
 
 ```css
-border: 2px solid #000000;
+--font-heading: 'Josefin Sans', system-ui, sans-serif;
+--font-body:    'Cardo', Georgia, serif;
 ```
 
-No utilizar bordes negros gruesos en cada elemento de una tabla.
+Ambas familias están en Google Fonts. Cargar solo los pesos usados (Josefin 400/600/700; Cardo 400/400i/700) con `display=swap`.
 
-### Sombras
+Tamaños en `rem` (base 1rem = 16px) para respetar el tamaño de texto que elija el usuario. Interlineado y tracking dependen del tamaño, según `apple-design`: interlineado ajustado en títulos grandes y más holgado en el cuerpo; nunca un único `letter-spacing` para todo.
 
-Preferir sombras sólidas y ligeramente marcadas:
+| Elemento                         | Familia      | Peso | Tamaño (desktop / mobile)  | Interlineado | Tracking  | Notas                          |
+| -------------------------------- | ------------ | ---- | -------------------------- | ------------ | --------- | ------------------------------ |
+| Título de página (H1)            | Josefin Sans | 700  | 2rem / 1.625rem            | 1.1          | `0.02em`  | MAYÚSCULAS                     |
+| H2 / título de card              | Josefin Sans | 700  | 1.5rem / 1.25rem           | 1.2          | `0.03em`  | MAYÚSCULAS                     |
+| H3                               | Josefin Sans | 600  | 1.25rem / 1.125rem         | 1.3          | `0`       |                                |
+| Navegación, botones, labels      | Josefin Sans | 600  | 1rem                       | 1.25         | `0.04em`  | Botones en MAYÚSCULAS          |
+| Métricas destacadas (KPIs)       | Josefin Sans | 700  | `clamp(2rem, 4vw, 2.5rem)` | 1.05         | `-0.02em` | La cifra domina sobre su etiqueta |
+| Tablas y valores monetarios      | Josefin Sans | 400  | 1rem                       | 1.4          | `0`       | Montos alineados a la derecha  |
+| Párrafos, descripciones, ayudas  | Cardo        | 400  | 1–1.125rem                 | 1.6          | `0`       | Máx. 65ch                      |
+| Citas y frases de marca          | Cardo        | 400i | 1.125–1.5rem               | 1.4          | `0`       | Bienvenida y estados vacíos    |
 
-```css
-box-shadow: 3px 4px 0 #000000;
-```
-
-Usarlas principalmente en botones, cards y componentes destacados.
-
----
-
-## Componentes
-
-### Botones
-
-Los botones principales deben:
-
-* Ser redondeados tipo pill.
-* Tener alto contraste.
-* Utilizar marrón oscuro o naranja.
-* Utilizar texto blanco cuando corresponda.
-* Tener estados `hover`, `focus` y `disabled` claros.
-
-### Cards
-
-Las cards deben:
-
-* Tener esquinas redondeadas.
-* Tener jerarquía visual clara.
-* Utilizar blanco, crema o marrón.
-* Reservar los colores fuertes para información importante.
-
-### Inputs
-
-Los inputs deben:
-
-* Tener `12–16px` de radius.
-* Tener bordes visibles.
-* Tener labels claros.
-* Mostrar claramente el estado `focus` y `error`.
-
-### Tablas
-
-Las tablas deben ser más sobrias que el resto de la interfaz:
-
-* Fondo claro.
-* Texto oscuro.
-* Headers con crema o tonos suaves.
-* Bordes discretos.
-* Hover visible.
-* Buena alineación de valores monetarios.
-
-La estética **nunca debe dificultar la lectura financiera**.
+- Las mayúsculas, que pide la marca, llevan tracking positivo que se reduce al crecer el tamaño. Las cifras grandes en caja mixta llevan tracking negativo.
+- La jerarquía se arma con peso, tamaño e interlineado juntos. Para enfatizar se usa peso antes que tamaño.
+- Base de 16px. Nada de texto de interfaz por debajo de 14px.
+- Las variantes Delgada y Ultradelgada de Josefin solo se usan en display de 32px o más, nunca en texto de interfaz.
+- Las mayúsculas son para titulares, botones y etiquetas cortas, nunca para párrafos.
+- Josefin Sans tiene altura de x baja. Verificar la legibilidad de cifras en tablas y subir a 17px si hace falta.
 
 ---
 
-## Layout
+## Logotipo
 
-En desktop utilizar:
+El brandbook define dos expresiones:
 
-```text
-Sidebar + Header + Main Content
-```
+1. **Logotipo principal (badge ilustrado):** círculo naranja/amarillo con una arepa al centro, "DE PANAS" en letras blancas con sombra sólida Vinotinto y "Auténtico sabor venezolano" en Vinotinto. Por ser ilustrativo y visualmente cargado, va en aplicaciones sencillas y formatos amplios donde mantenga legibilidad y protagonismo.
+2. **Logotipo tipográfico:** el nombre **"DE PANAS"** en mayúsculas, en distintos colores de la paleta y con la tipografía institucional. Va en composiciones elaboradas, con fotografía o con mayor carga visual, para evitar competencia visual. Busca reforzar el nombre como el elemento más distintivo de la identidad.
 
-El sidebar debe utilizar el lenguaje visual de los botones de la referencia:
+### Aplicación web [Adaptación web]
 
-* Elementos redondeados.
-* Estado activo claramente diferenciado.
-* Iconos consistentes.
-* Navegación simple.
+| Ubicación                                   | Versión                                       |
+| ------------------------------------------- | --------------------------------------------- |
+| Login, bienvenida, pantallas de carga amplias | Badge ilustrado (mínimo 120px de ancho)     |
+| Sidebar, header, barras compactas           | Tipográfico "DE PANAS" en Josefin Sans 700    |
+| Junto a tablas, gráficos o datos            | Solo tipográfico                              |
+| Favicon / ícono de app                      | Badge ilustrado 1:1: `frontend/public/favicon.ico` (16/32/48) y `frontend/public/brand/` (`favicon-16/32/48.png`, `apple-touch-icon-180.png`, `icon-192.png`, `icon-512.png`). Conectados en `frontend/index.html` y en `frontend/public/site.webmanifest`. |
 
-En mobile:
+**Assets de marca** en `frontend/public/brand/`: `logo-badge.png` (1197×1197, con transparencia) y los íconos de arriba. Referenciarlos con rutas absolutas desde la raíz pública (`/brand/logo-badge.png`).
 
-* Utilizar drawer o bottom navigation.
-* Cards de una columna.
-* Formularios de una columna.
-* Adaptar tablas para pantallas pequeñas.
-
-No convertir el aplicativo en un layout vertical tipo Linktree.
+- Espacio libre alrededor del badge igual a la altura de "DE PANAS" en el logo.
+- No deformar, rotar, recolorear fuera de la paleta ni añadir efectos al badge.
+- El tipográfico debe cumplir los contrastes de la tabla de arriba. Sobre naranja va en Verde Ávila o Vinotinto, y solo en tamaño grande.
 
 ---
 
-## Dashboard
+## Gráfica, íconos e ilustraciones
 
-El dashboard debe priorizar:
+El brandbook incluye un set de íconos e ilustraciones de productos (arepas, empanadas, tequeños) de **estilo natural y desenfadado**: trazo a mano alzada en línea, en Rojo Vinotinto.
 
-1. Métricas financieras.
-2. Costos.
-3. Gastos.
-4. Utilidad/margen.
-5. Gráficos.
-6. Actividad reciente.
+**[Adaptación web]**
 
-Los valores monetarios deben tener mayor jerarquía visual que sus etiquetas.
+- **Íconos de interfaz:** una sola librería de línea (**Lucide**, ya instalada). Su trazo lineal es coherente con las ilustraciones de marca. Grilla de 24px y trazo uniforme.
+- Las **ilustraciones de marca** son para bienvenida, estados vacíos, login y elementos de branding. Nunca dentro de tablas, formularios o junto a cifras.
+- No usar emojis como íconos.
+- Los íconos complementan el texto; los botones solo con ícono llevan `aria-label`.
 
 ---
 
-## Iconografía
+## Proporciones y espaciado [Adaptación web]
 
-Utilizar una única librería de iconos consistente.
+El brandbook no define proporciones. Se aplica `apple-design`: cada medida es una decisión defendible, en `rem` para que el layout escale con el texto.
 
-Preferencias:
+- **Escala de espaciado** (base de 4px): `--space-1: 0.25rem`, `--space-2: 0.5rem`, `--space-3: 0.75rem`, `--space-4: 1rem`, `--space-6: 1.5rem`, `--space-8: 2rem`, `--space-12: 3rem`. No se permiten valores sueltos fuera de la escala.
+- **Agrupación por proximidad:** dentro de un grupo (label e input, filas relacionadas) `--space-2`/`--space-3`; entre grupos `--space-6`; entre secciones `--space-8`/`--space-12`. Cada control va junto a lo que afecta.
+- **Controles:** alto mínimo de 44px (2.75rem) y zona táctil de 44×44px aunque el ícono sea menor.
+- **Layout:** sidebar de 15rem; header de 4rem; contenido con ancho máximo legible (texto 65ch, tablas al 100% del contenedor); gutter de `--space-6` en desktop y `--space-4` en mobile.
 
-* Lucide
-* Phosphor
-* Material Symbols
+## Formas, bordes y profundidad [Adaptación web]
 
-Los iconos complementan el texto; no deben sustituir etiquetas cuando una acción pueda ser ambigua.
+El brandbook no define radios ni sombras. Se derivan del logotipo, que es un círculo con letras redondeadas y sombra sólida desplazada en Vinotinto:
+
+- **Radios:** inputs 12px, cards 20px, modales 24px, botones y chips con forma de píldora (999px).
+- **Sombra de marca:** sólida y desplazada, en Vinotinto, como en el lettering del logo: `box-shadow: 3px 4px 0 var(--rojo-vinotinto)`. Solo en elementos destacados (botón principal, cards de métricas, badge), nunca en filas de tabla ni en inputs.
+- **Bordes:** `--color-border` para divisores y `--color-border-input` para controles. Nada de bordes negros.
+
+### Materiales (según `apple-design`)
+
+- **Header como capa translúcida:** fondo Crema y Trigo al 80% con `backdrop-filter: blur(20px) saturate(180%)`, y el contenido se desplaza por debajo. En lugar de un borde de 1px, un borde inferior suave de desvanecido aparece solo cuando hay contenido debajo.
+- **El peso del material marca la jerarquía.** La sidebar es una región estructural y va sólida (Verde Ávila). Los elementos interactivos van más ligeros. Nunca se apila una superficie translúcida clara sobre otra.
+- **El texto sobre material translúcido** usa Verde Ávila con un peso más y un poco de tracking extra. Nunca `--color-text-muted`.
+- **Modales:** scrim de Verde Ávila al 40% que atenúa el fondo; el modal es sólido (blanco). Un panel paralelo que no bloquea va sin scrim.
+- **Superficies grandes más "gruesas":** los modales llevan sombra difusa más profunda que las cards (`0 24px 48px rgb(20 68 40 / 0.18)`). La sombra de marca sólida es aparte y solo para elementos destacados.
+- **Accesibilidad:** con `prefers-reduced-transparency: reduce` el header es sólido y sin blur. Con `prefers-contrast: more` los fondos son sólidos y se usa un borde `--color-border-input`.
 
 ---
 
-## Imágenes
+## Movimiento e interacción [Adaptación web]
 
-Las imágenes gastronómicas pueden utilizarse en:
+Se toma de `apple-design`. Un elemento se siente vivo cuando responde al instante, el movimiento parte del valor actual en pantalla y puede interrumpirse en cualquier momento.
 
-* Login
-* Bienvenida
-* Empty states
-* Dashboard
-* Elementos de branding
+### Respuesta inmediata
+- El feedback va en el `pointerdown` o `:active`, no al soltar. Botón sin sombra: `transform: scale(0.97)` en 100ms ease-out. Botón con sombra de marca: se desplaza hacia la sombra (`translate(3px, 4px)` y la sombra a 0) en 100ms, como si se hundiera.
+- Nada de debounces, timers ni esperas artificiales en el camino del input. El `delay()` del mock de `api.js` simula red; no se suma otra espera en la UI.
+- Durante la interacción el feedback es continuo: hover visible, el campo de autocompletado filtra mientras se escribe y el drawer sigue al dedo 1:1.
 
-No utilizar fotografías como decoración en formularios, tablas o pantallas donde interfieran con la información.
+### Springs y valores
+- Lo que el usuario puede tocar o arrastrar (drawer mobile, sheets, reordenar) se anima con **springs**, no con transiciones CSS ni `@keyframes`, porque solo así se puede interrumpir. Librería: **Motion** (`motion`), con los presets centralizados en `frontend/src/styles/movimiento.js`.
+- **Spring por defecto:** sin rebote. Damping 1.0 y response 0.35 s, que en Motion es `{ type: 'spring', bounce: 0, duration: 0.35 }`.
+- **Con inercia** (soltar o lanzar el drawer): damping 0.8 y response 0.3 s (`bounce: 0.2, duration: 0.3`). Solo hay rebote cuando el gesto traía impulso; un menú que solo aparece nunca rebota.
+- **Al soltar un gesto:** se pasa la velocidad del dedo al spring y el destino (abrir o cerrar) se decide por la proyección del impulso y el signo de la velocidad, no solo por la posición.
+- **Bordes elásticos:** al arrastrar más allá del límite hay resistencia progresiva, nunca un tope seco.
+- Las transiciones que no son gestos (hover, cambio de color, aparición de un toast) pueden usar CSS: 150–250ms, solo `transform` y `opacity`.
+
+### Consistencia espacial
+- **Se entra y se sale por el mismo camino.** El drawer entra y sale por la izquierda. Los toasts aparecen y se van por el mismo borde. El modal crece y se encoge desde el mismo punto.
+- **Anclar al origen:** popovers, el menú de autocompletado y los menús contextuales nacen del elemento que los abrió (`transform-origin` en el disparador).
+- Nunca se bloquea el input durante una transición. Un modal que se está cerrando puede reabrirse y la animación parte del valor actual.
+
+### Movimiento reducido
+- Con `prefers-reduced-motion: reduce` los slides y springs se cambian por fundidos de opacidad de 200ms, sin rebotes. Los cambios de color u opacidad que ayudan a entender se mantienen.
+- Nada de fondos en movimiento, bucles lentos ni saltos bruscos de brillo.
 
 ---
 
-## UX
+## Componentes [Adaptación web]
 
-La prioridad de diseño es:
+**Botones**
+- Principal: fondo Verde Ávila, texto Crema y Trigo, Josefin Sans 600 en MAYÚSCULAS, forma de píldora.
+- Secundario: fondo blanco, borde y texto Verde Ávila.
+- Destructivo: fondo Rojo Vinotinto y texto blanco, siempre con confirmación.
+- Estados `hover`, `focus-visible` (anillo Vinotinto) y `disabled` visibles. Área táctil mínima de 44×44px.
+- Mientras una acción async está en curso, el botón queda deshabilitado y con indicador de carga.
+- La confirmación es solo para acciones destructivas e irreversibles. Si una acción se puede deshacer, se prefiere ofrecer "Deshacer" a confirmar.
 
-```text
-Claridad
-→ Usabilidad
-→ Consistencia
-→ Identidad visual
-→ Decoración
-```
+**Navegación (sidebar)**
+- Fondo Naranja Sazón como superficie de identidad, con texto e íconos en Ávila profundo (5.03:1). Ítem activo como píldora en Crema y Trigo con texto e ícono en Verde Ávila (9.71:1). Anillo de foco en Ávila profundo.
+- Logotipo tipográfico arriba con sombra Vinotinto. Franja de identidad en Crema y Trigo.
+- Cada pantalla responde a dónde estoy (ítem activo y título), a dónde puedo ir y cómo salgo (volver o cancelar visible). Los ítems se nombran por su contenido ("Compras", "Agregar compra") y no con etiquetas genéricas.
 
-La aplicación debe permitir comprender rápidamente:
+**Cards y métricas**
+- Fondo blanco sobre crema, radio de 20px. Las cards de KPI pueden llevar la sombra de marca.
+- La cifra (Josefin 700, Verde Ávila) tiene más jerarquía visual que su etiqueta.
 
-* Cuánto se gastó.
-* En qué se gastó.
-* Cuánto cuesta producir.
-* Qué categorías generan más costos.
-* Cómo cambian los costos y gastos.
-* Qué registros requieren atención.
+**Tablas**
+- Sobrias: fondo blanco, encabezado `--color-surface-soft` en Josefin 600, divisores discretos y hover visible.
+- Montos alineados a la derecha con el mismo número de decimales.
+- En mobile, scroll horizontal dentro de un contenedor, o filas convertidas en cards.
+
+**Formularios**
+- Label visible encima de cada campo; el placeholder no sustituye al label.
+- Error específico debajo del campo, en Vinotinto con ícono, enlazado con `aria-describedby`. **Los errores solo aparecen al intentar guardar** (decisión del equipo: llenar o agregar filas no debe interrumpir). Después de un intento fallido se revalidan en vivo y desaparecen al corregirlos. Las filas que quedaron completamente vacías se ignoran al guardar.
+- Si el envío falla, mostrar un resumen de errores arriba que reciba el foco y enlace a cada campo.
+
+**Notificaciones (toasts)**
+- Éxito con tinte verde y error con tinte vinotinto, siempre con ícono y texto.
+- No son el único canal para un error de formulario.
+
+---
+
+## Layout [Adaptación web]
+
+- **Desktop:** Sidebar + Header + contenido principal.
+- **Mobile:** drawer o bottom navigation (máximo 5 ítems), una sola columna y sin scroll horizontal de página.
+- **Prioridades del dashboard:** métricas financieras → costos → gastos → utilidad/margen → gráficos → actividad reciente.
+
+---
+
+## Tono de voz
+
+| Tono                                   | Estilo                                         |
+| -------------------------------------- | ---------------------------------------------- |
+| Cercano y conversacional               | Lenguaje simple, humano y cotidiano            |
+| Auténtico, venezolano, sutilmente nostálgico | Educativo sobre la cultura venezolana    |
+| Amigable, invita a probar cosas nuevas | Visual y verbalmente vibrante, caribeño        |
+
+Mensajes de marca: "Tu antojo venezolano en El Salvador", "Aquí se viene a comer rico", "Hoy toca arepita", "Naguará, qué rico".
+
+### Microcopy en la app [Adaptación web]
+
+| Contexto               | Tono                                       | Ejemplo                                              |
+| ---------------------- | ------------------------------------------ | ---------------------------------------------------- |
+| Bienvenida / inicio    | Cercano, con la voz de la marca            | "¡Epa! Hoy toca registrar las compras."              |
+| Estados vacíos         | Amigable, invita a la acción               | "Todavía no hay compras. ¡Agreguemos la primera!"   |
+| Éxito                  | Breve y cálido                             | "¡Listo! Compra guardada."                           |
+| Errores y validaciones | Claro y directo, **sin modismos**          | "Ingresa un precio mayor a 0."                       |
+| Datos financieros      | Neutral y preciso                          | Etiquetas literales: "Total gastado", "Costo unitario" |
 
 ---
 
 ## Reglas estrictas
 
-1. **No crear un dashboard genérico de SaaS.**
-2. **No copiar literalmente Linktree.**
-3. **No sacrificar legibilidad por estética.**
-4. **Mantener naranja + marrón como identidad principal.**
-5. **Usar bordes redondeados consistentemente.**
-6. **Usar botones tipo pill para acciones principales.**
-7. **Mantener una tipografía bold, redondeada y amigable.**
-8. **Usar bordes oscuros y sombras sólidas de forma estratégica.**
-9. **Mantener tablas y reportes visualmente sobrios.**
-10. **Toda nueva pantalla debe parecer parte del mismo sistema de diseño.**
-11. **La estética gastronómica debe complementar la aplicación, no competir con los datos.**
-12. **Cuando estética y funcionalidad entren en conflicto, siempre prevalece la funcionalidad.**
+1. Solo los seis colores del brandbook y sus derivados documentados aquí. Nada de negro puro ni colores fuera de paleta.
+2. Nunca texto blanco o crema sobre Naranja Sazón, Amarillo Criollo o Verde Fresco (salvo el logotipo tipográfico, exento). Texto sobre naranja: Ávila profundo.
+3. Josefin Sans para titulares e interfaz; Cardo para textos extensos.
+4. Badge ilustrado solo en espacios amplios y sencillos; en el resto, logotipo tipográfico.
+5. Contraste WCAG 2.1 AA en todo texto y control.
+6. Tablas y cifras sobrias: la marca nunca dificulta la lectura financiera.
+7. Toda pantalla nueva debe parecer parte del mismo sistema.
+8. Si estética y funcionalidad chocan, gana la funcionalidad.
+9. Precedencia: brandbook > skills de `.claude/skills/` > este documento.
+10. Todo lo tocable responde al instante, se puede interrumpir y respeta `prefers-reduced-motion`.
+
+---
+
+## Pendientes de marca
+
+Todos resueltos:
+
+- **Verdes:** confirmado que Verde Fresco es `#6DAD28` y Verde Ávila es `#144428` (ver nota en la paleta).
+- **Favicon e ícono de app:** se usa el badge ilustrado en 1:1, conectado en `frontend/index.html` y `site.webmanifest`.
+- **Assets del logotipo:** `frontend/public/brand/logo-badge.png` (1197×1197, transparente), sacado de las imágenes incrustadas en el brandbook.

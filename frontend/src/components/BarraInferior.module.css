@@ -1,0 +1,86 @@
+.barra {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .barra {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 30;
+    display: block;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--color-primary);
+  }
+}
+
+.lista {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  height: var(--alto-barra-inferior);
+  list-style: none;
+}
+
+.celda {
+  display: flex;
+}
+
+.item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--alto-control);
+  color: var(--color-on-primary);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.item:active .iconoCaja {
+  transform: scale(0.92);
+}
+
+.item:focus-visible {
+  outline-color: var(--color-on-primary);
+  outline-offset: -4px;
+}
+
+.iconoCaja {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 2rem;
+  transition: transform 100ms ease-out;
+}
+
+.pildora {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radio-pildora);
+  background: var(--crema-trigo);
+}
+
+.icono {
+  position: relative;
+}
+
+/* El ícono va sobre la píldora crema; la etiqueta, debajo, sobre el naranja */
+.activo .icono {
+  color: var(--verde-avila);
+}
+
+.activo .etiqueta {
+  color: var(--color-on-primary);
+  font-weight: 700;
+}
+
+/* Única excepción al mínimo de 14px: siempre va con ícono (ver plan, Fase 4.3) */
+.etiqueta {
+  font-family: var(--fuente-titulos);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}

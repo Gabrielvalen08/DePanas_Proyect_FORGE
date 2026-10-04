@@ -1,0 +1,92 @@
+.datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-8);
+  margin-bottom: var(--space-4);
+  font-family: var(--fuente-titulos);
+}
+
+.datos dt {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.datos dd {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+/* ---------- Tabla de productos (solo lectura) ---------- */
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--fuente-titulos);
+}
+
+.tabla th,
+.tabla td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.tabla thead th {
+  background: var(--color-surface-soft);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tabla tfoot th,
+.tabla tfoot td {
+  border-bottom: none;
+  padding-top: var(--space-4);
+}
+
+.tabla tfoot th {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.producto {
+  font-weight: 600;
+}
+
+.tabla .numerico {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.total {
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+
+.eliminar {
+  margin-right: auto;
+  --boton-texto: var(--color-danger);
+}
+
+.eliminar:hover:not(:disabled) {
+  --boton-fondo: var(--tinte-error);
+}
+
+.edicion {
+  padding-bottom: var(--space-4);
+}
+
+.edicion > form {
+  gap: 0;
+}
+
+.edicion > form > div:last-child {
+  padding: var(--space-4) var(--space-6) 0;
+}
