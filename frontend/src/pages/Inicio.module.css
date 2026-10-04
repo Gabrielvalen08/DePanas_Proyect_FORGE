@@ -1,0 +1,103 @@
+/* ---------- Bienvenida ---------- */
+.bienvenida {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-8);
+}
+
+.texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.descripcion {
+  font-size: 1.125rem;
+}
+
+.lema {
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+/* Espacio de aislamiento del badge: nunca se deforma ni lleva efectos */
+.badgeCaja {
+  flex-shrink: 0;
+  padding: var(--space-6);
+}
+
+.badge {
+  width: 160px;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+/* ---------- Acciones rápidas ---------- */
+.acciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-4);
+}
+
+.accion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+
+.circulo {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radio-pildora);
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.circuloDestacado {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: none;
+}
+
+.accionTexto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.accionTitulo {
+  font-family: var(--fuente-titulos);
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.accionDescripcion {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 767px) {
+  .bienvenida {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .badgeCaja {
+    align-self: center;
+    padding: var(--space-4);
+  }
+
+  .badge {
+    width: 120px;
+  }
+}

@@ -1,69 +1,62 @@
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ShoppingCart, TrendingUp, Package, Plus } from 'lucide-react'
+import { Plus, ShoppingCart } from 'lucide-react'
 import Header from '../components/Header'
+import { Tarjeta } from '../components/common'
+import estilos from './Inicio.module.css'
+
+const ACCIONES = [
+  {
+    a: '/compras',
+    Icono: ShoppingCart,
+    titulo: 'Ver compras',
+    texto: 'Consulta y filtra el registro',
+    destacada: false,
+  },
+  {
+    a: '/agregar-compra',
+    Icono: Plus,
+    titulo: 'Agregar compra',
+    texto: 'Registra lo que compraste hoy',
+    destacada: true,
+  },
+]
 
 export default function Inicio() {
-  const navigate = useNavigate()
-
   return (
     <>
       <Header title="Inicio" badge="De Panas SV" />
-      <main className="content" id="inicio-content">
-        {/* Welcome */}
-        <div className="card" style={{ background: 'linear-gradient(135deg, var(--brown) 0%, var(--primary-dark) 100%)', color: 'var(--white)' }}>
-          <div className="card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
-            <div>
-              <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--white)', marginBottom: 8 }}>
-                ¡Bienvenido a De Panas! 🍽️
-              </h2>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', maxWidth: 420 }}>
-                Sistema de gestión de compras e inventario para tu restaurante. Registra, consulta y analiza tus compras de forma fácil.
-              </p>
-            </div>
-            <div style={{ fontSize: 64 }}>🧑‍🍳</div>
+      <main id="contenido" tabIndex={-1}>
+        <Tarjeta franja className={estilos.bienvenida}>
+          <div className={estilos.texto}>
+            <h2>¡Epa! Bienvenido a De Panas</h2>
+            <p className={estilos.descripcion}>
+              Hoy toca registrar las compras. Consulta, agrega y lleva el control de lo que entra a la cocina.
+            </p>
+            <p className={estilos.lema}>La verdadera sazón venezolana</p>
           </div>
-        </div>
+          <div className={estilos.badgeCaja}>
+            <img
+              src="/brand/logo-badge.png"
+              alt="Logotipo De Panas: Auténtico sabor venezolano"
+              width="160"
+              height="160"
+              className={estilos.badge}
+            />
+          </div>
+        </Tarjeta>
 
-        {/* Quick actions */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-          <div className="card" style={{ cursor: 'pointer' }} onClick={() => navigate('/compras')}>
-            <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{
-                width: 52, height: 52,
-                background: 'var(--cream)',
-                borderRadius: 'var(--radius-md)',
-                border: '2px solid var(--black)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <ShoppingCart size={24} color="var(--brown)" />
-              </div>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--gray-900)' }}>Ver Compras</div>
-                <div style={{ fontSize: 13, color: 'var(--gray-500)' }}>Pantalla maestra</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card" style={{ cursor: 'pointer' }} onClick={() => navigate('/agregar-compra')}>
-            <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{
-                width: 52, height: 52,
-                background: 'var(--primary)',
-                borderRadius: 'var(--radius-md)',
-                border: '2px solid var(--black)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: 'var(--shadow-solid)',
-              }}>
-                <Plus size={24} color="var(--white)" />
-              </div>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--gray-900)' }}>Agregar Compra</div>
-                <div style={{ fontSize: 13, color: 'var(--gray-500)' }}>Registrar nueva compra</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <nav aria-label="Acciones rápidas" className={estilos.acciones}>
+          {ACCIONES.map(({ a, Icono, titulo, texto, destacada }) => (
+            <Tarjeta key={a} interactiva a={a} sombra={destacada} className={estilos.accion}>
+              <span className={[estilos.circulo, destacada && estilos.circuloDestacado].filter(Boolean).join(' ')}>
+                <Icono size={24} aria-hidden="true" />
+              </span>
+              <span className={estilos.accionTexto}>
+                <span className={estilos.accionTitulo}>{titulo}</span>
+                <span className={estilos.accionDescripcion}>{texto}</span>
+              </span>
+            </Tarjeta>
+          ))}
+        </nav>
       </main>
     </>
   )
