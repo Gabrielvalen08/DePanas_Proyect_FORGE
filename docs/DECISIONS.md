@@ -73,6 +73,21 @@ Combinaciones nuevas que no estaban en la tabla de `DESIGN_DECISIONS.md` (WCAG 2
 | — | Insignia del header oculta bajo 480px | Con logo + título + insignia, el título se truncaba |
 | Estado `tocados` en la validación | Solo `errors` | Equivalente: `onBlur` siempre valida; `onChange` revalida solo si ya había error |
 
+## Listas de compra (cambio de funcionalidad)
+
+Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
+
+| Tema | Decisión |
+| ---- | -------- |
+| Modelo | Lista `{ id, proveedor, fecha, productos[] }`; `precio` es el total de la línea y el gasto es la suma |
+| Página principal | `/` = Agregar compra; se eliminó `Inicio` (y `FilterModal`) |
+| Varias compras | Un `BloqueCompra` por compra, cada uno con su Cancelar/Guardar; al guardar se vacía o se quita |
+| Detalle | Modal (`DetalleLista`) con ver, editar (el mismo `BloqueCompra` con `plano`) y eliminar |
+| Filtros | En línea, sin modal, en vivo. Mientras llega la respuesta se mantiene la tabla anterior (sin parpadeo de "cargando") |
+| Fila clicable | Botón en la celda del proveedor con `::after` que cubre la fila: un solo control accesible por fila, con nombre descriptivo |
+| Layout del bloque | Container query (`@container`, 760px): tabla o tarjetas según el ancho del bloque, igual en la página y en el modal |
+| Datos previos | `depanas_compras` se migra una vez a `depanas_listas`, agrupando por proveedor y fecha |
+
 ## Pendientes
 - **Bundle:** el JS pasó de ~193 kB a ~339 kB (sin gzip), sobre todo por `motion`. Si importa, se puede cargar Motion de forma diferida.
 - `npm audit` reporta vulnerabilidades en `esbuild` (dev) y `react-router` 6. Arreglarlas implica subir versiones mayores (fuera del alcance).

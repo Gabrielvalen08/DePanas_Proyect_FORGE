@@ -4,7 +4,6 @@ import { ToastProvider } from './context/ToastContext'
 import Sidebar from './components/Sidebar'
 import BarraInferior from './components/BarraInferior'
 import { tituloDeRuta } from './components/navegacion'
-import Inicio from './pages/Inicio'
 import PantallaMaestra from './pages/PantallaMaestra'
 import AgregarCompra from './pages/AgregarCompra'
 import estilos from './App.module.css'
@@ -31,10 +30,11 @@ export default function App() {
         <Sidebar />
         <div className={estilos.areaPrincipal}>
           <Routes>
-            <Route path="/" element={<Inicio />} />
+            {/* Agregar compra es la página principal */}
+            <Route path="/" element={<AgregarCompra />} />
             <Route path="/compras" element={<PantallaMaestra />} />
-            <Route path="/agregar-compra" element={<AgregarCompra />} />
-            {/* Redirige cualquier ruta desconocida al inicio */}
+            <Route path="/agregar-compra" element={<Navigate to="/" replace />} />
+            {/* Redirige cualquier ruta desconocida a la principal */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

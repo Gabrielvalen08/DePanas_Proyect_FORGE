@@ -1,17 +1,22 @@
-/* ---------- Toolbar ---------- */
+/* ---------- Toolbar: Filtrar + panel en línea | Agregar compra ---------- */
 .toolbar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: var(--space-3);
 }
 
 .filtros {
+  flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.agregar {
+  flex-shrink: 0;
 }
 
 .contador {
@@ -20,11 +25,7 @@
   letter-spacing: 0;
 }
 
-/* ---------- Tabla sobria ---------- */
-.desplazable {
-  overflow-x: auto;
-}
-
+/* ---------- Tabla de listas ---------- */
 .tabla {
   width: 100%;
   border-collapse: collapse;
@@ -54,23 +55,53 @@
   border-bottom: none;
 }
 
-.tabla tbody tr {
+/* Toda la fila abre el detalle: el botón del proveedor se estira sobre ella */
+.fila {
+  position: relative;
+  cursor: pointer;
   transition: background-color 150ms ease-out;
 }
 
-.tabla tbody tr:hover {
+.fila:hover,
+.fila:has(.abrir:focus-visible) {
   background: var(--color-surface-soft);
 }
 
-.producto {
-  font-weight: 600;
+.fila:has(.abrir:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
 }
 
-/* Montos: alineados a la derecha y con cifras tabulares */
+.fila:active {
+  background: var(--tinte-aviso);
+}
+
+.abrir {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.abrir::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.abrir:focus-visible {
+  outline: none;
+}
+
 .tabla .numerico {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.gasto {
+  font-weight: 700;
 }
 
 .fecha {
@@ -79,22 +110,22 @@
   white-space: nowrap;
 }
 
-.colAcciones {
+.colAbrir {
   width: 1%;
-  text-align: right;
+  color: var(--color-text-muted);
 }
 
-.tabla .colAcciones {
-  padding-top: var(--space-1);
-  padding-bottom: var(--space-1);
+.fila:hover .colAbrir {
+  color: var(--color-text);
 }
 
-.eliminar:hover:not(:disabled) {
-  --boton-texto: var(--color-danger);
-}
-
-/* ---------- Móvil: cada fila se vuelve una tarjeta ---------- */
+/* ---------- Móvil: cada lista se vuelve una tarjeta ---------- */
 @media (max-width: 767px) {
+  .toolbar {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
   .tabla thead {
     position: absolute;
     width: 1px;
@@ -111,7 +142,6 @@
   }
 
   .tabla tbody tr {
-    position: relative;
     padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--color-border);
   }
@@ -135,19 +165,15 @@
     font-weight: 600;
   }
 
-  .tabla .numerico {
-    text-align: right;
-  }
-
-  .tabla .colAcciones {
+  .tabla .colAbrir {
     position: absolute;
-    top: var(--space-2);
-    right: var(--space-2);
+    top: var(--space-3);
+    right: var(--space-3);
     width: auto;
     padding: 0;
   }
 
   .tabla td:first-child {
-    padding-right: var(--space-12);
+    padding-right: var(--space-8);
   }
 }

@@ -1,14 +1,14 @@
-import { LayoutDashboard, PlusCircle, ShoppingCart } from 'lucide-react'
+import { PlusCircle, ShoppingCart } from 'lucide-react'
 
-// Lista única de navegación: la usan Sidebar y BarraInferior.
+// Lista única de navegación: la usan Sidebar, BarraInferior y App (títulos).
 // etiquetaCorta se usa en la barra inferior, donde el espacio es menor.
+// Agregar compra es la página principal: es lo que el cliente hace más seguido.
 export const itemsNavegacion = [
-  { a: '/', Icono: LayoutDashboard, etiqueta: 'Inicio', etiquetaCorta: 'Inicio', titulo: 'Inicio' },
+  { a: '/', Icono: PlusCircle, etiqueta: 'Agregar compra', etiquetaCorta: 'Agregar', titulo: 'Agregar compra' },
   { a: '/compras', Icono: ShoppingCart, etiqueta: 'Compras', etiquetaCorta: 'Compras', titulo: 'Compras' },
-  { a: '/agregar-compra', Icono: PlusCircle, etiqueta: 'Agregar compra', etiquetaCorta: 'Agregar', titulo: 'Agregar compra' },
 ]
 
 /** Título de la página para document.title según la ruta */
 export function tituloDeRuta(ruta) {
-  return itemsNavegacion.find(item => item.a === ruta)?.titulo ?? 'Inicio'
+  return itemsNavegacion.find(item => item.a === ruta)?.titulo ?? 'Agregar compra'
 }

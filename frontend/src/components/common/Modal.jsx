@@ -12,6 +12,7 @@ import estilos from './Modal.module.css'
  * Se compone con <CuerpoModal> y <PieModal> como hijos.
  * rol="alertdialog": confirmaciones; el clic en el scrim no cierra.
  * focoInicial: ref del elemento que recibe el foco al abrir.
+ * anchoMax: sm | md | lg
  */
 export default function Modal({ abierto, ...props }) {
   return createPortal(

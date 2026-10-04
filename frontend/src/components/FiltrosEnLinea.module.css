@@ -1,0 +1,45 @@
+/* Nace del botón Filtrar: se ancla a la izquierda */
+.panel {
+  flex: 1 1 36rem; /* al lado del botón si cabe; si no, debajo a todo el ancho */
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-surface);
+  transform-origin: left center;
+}
+
+.campoTexto {
+  flex: 1 1 0;
+  min-width: 8rem;
+}
+
+.campoFecha {
+  flex: 0 1 10rem;
+  min-width: 9rem;
+}
+
+/* El botón se alinea con los inputs, que llevan label encima */
+.limpiar {
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+@media (max-width: 767px) {
+  .panel {
+    width: 100%;
+    flex-wrap: wrap;
+    transform-origin: top center;
+  }
+
+  .campoTexto,
+  .campoFecha {
+    flex: 1 1 100%;
+  }
+
+  .limpiar {
+    width: 100%;
+  }
+}

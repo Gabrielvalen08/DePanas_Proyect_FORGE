@@ -26,14 +26,14 @@ Todos se ejecutan desde `frontend/`:
 
 React 18 + Vite 5 + react-router-dom 6, en JavaScript (JSX) sin TypeScript. Íconos: solo `lucide-react`.
 
-- `src/main.jsx` monta `<BrowserRouter>` y `<MotionConfig reducedMotion="user">`, y carga `styles/global.css`. `src/App.jsx` define el layout (`Sidebar` en escritorio, `BarraInferior` en móvil) y las rutas: `/` → `Inicio`, `/compras` → `PantallaMaestra` (lista, filtros y borrado de compras), `/agregar-compra` → `AgregarCompra` (formulario de varias filas guardadas en lote). Cualquier otra ruta redirige a `/`. Las rutas, íconos y títulos viven en `components/navegacion.js`.
+- `src/main.jsx` monta `<BrowserRouter>` y `<MotionConfig reducedMotion="user">`, y carga `styles/global.css`. `src/App.jsx` define el layout (`Sidebar` en escritorio, `BarraInferior` en móvil) y las rutas: `/` → `AgregarCompra` (página principal: una o varias compras, cada una en un `BloqueCompra` con su propio guardar), `/compras` → `PantallaMaestra` (tabla de listas, filtros en línea con `FiltrosEnLinea` y detalle en `DetalleLista` para ver, editar y eliminar). `/agregar-compra` y cualquier otra ruta redirigen a `/`. Las rutas, íconos y títulos viven en `components/navegacion.js`.
 - **Estilos:** tokens de 3 capas en `src/styles/tokens.css` y un `Componente.module.css` por componente. Los componentes usan solo tokens semánticos (`--color-*`), nunca hex sueltos. Presets de animación (Motion) en `styles/movimiento.js`.
 - **UI base:** `src/components/common/` (`Boton`, `Campo`, `Selector`, `Tarjeta`, `Insignia`, `Modal` + `CuerpoModal`/`PieModal`, `EstadoVacio`). Toda pantalla se arma con estas piezas. Hooks en `src/hooks/` y formateo en `src/utils/formato.js`: usa `fechaHoyISO()`, nunca `toISOString()`, que da UTC.
 - Cada directorio de `src/` tiene un `README.md` con sus convenciones. Las decisiones técnicas del refactor están en `docs/DECISIONS.md`.
-- **`src/services/api.js` es la única capa de datos.** Por ahora es un **mock** sobre `localStorage` (clave `depanas_compras`, sembrado con `MOCK_COMPRAS`) con un `delay()` artificial. Cada función async (`fetchCompras(filters)`, `guardarCompras(filas)`, `eliminarCompra(id)`) trae comentada la llamada `fetch` al backend real. Para conectar el backend, se descomenta ese bloque y se borra el del mock, sin cambiar la firma. Las páginas nunca deben usar `fetch` ni `localStorage` directamente.
-- `getProveedores()` / `getProductos()` son **síncronas** y alimentan `AutocompleteInput`. Salen de las compras existentes, así que necesitarán un endpoint cuando haya backend.
+- **`src/services/api.js` es la única capa de datos.** Por ahora es un **mock** sobre `localStorage` (clave `depanas_listas`, sembrado con `MOCK_LISTAS`) con un `delay()` artificial. Cada función async (`fetchListas(filters)`, `guardarLista(lista)`, `actualizarLista(id, lista)`, `eliminarLista(id)`) trae comentada la llamada `fetch` al backend real (`/api/listas`). Para conectar el backend, se descomenta ese bloque y se borra el del mock, sin cambiar la firma. Las páginas nunca deben usar `fetch` ni `localStorage` directamente. Si existe la clave antigua `depanas_compras`, se migra una vez agrupando por proveedor y fecha.
+- `getProveedores()` / `getProductos()` son **síncronas** y alimentan `AutocompleteInput`. Salen de las listas existentes, así que necesitarán un endpoint cuando haya backend. `totalLista(lista)` suma los precios.
 - Las notificaciones usan `useToast().addToast(message, 'success' | 'error')` de `src/context/ToastContext.jsx`.
-- Modelo de compra: `{ id, proveedor, producto, cantidad, unidad, precio, fecha }`. `fecha` es una cadena ISO `YYYY-MM-DD` (se ordena y filtra por comparación de strings) y `precio`/`cantidad` son números.
+- **Modelo: lista de compra** `{ id, proveedor, fecha, productos: [{ producto, cantidad, unidad, precio }] }`. `fecha` es una cadena ISO `YYYY-MM-DD` (se ordena y filtra por comparación de strings). `precio` es el **total de la línea** (no unitario); el gasto de la lista es la suma. El filtro `producto` devuelve las listas que contienen ese producto.
 
 ## Diseño (obligatorio)
 
@@ -50,4 +50,4 @@ Las skills ejecutan scripts desde la raíz del repo, p. ej. `python .claude/skil
 ## Convenciones
 
 - El código, los nombres (componentes, funciones, variables) y los textos de la UI están en **español**.
-- `src/services/api.js` no se modifica mientras sea mock (ESLint tiene una excepción para su `BASE_URL`).
+- En `src/services/api.js`, cualquier cambio de datos mantiene el bloque `fetch` comentado al día con el mock y tiene su test en `api.test.js`. ESLint tiene una excepción para su `BASE_URL`.

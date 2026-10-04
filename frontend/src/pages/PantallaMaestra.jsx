@@ -1,134 +1,106 @@
 import { useEffect, useState } from 'react'
-import { Loader2, Plus, ShoppingCart, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { ChevronRight, Loader2, Plus, ShoppingCart, SlidersHorizontal } from 'lucide-react'
 import Header from '../components/Header'
-import FilterModal from '../components/FilterModal'
-import ConfirmModal from '../components/ConfirmModal'
+import FiltrosEnLinea, { FILTROS_VACIOS, contarFiltrosActivos } from '../components/FiltrosEnLinea'
+import DetalleLista from '../components/DetalleLista'
 import { Boton, EstadoVacio, Insignia, Tarjeta } from '../components/common'
-import { fetchCompras, eliminarCompra } from '../services/api'
+import { fetchListas, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { formatearFecha, formatearPrecio } from '../utils/formato'
 import estilos from './PantallaMaestra.module.css'
 
-const EMPTY_FILTERS = {
-  proveedor: '',
-  producto: '',
-  fechaDesde: '',
-  fechaHasta: '',
-}
-
-function contarFiltrosActivos(filters) {
-  return Object.values(filters).filter(v => v !== '').length
-}
-
 export default function PantallaMaestra() {
   const { addToast } = useToast()
 
-  const [compras, setCompras] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState(EMPTY_FILTERS)
-  const [version, setVersion] = useState(0) // sube para recargar tras eliminar
-  const [filterOpen, setFilterOpen] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [listas, setListas] = useState(null) // null = primera carga
+  const [filters, setFilters] = useState(FILTROS_VACIOS)
+  const [version, setVersion] = useState(0) // sube para recargar tras editar o eliminar
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
+  const [listaAbierta, setListaAbierta] = useState(null)
 
+  // Filtra en vivo: mientras llega la respuesta se sigue mostrando la tabla anterior
   useEffect(() => {
     let vigente = true
-    fetchCompras(filters)
-      .then(data => { if (vigente) setCompras(data) })
+    fetchListas(filters)
+      .then(data => { if (vigente) setListas(data) })
       .catch(() => { if (vigente) addToast('Error al cargar las compras', 'error') })
-      .finally(() => { if (vigente) setLoading(false) })
     return () => { vigente = false } // descarta respuestas viejas si cambian los filtros
   }, [filters, version, addToast])
 
-  function cambiarFiltros(nuevos) {
-    setLoading(true)
-    setFilters(nuevos)
-  }
-
-  function recargar() {
-    setLoading(true)
-    setVersion(v => v + 1)
-  }
-
-  async function handleDelete(id) {
-    try {
-      await eliminarCompra(id)
-      addToast('Compra eliminada correctamente')
-      recargar()
-    } catch {
-      addToast('Error al eliminar la compra', 'error')
-    }
-  }
-
   const filtrosActivos = contarFiltrosActivos(filters)
   const hayFiltros = filtrosActivos > 0
-  const compraPorEliminar = compras.find(c => c.id === deleteTarget)
 
   function contenidoTabla() {
-    if (loading) {
+    if (listas === null) {
       return <EstadoVacio cargando icono={<Loader2 />} titulo="Cargando compras…" />
     }
-    if (compras.length === 0 && hayFiltros) {
+    if (listas.length === 0 && hayFiltros) {
       return (
         <EstadoVacio
           icono={<SlidersHorizontal />}
           titulo="Sin resultados"
           texto="Prueba con otros filtros"
-          accion={<Boton variante="fantasma" onClick={() => cambiarFiltros(EMPTY_FILTERS)}>Limpiar filtros</Boton>}
+          accion={<Boton variante="fantasma" onClick={() => setFilters(FILTROS_VACIOS)}>Limpiar filtros</Boton>}
         />
       )
     }
-    if (compras.length === 0) {
+    if (listas.length === 0) {
       return (
         <EstadoVacio
           icono={<ShoppingCart />}
           titulo="Todavía no hay compras."
           texto="¡Agreguemos la primera!"
-          accion={<Boton variante="primario" icono={<Plus />} a="/agregar-compra">Agregar compra</Boton>}
+          accion={<Boton variante="primario" icono={<Plus />} a="/">Agregar compra</Boton>}
         />
       )
     }
     return (
-      <div className={estilos.desplazable}>
-        <table className={estilos.tabla}>
-          <caption className="solo-lector">Compras registradas</caption>
-          <thead>
-            <tr>
-              <th scope="col">Proveedor</th>
-              <th scope="col">Producto</th>
-              <th scope="col">Cantidad</th>
-              <th scope="col" className={estilos.numerico}>Precio</th>
-              <th scope="col">Fecha</th>
-              <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {compras.map(compra => (
-              <tr key={compra.id}>
-                <td data-etiqueta="Proveedor"><Insignia tono="neutro">{compra.proveedor}</Insignia></td>
-                <td data-etiqueta="Producto" className={estilos.producto}>{compra.producto}</td>
-                <td data-etiqueta="Cantidad">{compra.cantidad} {compra.unidad}</td>
-                <td data-etiqueta="Precio" className={estilos.numerico}>{formatearPrecio(compra.precio)}</td>
-                <td data-etiqueta="Fecha" className={estilos.fecha}>{formatearFecha(compra.fecha)}</td>
-                <td className={estilos.colAcciones}>
-                  <Boton
-                    variante="icono"
-                    icono={<Trash2 />}
-                    aria-label={`Eliminar compra de ${compra.producto}`}
-                    className={estilos.eliminar}
-                    onClick={() => setDeleteTarget(compra.id)}
-                  />
+      <table className={estilos.tabla}>
+        <caption className="solo-lector">Listas de compra. Abre una fila para ver sus productos.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Proveedor</th>
+            <th scope="col" className={estilos.numerico}>Productos</th>
+            <th scope="col" className={estilos.numerico}>Gasto total</th>
+            <th scope="col">Fecha</th>
+            <th scope="col" className={estilos.colAbrir}><span className="solo-lector">Detalle</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {listas.map(lista => {
+            const n = lista.productos.length
+            return (
+              <tr key={lista.id} className={estilos.fila}>
+                <td data-etiqueta="Proveedor">
+                  {/* El botón cubre toda la fila (::after): un clic en cualquier parte abre el detalle */}
+                  <button
+                    type="button"
+                    className={estilos.abrir}
+                    onClick={() => setListaAbierta(lista)}
+                    aria-label={`Ver compra en ${lista.proveedor} del ${formatearFecha(lista.fecha)}, ${n} producto${n !== 1 ? 's' : ''}`}
+                  >
+                    <Insignia tono="neutro">{lista.proveedor}</Insignia>
+                  </button>
+                </td>
+                <td data-etiqueta="Productos" className={estilos.numerico}>{n}</td>
+                <td data-etiqueta="Gasto total" className={`${estilos.numerico} ${estilos.gasto}`}>
+                  {formatearPrecio(totalLista(lista))}
+                </td>
+                <td data-etiqueta="Fecha" className={estilos.fecha}>{formatearFecha(lista.fecha)}</td>
+                <td className={estilos.colAbrir} aria-hidden="true">
+                  <ChevronRight size={20} />
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            )
+          })}
+        </tbody>
+      </table>
     )
   }
 
   return (
     <>
-      <Header title="Compras" badge="Pantalla maestra" />
+      <Header title="Compras" badge="Listas de compra" />
 
       <main id="contenido" tabIndex={-1}>
         <div className={estilos.toolbar}>
@@ -137,48 +109,35 @@ export default function PantallaMaestra() {
               id="open-filter-btn"
               variante={hayFiltros ? 'primario' : 'secundario'}
               icono={<SlidersHorizontal />}
-              onClick={() => setFilterOpen(true)}
+              onClick={() => setFiltrosAbiertos(v => !v)}
+              aria-expanded={filtrosAbiertos}
+              aria-controls="panel-filtros"
               aria-label={hayFiltros ? `Filtrar, ${filtrosActivos} filtro${filtrosActivos !== 1 ? 's' : ''} activo${filtrosActivos !== 1 ? 's' : ''}` : undefined}
             >
               Filtrar
               {hayFiltros && <Insignia tono="marca" className={estilos.contador}>{filtrosActivos}</Insignia>}
             </Boton>
-            {hayFiltros && (
-              <Boton id="clear-filters-btn" variante="fantasma" onClick={() => cambiarFiltros(EMPTY_FILTERS)}>
-                Limpiar filtros
-              </Boton>
-            )}
+            <FiltrosEnLinea id="panel-filtros" abierto={filtrosAbiertos} filtros={filters} alCambiar={setFilters} />
           </div>
 
-          <Boton id="go-agregar-compra-btn" variante="primario" sombra icono={<Plus />} a="/agregar-compra">
+          <Boton id="go-agregar-compra-btn" variante="primario" sombra icono={<Plus />} a="/" className={estilos.agregar}>
             Agregar compra
           </Boton>
         </div>
 
         <Tarjeta
-          titulo="Registro de compras"
+          titulo="Listas de compra"
           icono={<ShoppingCart />}
-          accion={loading ? '…' : `${compras.length} registro${compras.length !== 1 ? 's' : ''}`}
+          accion={listas === null ? '…' : `${listas.length} compra${listas.length !== 1 ? 's' : ''}`}
         >
           {contenidoTabla()}
         </Tarjeta>
       </main>
 
-      <FilterModal
-        isOpen={filterOpen}
-        onClose={() => setFilterOpen(false)}
-        filters={filters}
-        onApply={cambiarFiltros}
-      />
-
-      <ConfirmModal
-        isOpen={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={() => handleDelete(deleteTarget)}
-        title="Eliminar compra"
-        message={`¿Seguro que deseas eliminar ${compraPorEliminar ? `la compra de ${compraPorEliminar.producto}` : 'este registro'}? Esta acción no se puede deshacer.`}
-        confirmLabel="Eliminar"
-        danger
+      <DetalleLista
+        lista={listaAbierta}
+        alCerrar={() => setListaAbierta(null)}
+        alCambio={() => setVersion(v => v + 1)}
       />
     </>
   )
