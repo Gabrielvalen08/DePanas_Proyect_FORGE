@@ -39,7 +39,7 @@ React 18 + Vite 5 + react-router-dom 6, en JavaScript (JSX) sin TypeScript. Íco
 
 `DESIGN_DECISIONS.md` (raíz) define la marca para la web a partir del *Brandbook DE PANAS (mayo 2026)* y **toda pantalla nueva debe seguirlo**. Precedencia: **brandbook > skills de `.claude/skills/` > `DESIGN_DECISIONS.md`**. `apple-design` guía proporciones, interacción, animaciones y materiales; `ui-ux-pro-max`, `brand` y `design-system` guían tokens, accesibilidad y UX. Lo esencial:
 
-- Paleta: Rojo Vinotinto `#911C0D`, Naranja Sazón `#EF7D05`, Amarillo Criollo `#F8A914`, Verde Fresco `#6DAD28`, Verde Ávila `#144428`, Crema y Trigo `#FEEECC`. Sin negro puro. Nunca texto blanco o crema sobre naranja, amarillo o verde fresco.
+- Paleta: Rojo Vinotinto `#911C0D`, Naranja Sazón `#EF7D05`, Amarillo Criollo `#F8A914`, Verde Fresco `#6DAD28`, Verde Ávila `#144428`, Crema y Trigo `#FEEECC`. Sin negro puro. Naranja y crema son los protagonistas (sidebar, barra inferior y botón primario en naranja). Texto sobre naranja: siempre `--color-on-primary` (Ávila profundo `#0F331E`, 5.03:1); nunca texto blanco o crema sobre naranja, amarillo o verde fresco (el logotipo tipográfico está exento).
 - Tipografía: Josefin Sans para titulares e interfaz (titulares en mayúsculas) y Cardo para textos extensos.
 - Las tablas van sobrias, con los montos alineados a la derecha. Contraste WCAG AA en todo.
 - Movimiento: feedback al presionar, springs interrumpibles para lo arrastrable y `prefers-reduced-motion` siempre respetado.

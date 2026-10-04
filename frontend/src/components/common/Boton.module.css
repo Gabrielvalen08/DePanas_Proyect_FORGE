@@ -1,6 +1,6 @@
 .boton {
   --boton-fondo: transparent;
-  --boton-texto: var(--color-primary);
+  --boton-texto: var(--color-text);
   --boton-borde: transparent;
 
   position: relative;
@@ -59,9 +59,10 @@ svg.icono {
   --boton-borde: var(--color-primary-hover);
 }
 
+/* Borde en Verde Ávila: el naranja sobre blanco (2.76:1) no marca el límite del control */
 .secundario {
   --boton-fondo: var(--color-surface);
-  --boton-borde: var(--color-primary);
+  --boton-borde: var(--color-text);
 }
 
 .secundario:hover:not(:disabled),

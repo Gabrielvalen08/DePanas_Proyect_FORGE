@@ -35,11 +35,11 @@
 }
 
 .input:hover {
-  border-color: var(--color-primary);
+  border-color: var(--color-text);
 }
 
 .input:focus {
-  border-color: var(--color-primary);
+  border-color: var(--color-text);
 }
 
 .conPrefijo {

@@ -10,16 +10,19 @@ Definidos en `frontend/src/styles/tokens.css` (capa 2). Los componentes solo usa
 
 | Token                  | Valor                           | Uso                                    |
 | ---------------------- | ------------------------------- | -------------------------------------- |
-| `--color-bg`           | Crema y Trigo `#FEEECC`         | Fondo de página                        |
+| `--color-bg`           | Crema y Trigo `#FEEECC`         | Fondo de página y atmósfera general    |
 | `--color-surface`      | `#FFFFFF`                       | Tarjetas, tablas, modales, inputs      |
-| `--color-surface-soft` | `#FFF8EB`                       | Encabezados de tabla, hover            |
-| `--color-text`         | Verde Ávila `#144428`           | Texto y cifras                         |
+| `--color-surface-soft` | `#FFF8EB`                       | Encabezados de tabla, hover suave      |
+| `--color-text`         | Verde Ávila `#144428`           | Texto principal, cifras y contraste AA |
 | `--color-text-muted`   | `#4F735E`                       | Texto secundario                       |
-| `--color-primary`      | Verde Ávila `#144428`           | Acción principal, sidebar, barra inferior |
-| `--color-brand`        | Naranja Sazón `#EF7D05`         | Franjas de identidad, íconos decorativos |
-| `--color-accent`       | Amarillo Criollo `#F8A914`      | Navegación activa, insignias de marca  |
+| `--color-primary`      | Naranja Sazón `#EF7D05`         | Acción principal, sidebar, barra móvil |
+| `--color-on-primary`   | Ávila profundo `#0F331E`        | Texto e íconos sobre naranja (5.03:1)  |
+| `--color-brand`        | Naranja Sazón `#EF7D05`         | Franjas de identidad, íconos de marca  |
+| `--color-accent`       | Amarillo Criollo `#F8A914`      | Detalles, acentos secundarios          |
 | `--color-danger`       | Rojo Vinotinto `#911C0D`        | Eliminar, errores                      |
 | `--color-focus`        | Rojo Vinotinto `#911C0D`        | Anillo de foco                         |
+
+> **Jerarquía cromática de marca:** Crema y Trigo (`#FEEECC`) y Naranja Sazón (`#EF7D05`) son los colores dominantes que definen la calidez y personalidad de De Panas SV. Verde Ávila (`#144428`) se reserva como ancla tipográfica y contable para garantizar contraste estricto WCAG AA en todo momento. Sobre el naranja, el texto usa **Ávila profundo** (`#0F331E`, el mismo verde con menos luz), porque Verde Ávila da 4.03:1 y solo cumple en texto grande. En la barra lateral naranja, el ítem activo usa una píldora Crema y Trigo con texto Verde Ávila (9.71:1). El logotipo "DE PANAS" va en crema con sombra Vinotinto, como en el badge; los logotipos están exentos del criterio de contraste.
 
 Escala de espaciado `--space-1` … `--space-12` (base 4px, en `rem`). Radios: inputs 12px, tarjetas 20px, modales 24px, botones 999px. Sombra de marca `3px 4px 0` Vinotinto.
 
@@ -50,13 +53,15 @@ Combinaciones nuevas que no estaban en la tabla de `DESIGN_DECISIONS.md` (WCAG 2
 
 | Texto / fondo                                   | Ratio |
 | ----------------------------------------------- | ----- |
-| Crema / hover primario `#376048` (Ávila 85% + blanco) | 6.25 |
+| Ávila profundo / Naranja Sazón (botón primario, sidebar, barra) | 5.03 |
+| Ávila profundo / hover primario (Naranja 85% + blanco) | 5.79 |
 | Blanco / hover peligro `#7E2211` (Vinotinto 85% + Ávila) | 9.89 |
 | `#4F735E` / `--color-surface-soft`              | 5.04  |
 | Verde Ávila / `--color-surface-soft`            | 10.53 |
 | Vinotinto / tinte de error `#F4E8E7`            | 7.38  |
 | Verde Ávila / tinte de éxito `#E2EFD4`          | 9.29  |
-| Crema / hover de nav `#30583C`                  | 7.08  |
+| Ávila profundo / hover de nav (crema 20% sobre naranja) | ≥ 5.03 |
+| Verde Ávila / píldora activa Crema y Trigo      | 9.71  |
 
 ## Desviaciones del plan
 

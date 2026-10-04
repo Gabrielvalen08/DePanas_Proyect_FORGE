@@ -13,6 +13,7 @@
 
   /* Derivados documentados en DESIGN_DECISIONS.md */
   --crema-claro:      #FFF8EB;
+  --avila-profundo:   #0F331E; /* Verde Ávila al 75% de luminosidad: texto sobre Naranja Sazón (5.03:1) */
   --avila-75:         #4F735E;
   --avila-borde:      #728F7E;
   --borde-suave:      #C4C4A3;
@@ -57,8 +58,8 @@
   --color-text-muted:    var(--avila-75);
   --color-border:        var(--borde-suave);
   --color-border-input:  var(--avila-borde);
-  --color-primary:       var(--verde-avila);
-  --color-on-primary:    var(--crema-trigo);
+  --color-primary:       var(--naranja-sazon);
+  --color-on-primary:    var(--avila-profundo); /* AA en cualquier tamaño sobre el naranja */
   --color-brand:         var(--naranja-sazon);
   --color-accent:        var(--amarillo-criollo);
   --color-danger:        var(--rojo-vinotinto);
@@ -68,14 +69,14 @@
   --color-focus:         var(--rojo-vinotinto);
 
   /* Estados hover: mezclas de la paleta, sin colores nuevos */
-  --color-primary-hover: color-mix(in srgb, var(--verde-avila) 85%, var(--blanco));
+  --color-primary-hover: color-mix(in srgb, var(--naranja-sazon) 85%, var(--blanco));
   --color-danger-hover:  color-mix(in srgb, var(--rojo-vinotinto) 85%, var(--verde-avila));
 
   --sombra-marca:    3px 4px 0 var(--rojo-vinotinto);
   --sombra-modal:    0 24px 48px rgb(20 68 40 / 0.18);
   --sombra-flotante: 0 8px 24px rgb(20 68 40 / 0.12);
   --scrim:           rgb(20 68 40 / 0.4);
-  --material-header: rgb(254 238 204 / 0.8);
+  --material-header: rgb(254 238 204 / 0.85);
 }
 
 /* =========================================================

@@ -53,7 +53,8 @@ AA exige 4.5:1 para texto normal y 3:1 para texto grande (≥ 24px, o ≥ 18.66p
 | Blanco / Rojo Vinotinto           | 8.84   | Cualquier texto             |
 | Crema y Trigo / Rojo Vinotinto    | 7.71   | Cualquier texto             |
 | Verde Ávila / Amarillo Criollo    | 5.66   | Cualquier texto             |
-| Verde Ávila / Naranja Sazón       | 4.03   | Solo texto grande           |
+| Ávila profundo `#0F331E` / Naranja Sazón | 5.03 | Cualquier texto (texto sobre naranja) |
+| Verde Ávila / Naranja Sazón       | 4.03   | Solo texto grande e íconos  |
 | Rojo Vinotinto / Naranja Sazón    | 3.20   | Solo texto grande           |
 | Blanco / Naranja Sazón            | 2.76   | **Nunca para texto**        |
 | Blanco o Crema / Amarillo Criollo | ≤ 1.97 | **Nunca para texto**        |
@@ -72,9 +73,10 @@ Capas de tokens según la skill `design-system`: primitivos (tabla de arriba), s
 | `--color-text-muted`    | `#4F735E` (Ávila 75%)        | Texto secundario (5.32:1 sobre blanco, 4.64:1 sobre crema)       |
 | `--color-border`        | `#C4C4A3`                    | Divisores decorativos (no es límite de un control)               |
 | `--color-border-input`  | `#728F7E`                    | Borde de inputs y controles (3.53:1 sobre blanco)                |
-| `--color-primary`       | Verde Ávila `#144428`        | Acción principal (fondo) con texto Crema o Blanco                |
-| `--color-brand`         | Naranja Sazón `#EF7D05`      | Superficie de identidad: franja de header, badge, ilustraciones  |
-| `--color-accent`        | Amarillo Criollo `#F8A914`   | Acentos, estado activo de navegación (con texto Verde Ávila)     |
+| `--color-primary`       | Naranja Sazón `#EF7D05`      | Acción principal, sidebar y barra inferior                        |
+| `--color-on-primary`    | Ávila profundo `#0F331E` (Verde Ávila al 75% de luminosidad) | Texto e íconos sobre naranja (5.03:1, AA en cualquier tamaño) |
+| `--color-brand`         | Naranja Sazón `#EF7D05`      | Superficie de identidad: sidebar, franja de header, badge, ilustraciones  |
+| `--color-accent`        | Amarillo Criollo `#F8A914`   | Acentos secundarios y avisos (con texto Verde Ávila)             |
 | `--color-danger`        | Rojo Vinotinto `#911C0D`     | Acciones destructivas y errores                                  |
 | `--color-success`       | Verde Fresco `#6DAD28`       | Indicadores de éxito, solo como fondo/tinte o ícono; texto en Ávila |
 | `--color-warning`       | Amarillo Criollo `#F8A914`   | Avisos, como fondo con texto Verde Ávila                          |
@@ -84,10 +86,13 @@ Tintes para fondos de estado: éxito `#E2EFD4`, aviso `#FDE5B8`, error `#F4E8E7`
 
 ### Reglas de color
 
-- El naranja y el amarillo del logotipo son la cara de la marca. El naranja va como **superficie de identidad**, nunca como fondo de texto pequeño.
-- El verde aporta contraste y equilibrio. Verde Ávila es el color de texto y de acción principal.
-- El Rojo Vinotinto queda para lo destructivo, los errores y el foco. Nunca se usa como acción principal, para no confundir "guardar" con "eliminar".
-- No usar más de 2 o 3 colores de marca en un mismo componente.
+- **Colores protagonistas:** **Crema y Trigo (`#FEEECC`)** y **Naranja Sazón (`#EF7D05`)** son los colores principales y más visibles de la aplicación, aportando calidez venezolana y vibrancia caribeña.
+- **Contraste y legibilidad:** **Verde Ávila (`#144428`)** es el color del texto y cifras. Aporta contraste absoluto (11.13:1 sobre blanco y 9.71:1 sobre crema), garantizando que las tablas, montos financieros y formularios sean 100% legibles sin cansar la vista.
+- **Texto sobre naranja:** Verde Ávila sobre Naranja Sazón da 4.03:1, que solo cumple AA en texto grande. Por eso todo texto sobre naranja usa **Ávila profundo `#0F331E`**, el mismo verde con menos luz (5.03:1, AA en cualquier tamaño).
+- **Acciones principales:** El botón primario usa **Naranja Sazón `#EF7D05`** con texto en **Ávila profundo** y la sombra de marca Vinotinto. El secundario es blanco con borde y texto Verde Ávila, porque el naranja sobre blanco (2.76:1) no marca el límite de un control.
+- **Navegación:** La barra lateral y la barra inferior usan Naranja Sazón como superficie de identidad, con texto en Ávila profundo y el ítem activo como píldora **Crema y Trigo** con texto **Verde Ávila** (9.71:1).
+- **Logotipo tipográfico:** sobre naranja va en Crema y Trigo con sombra sólida Vinotinto, como el lettering del badge. Los logotipos están exentos del criterio de contraste (WCAG 1.4.3).
+- El Rojo Vinotinto queda para lo destructivo, los errores y la sombra sólida de marca.
 - El color nunca es el único portador de significado: los estados llevan siempre ícono o texto.
 
 ---
@@ -236,8 +241,8 @@ Se toma de `apple-design`. Un elemento se siente vivo cuando responde al instant
 - La confirmación es solo para acciones destructivas e irreversibles. Si una acción se puede deshacer, se prefiere ofrecer "Deshacer" a confirmar.
 
 **Navegación (sidebar)**
-- Fondo Verde Ávila con texto Crema y Trigo. Ítem activo como píldora Amarillo Criollo con texto Verde Ávila.
-- Logotipo tipográfico arriba. El naranja aparece como franja o acento de identidad.
+- Fondo Naranja Sazón como superficie de identidad, con texto e íconos en Ávila profundo (5.03:1). Ítem activo como píldora en Crema y Trigo con texto e ícono en Verde Ávila (9.71:1). Anillo de foco en Ávila profundo.
+- Logotipo tipográfico arriba con sombra Vinotinto. Franja de identidad en Crema y Trigo.
 - Cada pantalla responde a dónde estoy (ítem activo y título), a dónde puedo ir y cómo salgo (volver o cancelar visible). Los ítems se nombran por su contenido ("Compras", "Agregar compra") y no con etiquetas genéricas.
 
 **Cards y métricas**
@@ -293,7 +298,7 @@ Mensajes de marca: "Tu antojo venezolano en El Salvador", "Aquí se viene a come
 ## Reglas estrictas
 
 1. Solo los seis colores del brandbook y sus derivados documentados aquí. Nada de negro puro ni colores fuera de paleta.
-2. Nunca texto blanco o crema sobre Naranja Sazón, Amarillo Criollo o Verde Fresco.
+2. Nunca texto blanco o crema sobre Naranja Sazón, Amarillo Criollo o Verde Fresco (salvo el logotipo tipográfico, exento). Texto sobre naranja: Ávila profundo.
 3. Josefin Sans para titulares e interfaz; Cardo para textos extensos.
 4. Badge ilustrado solo en espacios amplios y sencillos; en el resto, logotipo tipográfico.
 5. Contraste WCAG 2.1 AA en todo texto y control.

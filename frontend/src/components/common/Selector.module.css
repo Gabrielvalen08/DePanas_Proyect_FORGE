@@ -33,7 +33,7 @@
 
 .select:hover,
 .select:focus {
-  border-color: var(--color-primary);
+  border-color: var(--color-text);
 }
 
 .conError,

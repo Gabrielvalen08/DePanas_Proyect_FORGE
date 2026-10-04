@@ -42,7 +42,7 @@
 }
 
 .item:focus-visible {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-on-primary);
   outline-offset: -4px;
 }
 
@@ -59,15 +59,21 @@
   position: absolute;
   inset: 0;
   border-radius: var(--radio-pildora);
-  background: var(--color-accent);
+  background: var(--crema-trigo);
 }
 
 .icono {
   position: relative;
 }
 
+/* El ícono va sobre la píldora crema; la etiqueta, debajo, sobre el naranja */
 .activo .icono {
-  color: var(--color-text);
+  color: var(--verde-avila);
+}
+
+.activo .etiqueta {
+  color: var(--color-on-primary);
+  font-weight: 700;
 }
 
 /* Única excepción al mínimo de 14px: siempre va con ícono (ver plan, Fase 4.3) */
