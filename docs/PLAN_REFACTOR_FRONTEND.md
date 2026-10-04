@@ -162,7 +162,7 @@ docs/
    npm install -D vitest@^2 jsdom @testing-library/react @testing-library/dom @testing-library/jest-dom @testing-library/user-event
    ```
    ```bash
-   npm install -D eslint@^9 @eslint/js globals eslint-plugin-react eslint-plugin-react-hooks eslint-plugin-jsx-a11y
+   npm install -D eslint@^9 @eslint/js@^9 globals eslint-plugin-react eslint-plugin-react-hooks eslint-plugin-jsx-a11y
    ```
 2. Agrega los scripts a `package.json`:
    ```json
@@ -229,6 +229,17 @@ docs/
    ]
    ```
    La regla `react/forbid-dom-props` hace que ESLint rechace cualquier `style={{}}` nuevo.
+
+   **Notas de versiones** (verificadas al ejecutar esta fase):
+   - Instala **`@eslint/js@^9`**, no la última: `@eslint/js` 10 pide ESLint 10, pero `eslint-plugin-jsx-a11y` solo soporta hasta ESLint 9 y npm falla con `ERESOLVE`.
+   - `eslint-plugin-react-hooks` v7 incluye reglas del React Compiler, como `set-state-in-effect`. Las fases 6.2 y 6.3 ya están escritas para cumplirlas.
+   - Agrega al final del array esta excepción, porque `api.js` no se puede tocar y `BASE_URL` solo aparece en los `fetch` comentados:
+     ```js
+     {
+       files: ['src/services/api.js'],
+       rules: { 'no-unused-vars': ['error', { varsIgnorePattern: '^BASE_URL$' }] },
+     },
+     ```
 6. Ejecuta `npm run lint`. **Se espera que falle** con el código actual (los `style` y los problemas de a11y). Anota cuántos errores hay; esos errores son la lista de trabajo de las fases 3 a 6.
 
 **Criterios de aceptación**
@@ -738,15 +749,29 @@ export function fechaHoyISO(fecha = new Date()) // fecha LOCAL en "YYYY-MM-DD"
   - Cargando: `EstadoVacio` con `Loader2` y "Cargando compras…".
   - Vacío sin filtros: `EstadoVacio` "Todavía no hay compras." / "¡Agreguemos la primera!" con un botón primario "Agregar compra".
   - Vacío con filtros: "Sin resultados" / "Prueba con otros filtros" con un botón fantasma "Limpiar filtros".
-- **Lógica:** `loadCompras`, `handleDelete` y `EMPTY_FILTERS` siguen exactamente igual.
+- **Lógica:** `handleDelete`, `EMPTY_FILTERS` y las llamadas a `fetchCompras`/`eliminarCompra` siguen igual. **Excepción obligatoria:** el efecto de carga actual llama a `setLoading(true)` dentro de `useEffect`, y la regla `react-hooks/set-state-in-effect` lo rechaza. Reescríbelo así:
+  ```js
+  const [filters, setFilters] = useState(EMPTY_FILTERS)
+  const [version, setVersion] = useState(0) // sube para recargar tras eliminar
+
+  useEffect(() => {
+    let vigente = true
+    fetchCompras(filters)
+      .then(data => { if (vigente) setCompras(data) })
+      .catch(() => { if (vigente) addToast('Error al cargar las compras', 'error') })
+      .finally(() => { if (vigente) setLoading(false) })
+    return () => { vigente = false } // descarta respuestas viejas si cambian los filtros
+  }, [filters, version, addToast])
+
+  function cambiarFiltros(nuevos) { setLoading(true); setFilters(nuevos) }
+  function recargar() { setLoading(true); setVersion(v => v + 1) }
+  ```
+  Todo lo que hoy llama a `setFilters` (aplicar filtros, "Limpiar filtros") pasa a llamar a `cambiarFiltros`. Tras eliminar, se llama a `recargar()` en lugar de `loadCompras(filters)`. `loading` arranca en `true`.
 
 ### 6.3 `FilterModal`
 - Construido sobre `Modal`, con `titulo="Filtrar compras"`, `icono={<SlidersHorizontal/>}` y `anchoMax="md"`.
 - Campos: dos `Campo` para Proveedor y Producto, y dos `Campo tipo="date"` para Desde y Hasta. En desktop van en grilla de 2 columnas y en móvil, en 1.
-- **Corrección del bug:** sincroniza el estado local cada vez que se abre:
-  ```js
-  useEffect(() => { if (isOpen) setLocal({ ...filters }) }, [isOpen, filters])
-  ```
+- **Corrección del bug:** el estado local debe partir de `filters` cada vez que el modal se abre. **No uses un `useEffect` con `setLocal`**, porque la regla `react-hooks/set-state-in-effect` lo rechaza. Mueve el formulario a un componente interno, `FormularioFiltros`, que recibe `filters` e inicializa `useState({ ...filters })`. Como `Modal` desmonta su contenido al cerrarse (`AnimatePresence`), el formulario se vuelve a montar con los filtros actuales en cada apertura.
 - **Validación:** si `fechaDesde > fechaHasta`, muestra el error en `Campo` "Hasta": "La fecha final debe ser igual o posterior a la inicial". Mientras haya error, "Aplicar filtros" queda deshabilitado.
 - **Pie:** "Limpiar" (`fantasma`) y "Aplicar filtros" (`primario`).
 - **Anclaje visual:** el modal escala desde el centro con `variantesModal`, sin `transform-origin` especial, porque es un diálogo centrado y no un popover.
