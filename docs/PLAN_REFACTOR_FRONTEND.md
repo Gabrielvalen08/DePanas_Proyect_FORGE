@@ -50,6 +50,7 @@ Reconstruir visualmente las vistas y componentes **que ya existen** en `frontend
 | La validación es solo al guardar, los errores no están enlazados al campo y el aviso es solo un toast | `AgregarCompra.jsx`        | 6    |
 | Los toasts usan `Date.now()` como id (puede repetirse) y no tienen `aria-live` | `ToastContext.jsx`         | 5    |
 | Hay 51 bloques `style={{}}`                                              | páginas y componentes      | 3–6  |
+| `getTodayISO()` usa `toISOString()` (UTC): después de las 18:00 en El Salvador la "fecha de hoy" sale como mañana y así se guarda en las compras | `AgregarCompra.jsx`        | 4, 6 |
 
 ---
 
@@ -659,7 +660,9 @@ export function formatearPrecio(valor)        // → "$12.50"
 export function formatearFecha(isoFecha)      // "2026-09-28" → "28/09/2026"
 export function formatearFechaLarga(fecha)    // Date → "sábado, 3 de octubre de 2026"
 export function formatearFechaTexto(isoFecha) // "2026-09-28" → "28 de septiembre de 2026"
+export function fechaHoyISO(fecha = new Date()) // fecha LOCAL en "YYYY-MM-DD"
 ```
+`fechaHoyISO` reemplaza a `getTodayISO()` de `AgregarCompra.jsx`. **No uses `toISOString()`**, que convierte a UTC; arma la cadena con `getFullYear()`, `getMonth() + 1` y `getDate()`, con ceros a la izquierda. Test obligatorio: `fechaHoyISO(new Date(2026, 9, 3, 23, 30)) === '2026-10-03'`.
 **Atención:** `Intl.NumberFormat('es-SV', { style: 'currency', currency: 'USD' })` puede devolver `US$12.50` según el navegador. El requisito es `$12.50`. Prueba la salida; si no coincide, usa `minimumFractionDigits: 2` con `style: 'decimal'` y antepón `$`. El test `formatearPrecio(12.5) === '$12.50'` es obligatorio.
 
 **Criterios de aceptación**
@@ -762,7 +765,7 @@ export function formatearFechaTexto(isoFecha) // "2026-09-28" → "28 de septiem
   - Arriba a la izquierda, `Boton variante="fantasma"` con `ArrowLeft` y "Volver a compras".
   - A la derecha, una `Tarjeta` pequeña con la fecha de hoy:
     - Ícono `CalendarDays`.
-    - La fecha con `formatearFechaTexto(hoy)` en Josefin 700.
+    - La fecha con `formatearFechaTexto(hoy)` en Josefin 700, donde `hoy = fechaHoyISO()`. Elimina `getTodayISO()` y `formatDateDisplay()` del archivo; `emptyFila()` también usa `fechaHoyISO()`.
     - La nota en Cardo: "Esta fecha se aplica a todo lo que agregues ahora; puedes cambiarla por fila."
 - **Tabla editable** dentro de `Tarjeta titulo="Detalle de compras"`, con el contador de filas en `accion`:
   - Columnas: Proveedor (`AutocompleteInput`), Producto (`AutocompleteInput`), Cantidad (`Campo tipo="number"` + `Selector` de unidades), Precio (`Campo prefijo="$"`), Fecha (`Campo tipo="date"`) y eliminar fila.
@@ -824,7 +827,7 @@ Patrón ARIA *combobox* con lista (WAI-ARIA APG). La API pública (`value`, `onC
 | `AgregarCompra.test.jsx`  | Al salir de Precio vacío aparece "Ingresa un precio mayor a 0", enlazado con `aria-describedby`. Al guardar con una fila vacía aparece el resumen `role="alert"` con foco y **no** se llama a `guardarCompras` (mock de `../services/api`). Con datos válidos se llama una vez con el payload correcto. |
 | `AutocompleteInput.test.jsx` | Escribir "Sú" muestra "Súper Selectos"; `ArrowDown` + `Enter` lo selecciona; `Escape` cierra. |
 | `PantallaMaestra.test.jsx` | Eliminar abre la confirmación con el foco en "Cancelar"; confirmar llama a `eliminarCompra(id)`. "Limpiar filtros" y luego "Filtrar" muestra el modal con campos vacíos (regresión del bug). |
-| `formato.test.js`         | `formatearPrecio(12.5) === '$12.50'`, `formatearFecha('2026-09-28') === '28/09/2026'`. |
+| `formato.test.js`         | `formatearPrecio(12.5) === '$12.50'`, `formatearFecha('2026-09-28') === '28/09/2026'`, `fechaHoyISO(new Date(2026, 9, 3, 23, 30)) === '2026-10-03'`. |
 
 Para los tests de páginas, renderiza dentro de `<MemoryRouter>` y `<ToastProvider>`.
 
