@@ -16,14 +16,20 @@ Todos se ejecutan desde `frontend/`:
 - `npm run dev`: servidor de desarrollo Vite en http://localhost:5173 (redirige `/api` a `localhost:3000`)
 - `npm run build`: build de producción en `frontend/dist/`
 - `npm run preview`: sirve el build
+- `npm run lint`: ESLint 9 con `jsx-a11y` (strict) y `react-hooks` v7. Prohíbe `style={{}}`
+- `npm run test`: Vitest en modo watch; `npm run test:run` una sola vez
+- Un solo archivo de test: `npx vitest run src/pages/AgregarCompra.test.jsx`
 
-No hay linter ni tests configurados.
+`react-hooks` v7 rechaza `setState` síncrono dentro de `useEffect`: actualiza estado desde callbacks o promesas (ver la carga en `PantallaMaestra.jsx`).
 
 ## Arquitectura
 
 React 18 + Vite 5 + react-router-dom 6, en JavaScript (JSX) sin TypeScript. Íconos: solo `lucide-react`.
 
-- `src/main.jsx` monta `<BrowserRouter>`. `src/App.jsx` define el layout fijo (`Sidebar` + `.main-area`) y las rutas: `/` → `Inicio`, `/compras` → `PantallaMaestra` (lista, filtros y borrado de compras), `/agregar-compra` → `AgregarCompra` (formulario de varias filas guardadas en lote). Cualquier otra ruta redirige a `/`.
+- `src/main.jsx` monta `<BrowserRouter>` y `<MotionConfig reducedMotion="user">`, y carga `styles/global.css`. `src/App.jsx` define el layout (`Sidebar` en escritorio, `BarraInferior` en móvil) y las rutas: `/` → `Inicio`, `/compras` → `PantallaMaestra` (lista, filtros y borrado de compras), `/agregar-compra` → `AgregarCompra` (formulario de varias filas guardadas en lote). Cualquier otra ruta redirige a `/`. Las rutas, íconos y títulos viven en `components/navegacion.js`.
+- **Estilos:** tokens de 3 capas en `src/styles/tokens.css` y un `Componente.module.css` por componente. Los componentes usan solo tokens semánticos (`--color-*`), nunca hex sueltos. Presets de animación (Motion) en `styles/movimiento.js`.
+- **UI base:** `src/components/common/` (`Boton`, `Campo`, `Selector`, `Tarjeta`, `Insignia`, `Modal` + `CuerpoModal`/`PieModal`, `EstadoVacio`). Toda pantalla se arma con estas piezas. Hooks en `src/hooks/` y formateo en `src/utils/formato.js`: usa `fechaHoyISO()`, nunca `toISOString()`, que da UTC.
+- Cada directorio de `src/` tiene un `README.md` con sus convenciones. Las decisiones técnicas del refactor están en `docs/DECISIONS.md`.
 - **`src/services/api.js` es la única capa de datos.** Por ahora es un **mock** sobre `localStorage` (clave `depanas_compras`, sembrado con `MOCK_COMPRAS`) con un `delay()` artificial. Cada función async (`fetchCompras(filters)`, `guardarCompras(filas)`, `eliminarCompra(id)`) trae comentada la llamada `fetch` al backend real. Para conectar el backend, se descomenta ese bloque y se borra el del mock, sin cambiar la firma. Las páginas nunca deben usar `fetch` ni `localStorage` directamente.
 - `getProveedores()` / `getProductos()` son **síncronas** y alimentan `AutocompleteInput`. Salen de las compras existentes, así que necesitarán un endpoint cuando haya backend.
 - Las notificaciones usan `useToast().addToast(message, 'success' | 'error')` de `src/context/ToastContext.jsx`.
@@ -39,11 +45,9 @@ React 18 + Vite 5 + react-router-dom 6, en JavaScript (JSX) sin TypeScript. Íco
 - Movimiento: feedback al presionar, springs interrumpibles para lo arrastrable y `prefers-reduced-motion` siempre respetado.
 - Assets de marca en `frontend/public/brand/` (logo y los íconos de favicon/PWA, conectados en `index.html` y `public/site.webmanifest`).
 
-**Migración pendiente:** `src/index.css` todavía usa el sistema anterior (Nunito Sans, `--brown #651A0C`, bordes y sombras negras). No lo tomes como referencia de marca. Los estilos globales están ahí y las páginas usan bastantes `style={{...}}` en línea.
-
 Las skills ejecutan scripts desde la raíz del repo, p. ej. `python .claude/skills/ui-ux-pro-max/scripts/search.py "<consulta>" --domain ux`.
 
 ## Convenciones
 
 - El código, los nombres (componentes, funciones, variables) y los textos de la UI están en **español**.
-- No hay `.gitignore`: `frontend/node_modules/` y `frontend/dist/` están versionados por error y ensucian el `git status`. No los incluyas en commits salvo que te lo pidan.
+- `src/services/api.js` no se modifica mientras sea mock (ESLint tiene una excepción para su `BASE_URL`).

@@ -10,7 +10,7 @@ Este documento define las decisiones de marca para la interfaz web del aplicativ
   - Si una regla de este documento choca con una skill, prevalece la skill.
   - Si una skill choca con el brandbook, prevalece el brandbook. Por ejemplo, `apple-design` recomienda la fuente del sistema, pero la marca exige Josefin Sans y Cardo. Los valores de marca (hex, familias tipográficas, logotipo, tono) nunca se reemplazan por recomendaciones de una skill.
 
-> Estas son decisiones nuevas. El frontend actual (`frontend/src/index.css`) todavía usa la paleta y tipografía anteriores (Nunito Sans, marrón `#651A0C`, bordes negros) y se migrará aparte.
+> El frontend ya implementa estas decisiones: tokens en `frontend/src/styles/tokens.css` y componentes base en `frontend/src/components/common/`. Las decisiones técnicas de esa implementación están en [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
@@ -207,7 +207,7 @@ Se toma de `apple-design`. Un elemento se siente vivo cuando responde al instant
 - Durante la interacción el feedback es continuo: hover visible, el campo de autocompletado filtra mientras se escribe y el drawer sigue al dedo 1:1.
 
 ### Springs y valores
-- Lo que el usuario puede tocar o arrastrar (drawer mobile, sheets, reordenar) se anima con **springs**, no con transiciones CSS ni `@keyframes`, porque solo así se puede interrumpir. Librería recomendada: **Motion** (`motion`), que habrá que agregar al implementar.
+- Lo que el usuario puede tocar o arrastrar (drawer mobile, sheets, reordenar) se anima con **springs**, no con transiciones CSS ni `@keyframes`, porque solo así se puede interrumpir. Librería: **Motion** (`motion`), con los presets centralizados en `frontend/src/styles/movimiento.js`.
 - **Spring por defecto:** sin rebote. Damping 1.0 y response 0.35 s, que en Motion es `{ type: 'spring', bounce: 0, duration: 0.35 }`.
 - **Con inercia** (soltar o lanzar el drawer): damping 0.8 y response 0.3 s (`bounce: 0.2, duration: 0.3`). Solo hay rebote cuando el gesto traía impulso; un menú que solo aparece nunca rebota.
 - **Al soltar un gesto:** se pasa la velocidad del dedo al spring y el destino (abrir o cerrar) se decide por la proyección del impulso y el signo de la velocidad, no solo por la posición.
