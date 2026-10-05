@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Download, Plus, Upload } from 'lucide-react'
 import Header from '../components/Header'
 import BloqueCompra from '../components/BloqueCompra'
+import ConfirmModal from '../components/ConfirmModal'
 import { Boton } from '../components/common'
-import { exportarDB, guardarLista, importarDB } from '../services/api'
+import { detectarModo, exportarDB, guardarLista, importarDB } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { springSuave } from '../styles/movimiento'
 import estilos from './AgregarCompra.module.css'
@@ -13,14 +14,23 @@ import estilos from './AgregarCompra.module.css'
  * Página principal. Cada bloque es una compra distinta (un proveedor y una
  * fecha) y se guarda por separado. "Nueva compra" agrega otro bloque debajo.
  *
- * En la esquina inferior derecha hay botones de Exportar/Importar para
- * sincronizar la base de datos entre dos dispositivos sin necesidad de internet.
+ * Al final hay botones de Exportar/Cargar datos para llevar la base de datos
+ * de un dispositivo a otro sin internet. Cargar un .db reemplaza la base
+ * (con confirmación y respaldo); cargar un .json agrega las compras nuevas.
  */
 export default function AgregarCompra() {
   const { addToast } = useToast()
   const siguiente = useRef(2)
   const inputArchivoRef = useRef(null)
   const [bloques, setBloques] = useState([{ clave: 1, enfocar: false }])
+  const [modo, setModo] = useState(null) // 'servidor' | 'local'
+  const [archivoPorReemplazar, setArchivoPorReemplazar] = useState(null)
+
+  useEffect(() => {
+    let vigente = true
+    detectarModo().then(m => { if (vigente) setModo(m) })
+    return () => { vigente = false }
+  }, [])
 
   function nuevaCompra() {
     setBloques(prev => [...prev, { clave: siguiente.current++, enfocar: true }])
@@ -53,24 +63,33 @@ export default function AgregarCompra() {
   async function handleExportar() {
     try {
       await exportarDB()
-      addToast('Base de datos exportada correctamente')
-    } catch {
-      addToast('Error al exportar la base de datos', 'error')
+      addToast('Datos exportados correctamente')
+    } catch (error) {
+      addToast(`No se pudo exportar: ${error.message}`, 'error')
     }
   }
 
-  async function handleImportar(e) {
-    const archivo = e.target.files?.[0]
-    if (!archivo) return
+  async function importar(archivo) {
     try {
-      await importarDB(archivo)
-      addToast('Base de datos importada correctamente. Recarga para ver los cambios.')
-    } catch {
-      addToast('Error al importar el archivo. Verifica el formato (.db, .sqlite o .json).', 'error')
-    } finally {
-      // Limpiar el input para permitir subir el mismo archivo de nuevo
-      e.target.value = ''
+      const resultado = await importarDB(archivo)
+      addToast(
+        resultado?.nuevas !== undefined
+          ? `Datos cargados: ${resultado.nuevas} compra${resultado.nuevas !== 1 ? 's' : ''} nueva${resultado.nuevas !== 1 ? 's' : ''}`
+          : 'Base de datos reemplazada. Se guardó un respaldo de la anterior en el servidor.'
+      )
+    } catch (error) {
+      addToast(`No se pudo cargar el archivo: ${error.message}`, 'error')
     }
+  }
+
+  function handleArchivo(e) {
+    const archivo = e.target.files?.[0]
+    // Limpiar el input para permitir elegir el mismo archivo de nuevo
+    e.target.value = ''
+    if (!archivo) return
+    // Un .db reemplaza TODA la base: se confirma antes. Un .json solo agrega compras.
+    if (/\.(db|sqlite)$/i.test(archivo.name)) setArchivoPorReemplazar(archivo)
+    else importar(archivo)
   }
 
   return (
@@ -128,12 +147,29 @@ export default function AgregarCompra() {
             ref={inputArchivoRef}
             type="file"
             accept=".db,.sqlite,.json"
-            style={{ display: 'none' }}
-            onChange={handleImportar}
+            hidden
+            onChange={handleArchivo}
             aria-label="Seleccionar archivo de base de datos para importar"
           />
+          {modo && (
+            <p className={estilos.modo}>
+              {modo === 'servidor'
+                ? 'Las compras se guardan en la base de datos del servidor.'
+                : 'Servidor no disponible: las compras se guardan solo en este navegador.'}
+            </p>
+          )}
         </div>
       </main>
+
+      <ConfirmModal
+        isOpen={archivoPorReemplazar !== null}
+        onClose={() => setArchivoPorReemplazar(null)}
+        onConfirm={() => importar(archivoPorReemplazar)}
+        title="Reemplazar la base de datos"
+        message={`Se reemplazarán todas las compras de este equipo por las de "${archivoPorReemplazar?.name ?? ''}". Se guardará un respaldo de la base actual en el servidor.`}
+        confirmLabel="Reemplazar"
+        danger
+      />
     </>
   )
 }

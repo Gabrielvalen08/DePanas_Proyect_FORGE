@@ -6,11 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 App web de contabilidad para el restaurante **De Panas SV**: registro de compras e insumos y, más adelante, costos, gastos y márgenes. Es un proyecto académico de POO. Los requisitos y el descubrimiento están en los PDF de la raíz (`Documento de requerimientos - De Panas.pdf`, `Documento de descubrimiento - De Panas.pdf`).
 
-Hoy solo existe el **frontend** (`frontend/`). El backend previsto es Node.js + Express en `http://localhost:3000`, pero todavía no está en el repo.
+Hay un **frontend** (`frontend/`) y un **backend** (`backend/`): Node.js + Express con SQLite (`node:sqlite`, Node ≥ 22.13) en `http://localhost:3000`. El frontend funciona también sin backend (modo local, ver abajo).
 
 ## Comandos
 
-Todos se ejecutan desde `frontend/`:
+### Backend (desde `backend/`)
+
+- `npm install`, `npm start` (o `npm run dev` con recarga). La base vive en `backend/db/depanas.db` (ignorada por git).
+- `npm test`: tests con el runner nativo (`node --test`); cada test usa una base temporal.
+
+### Frontend (desde `frontend/`)
 
 - `npm install`: instala las dependencias
 - `npm run dev`: servidor de desarrollo Vite en http://localhost:5173 (redirige `/api` a `localhost:3000`)
@@ -30,10 +35,14 @@ React 18 + Vite 5 + react-router-dom 6, en JavaScript (JSX) sin TypeScript. Íco
 - **Estilos:** tokens de 3 capas en `src/styles/tokens.css` y un `Componente.module.css` por componente. Los componentes usan solo tokens semánticos (`--color-*`), nunca hex sueltos. Presets de animación (Motion) en `styles/movimiento.js`.
 - **UI base:** `src/components/common/` (`Boton`, `Campo`, `Selector`, `Tarjeta`, `Insignia`, `Modal` + `CuerpoModal`/`PieModal`, `EstadoVacio`). Toda pantalla se arma con estas piezas. Hooks en `src/hooks/` y formateo en `src/utils/formato.js`: usa `fechaHoyISO()`, nunca `toISOString()`, que da UTC.
 - Cada directorio de `src/` tiene un `README.md` con sus convenciones. Las decisiones técnicas del refactor están en `docs/DECISIONS.md`.
-- **`src/services/api.js` es la única capa de datos.** Por ahora es un **mock** sobre `localStorage` (clave `depanas_listas`, sembrado con `MOCK_LISTAS`) con un `delay()` artificial. Cada función async (`fetchListas(filters)`, `guardarLista(lista)`, `actualizarLista(id, lista)`, `eliminarLista(id)`) trae comentada la llamada `fetch` al backend real (`/api/listas`). Para conectar el backend, se descomenta ese bloque y se borra el del mock, sin cambiar la firma. Las páginas nunca deben usar `fetch` ni `localStorage` directamente. Si existe la clave antigua `depanas_compras`, se migra una vez agrupando por proveedor y fecha.
-- `getProveedores()` / `getProductos()` son **síncronas** y alimentan `AutocompleteInput`. Salen de las listas existentes, así que necesitarán un endpoint cuando haya backend. `totalLista(lista)` suma los precios.
+- **`src/services/api.js` es la única capa de datos** (`fetchListas(filters)`, `guardarLista`, `actualizarLista(id, …)`, `eliminarLista(id)`, `exportarDB`, `importarDB`). Tiene **dos modos que nunca se mezclan**, decididos una vez por carga con `detectarModo()` (`GET /api/health`):
+  - **servidor:** todo va a `/api/compras` y los errores del backend se propagan a la UI. Nada se copia a `localStorage`.
+  - **local:** sin backend, todo vive en `localStorage` (`depanas_listas`, con `MOCK_LISTAS` de ejemplo).
+  No agregues caídas silenciosas a `localStorage` cuando el backend falla. Las páginas nunca usan `fetch` ni `localStorage` directamente.
+- `getProveedores()` / `getMateriales()` son **síncronas** y alimentan `AutocompleteInput` (en modo servidor leen una caché que se refresca tras cada escritura). `totalLista(lista)` suma los montos.
 - Las notificaciones usan `useToast().addToast(message, 'success' | 'error')` de `src/context/ToastContext.jsx`.
-- **Modelo: lista de compra** `{ id, proveedor, fecha, productos: [{ producto, cantidad, unidad, precio }] }`. `fecha` es una cadena ISO `YYYY-MM-DD` (se ordena y filtra por comparación de strings). `precio` es el **total de la línea** (no unitario); el gasto de la lista es la suma. El filtro `producto` devuelve las listas que contienen ese producto.
+- **Modelo: compra (lista)** `{ id, proveedor, fecha, categoria, materiales: [{ material, cantidad, unidad, monto, producto }] }`. `fecha` es ISO `YYYY-MM-DD`. `monto` es el **total de la línea** (no unitario); el gasto de la compra es la suma. `producto` es el destino del material (aún sin UI). El filtro `material` devuelve las compras que contienen ese material. En modo servidor el `id` es un UUID (`compra_id`); en local, un número.
+- **Backend:** tabla única `ingresos` (una fila por material) con `compra_id` para agrupar cada compra y `unidad`. `db.js` migra bases del esquema anterior al abrirlas. `/api/compras` (routes/listas.js) trabaja con compras completas y valida montos y cantidades > 0; `/api/ingresos` da acceso fila por fila. Exportar usa `VACUUM INTO` (con WAL, copiar el `.db` a pelo exportaba una base vacía); importar un `.db` valida el archivo y guarda `depanas.respaldo.db`; importar JSON fusiona sin duplicar.
 
 ## Diseño (obligatorio)
 
@@ -50,4 +59,4 @@ Las skills ejecutan scripts desde la raíz del repo, p. ej. `python .claude/skil
 ## Convenciones
 
 - El código, los nombres (componentes, funciones, variables) y los textos de la UI están en **español**.
-- En `src/services/api.js`, cualquier cambio de datos mantiene el bloque `fetch` comentado al día con el mock y tiene su test en `api.test.js`. ESLint tiene una excepción para su `BASE_URL`.
+- Un cambio en los datos toca los dos modos de `src/services/api.js` y el backend, con tests en `frontend/src/services/api.test.js` (modo servidor con `fetch` simulado y modo local) y en `backend/test/`.
