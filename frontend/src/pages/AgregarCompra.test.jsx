@@ -8,6 +8,9 @@ import AgregarCompra from './AgregarCompra'
 
 vi.mock('../services/api', () => ({
   guardarLista:         vi.fn(lista => Promise.resolve({ id: 99, ...lista })),
+  detectarModo:         () => Promise.resolve('local'),
+  exportarDB:           vi.fn(() => Promise.resolve()),
+  importarDB:           vi.fn(() => Promise.resolve({ ok: true, nuevas: 1 })),
   exportarJSON:         vi.fn(() => Promise.resolve()),
   importarJSON:         vi.fn(() => Promise.resolve()),
   getProveedores:       () => ['Súper Selectos', 'Walmart'],

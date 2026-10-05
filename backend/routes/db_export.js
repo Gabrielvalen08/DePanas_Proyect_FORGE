@@ -1,32 +1,69 @@
 /**
  * routes/db_export.js
  * Portabilidad entre dispositivos:
- *   GET  /api/db/exportar          → descarga el archivo depanas.db
- *   POST /api/db/importar          → recibe un .db, lo reemplaza y reconecta SQLite
- *   GET  /api/db/exportar-json     → exporta todos los ingresos como JSON
- *   POST /api/db/importar-json     → importa ingresos desde JSON (fusiona, no reemplaza)
+ *   GET  /api/db/exportar          → descarga una copia consistente de depanas.db
+ *   POST /api/db/importar          → valida un .db, respalda la base actual y la reemplaza
+ *   GET  /api/db/exportar-json     → exporta todas las compras como JSON
+ *   POST /api/db/importar-json     → fusiona compras desde JSON (no duplica las que ya existen)
  *
- * Para importar el archivo binario se usa multer (upload a disco temporal).
+ * Para importar el archivo binario se usa multer (upload a una carpeta temporal del sistema).
  */
 
 import { Router } from 'express'
 import multer from 'multer'
-import { existsSync, copyFileSync, unlinkSync } from 'fs'
-import { resolve } from 'path'
+import { createHash } from 'crypto'
+import { existsSync, mkdirSync, rmSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import { copiaConsistente, enTransaccion, esBaseDePanas } from '../db.js'
+import { agruparFilas, validarCompra } from './listas.js'
 
-const upload = multer({ dest: 'tmp_uploads/' })
+const CARPETA_TEMPORAL = join(tmpdir(), 'depanas-uploads')
+mkdirSync(CARPETA_TEMPORAL, { recursive: true })
 
-export function crearRutasExport(db, dbPath, reconectarDB) {
+const upload = multer({
+  dest: CARPETA_TEMPORAL,
+  limits: { fileSize: 200 * 1024 * 1024 }, // 200 MB
+})
+
+function borrarSiExiste(ruta) {
+  if (ruta && existsSync(ruta)) rmSync(ruta, { force: true })
+}
+
+/**
+ * Convierte el JSON importado en compras { id?, proveedor, fecha, categoria, materiales }.
+ * Acepta el formato de /exportar-json (compras con materiales) y filas planas
+ * de `ingresos` (las agrupa por compra_id o, si no tienen, por proveedor + fecha).
+ */
+function aCompras(datos) {
+  if (datos.every(d => Array.isArray(d?.materiales))) return datos
+  const filas = datos.map(f => ({
+    ...f,
+    compra_id: f.compra_id || `legado:${f.proveedor}|${f.fecha}`,
+    unidad: f.unidad || 'unidad',
+  }))
+  return agruparFilas(filas)
+}
+
+/**
+ * getDb(): conexión vigente.
+ * reemplazarDB(rutaArchivo): cierra la conexión, reemplaza depanas.db y la reabre.
+ */
+export function crearRutasExport(getDb, reemplazarDB) {
   const router = Router()
 
-  // GET /api/db/exportar — descarga el archivo SQLite completo
+  // GET /api/db/exportar — copia completa y consistente (incluye lo que está en el WAL)
   router.get('/exportar', (_req, res) => {
-    const rutaAbsoluta = resolve(dbPath)
-    if (!existsSync(rutaAbsoluta)) {
-      return res.status(404).json({ error: 'Base de datos no encontrada' })
+    const temporal = join(tmpdir(), `depanas-export-${Date.now()}.db`)
+    try {
+      copiaConsistente(getDb(), temporal)
+    } catch (err) {
+      borrarSiExiste(temporal)
+      return res.status(500).json({ error: `No se pudo exportar: ${err.message}` })
     }
-    res.download(rutaAbsoluta, 'depanas.db', err => {
-      if (err) res.status(500).json({ error: 'Error al descargar' })
+    res.download(temporal, 'depanas.db', err => {
+      borrarSiExiste(temporal)
+      if (err && !res.headersSent) res.status(500).json({ error: 'Error al descargar' })
     })
   })
 
@@ -36,53 +73,71 @@ export function crearRutasExport(db, dbPath, reconectarDB) {
       return res.status(400).json({ error: 'No se recibió ningún archivo' })
     }
     try {
-      const rutaAbsoluta = resolve(dbPath)
-      // Cerrar la conexión actual antes de reemplazar el archivo
-      reconectarDB(() => {
-        copyFileSync(req.file.path, rutaAbsoluta)
-        unlinkSync(req.file.path)
-      })
-      res.json({ ok: true, mensaje: 'Base de datos importada correctamente' })
+      if (!esBaseDePanas(req.file.path)) {
+        return res.status(400).json({ error: 'El archivo no es una base de datos de De Panas válida' })
+      }
+      const { respaldo } = reemplazarDB(req.file.path)
+      res.json({ ok: true, mensaje: 'Base de datos importada correctamente', respaldo })
     } catch (err) {
-      if (req.file?.path && existsSync(req.file.path)) unlinkSync(req.file.path)
       res.status(500).json({ error: err.message })
+    } finally {
+      borrarSiExiste(req.file.path)
     }
   })
 
-  // GET /api/db/exportar-json — todos los ingresos como JSON (alternativa ligera)
+  // GET /api/db/exportar-json — todas las compras, agrupadas
   router.get('/exportar-json', (_req, res) => {
     try {
-      const ingresos = db.prepare('SELECT * FROM ingresos ORDER BY fecha DESC, id DESC').all()
-      res.setHeader('Content-Disposition', 'attachment; filename="depanas_ingresos.json"')
-      res.json(ingresos)
+      const filas = getDb().prepare('SELECT * FROM ingresos ORDER BY fecha DESC, id DESC').all()
+      res.setHeader('Content-Disposition', 'attachment; filename="depanas_compras.json"')
+      res.json(agruparFilas(filas))
     } catch (err) {
       res.status(500).json({ error: err.message })
     }
   })
 
-  // POST /api/db/importar-json — fusiona ingresos desde JSON
-  // Body: array de objetos { fecha, material, cantidad, monto, proveedor, categoria, producto }
+  // POST /api/db/importar-json — fusiona compras desde JSON.
+  // Las compras cuyo id ya existe se omiten: importar dos veces no duplica.
   router.post('/importar-json', (req, res) => {
-    const filas = req.body
-    if (!Array.isArray(filas) || filas.length === 0) {
-      return res.status(400).json({ error: 'Se esperaba un array de ingresos' })
+    const datos = req.body
+    if (!Array.isArray(datos) || datos.length === 0) {
+      return res.status(400).json({ error: 'Se esperaba una lista de compras' })
     }
 
+    const compras = []
+    for (const [i, cruda] of aCompras(datos).entries()) {
+      const { compra, error } = validarCompra(cruda)
+      if (error) return res.status(400).json({ error: `Compra ${i + 1}: ${error}` })
+      // Sin id propio (p. ej. exportada en modo local): id derivado del contenido,
+      // así reimportar el mismo archivo no la duplica
+      const id = typeof cruda.id === 'string' && cruda.id
+        ? cruda.id
+        : `importada:${createHash('sha1').update(JSON.stringify(compra)).digest('hex').slice(0, 16)}`
+      compras.push({ id, ...compra })
+    }
+
+    const db = getDb()
+    const existe = db.prepare('SELECT 1 FROM ingresos WHERE compra_id = ? LIMIT 1')
     const insertar = db.prepare(
-      'INSERT INTO ingresos (fecha, material, cantidad, monto, proveedor, categoria, producto) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto) ' +
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     )
 
-    db.exec('BEGIN')
     try {
-      let insertadas = 0
-      for (const f of filas) {
-        insertar.run(f.fecha, f.material, Number(f.cantidad) || 1, Number(f.monto), f.proveedor, f.categoria, f.producto ?? '')
-        insertadas++
-      }
-      db.exec('COMMIT')
-      res.json({ ok: true, insertadas })
+      const resultado = enTransaccion(db, () => {
+        let nuevas = 0
+        let omitidas = 0
+        for (const c of compras) {
+          if (existe.get(c.id)) { omitidas++; continue }
+          for (const m of c.materiales) {
+            insertar.run(c.id, c.fecha, m.material, m.cantidad, m.unidad, m.monto, c.proveedor, c.categoria, m.producto)
+          }
+          nuevas++
+        }
+        return { nuevas, omitidas }
+      })
+      res.json({ ok: true, ...resultado })
     } catch (err) {
-      try { db.exec('ROLLBACK') } catch {}
       res.status(500).json({ error: err.message })
     }
   })

@@ -16,18 +16,24 @@
   }
 }
 
-/* Botones de portabilidad (Exportar / Importar) */
+/* Botones de portabilidad (Exportar / Importar).
+   Sin opacity: al 70% el texto bajaba a 4.34:1, por debajo de AA. */
 .portabilidad {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: var(--space-3);
   padding-top: var(--space-6);
   border-top: 1px solid var(--color-border);
-  opacity: 0.7;
 }
 
-.portabilidad:hover {
-  opacity: 1;
+/* Indica dónde se guardan las compras (servidor o este navegador) */
+.modo {
+  flex-basis: 100%;
+  max-width: none;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
 }
 
 @media (max-width: 767px) {

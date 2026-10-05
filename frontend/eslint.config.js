@@ -27,9 +27,4 @@ export default [
       'react/forbid-dom-props': ['error', { forbid: ['style'] }],
     },
   },
-  {
-    // api.js no se modifica: BASE_URL solo se usa en los fetch comentados
-    files: ['src/services/api.js'],
-    rules: { 'no-unused-vars': ['error', { varsIgnorePattern: '^BASE_URL$' }] },
-  },
 ]

@@ -1,7 +1,11 @@
 /**
  * api.js
  * Capa de servicio para comunicarse con el backend Node.js + Express.
- * Soporta modo local/mock (localStorage) y llamadas al backend SQLite (/api).
+ *
+ * Dos modos, que nunca se mezclan (ver detectarModo):
+ *  - servidor: si /api/health responde, todo va al backend SQLite (/api/compras)
+ *    y sus errores se propagan a la UI.
+ *  - local: sin servidor, todo se guarda en localStorage (con datos de ejemplo).
  *
  * Modelo de datos: una lista de compra agrupa varios materiales bajo un
  * mismo proveedor, fecha y categoría.
@@ -67,7 +71,9 @@ export function getCatalogoMateriales() {
   try {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(CLAVE_CATALOGO) : null
     if (raw) return JSON.parse(raw)
-  } catch {}
+  } catch {
+    // Catálogo guardado ilegible: se usa el inicial
+  }
   return structuredClone(CATALOGO_INICIAL)
 }
 
@@ -86,7 +92,7 @@ export function buscarEnCatalogo(nombreMaterial) {
 /** Lista de nombres de materiales para autocompletado */
 export function getMateriales() {
   const deCatalogo = getCatalogoMateriales().map(m => m.nombre)
-  const deListas = getListas().flatMap(l => (l.materiales || []).map(m => m.material))
+  const deListas = listasParaSugerencias().flatMap(l => (l.materiales || []).map(m => m.material))
   return [...new Set([...deCatalogo, ...deListas])].filter(Boolean).sort()
 }
 
@@ -100,7 +106,92 @@ export function getCategorias() {
 }
 
 // ---------------------------------------------------------------------------
-// Mock data inicial (5 listas alineadas con los tests y el nuevo modelo)
+// Modo de datos: servidor (SQLite) o local (localStorage)
+// ---------------------------------------------------------------------------
+// Se decide UNA vez por carga de la página con /api/health. Con servidor, todo
+// va al backend y sus errores se propagan (la UI muestra el error); nunca se
+// guarda "a escondidas" en localStorage. Sin servidor, todo es local.
+
+let modoPromesa = null
+let cacheServidor = null // últimas compras del servidor, para el autocompletado
+
+/** Resuelve 'servidor' o 'local' */
+export function detectarModo() {
+  if (!modoPromesa) {
+    modoPromesa = (async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/health`)
+        const json = res.ok ? await res.json() : null
+        if (json?.ok) {
+          refrescarCache() // sugerencias del autocompletado
+          return 'servidor'
+        }
+        return 'local'
+      } catch {
+        return 'local'
+      }
+    })()
+  }
+  return modoPromesa
+}
+
+/** Solo para tests: vuelve a detectar el modo en la próxima llamada */
+export function reiniciarModo() {
+  modoPromesa = null
+  cacheServidor = null
+}
+
+/** fetch al backend; si responde con error, lanza con el mensaje del servidor */
+async function pedir(ruta, opciones = {}) {
+  const res = await fetch(`${BASE_URL}${ruta}`, opciones)
+  if (!res.ok) {
+    let mensaje = `Error ${res.status}`
+    try {
+      mensaje = (await res.json()).error || mensaje
+    } catch {
+      // La respuesta de error no traía JSON
+    }
+    throw new Error(mensaje)
+  }
+  return res
+}
+
+async function pedirJSON(ruta, metodo, cuerpo) {
+  const res = await pedir(ruta, {
+    method: metodo,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cuerpo),
+  })
+  return res.status === 204 ? null : res.json()
+}
+
+async function refrescarCache() {
+  try {
+    cacheServidor = (await (await pedir('/compras')).json()).map(enriquecerLista)
+  } catch {
+    // Solo afecta a las sugerencias del autocompletado
+  }
+}
+
+function listasParaSugerencias() {
+  return cacheServidor ?? getListas()
+}
+
+/** Lo que se envía al backend para crear o editar una compra */
+function cuerpoCompra(lista) {
+  const n = normalizar(lista)
+  return {
+    proveedor: n.proveedor,
+    fecha: n.fecha,
+    categoria: lista.categoria ?? '',
+    materiales: n.materiales.map(({ material, cantidad, unidad, monto, producto }) => ({
+      material, cantidad, unidad, monto, producto,
+    })),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mock data inicial (solo modo local)
 // ---------------------------------------------------------------------------
 const MOCK_LISTAS = [
   {
@@ -154,28 +245,27 @@ const MOCK_LISTAS = [
   },
 ]
 
-// Convierte las compras del modelo anterior en listas
+// Convierte compras del modelo anterior (o filas planas) en listas
 function migrarCompras(compras) {
   const grupos = new Map()
   compras.forEach(c => {
-    const clave = `${c.proveedor}|${c.fecha}`
+    const clave = c.compra_id || `${c.proveedor}|${c.fecha}`
     if (!grupos.has(clave)) {
       grupos.set(clave, {
         id: grupos.size + 1,
         proveedor: c.proveedor,
         fecha: c.fecha,
-        categoria: 'Materia Prima',
+        categoria: c.categoria || 'Materia Prima',
         materiales: [],
       })
     }
-    const item = {
+    grupos.get(clave).materiales.push({
       material: c.material || c.producto,
       cantidad: c.cantidad,
       unidad:   c.unidad,
       monto:    c.monto !== undefined ? c.monto : c.precio,
-      producto: c.productoDestino || '',
-    }
-    grupos.get(clave).materiales.push(item)
+      producto: c.productoDestino || (c.material ? c.producto || '' : ''),
+    })
   })
   return [...grupos.values()].map(enriquecerLista)
 }
@@ -192,17 +282,16 @@ function enriquecerLista(lista) {
     precio:   Number(m.monto !== undefined ? m.monto : m.precio) || 0,
   }))
 
-  const res = {
+  return {
     ...lista,
     categoria:  lista.categoria || 'Materia Prima',
     materiales: mat,
     // compatibilidad para código/tests que lean productos:
     productos:  mat.map(m => ({ ...m, producto: m.material, precio: m.monto })),
   }
-  return res
 }
 
-// Helpers para localStorage
+// Helpers para localStorage (modo local)
 function getListas() {
   try {
     if (typeof localStorage === 'undefined') return MOCK_LISTAS.map(enriquecerLista)
@@ -230,7 +319,7 @@ function setListas(listas) {
 }
 
 function siguienteId(listas) {
-  return listas.length ? Math.max(...listas.map(l => l.id)) + 1 : 1
+  return listas.length ? Math.max(...listas.map(l => Number(l.id) || 0)) + 1 : 1
 }
 
 function normalizar({ proveedor, fecha, categoria, materiales, productos }) {
@@ -240,7 +329,7 @@ function normalizar({ proveedor, fecha, categoria, materiales, productos }) {
     cantidad:  parseFloat(m.cantidad) || 1,
     unidad:    m.unidad || 'unidad',
     monto:     parseFloat(m.monto !== undefined ? m.monto : m.precio) || 0,
-    producto:  (m.productoDestino ?? m.producto ?? '').trim(),
+    producto:  (m.material !== undefined ? m.producto ?? '' : m.productoDestino ?? '').trim(),
     precio:    parseFloat(m.monto !== undefined ? m.monto : m.precio) || 0,
   }))
 
@@ -265,95 +354,45 @@ export function totalLista(lista) {
 // Listas de proveedores para autocompletado
 // ---------------------------------------------------------------------------
 export function getProveedores() {
-  return [...new Set(getListas().map(l => l.proveedor))].filter(Boolean).sort()
+  return [...new Set(listasParaSugerencias().map(l => l.proveedor))].filter(Boolean).sort()
 }
 
 // ---------------------------------------------------------------------------
 // CRUD de listas de compra
 // ---------------------------------------------------------------------------
 
+/** filters: { proveedor, material (o producto), fechaDesde, fechaHasta } */
 export async function fetchListas(filters = {}) {
-  // Intentar backend si está disponible
-  try {
+  const material = filters.material || filters.producto
+
+  if ((await detectarModo()) === 'servidor') {
     const params = new URLSearchParams()
     if (filters.proveedor) params.set('proveedor', filters.proveedor)
-    if (filters.material || filters.producto) params.set('material', filters.material || filters.producto)
+    if (material) params.set('material', material)
     if (filters.fechaDesde) params.set('fechaDesde', filters.fechaDesde)
     if (filters.fechaHasta) params.set('fechaHasta', filters.fechaHasta)
+    const compras = (await (await pedir(`/compras?${params}`)).json()).map(enriquecerLista)
+    if ([...params].length === 0) cacheServidor = compras
+    return compras
+  }
 
-    const res = await fetch(`${BASE_URL}/ingresos?${params}`).catch(() => null)
-    if (res && res.ok) {
-      const filas = await res.json()
-      // Agrupar filas planas en compras
-      const comprasMap = new Map()
-      filas.forEach(f => {
-        const clave = `${f.proveedor}|${f.fecha}|${f.categoria}`
-        if (!comprasMap.has(clave)) {
-          comprasMap.set(clave, {
-            id: f.id,
-            proveedor: f.proveedor,
-            fecha: f.fecha,
-            categoria: f.categoria,
-            materiales: [],
-          })
-        }
-        comprasMap.get(clave).materiales.push({
-          id: f.id,
-          material: f.material,
-          cantidad: f.cantidad,
-          monto: f.monto,
-          producto: f.producto || '',
-        })
-      })
-      if (comprasMap.size > 0) {
-        return [...comprasMap.values()].map(enriquecerLista)
-      }
-    }
-  } catch {}
-
-  // Fallback a almacenamiento local mock
   await delay(200)
   let listas = getListas()
   const contiene = (texto, busqueda) => (texto || '').toLowerCase().includes(busqueda.toLowerCase())
   if (filters.proveedor) listas = listas.filter(l => contiene(l.proveedor, filters.proveedor))
-  if (filters.material || filters.producto) {
-    const term = filters.material || filters.producto
-    listas = listas.filter(l => (l.materiales || []).some(m => contiene(m.material, term)))
-  }
+  if (material) listas = listas.filter(l => (l.materiales || []).some(m => contiene(m.material, material)))
   if (filters.fechaDesde) listas = listas.filter(l => l.fecha >= filters.fechaDesde)
   if (filters.fechaHasta) listas = listas.filter(l => l.fecha <= filters.fechaHasta)
   return listas.sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id)
 }
 
 export async function guardarLista(lista) {
-  // Intentar backend
-  try {
-    const res = await fetch(`${BASE_URL}/ingresos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        proveedor: lista.proveedor,
-        fecha: lista.fecha,
-        categoria: lista.categoria,
-        materiales: (lista.materiales || lista.productos || []).map(m => ({
-          material: m.material || m.producto,
-          cantidad: m.cantidad,
-          monto: m.monto !== undefined ? m.monto : m.precio,
-          producto: m.productoDestino || m.producto || '',
-        })),
-      }),
-    }).catch(() => null)
-    if (res && res.ok) {
-      const data = await res.json()
-      // Guardar también copia local
-      const listas = getListas()
-      const nueva = enriquecerLista({ id: siguienteId(listas), ...normalizar(lista) })
-      setListas([...listas, nueva])
-      return { id: data[0]?.id || siguienteId(listas), ...nueva }
-    }
-  } catch {}
+  if ((await detectarModo()) === 'servidor') {
+    const guardada = enriquecerLista(await pedirJSON('/compras', 'POST', cuerpoCompra(lista)))
+    refrescarCache()
+    return guardada
+  }
 
-  // Fallback / mock
   await delay(200)
   const listas = getListas()
   const nueva = enriquecerLista({ id: siguienteId(listas), ...normalizar(lista) })
@@ -362,6 +401,12 @@ export async function guardarLista(lista) {
 }
 
 export async function actualizarLista(id, lista) {
+  if ((await detectarModo()) === 'servidor') {
+    const actualizada = enriquecerLista(await pedirJSON(`/compras/${encodeURIComponent(id)}`, 'PUT', cuerpoCompra(lista)))
+    refrescarCache()
+    return actualizada
+  }
+
   await delay(200)
   const listas = getListas()
   if (!listas.some(l => l.id === id)) throw new Error('La lista no existe')
@@ -371,6 +416,12 @@ export async function actualizarLista(id, lista) {
 }
 
 export async function eliminarLista(id) {
+  if ((await detectarModo()) === 'servidor') {
+    await pedir(`/compras/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    refrescarCache()
+    return
+  }
+
   await delay(150)
   setListas(getListas().filter(l => l.id !== id))
 }
@@ -379,62 +430,61 @@ export async function eliminarLista(id) {
 // Exportar / Importar (portabilidad entre dispositivos)
 // ---------------------------------------------------------------------------
 
-/** Descarga depanas.db o exporta JSON */
+/** Con servidor descarga depanas.db; sin servidor, un JSON con las compras locales */
 export async function exportarDB() {
-  try {
-    const res = await fetch(`${BASE_URL}/db/exportar`)
-    if (res.ok) {
-      const blob = await res.blob()
-      descargarBlob(blob, 'depanas.db')
-      return
-    }
-  } catch {}
-  // Si backend no responde, exportar JSON
+  if ((await detectarModo()) === 'servidor') {
+    const res = await pedir('/db/exportar')
+    descargarBlob(await res.blob(), 'depanas.db')
+    return
+  }
   await exportarJSON()
 }
 
-/** Sube depanas.db al servidor */
+/**
+ * .db/.sqlite: reemplaza la base del servidor (el servidor guarda un respaldo).
+ * .json: fusiona las compras con las existentes.
+ */
 export async function importarDB(archivo) {
-  if (archivo.name.endsWith('.db') || archivo.name.endsWith('.sqlite')) {
+  if (/\.(db|sqlite)$/i.test(archivo.name)) {
+    if ((await detectarModo()) !== 'servidor') {
+      throw new Error('Para cargar un archivo .db el servidor debe estar en ejecución')
+    }
     const form = new FormData()
     form.append('db', archivo)
-    const res = await fetch(`${BASE_URL}/db/importar`, { method: 'POST', body: form })
-    if (!res.ok) throw new Error('Error al importar la base de datos')
-    return await res.json()
+    const resultado = await (await pedir('/db/importar', { method: 'POST', body: form })).json()
+    refrescarCache()
+    return resultado
   }
-  // Si es JSON
-  return await importarJSON(archivo)
+  return importarJSON(archivo)
 }
 
 export async function exportarJSON() {
-  try {
-    const res = await fetch(`${BASE_URL}/db/exportar-json`).catch(() => null)
-    if (res && res.ok) {
-      const blob = await res.blob()
-      descargarBlob(blob, 'depanas_ingresos.json')
-      return
-    }
-  } catch {}
-
-  const listas = getListas()
-  const blob = new Blob([JSON.stringify(listas, null, 2)], { type: 'application/json' })
-  descargarBlob(blob, 'depanas_ingresos.json')
+  if ((await detectarModo()) === 'servidor') {
+    const res = await pedir('/db/exportar-json')
+    descargarBlob(await res.blob(), 'depanas_compras.json')
+    return
+  }
+  const blob = new Blob([JSON.stringify(getListas(), null, 2)], { type: 'application/json' })
+  descargarBlob(blob, 'depanas_compras.json')
 }
 
+/** Acepta compras (con materiales) o filas planas de `ingresos` */
 export async function importarJSON(archivo) {
-  const texto = await archivo.text()
-  const datos = JSON.parse(texto)
-  if (!Array.isArray(datos)) throw new Error('Formato inválido')
+  const datos = JSON.parse(await archivo.text())
+  if (!Array.isArray(datos)) throw new Error('Formato inválido: se esperaba una lista de compras')
 
-  try {
-    await fetch(`${BASE_URL}/db/importar-json`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datos),
-    }).catch(() => null)
-  } catch {}
+  if ((await detectarModo()) === 'servidor') {
+    const resultado = await pedirJSON('/db/importar-json', 'POST', datos)
+    refrescarCache()
+    return resultado
+  }
 
-  setListas(datos.map(enriquecerLista))
+  // Local: se fusionan con las listas existentes (no se reemplazan)
+  const entrantes = datos.every(d => Array.isArray(d?.materiales)) ? datos.map(enriquecerLista) : migrarCompras(datos)
+  const listas = getListas()
+  let id = siguienteId(listas)
+  setListas([...listas, ...entrantes.map(l => ({ ...l, id: id++ }))])
+  return { ok: true, nuevas: entrantes.length }
 }
 
 function descargarBlob(blob, nombre) {
@@ -443,7 +493,8 @@ function descargarBlob(blob, nombre) {
   a.href = url
   a.download = nombre
   a.click()
-  URL.revokeObjectURL(url)
+  // Revocar en el acto puede cancelar la descarga en algunos navegadores
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 function delay(ms) {
