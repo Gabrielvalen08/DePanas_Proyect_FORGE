@@ -81,8 +81,46 @@
   box-shadow: 0 2px 8px rgb(145 28 13 / 0.2);
 }
 
+.pie {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid rgb(254 238 204 / 0.25);
+}
+
+.botonBloquear {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--alto-control);
+  padding: 0 var(--space-4);
+  border-radius: var(--radio-pildora);
+  border: 1px solid rgb(254 238 204 / 0.4);
+  background: transparent;
+  color: var(--color-on-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease-out, transform 100ms ease-out;
+}
+
+.botonBloquear:hover {
+  background: rgb(254 238 204 / 0.2);
+}
+
+.botonBloquear:active {
+  transform: scale(0.97);
+}
+
+.botonBloquear:focus-visible {
+  outline-color: var(--color-on-primary);
+}
+
 @media (max-width: 767px) {
   .sidebar {
     display: none;
   }
 }
+

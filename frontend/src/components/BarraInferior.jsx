@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
 import { motion } from 'motion/react'
+import { Lock } from 'lucide-react'
 import { itemsNavegacion } from './navegacion'
 import { springSuave } from '../styles/movimiento'
 import estilos from './BarraInferior.module.css'
 
 /** Navegación móvil (< 768px). La píldora activa se desliza entre ítems. */
-export default function BarraInferior() {
+export default function BarraInferior({ onBloquear }) {
   return (
     <nav className={estilos.barra} aria-label="Menú principal móvil">
       <ul className={estilos.lista}>
@@ -30,7 +31,25 @@ export default function BarraInferior() {
             </NavLink>
           </li>
         ))}
+
+        {onBloquear && (
+          <li className={estilos.celda}>
+            <button
+              type="button"
+              onClick={onBloquear}
+              className={estilos.itemBoton}
+              aria-label="Bloquear sistema"
+              title="Bloquear"
+            >
+              <span className={estilos.iconoCaja}>
+                <Lock size={20} aria-hidden="true" className={estilos.icono} />
+              </span>
+              <span className={estilos.etiqueta}>Bloquear</span>
+            </button>
+          </li>
+        )}
       </ul>
     </nav>
   )
 }
+

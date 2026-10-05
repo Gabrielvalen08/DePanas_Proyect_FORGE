@@ -1,19 +1,27 @@
 import { useEffect, useRef } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ToastProvider } from './context/ToastContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import Sidebar from './components/Sidebar'
 import BarraInferior from './components/BarraInferior'
 import { tituloDeRuta } from './components/navegacion'
 import PantallaMaestra from './pages/PantallaMaestra'
 import AgregarCompra from './pages/AgregarCompra'
+import PantallaContrasena from './pages/PantallaContrasena'
 import estilos from './App.module.css'
 
-export default function App() {
+function AppContenido() {
+  const { autenticado, salir } = useAuth()
   const { pathname } = useLocation()
   const primeraCarga = useRef(true)
 
-  // Al cambiar de ruta: actualiza el título y lleva el foco al contenido
+  // Al cambiar de ruta o estado de autenticación: actualiza el título y lleva el foco al contenido
   useEffect(() => {
+    if (!autenticado) {
+      document.title = 'Acceso al sistema | De Panas SV'
+      return
+    }
+
     document.title = `${tituloDeRuta(pathname)} | De Panas SV`
     if (primeraCarga.current) {
       primeraCarga.current = false
@@ -21,13 +29,17 @@ export default function App() {
     }
     document.getElementById('contenido')?.focus({ preventScroll: true })
     window.scrollTo(0, 0)
-  }, [pathname])
+  }, [pathname, autenticado])
+
+  if (!autenticado) {
+    return <PantallaContrasena />
+  }
 
   return (
-    <ToastProvider>
+    <>
       <a href="#contenido" className="saltar-contenido">Saltar al contenido</a>
       <div className={estilos.layout}>
-        <Sidebar />
+        <Sidebar onBloquear={salir} />
         <div className={estilos.areaPrincipal}>
           <Routes>
             {/* Agregar compra es la página principal */}
@@ -38,8 +50,19 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
-        <BarraInferior />
+        <BarraInferior onBloquear={salir} />
       </div>
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AuthProvider>
+        <AppContenido />
+      </AuthProvider>
     </ToastProvider>
   )
 }
+
