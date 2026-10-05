@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { AlertCircle, Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import { Boton, Campo, Selector } from './common'
-import { buscarEnCatalogo, getCategorias, getMateriales, getProveedores } from '../services/api'
+import { getMateriales, getProveedores } from '../services/api'
 import { fechaHoyISO, formatearPrecio } from '../utils/formato'
 import { springSuave } from '../styles/movimiento'
 import estilos from './BloqueCompra.module.css'
@@ -14,13 +14,13 @@ export const UNIDADES = ['lb', 'kg', 'g', 'oz', 'galon', 'litro', 'ml', 'unidad'
 const CAMPOS_FILA = [
   { clave: 'material', nombre: 'Material' },
   { clave: 'cantidad', nombre: 'Cantidad' },
-  { clave: 'monto',   nombre: 'Precio' },
+  { clave: 'monto',    nombre: 'Precio' },
 ]
 
 let siguienteIdFila = 1
 
 function filaVacia() {
-  return { id: siguienteIdFila++, material: '', cantidad: '', unidad: 'lb', monto: '', producto: '' }
+  return { id: siguienteIdFila++, material: '', cantidad: '', unidad: 'lb', monto: '' }
 }
 
 function filasDesde(materiales) {
@@ -29,9 +29,8 @@ function filasDesde(materiales) {
     id: siguienteIdFila++,
     material: m.material,
     cantidad: String(m.cantidad),
-    unidad: m.unidad,
-    monto: String(m.monto),
-    producto: m.producto ?? '',
+    unidad: m.unidad || 'lb',
+    monto: String(m.monto !== undefined ? m.monto : m.precio || ''),
   }))
 }
 
@@ -53,7 +52,6 @@ function validarFila(fila) {
 function validarEncabezado(campo, valor) {
   if (campo === 'proveedor' && !valor.trim()) return 'Escribe el proveedor'
   if (campo === 'fecha' && !valor) return 'Elige la fecha de la compra'
-  if (campo === 'categoria' && !valor.trim()) return 'Escribe la categoría'
   return undefined
 }
 
@@ -62,12 +60,12 @@ const filtrar = (lista, texto) => lista.filter(x => x.toLowerCase().includes(tex
 
 /**
  * BloqueCompra
- * Formulario de una lista de compra: proveedor, categoría y fecha en el encabezado,
- * y filas de materiales (material, cantidad + unidad, monto, producto destino).
+ * Formulario de una lista de compra: proveedor y fecha en el encabezado,
+ * y filas de materiales (material, cantidad + unidad, monto).
  *
  * Props:
  *  - titulo: texto del encabezado (por defecto "Detalle de compra")
- *  - inicial: { proveedor, fecha, categoria, materiales } para editar
+ *  - inicial: { proveedor, fecha, materiales } para editar
  *  - alGuardar(lista): async; si se resuelve, se llama a alGuardado
  *  - alGuardado(lista), alCancelar()
  *  - textoGuardar, enfocarAlMontar, plano (sin tarjeta, p. ej. dentro de un modal)
@@ -83,17 +81,16 @@ export default function BloqueCompra({
   plano = false,
 }) {
   const id = useId().replace(/:/g, '')
-  const [proveedor, setProveedor]   = useState(inicial?.proveedor ?? '')
-  const [fecha, setFecha]           = useState(inicial?.fecha ?? fechaHoyISO())
-  const [categoria, setCategoria]   = useState(inicial?.categoria ?? '')
-  const [filas, setFilas]           = useState(() => filasDesde(inicial?.materiales))
-  const [errores, setErrores]       = useState({})
-  const [guardando, setGuardando]   = useState(false)
+  const [proveedor, setProveedor] = useState(inicial?.proveedor ?? '')
+  const [fecha, setFecha]         = useState(inicial?.fecha ?? fechaHoyISO())
+  const [filas, setFilas]         = useState(() => filasDesde(inicial?.materiales || inicial?.productos))
+  const [errores, setErrores]     = useState({})
+  const [guardando, setGuardando] = useState(false)
   const [intentoGuardar, setIntentoGuardar] = useState(false)
 
-  const resumenRef       = useRef(null)
-  const enfocarResumen   = useRef(false)
-  const filaPorEnfocar   = useRef(null)
+  const resumenRef     = useRef(null)
+  const enfocarResumen = useRef(false)
+  const filaPorEnfocar = useRef(null)
 
   useEffect(() => {
     if (enfocarAlMontar) document.getElementById(`${id}-proveedor`)?.focus()
@@ -115,12 +112,6 @@ export default function BloqueCompra({
 
   const sugerirProveedores = useCallback(texto => filtrar(getProveedores(), texto), [])
   const sugerirMateriales  = useCallback(texto => filtrar(getMateriales(), texto), [])
-  const sugerirCategorias  = useCallback(texto => filtrar(getCategorias(), texto), [])
-  // Sugerencias de producto: los valores únicos del catálogo que ya están en las filas
-  const sugerirProductos   = useCallback(texto => {
-    const todos = [...new Set(filas.map(f => f.producto).filter(Boolean))]
-    return filtrar(todos, texto)
-  }, [filas])
 
   function fijarError(claveError, mensaje) {
     setErrores(prev => {
@@ -135,13 +126,12 @@ export default function BloqueCompra({
   function cambiarEncabezado(campo, valor) {
     if (campo === 'proveedor') setProveedor(valor)
     else if (campo === 'fecha') setFecha(valor)
-    else if (campo === 'categoria') setCategoria(valor)
     if (errores[campo]) fijarError(campo, validarEncabezado(campo, valor))
   }
 
   function salirDeEncabezado(campo) {
     if (!intentoGuardar) return
-    const valor = campo === 'proveedor' ? proveedor : campo === 'fecha' ? fecha : categoria
+    const valor = campo === 'proveedor' ? proveedor : fecha
     fijarError(campo, validarEncabezado(campo, valor))
   }
 
@@ -149,19 +139,6 @@ export default function BloqueCompra({
   function cambiarFila(filaId, campo, valor) {
     const filaActual = filas.find(f => f.id === filaId)
     const actualizada = { ...filaActual, [campo]: valor }
-
-    // Autocompletar Categoría y Producto al escribir el Material
-    if (campo === 'material') {
-      const encontrado = buscarEnCatalogo(valor)
-      if (encontrado) {
-        // Solo autocompleta categoría si el usuario no la ha tocado ya
-        if (!categoria) setCategoria(encontrado.categoria)
-        // Solo autocompleta producto destino si estaba vacío
-        if (!actualizada.producto && encontrado.producto) {
-          actualizada.producto = encontrado.producto
-        }
-      }
-    }
 
     setFilas(prev => prev.map(f => (f.id === filaId ? actualizada : f)))
     if (errores[clave(filaId, campo)]) fijarError(clave(filaId, campo), validarFila(actualizada)[campo])
@@ -194,8 +171,8 @@ export default function BloqueCompra({
     setIntentoGuardar(true)
 
     const nuevos = {}
-    ;['proveedor', 'fecha', 'categoria'].forEach(campo => {
-      const valor = campo === 'proveedor' ? proveedor : campo === 'fecha' ? fecha : categoria
+    ;['proveedor', 'fecha'].forEach(campo => {
+      const valor = campo === 'proveedor' ? proveedor : fecha
       const mensaje = validarEncabezado(campo, valor)
       if (mensaje) nuevos[campo] = mensaje
     })
@@ -215,10 +192,21 @@ export default function BloqueCompra({
     const lista = {
       proveedor,
       fecha,
-      categoria,
-      materiales: filasConDatos.map(({ material, cantidad, unidad, monto, producto }) =>
-        ({ material, cantidad, unidad, monto, producto })
-      ),
+      categoria: '',
+      materiales: filasConDatos.map(({ material, cantidad, unidad, monto }) => ({
+        material,
+        cantidad: Number(cantidad),
+        unidad,
+        monto: Number(monto),
+        precio: Number(monto),
+        producto: '',
+      })),
+      productos: filasConDatos.map(({ material, cantidad, unidad, monto }) => ({
+        producto: material,
+        cantidad: Number(cantidad),
+        unidad,
+        precio: Number(monto),
+      })),
     }
 
     setGuardando(true)
@@ -226,7 +214,7 @@ export default function BloqueCompra({
       const guardada = await alGuardar(lista)
       alGuardado?.(guardada ?? lista)
     } catch {
-      // El padre notifica el error (toast); los datos quedan para reintentar
+      // El padre notifica el error
     } finally {
       setGuardando(false)
     }
@@ -235,9 +223,8 @@ export default function BloqueCompra({
   const total = filas.reduce((suma, f) => suma + (Number(f.monto) > 0 ? Number(f.monto) : 0), 0)
 
   const resumen = [
-    errores.proveedor  && { idCampo: `${id}-proveedor`,  texto: `Proveedor: ${errores.proveedor}` },
-    errores.categoria  && { idCampo: `${id}-categoria`,  texto: `Categoría: ${errores.categoria}` },
-    errores.fecha      && { idCampo: `${id}-fecha`,      texto: `Fecha: ${errores.fecha}` },
+    errores.proveedor && { idCampo: `${id}-proveedor`, texto: `Proveedor: ${errores.proveedor}` },
+    errores.fecha     && { idCampo: `${id}-fecha`,     texto: `Fecha: ${errores.fecha}` },
     ...filas.flatMap((fila, i) =>
       CAMPOS_FILA.filter(({ clave: campo }) => errores[clave(fila.id, campo)]).map(({ clave: campo, nombre }) => ({
         idCampo: `${id}-${campo}-${fila.id}`,
@@ -267,18 +254,6 @@ export default function BloqueCompra({
                 placeholder="Súper Selectos…"
                 getSuggestions={sugerirProveedores}
                 error={errores.proveedor}
-              />
-            </div>
-            <div className={estilos.campoCategoria}>
-              <AutocompleteInput
-                id={`${id}-categoria`}
-                etiqueta="Categoría"
-                value={categoria}
-                onChange={valor => cambiarEncabezado('categoria', valor)}
-                onBlur={() => salirDeEncabezado('categoria')}
-                placeholder="Materia Prima…"
-                getSuggestions={sugerirCategorias}
-                error={errores.categoria}
               />
             </div>
             <Campo
@@ -317,7 +292,6 @@ export default function BloqueCompra({
               <th scope="col" className={estilos.colMaterial}>Material</th>
               <th scope="col" className={estilos.colCantidad}>Cantidad</th>
               <th scope="col" className={estilos.colPrecio}>Precio</th>
-              <th scope="col" className={estilos.colProducto}>Producto</th>
               <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
             </tr>
           </thead>
@@ -342,7 +316,7 @@ export default function BloqueCompra({
                         value={fila.material}
                         onChange={valor => cambiarFila(fila.id, 'material', valor)}
                         onBlur={() => salirDeCampoFila(fila.id, 'material')}
-                        placeholder="Jamón de Pavo…"
+                        placeholder="Ej: Harina de maíz…"
                         getSuggestions={sugerirMateriales}
                         error={errores[clave(fila.id, 'material')]}
                       />
@@ -394,18 +368,6 @@ export default function BloqueCompra({
                         onChange={e => cambiarFila(fila.id, 'monto', e.target.value)}
                         onBlur={() => salirDeCampoFila(fila.id, 'monto')}
                         error={errores[clave(fila.id, 'monto')]}
-                      />
-                    </td>
-
-                    {/* Producto destino (opcional, autocompletado) */}
-                    <td>
-                      <Campo
-                        id={`${id}-producto-${fila.id}`}
-                        etiqueta={`Producto, fila ${n}`}
-                        etiquetaOculta
-                        placeholder="Cachitos…"
-                        value={fila.producto}
-                        onChange={e => cambiarFila(fila.id, 'producto', e.target.value)}
                       />
                     </td>
 

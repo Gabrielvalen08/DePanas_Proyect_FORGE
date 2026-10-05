@@ -1,13 +1,25 @@
 /**
  * routes/compras.js
- * CRUD sobre la tabla `ingresos`.
- * Cada fila = un material comprado (proveedor + fecha + material + cantidad + monto + categoría + producto).
+ * CRUD sobre la tabla única `ingresos`.
+ * Cada fila = un material comprado (fecha, material, cantidad, monto, proveedor, categoria, producto).
  */
 
 import { Router } from 'express'
 
 export function crearRutasCompras(db) {
   const router = Router()
+
+  // GET /api/ingresos/materiales — Lista única de materiales para autocompletado
+  router.get('/materiales', (_req, res) => {
+    try {
+      const filas = db.prepare(
+        'SELECT DISTINCT material FROM ingresos WHERE material != "" ORDER BY material COLLATE NOCASE'
+      ).all()
+      res.json(filas.map(f => f.material))
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
 
   // GET /api/ingresos
   // Filtros opcionales: proveedor, material, fechaDesde, fechaHasta
@@ -45,13 +57,12 @@ export function crearRutasCompras(db) {
   })
 
   // POST /api/ingresos
-  // Body: { proveedor, fecha, categoria, materiales: [{ material, cantidad, unidad, monto, producto }] }
-  // Inserta una fila por cada material y devuelve las filas insertadas
+  // Body: { proveedor, fecha, categoria?, materiales: [{ material, cantidad, monto, producto? }] }
   router.post('/', (req, res) => {
-    const { proveedor, fecha, categoria, materiales } = req.body
+    const { proveedor, fecha, categoria = '', materiales } = req.body
 
-    if (!proveedor || !fecha || !categoria || !Array.isArray(materiales) || materiales.length === 0) {
-      return res.status(400).json({ error: 'Faltan campos obligatorios' })
+    if (!proveedor || !fecha || !Array.isArray(materiales) || materiales.length === 0) {
+      return res.status(400).json({ error: 'Faltan campos obligatorios (proveedor, fecha, materiales)' })
     }
 
     const insertar = db.prepare(
@@ -65,20 +76,20 @@ export function crearRutasCompras(db) {
           fecha,
           m.material?.trim() ?? '',
           Number(m.cantidad) || 1,
-          Number(m.monto),
+          Number(m.monto !== undefined ? m.monto : m.precio),
           proveedor.trim(),
-          categoria.trim(),
-          m.producto?.trim() ?? ''
+          (categoria || m.categoria || '').trim(),
+          (m.producto || '').trim()
         )
         return {
           id: Number(info.lastInsertRowid),
           fecha,
           material: m.material,
           cantidad: m.cantidad,
-          monto: m.monto,
+          monto: m.monto !== undefined ? m.monto : m.precio,
           proveedor,
-          categoria,
-          producto: m.producto ?? ''
+          categoria: (categoria || m.categoria || '').trim(),
+          producto: (m.producto || '').trim()
         }
       })
       db.exec('COMMIT')
@@ -92,15 +103,15 @@ export function crearRutasCompras(db) {
   // PUT /api/ingresos/:id — actualizar una fila
   router.put('/:id', (req, res) => {
     const { id } = req.params
-    const { fecha, material, cantidad, monto, proveedor, categoria, producto } = req.body
+    const { fecha, material, cantidad, monto, proveedor, categoria = '', producto = '' } = req.body
 
     try {
       const info = db.prepare(
         'UPDATE ingresos SET fecha=?, material=?, cantidad=?, monto=?, proveedor=?, categoria=?, producto=? WHERE id=?'
-      ).run(fecha, material, cantidad, monto, proveedor, categoria, producto ?? '', id)
+      ).run(fecha, material, cantidad, monto, proveedor, categoria, producto, id)
 
       if (Number(info.changes) === 0) return res.status(404).json({ error: 'Ingreso no encontrado' })
-      res.json({ id: Number(id), fecha, material, cantidad, monto, proveedor, categoria, producto: producto ?? '' })
+      res.json({ id: Number(id), fecha, material, cantidad, monto, proveedor, categoria, producto })
     } catch (err) {
       res.status(500).json({ error: err.message })
     }

@@ -29,7 +29,6 @@ function renderizar() {
 async function llenarCompraValida(usuario, bloque = document.body) {
   const en = within(bloque)
   await usuario.type(en.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
-  await usuario.type(en.getByRole('combobox', { name: 'Categoría' }), 'Materia Prima')
   await usuario.type(en.getByRole('combobox', { name: 'Material, fila 1' }), 'Tocino La Rioja')
   await usuario.type(en.getByLabelText('Cantidad, fila 1'), '2')
   await usuario.selectOptions(en.getByLabelText('Unidad, fila 1'), 'kg')
@@ -39,11 +38,10 @@ async function llenarCompraValida(usuario, bloque = document.body) {
 describe('AgregarCompra', () => {
   beforeEach(() => vi.mocked(guardarLista).mockClear())
 
-  it('proveedor, categoría y fecha van en el encabezado; la fecha arranca en hoy', () => {
+  it('proveedor y fecha van en el encabezado; la fecha arranca en hoy', () => {
     renderizar()
     expect(screen.getByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
     expect(screen.getAllByRole('combobox', { name: 'Proveedor' })).toHaveLength(1)
-    expect(screen.getAllByRole('combobox', { name: 'Categoría' })).toHaveLength(1)
     expect(screen.getByLabelText('Fecha')).toHaveValue(fechaHoyISO())
   })
 
@@ -115,7 +113,6 @@ describe('AgregarCompra', () => {
     expect(guardarLista).toHaveBeenCalledWith(expect.objectContaining({
       proveedor: 'Walmart',
       fecha: fechaHoyISO(),
-      categoria: 'Materia Prima',
     }))
     expect(await screen.findByText(/Compra en Walmart guardada/)).toBeInTheDocument()
     await waitFor(() => expect(screen.getByRole('combobox', { name: 'Proveedor' })).toHaveValue(''))

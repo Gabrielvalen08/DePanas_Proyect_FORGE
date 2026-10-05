@@ -81,7 +81,6 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
                   <tr>
                     <th scope="col">Material</th>
                     <th scope="col">Cantidad</th>
-                    <th scope="col">Producto</th>
                     <th scope="col" className={estilos.numerico}>Precio</th>
                   </tr>
                 </thead>
@@ -90,8 +89,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
                     <tr key={`${m.material}-${i}`}>
                       <td className={estilos.producto}>{m.material}</td>
                       <td>{m.cantidad} {m.unidad}</td>
-                      <td>{m.producto || '—'}</td>
-                      <td className={estilos.numerico}>{formatearPrecio(m.monto)}</td>
+                      <td className={estilos.numerico}>{formatearPrecio(m.monto !== undefined ? m.monto : m.precio)}</td>
                     </tr>
                   ))}
                 </tbody>

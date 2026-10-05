@@ -44,12 +44,7 @@
 }
 
 .campoProveedor {
-  flex: 1 1 14rem;
-  min-width: 0;
-}
-
-.campoCategoria {
-  flex: 1 1 11rem;
+  flex: 1 1 18rem;
   min-width: 0;
 }
 
@@ -131,10 +126,9 @@
   vertical-align: top;
 }
 
-.colMaterial  { width: 30%; }
+.colMaterial  { width: 50%; }
 .colCantidad  { min-width: 12rem; }
 .colPrecio    { min-width: 9rem; }
-.colProducto  { width: 20%; }
 .colAcciones  { width: 1%; }
 
 .cantidadGrupo {
