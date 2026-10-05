@@ -5,10 +5,74 @@ import {
   getProductos,
   getProveedores,
   guardarLista,
+  reiniciarModo,
   totalLista,
 } from './api'
 
-describe('api: listas de compra', () => {
+// El modo (servidor/local) se detecta una vez por carga: cada test empieza de cero
+beforeEach(() => reiniciarModo())
+afterEach(() => vi.unstubAllGlobals())
+
+describe('api: modo servidor', () => {
+  const COMPRA = {
+    id: 'c-1', proveedor: 'Walmart', fecha: '2026-10-01', categoria: '',
+    materiales: [{ id: 7, material: 'Arroz', cantidad: 5, unidad: 'lb', monto: 4.25, producto: '' }],
+  }
+
+  /** Simula el backend: responde según "MÉTODO ruta" y registra las llamadas */
+  function simularServidor(respuestas) {
+    const llamadas = []
+    vi.stubGlobal('fetch', vi.fn(async (url, opciones = {}) => {
+      const metodo = opciones.method || 'GET'
+      const ruta = url.replace('/api', '').split('?')[0]
+      llamadas.push({ metodo, ruta, url, cuerpo: opciones.body ? JSON.parse(opciones.body) : undefined })
+      if (ruta === '/health') return Response.json({ ok: true })
+      const r = respuestas[`${metodo} ${ruta}`]
+      if (!r) return Response.json([])
+      return r.status === 204 ? new Response(null, { status: 204 }) : Response.json(r.cuerpo, { status: r.status ?? 200 })
+    }))
+    return llamadas
+  }
+
+  it('lee las compras del backend sin mezclar datos locales', async () => {
+    simularServidor({ 'GET /compras': { cuerpo: [COMPRA] } })
+    const listas = await fetchListas({ material: 'arroz' })
+    expect(listas).toHaveLength(1)
+    expect(listas[0].materiales[0]).toMatchObject({ material: 'Arroz', unidad: 'lb', monto: 4.25 })
+  })
+
+  it('con el backend vacío devuelve vacío (no los datos de ejemplo)', async () => {
+    simularServidor({ 'GET /compras': { cuerpo: [] } })
+    expect(await fetchListas()).toEqual([])
+  })
+
+  it('guardar, editar y eliminar van al backend con el id de la compra', async () => {
+    const llamadas = simularServidor({
+      'POST /compras': { status: 201, cuerpo: COMPRA },
+      'PUT /compras/c-1': { cuerpo: COMPRA },
+      'DELETE /compras/c-1': { status: 204 },
+    })
+    const lista = { proveedor: 'Walmart', fecha: '2026-10-01', materiales: [{ material: 'Arroz', cantidad: 5, unidad: 'lb', monto: 4.25 }] }
+
+    await guardarLista(lista)
+    await actualizarLista('c-1', lista)
+    await eliminarLista('c-1')
+
+    const escrituras = llamadas.filter(l => l.metodo !== 'GET')
+    expect(escrituras.map(l => `${l.metodo} ${l.ruta}`)).toEqual(['POST /compras', 'PUT /compras/c-1', 'DELETE /compras/c-1'])
+    expect(escrituras[0].cuerpo.materiales[0]).toEqual({ material: 'Arroz', cantidad: 5, unidad: 'lb', monto: 4.25, producto: '' })
+    expect(localStorage.getItem('depanas_listas')).toBeNull()
+  })
+
+  it('si el backend rechaza el guardado, el error llega a la UI (no se guarda en local)', async () => {
+    simularServidor({ 'POST /compras': { status: 400, cuerpo: { error: 'Fila 1: el monto debe ser mayor a 0' } } })
+    await expect(guardarLista({ proveedor: 'X', fecha: '2026-10-01', materiales: [] }))
+      .rejects.toThrow('Fila 1: el monto debe ser mayor a 0')
+    expect(localStorage.getItem('depanas_listas')).toBeNull()
+  })
+})
+
+describe('api: listas de compra (modo local)', () => {
   it('devuelve las listas mock, más recientes primero', async () => {
     const listas = await fetchListas()
     expect(listas).toHaveLength(5)
