@@ -38,12 +38,18 @@
 .encabezadoCampos {
   flex: 1;
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-4);
   min-width: 0;
 }
 
 .campoProveedor {
   flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.campoCategoria {
+  flex: 1 1 11rem;
   min-width: 0;
 }
 
@@ -125,10 +131,11 @@
   vertical-align: top;
 }
 
-.colProducto { width: 45%; }
-.colCantidad { min-width: 12rem; }
-.colPrecio { min-width: 9rem; }
-.colAcciones { width: 1%; }
+.colMaterial  { width: 30%; }
+.colCantidad  { min-width: 12rem; }
+.colPrecio    { min-width: 9rem; }
+.colProducto  { width: 20%; }
+.colAcciones  { width: 1%; }
 
 .cantidadGrupo {
   display: flex;

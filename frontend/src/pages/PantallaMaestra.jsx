@@ -60,7 +60,7 @@ export default function PantallaMaestra() {
         <thead>
           <tr>
             <th scope="col">Proveedor</th>
-            <th scope="col" className={estilos.numerico}>Productos</th>
+            <th scope="col" className={estilos.numerico}>Materiales</th>
             <th scope="col" className={estilos.numerico}>Gasto total</th>
             <th scope="col">Fecha</th>
             <th scope="col" className={estilos.colAbrir}><span className="solo-lector">Detalle</span></th>
@@ -68,7 +68,7 @@ export default function PantallaMaestra() {
         </thead>
         <tbody>
           {listas.map(lista => {
-            const n = lista.productos.length
+            const n = lista.materiales.length
             return (
               <tr key={lista.id} className={estilos.fila}>
                 <td data-etiqueta="Proveedor">
@@ -77,12 +77,12 @@ export default function PantallaMaestra() {
                     type="button"
                     className={estilos.abrir}
                     onClick={() => setListaAbierta(lista)}
-                    aria-label={`Ver compra en ${lista.proveedor} del ${formatearFecha(lista.fecha)}, ${n} producto${n !== 1 ? 's' : ''}`}
+                    aria-label={`Ver compra en ${lista.proveedor} del ${formatearFecha(lista.fecha)}, ${n} material${n !== 1 ? 'es' : ''}`}
                   >
                     <Insignia tono="neutro">{lista.proveedor}</Insignia>
                   </button>
                 </td>
-                <td data-etiqueta="Productos" className={estilos.numerico}>{n}</td>
+                <td data-etiqueta="Materiales" className={estilos.numerico}>{n}</td>
                 <td data-etiqueta="Gasto total" className={`${estilos.numerico} ${estilos.gasto}`}>
                   {formatearPrecio(totalLista(lista))}
                 </td>

@@ -50,7 +50,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
     }
   }
 
-  const n = lista?.productos.length ?? 0
+  const n = lista?.materiales.length ?? 0
 
   return (
     <>
@@ -70,26 +70,28 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
                   <dd>{formatearFechaTexto(lista.fecha)}</dd>
                 </div>
                 <div>
-                  <dt>Productos</dt>
+                  <dt>Materiales</dt>
                   <dd>{n}</dd>
                 </div>
               </dl>
 
               <table className={estilos.tabla}>
-                <caption className="solo-lector">Productos de la compra</caption>
+                <caption className="solo-lector">Materiales de la compra</caption>
                 <thead>
                   <tr>
-                    <th scope="col">Producto</th>
+                    <th scope="col">Material</th>
                     <th scope="col">Cantidad</th>
+                    <th scope="col">Producto</th>
                     <th scope="col" className={estilos.numerico}>Precio</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {lista.productos.map((p, i) => (
-                    <tr key={`${p.producto}-${i}`}>
-                      <td className={estilos.producto}>{p.producto}</td>
-                      <td>{p.cantidad} {p.unidad}</td>
-                      <td className={estilos.numerico}>{formatearPrecio(p.precio)}</td>
+                  {lista.materiales.map((m, i) => (
+                    <tr key={`${m.material}-${i}`}>
+                      <td className={estilos.producto}>{m.material}</td>
+                      <td>{m.cantidad} {m.unidad}</td>
+                      <td>{m.producto || '—'}</td>
+                      <td className={estilos.numerico}>{formatearPrecio(m.monto)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -137,7 +139,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
         onClose={() => setConfirmando(false)}
         onConfirm={eliminar}
         title="Eliminar compra"
-        message={`¿Seguro que deseas eliminar la compra en ${lista?.proveedor ?? ''} con ${n} producto${n !== 1 ? 's' : ''}? Esta acción no se puede deshacer.`}
+        message={`¿Seguro que deseas eliminar la compra en ${lista?.proveedor ?? ''} con ${n} material${n !== 1 ? 'es' : ''}? Esta acción no se puede deshacer.`}
         confirmLabel="Eliminar"
         danger
       />

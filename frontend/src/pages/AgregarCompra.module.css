@@ -15,3 +15,24 @@
     width: 100%;
   }
 }
+
+/* Botones de portabilidad (Exportar / Importar) */
+.portabilidad {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+  opacity: 0.7;
+}
+
+.portabilidad:hover {
+  opacity: 1;
+}
+
+@media (max-width: 767px) {
+  .portabilidad {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

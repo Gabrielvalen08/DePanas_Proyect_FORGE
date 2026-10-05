@@ -4,7 +4,7 @@ import { Boton, Campo } from './common'
 import { springSuave } from '../styles/movimiento'
 import estilos from './FiltrosEnLinea.module.css'
 
-export const FILTROS_VACIOS = { proveedor: '', producto: '', fechaDesde: '', fechaHasta: '' }
+export const FILTROS_VACIOS = { proveedor: '', material: '', fechaDesde: '', fechaHasta: '' }
 
 export function contarFiltrosActivos(filtros) {
   return Object.values(filtros).filter(v => v !== '').length
@@ -49,11 +49,11 @@ export default function FiltrosEnLinea({ id, abierto, filtros, alCambiar }) {
             className={estilos.campoTexto}
           />
           <Campo
-            id="filtro-producto"
-            etiqueta="Producto"
-            placeholder="Ej: Pollo"
-            value={filtros.producto}
-            onChange={e => cambiar('producto', e.target.value)}
+            id="filtro-material"
+            etiqueta="Material"
+            placeholder="Ej: Tocino"
+            value={filtros.material}
+            onChange={e => cambiar('material', e.target.value)}
             className={estilos.campoTexto}
           />
           <Campo

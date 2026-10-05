@@ -7,9 +7,13 @@ import { fechaHoyISO } from '../utils/formato'
 import AgregarCompra from './AgregarCompra'
 
 vi.mock('../services/api', () => ({
-  guardarLista: vi.fn(lista => Promise.resolve({ id: 99, ...lista })),
-  getProveedores: () => ['Súper Selectos', 'Walmart'],
-  getProductos: () => ['Pollo entero', 'Tomate'],
+  guardarLista:         vi.fn(lista => Promise.resolve({ id: 99, ...lista })),
+  exportarJSON:         vi.fn(() => Promise.resolve()),
+  importarJSON:         vi.fn(() => Promise.resolve()),
+  getProveedores:       () => ['Súper Selectos', 'Walmart'],
+  getMateriales:        () => ['Tocino La Rioja', 'Pechugas de Pollo'],
+  getCategorias:        () => ['Materia Prima', 'Bebidas', 'Desechables'],
+  buscarEnCatalogo:     () => null,
 }))
 
 function renderizar() {
@@ -25,7 +29,8 @@ function renderizar() {
 async function llenarCompraValida(usuario, bloque = document.body) {
   const en = within(bloque)
   await usuario.type(en.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
-  await usuario.type(en.getByRole('combobox', { name: 'Producto, fila 1' }), 'Tomate')
+  await usuario.type(en.getByRole('combobox', { name: 'Categoría' }), 'Materia Prima')
+  await usuario.type(en.getByRole('combobox', { name: 'Material, fila 1' }), 'Tocino La Rioja')
   await usuario.type(en.getByLabelText('Cantidad, fila 1'), '2')
   await usuario.selectOptions(en.getByLabelText('Unidad, fila 1'), 'kg')
   await usuario.type(en.getByLabelText('Precio, fila 1'), '3.5')
@@ -34,24 +39,25 @@ async function llenarCompraValida(usuario, bloque = document.body) {
 describe('AgregarCompra', () => {
   beforeEach(() => vi.mocked(guardarLista).mockClear())
 
-  it('proveedor y fecha van una sola vez; la fecha arranca en hoy', () => {
+  it('proveedor, categoría y fecha van en el encabezado; la fecha arranca en hoy', () => {
     renderizar()
     expect(screen.getByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
     expect(screen.getAllByRole('combobox', { name: 'Proveedor' })).toHaveLength(1)
+    expect(screen.getAllByRole('combobox', { name: 'Categoría' })).toHaveLength(1)
     expect(screen.getByLabelText('Fecha')).toHaveValue(fechaHoyISO())
   })
 
   it('no muestra errores al salir de los campos ni al agregar filas antes de guardar', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    await usuario.click(screen.getByRole('combobox', { name: 'Producto, fila 1' }))
+    await usuario.click(screen.getByRole('combobox', { name: 'Material, fila 1' }))
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
     await usuario.tab()
 
     expect(screen.queryByRole('alert', { name: /revisa estos campos/i })).not.toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: 'Producto, fila 1' })).not.toHaveAttribute('aria-invalid')
-    expect(screen.getByRole('combobox', { name: 'Producto, fila 2' })).not.toHaveAttribute('aria-invalid')
+    expect(screen.getByRole('combobox', { name: 'Material, fila 1' })).not.toHaveAttribute('aria-invalid')
+    expect(screen.getByRole('combobox', { name: 'Material, fila 2' })).not.toHaveAttribute('aria-invalid')
   })
 
   it('tras intentar guardar, el error queda enlazado al campo y desaparece al corregirlo', async () => {
@@ -73,7 +79,7 @@ describe('AgregarCompra', () => {
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
-    expect(vi.mocked(guardarLista).mock.calls[0][0].productos).toHaveLength(1)
+    expect(vi.mocked(guardarLista).mock.calls[0][0].materiales).toHaveLength(1)
     expect(screen.queryByRole('alert', { name: /revisa estos campos/i })).not.toBeInTheDocument()
   })
 
@@ -90,7 +96,7 @@ describe('AgregarCompra', () => {
     expect(guardarLista).not.toHaveBeenCalled()
   })
 
-  it('el total suma los precios de las filas', async () => {
+  it('el total suma los montos de las filas', async () => {
     const usuario = userEvent.setup()
     renderizar()
     await usuario.type(screen.getByLabelText('Precio, fila 1'), '3.5')
@@ -106,11 +112,11 @@ describe('AgregarCompra', () => {
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
-    expect(guardarLista).toHaveBeenCalledWith({
+    expect(guardarLista).toHaveBeenCalledWith(expect.objectContaining({
       proveedor: 'Walmart',
       fecha: fechaHoyISO(),
-      productos: [{ producto: 'Tomate', cantidad: '2', unidad: 'kg', precio: '3.5' }],
-    })
+      categoria: 'Materia Prima',
+    }))
     expect(await screen.findByText(/Compra en Walmart guardada/)).toBeInTheDocument()
     await waitFor(() => expect(screen.getByRole('combobox', { name: 'Proveedor' })).toHaveValue(''))
   })
@@ -129,11 +135,11 @@ describe('AgregarCompra', () => {
     expect(screen.getByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
   })
 
-  it('agregar fila lleva el foco a su Producto; nunca quedan menos de 1', async () => {
+  it('agregar fila lleva el foco a su Material; nunca quedan menos de 1', async () => {
     const usuario = userEvent.setup()
     renderizar()
     expect(screen.getByRole('button', { name: 'Eliminar fila 1' })).toBeDisabled()
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
-    expect(screen.getByRole('combobox', { name: 'Producto, fila 2' })).toHaveFocus()
+    expect(screen.getByRole('combobox', { name: 'Material, fila 2' })).toHaveFocus()
   })
 })
