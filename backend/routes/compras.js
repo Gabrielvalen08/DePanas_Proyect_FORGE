@@ -1,19 +1,30 @@
 /**
  * routes/compras.js
- * CRUD sobre la tabla única `ingresos`.
- * Cada fila = un material comprado (fecha, material, cantidad, monto, proveedor, categoria, producto).
+ * CRUD fila por fila sobre la tabla única `ingresos`.
+ * Cada fila = un material comprado (fecha, material, cantidad, unidad, monto,
+ * proveedor, categoria, producto) y la compra a la que pertenece (compra_id).
+ *
+ * El frontend trabaja con compras completas en /api/compras (routes/listas.js);
+ * estas rutas quedan para acceso directo a las filas.
  */
 
 import { Router } from 'express'
+import { randomUUID } from 'crypto'
+import { enTransaccion } from '../db.js'
+import { validarCompra } from './listas.js'
 
-export function crearRutasCompras(db) {
+const CAMPOS_FILA = ['fecha', 'material', 'cantidad', 'unidad', 'monto', 'proveedor', 'categoria', 'producto']
+
+/** getDb() devuelve la conexión vigente (cambia al importar un .db) */
+export function crearRutasCompras(getDb) {
   const router = Router()
 
   // GET /api/ingresos/materiales — Lista única de materiales para autocompletado
   router.get('/materiales', (_req, res) => {
     try {
-      const filas = db.prepare(
-        'SELECT DISTINCT material FROM ingresos WHERE material != "" ORDER BY material COLLATE NOCASE'
+      // Comillas simples: en SQLite "" es un identificador, no un texto vacío
+      const filas = getDb().prepare(
+        "SELECT DISTINCT material FROM ingresos WHERE material != '' ORDER BY material COLLATE NOCASE"
       ).all()
       res.json(filas.map(f => f.material))
     } catch (err) {
@@ -49,69 +60,64 @@ export function crearRutasCompras(db) {
     sql += ' ORDER BY fecha DESC, id DESC'
 
     try {
-      const filas = db.prepare(sql).all(...params)
-      res.json(filas)
+      res.json(getDb().prepare(sql).all(...params))
     } catch (err) {
       res.status(500).json({ error: err.message })
     }
   })
 
   // POST /api/ingresos
-  // Body: { proveedor, fecha, categoria?, materiales: [{ material, cantidad, monto, producto? }] }
+  // Body: { proveedor, fecha, categoria?, materiales: [{ material, cantidad, unidad?, monto, producto? }] }
+  // Todas las filas de una petición forman una misma compra.
   router.post('/', (req, res) => {
-    const { proveedor, fecha, categoria = '', materiales } = req.body
+    const { compra, error } = validarCompra(req.body)
+    if (error) return res.status(400).json({ error })
 
-    if (!proveedor || !fecha || !Array.isArray(materiales) || materiales.length === 0) {
-      return res.status(400).json({ error: 'Faltan campos obligatorios (proveedor, fecha, materiales)' })
-    }
-
+    const db = getDb()
+    const compraId = randomUUID()
     const insertar = db.prepare(
-      'INSERT INTO ingresos (fecha, material, cantidad, monto, proveedor, categoria, producto) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto) ' +
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     )
 
-    db.exec('BEGIN')
     try {
-      const insertadas = materiales.map(m => {
-        const info = insertar.run(
-          fecha,
-          m.material?.trim() ?? '',
-          Number(m.cantidad) || 1,
-          Number(m.monto !== undefined ? m.monto : m.precio),
-          proveedor.trim(),
-          (categoria || m.categoria || '').trim(),
-          (m.producto || '').trim()
-        )
-        return {
-          id: Number(info.lastInsertRowid),
-          fecha,
-          material: m.material,
-          cantidad: m.cantidad,
-          monto: m.monto !== undefined ? m.monto : m.precio,
-          proveedor,
-          categoria: (categoria || m.categoria || '').trim(),
-          producto: (m.producto || '').trim()
-        }
-      })
-      db.exec('COMMIT')
+      const insertadas = enTransaccion(db, () =>
+        compra.materiales.map(m => {
+          const info = insertar.run(
+            compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, compra.categoria, m.producto
+          )
+          return {
+            id: Number(info.lastInsertRowid),
+            compra_id: compraId,
+            fecha: compra.fecha,
+            proveedor: compra.proveedor,
+            categoria: compra.categoria,
+            ...m,
+          }
+        })
+      )
       res.status(201).json(insertadas)
     } catch (err) {
-      try { db.exec('ROLLBACK') } catch {}
       res.status(500).json({ error: err.message })
     }
   })
 
-  // PUT /api/ingresos/:id — actualizar una fila
+  // PUT /api/ingresos/:id — actualizar una fila (todos sus campos)
   router.put('/:id', (req, res) => {
     const { id } = req.params
-    const { fecha, material, cantidad, monto, proveedor, categoria = '', producto = '' } = req.body
+    const faltantes = ['fecha', 'material', 'cantidad', 'monto', 'proveedor'].filter(c => req.body?.[c] === undefined)
+    if (faltantes.length > 0) {
+      return res.status(400).json({ error: `Faltan campos: ${faltantes.join(', ')}` })
+    }
+    const fila = { unidad: 'unidad', categoria: '', producto: '', ...req.body }
 
     try {
-      const info = db.prepare(
-        'UPDATE ingresos SET fecha=?, material=?, cantidad=?, monto=?, proveedor=?, categoria=?, producto=? WHERE id=?'
-      ).run(fecha, material, cantidad, monto, proveedor, categoria, producto, id)
+      const info = getDb().prepare(
+        'UPDATE ingresos SET fecha=?, material=?, cantidad=?, unidad=?, monto=?, proveedor=?, categoria=?, producto=? WHERE id=?'
+      ).run(...CAMPOS_FILA.map(c => fila[c]), id)
 
       if (Number(info.changes) === 0) return res.status(404).json({ error: 'Ingreso no encontrado' })
-      res.json({ id: Number(id), fecha, material, cantidad, monto, proveedor, categoria, producto })
+      res.json(getDb().prepare('SELECT * FROM ingresos WHERE id = ?').get(id))
     } catch (err) {
       res.status(500).json({ error: err.message })
     }
@@ -119,9 +125,8 @@ export function crearRutasCompras(db) {
 
   // DELETE /api/ingresos/:id
   router.delete('/:id', (req, res) => {
-    const { id } = req.params
     try {
-      const info = db.prepare('DELETE FROM ingresos WHERE id=?').run(id)
+      const info = getDb().prepare('DELETE FROM ingresos WHERE id=?').run(req.params.id)
       if (Number(info.changes) === 0) return res.status(404).json({ error: 'Ingreso no encontrado' })
       res.status(204).end()
     } catch (err) {
