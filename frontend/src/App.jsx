@@ -15,7 +15,7 @@ import { ACCESO } from './utils/mensajes'
 import estilos from './App.module.css'
 
 function AppContenido() {
-  const { autenticado, salir } = useAuth()
+  const { autenticado, salir, tienePermiso } = useAuth()
   const { addToast } = useToast()
 
   function bloquear() {
@@ -45,6 +45,8 @@ function AppContenido() {
     return <PantallaContrasena />
   }
 
+  const puedeConfiguracion = tienePermiso('/configuracion')
+
   return (
     <>
       <a href="#contenido" className="saltar-contenido">Saltar al contenido</a>
@@ -55,8 +57,14 @@ function AppContenido() {
             {/* Agregar compra es la página principal */}
             <Route path="/" element={<AgregarCompra />} />
             <Route path="/compras" element={<PantallaMaestra />} />
-            <Route path="/configuracion" element={<PantallaConfiguracion />} />
-            <Route path="/configuracion/:seccion" element={<PantallaConfiguracion />} />
+            <Route
+              path="/configuracion"
+              element={puedeConfiguracion ? <PantallaConfiguracion /> : <Navigate to="/" replace />}
+            />
+            <Route
+              path="/configuracion/:seccion"
+              element={puedeConfiguracion ? <PantallaConfiguracion /> : <Navigate to="/" replace />}
+            />
             <Route path="/exportar" element={<PantallaExportar />} />
             <Route path="/cargar" element={<PantallaCargar />} />
             <Route path="/agregar-compra" element={<Navigate to="/" replace />} />
@@ -79,4 +87,3 @@ export default function App() {
     </ToastProvider>
   )
 }
-

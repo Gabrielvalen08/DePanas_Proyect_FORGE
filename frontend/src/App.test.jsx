@@ -29,7 +29,7 @@ function renderizarApp(rutaInicial = '/') {
   )
 }
 
-describe('App - Flujo de seguridad con PantallaContrasena', () => {
+describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
   beforeEach(() => {
     sessionStorage.clear()
   })
@@ -39,19 +39,22 @@ describe('App - Flujo de seguridad con PantallaContrasena', () => {
 
     // Debe mostrarse la pantalla de contraseña
     expect(screen.getByRole('heading', { name: ACCESO.titulo })).toBeInTheDocument()
-    expect(screen.getByLabelText('Contraseña de acceso')).toBeInTheDocument()
+    expect(screen.getByLabelText(ACCESO.etiquetaUsuario)).toBeInTheDocument()
+    expect(screen.getByLabelText(ACCESO.etiquetaContrasena)).toBeInTheDocument()
 
     // No debe mostrar la navegación ni el formulario de compras
     expect(screen.queryByRole('heading', { name: 'Detalle de compra' })).not.toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Menú principal' })).not.toBeInTheDocument()
   })
 
-  it('desbloquea el sistema completo al ingresar la contraseña correcta 1234', async () => {
+  it('desbloquea el sistema completo al ingresar Cesar_01 y 1234', async () => {
     const usuario = userEvent.setup()
     renderizarApp()
 
-    const input = screen.getByLabelText('Contraseña de acceso')
-    await usuario.type(input, '1234')
+    const inputUser = screen.getByLabelText(ACCESO.etiquetaUsuario)
+    const inputPass = screen.getByLabelText(ACCESO.etiquetaContrasena)
+    await usuario.type(inputUser, 'Cesar_01')
+    await usuario.type(inputPass, '1234')
     await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
 
     // Ahora sí debe verse el contenido principal
@@ -66,8 +69,10 @@ describe('App - Flujo de seguridad con PantallaContrasena', () => {
     renderizarApp()
 
     // Desbloquear
-    const input = screen.getByLabelText('Contraseña de acceso')
-    await usuario.type(input, '1234')
+    const inputUser = screen.getByLabelText(ACCESO.etiquetaUsuario)
+    const inputPass = screen.getByLabelText(ACCESO.etiquetaContrasena)
+    await usuario.type(inputUser, 'Cesar_01')
+    await usuario.type(inputPass, '1234')
     await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
 
     await waitFor(() => {
@@ -84,9 +89,10 @@ describe('App - Flujo de seguridad con PantallaContrasena', () => {
     expect(await screen.findByText(ACCESO.bloqueado)).toBeInTheDocument()
   })
 
-  it('el menú tiene Configuración justo arriba de Bloquear, y Cargar datos avisa que está en construcción', async () => {
+  it('para Cesar_01: el menú tiene Configuración y puede navegar a /configuracion', async () => {
     const usuario = userEvent.setup()
     sessionStorage.setItem('depanas_autenticado', 'true')
+    sessionStorage.setItem('depanas_usuario', 'Cesar_01')
     renderizarApp('/cargar')
     expect(screen.getByText('Estamos trabajando en ello')).toBeInTheDocument()
 
@@ -96,5 +102,18 @@ describe('App - Flujo de seguridad con PantallaContrasena', () => {
     expect(configuracion.compareDocumentPosition(bloquear) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     await usuario.click(configuracion)
     expect(await screen.findByRole('heading', { name: 'Configuración', level: 1 })).toBeInTheDocument()
+  })
+
+  it('para Marta_02: el menú NO muestra Configuración y redirige si intenta entrar a /configuracion', async () => {
+    sessionStorage.setItem('depanas_autenticado', 'true')
+    sessionStorage.setItem('depanas_usuario', 'Marta_02')
+    renderizarApp('/configuracion')
+
+    // No debe tener el enlace en el menú
+    expect(screen.queryByRole('link', { name: 'Configuración' })).not.toBeInTheDocument()
+
+    // Debe haber sido redirigido a la página principal (Detalle de compra)
+    expect(await screen.findByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Configuración', level: 1 })).not.toBeInTheDocument()
   })
 })

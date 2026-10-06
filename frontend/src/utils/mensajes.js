@@ -72,11 +72,18 @@ export function fraseDelDia(ruta, fecha = new Date()) {
 // ---------------------------------------------------------------------------
 export const ACCESO = {
   titulo: '¡Épale, pana!',
-  descripcion: 'Escribe la contraseña para entrar al registro de compras y costos de la cocina.',
+  descripcion: 'Ingresa tu usuario y contraseña para entrar al registro de compras y costos de la cocina.',
+  etiquetaUsuario: 'Usuario',
+  etiquetaContrasena: 'Contraseña',
   etiqueta: 'Contraseña de acceso',
-  boton: 'Entrar',
-  faltaContrasena: 'Escribe la contraseña para entrar.',
-  incorrecta: 'Esa no es la contraseña. Revísala e inténtalo de nuevo.',
+  placeholderUsuario: 'Usuario (ej. Cesar_01 o Marta_02)',
+  placeholderContrasena: '••••',
+  boton: 'Ingresar',
+  olvideContrasena: 'Olvidé mi contraseña',
+  ayudaOlvide: 'Pide al administrador del sistema que te ayude a restablecer tu clave.',
+  faltaUsuario: 'Escribe tu usuario para entrar.',
+  faltaContrasena: 'Escribe tu contraseña para entrar.',
+  incorrecta: 'Usuario o contraseña incorrectos. Revísalos e inténtalo de nuevo.',
   pie: 'De Panas SV · Aquí se viene a comer rico',
   bloqueado: 'Listo, cerramos la sesión. ¡Nos vemos pronto, pana!',
 }
