@@ -22,6 +22,18 @@ CREATE TABLE IF NOT EXISTS ingresos (
     producto   TEXT DEFAULT ''              -- Producto destino (definido en DB, aún no en web)
 );
 
+-- Opciones de los desplegables (proveedor, categoría, material, producto).
+-- Cada material guarda su categoría y su producto, como en el Excel.
+-- Se siembra con las listas del Excel (db/catalogo.js) al abrir la base.
+CREATE TABLE IF NOT EXISTS catalogo (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo       TEXT NOT NULL CHECK (tipo IN ('proveedor', 'categoria', 'material', 'producto')),
+    nombre     TEXT NOT NULL,
+    categoria  TEXT NOT NULL DEFAULT '',   -- Solo materiales
+    producto   TEXT NOT NULL DEFAULT '',   -- Solo materiales
+    UNIQUE (tipo, nombre COLLATE NOCASE)
+);
+
 -- Índices para búsquedas y filtros rápidos
 -- (el índice de compra_id se crea en db.js, después de migrar bases antiguas)
 CREATE INDEX IF NOT EXISTS idx_ingresos_fecha ON ingresos(fecha);

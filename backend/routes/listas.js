@@ -4,7 +4,7 @@
  * Es lo que usa el frontend: una compra = un proveedor, una fecha y sus materiales.
  *
  *   GET    /api/compras               → compras, con filtros proveedor/material/fechaDesde/fechaHasta
- *   GET    /api/compras/sugerencias   → { proveedores, materiales } para el autocompletado
+ *   GET    /api/compras/sugerencias   → { proveedores, categorias, materiales, productos } (catálogo + compras)
  *   GET    /api/compras/:id           → una compra
  *   POST   /api/compras               → crea una compra (todas sus filas en una transacción)
  *   PUT    /api/compras/:id           → reemplaza los materiales de una compra
@@ -13,7 +13,8 @@
 
 import { Router } from 'express'
 import { randomUUID } from 'crypto'
-import { enTransaccion } from '../db.js'
+import { enTransaccion, registrarCompra } from '../db.js'
+import { leerCatalogo } from './catalogo.js'
 
 const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/
 
@@ -36,6 +37,7 @@ export function agruparFilas(filas) {
       cantidad: f.cantidad,
       unidad: f.unidad,
       monto: f.monto,
+      categoria: f.categoria ?? '',
       producto: f.producto ?? '',
     })
   }
@@ -68,6 +70,8 @@ export function validarCompra(cuerpo) {
       cantidad,
       unidad: typeof m.unidad === 'string' && m.unidad.trim() ? m.unidad.trim() : 'unidad',
       monto,
+      // Solo si viene: así el id derivado al importar JSON antiguos no cambia
+      ...(typeof m.categoria === 'string' && m.categoria.trim() ? { categoria: m.categoria.trim() } : {}),
       producto: typeof m.producto === 'string' ? m.producto.trim() : '',
     })
   }
@@ -89,8 +93,10 @@ function insertarMateriales(db, compraId, compra) {
     'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto) ' +
     'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
   )
+  registrarCompra(db, compra)
   for (const m of compra.materiales) {
-    insertar.run(compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, compra.categoria, m.producto)
+    // La categoría es de cada material (como en el Excel); la de la compra queda como respaldo
+    insertar.run(compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, m.categoria || compra.categoria, m.producto)
   }
 }
 
@@ -130,14 +136,8 @@ export function crearRutasListas(getDb) {
 
   router.get('/sugerencias', (_req, res) => {
     try {
-      const db = getDb()
-      const proveedores = db
-        .prepare("SELECT DISTINCT proveedor FROM ingresos WHERE proveedor != '' ORDER BY proveedor COLLATE NOCASE")
-        .all().map(f => f.proveedor)
-      const materiales = db
-        .prepare("SELECT DISTINCT material FROM ingresos WHERE material != '' ORDER BY material COLLATE NOCASE")
-        .all().map(f => f.material)
-      res.json({ proveedores, materiales })
+      const { proveedores, categorias, materiales, productos } = leerCatalogo(getDb())
+      res.json({ proveedores, categorias, materiales: materiales.map(m => m.nombre), productos })
     } catch (err) {
       res.status(500).json({ error: err.message })
     }

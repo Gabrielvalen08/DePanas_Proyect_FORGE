@@ -10,7 +10,7 @@
 
 import { Router } from 'express'
 import { randomUUID } from 'crypto'
-import { enTransaccion } from '../db.js'
+import { enTransaccion, registrarCompra } from '../db.js'
 import { validarCompra } from './listas.js'
 
 const CAMPOS_FILA = ['fecha', 'material', 'cantidad', 'unidad', 'monto', 'proveedor', 'categoria', 'producto']
@@ -81,10 +81,11 @@ export function crearRutasCompras(getDb) {
     )
 
     try {
-      const insertadas = enTransaccion(db, () =>
-        compra.materiales.map(m => {
+      const insertadas = enTransaccion(db, () => {
+        registrarCompra(db, compra)
+        return compra.materiales.map(m => {
           const info = insertar.run(
-            compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, compra.categoria, m.producto
+            compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, m.categoria || compra.categoria, m.producto
           )
           return {
             id: Number(info.lastInsertRowid),
@@ -95,7 +96,7 @@ export function crearRutasCompras(getDb) {
             ...m,
           }
         })
-      )
+      })
       res.status(201).json(insertadas)
     } catch (err) {
       res.status(500).json({ error: err.message })
@@ -109,12 +110,33 @@ export function crearRutasCompras(getDb) {
     if (faltantes.length > 0) {
       return res.status(400).json({ error: `Faltan campos: ${faltantes.join(', ')}` })
     }
-    const fila = { unidad: 'unidad', categoria: '', producto: '', ...req.body }
+    // Las mismas reglas que una compra completa: fecha AAAA-MM-DD, cantidad y monto > 0
+    const cuerpo = req.body
+    const { compra, error } = validarCompra({
+      proveedor: cuerpo.proveedor,
+      fecha: cuerpo.fecha,
+      materiales: [{
+        material: cuerpo.material,
+        cantidad: cuerpo.cantidad,
+        unidad: cuerpo.unidad,
+        monto: cuerpo.monto,
+        categoria: cuerpo.categoria,
+        producto: cuerpo.producto,
+      }],
+    })
+    if (error) return res.status(400).json({ error: error.replace(/^Fila 1: /, '') })
+    const m = compra.materiales[0]
+    const fila = { ...m, fecha: compra.fecha, proveedor: compra.proveedor, categoria: m.categoria ?? '' }
 
     try {
-      const info = getDb().prepare(
-        'UPDATE ingresos SET fecha=?, material=?, cantidad=?, unidad=?, monto=?, proveedor=?, categoria=?, producto=? WHERE id=?'
-      ).run(...CAMPOS_FILA.map(c => fila[c]), id)
+      const db = getDb()
+      const info = enTransaccion(db, () => {
+        const resultado = db.prepare(
+          'UPDATE ingresos SET fecha=?, material=?, cantidad=?, unidad=?, monto=?, proveedor=?, categoria=?, producto=? WHERE id=?'
+        ).run(...CAMPOS_FILA.map(c => fila[c]), id)
+        if (Number(resultado.changes) > 0) registrarCompra(db, { proveedor: compra.proveedor, materiales: [m] })
+        return resultado
+      })
 
       if (Number(info.changes) === 0) return res.status(404).json({ error: 'Ingreso no encontrado' })
       res.json(getDb().prepare('SELECT * FROM ingresos WHERE id = ?').get(id))
