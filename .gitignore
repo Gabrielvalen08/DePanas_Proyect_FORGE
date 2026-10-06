@@ -9,3 +9,8 @@ backend/node_modules/
 backend/tmp_uploads/
 *.db-shm
 *.db-wal
+
+# Archivos de Excel del negocio: sus datos ya están en backend/db/catalogo.js
+*.xlsx
+*.xls
+*.xlsm

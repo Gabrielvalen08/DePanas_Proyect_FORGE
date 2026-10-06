@@ -38,11 +38,28 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.item:active .iconoCaja {
+.itemBoton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--alto-control);
+  color: var(--color-on-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.item:active .iconoCaja,
+.itemBoton:active .iconoCaja {
   transform: scale(0.92);
 }
 
-.item:focus-visible {
+.item:focus-visible,
+.itemBoton:focus-visible {
   outline-color: var(--color-on-primary);
   outline-offset: -4px;
 }

@@ -6,6 +6,7 @@ import { Boton, CuerpoModal, Modal, PieModal } from './common'
 import { actualizarLista, eliminarLista, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { formatearFechaTexto, formatearPrecio } from '../utils/formato'
+import { COMPRA } from '../utils/mensajes'
 import estilos from './DetalleLista.module.css'
 
 /**
@@ -28,13 +29,13 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
     try {
       return await actualizarLista(lista.id, datos)
     } catch (error) {
-      addToast('Error al actualizar la compra', 'error')
+      addToast(COMPRA.errorActualizar(error.message), 'error')
       throw error
     }
   }
 
   function alGuardado() {
-    addToast('Compra actualizada')
+    addToast(COMPRA.actualizada)
     cerrar()
     alCambio()
   }
@@ -42,11 +43,11 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
   async function eliminar() {
     try {
       await eliminarLista(lista.id)
-      addToast('Compra eliminada')
+      addToast(COMPRA.eliminada)
       cerrar()
       alCambio()
     } catch {
-      addToast('Error al eliminar la compra', 'error')
+      addToast(COMPRA.errorEliminar, 'error')
     }
   }
 
@@ -136,9 +137,9 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
         isOpen={confirmando}
         onClose={() => setConfirmando(false)}
         onConfirm={eliminar}
-        title="Eliminar compra"
-        message={`¿Seguro que deseas eliminar la compra en ${lista?.proveedor ?? ''} con ${n} material${n !== 1 ? 'es' : ''}? Esta acción no se puede deshacer.`}
-        confirmLabel="Eliminar"
+        title={COMPRA.confirmarEliminar.titulo}
+        message={COMPRA.confirmarEliminar.mensaje(lista?.proveedor ?? '', n)}
+        confirmLabel={COMPRA.confirmarEliminar.confirmar}
         danger
       />
     </>

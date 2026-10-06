@@ -1,0 +1,194 @@
+/* Va directo sobre el collage: Verde Ávila, no el atenuado (AA sobre los trazos) */
+.intro {
+  max-width: 65ch;
+  font-size: 1.0625rem;
+  color: var(--color-text);
+}
+
+/* La tarjeta no rellena su contenido: el margen interno va aquí */
+.cuerpo {
+  padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+/* ---------- Rangos rápidos: píldoras ---------- */
+.rangos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.rango {
+  min-height: var(--alto-control);
+  padding: 0.2em var(--space-4) 0;
+  border: 1.5px solid var(--color-border-input);
+  border-radius: var(--radio-pildora);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--fuente-titulos);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease-out, transform 100ms ease-out;
+}
+
+.rango:hover {
+  background: var(--color-surface-soft);
+}
+
+.rango:active {
+  transform: scale(0.97);
+}
+
+/* Elegido: Verde Ávila con texto Crema y Trigo (9.71:1), como en la ventana de categoría */
+.rangoActivo,
+.rangoActivo:hover {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.fechas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 14rem));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+/* ---------- Formato ---------- */
+.formatos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0 0 var(--space-6);
+  padding: 0;
+  border: 0;
+}
+
+.legenda {
+  grid-column: 1 / -1;
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-family: var(--fuente-titulos);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.formato {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radio-input);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: border-color 150ms ease-out;
+}
+
+.formato:hover {
+  border-color: var(--color-primary);
+}
+
+.formatoActivo,
+.formatoActivo:hover {
+  border-color: var(--color-primary);
+  box-shadow: inset 4px 0 0 var(--color-primary);
+}
+
+/* El radio real queda para teclado y lectores; el foco se ve en toda la opción */
+.radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.formato:has(.radio:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.formatoIcono {
+  flex-shrink: 0;
+  color: var(--color-text);
+}
+
+.formatoTextos {
+  display: flex;
+  flex-direction: column;
+}
+
+.formatoTitulo {
+  padding-top: 0.15em;
+  font-family: var(--fuente-titulos);
+  font-weight: 700;
+}
+
+.formatoDescripcion {
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+/* ---------- Resumen y descarga ---------- */
+.pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.resumen {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--fuente-titulos);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.girando {
+  animation: girar 1s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 767px) {
+  .cuerpo {
+    padding: var(--space-4);
+  }
+
+  .fechas,
+  .formatos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pie > * {
+    flex-basis: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rango,
+  .formato {
+    transition: none;
+  }
+
+  .rango:active {
+    transform: none;
+  }
+
+  .girando {
+    animation: none;
+  }
+}

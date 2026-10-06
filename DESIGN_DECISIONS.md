@@ -149,14 +149,15 @@ El brandbook define dos expresiones:
 | Ubicación                                   | Versión                                       |
 | ------------------------------------------- | --------------------------------------------- |
 | Login, bienvenida, pantallas de carga amplias | Badge ilustrado (mínimo 120px de ancho)     |
-| Sidebar, header, barras compactas           | Tipográfico "DE PANAS" en Josefin Sans 700    |
+| Sidebar                                     | La **arepa del badge** (40px) + tipográfico "DE PANAS" en Josefin Sans 700. Pedido del cliente: el badge completo no se lee a ese tamaño |
+| Header, barras compactas                    | Tipográfico "DE PANAS" en Josefin Sans 700    |
 | Junto a tablas, gráficos o datos            | Solo tipográfico                              |
 | Favicon / ícono de app                      | Badge ilustrado 1:1: `frontend/public/favicon.ico` (16/32/48) y `frontend/public/brand/` (`favicon-16/32/48.png`, `apple-touch-icon-180.png`, `icon-192.png`, `icon-512.png`). Conectados en `frontend/index.html` y en `frontend/public/site.webmanifest`. |
 
-**Assets de marca** en `frontend/public/brand/`: `logo-badge.png` (1197×1197, con transparencia) y los íconos de arriba. Referenciarlos con rutas absolutas desde la raíz pública (`/brand/logo-badge.png`).
+**Assets de marca** en `frontend/public/brand/`: `logo-badge.png` (1197×1197, con transparencia), `arepa.png` (la arepa del badge recortada, sin fondo ni letras, 192×192), `patron-elementos-graficos.webp` (collage de la pág. 10) y los íconos de arriba. Referenciarlos con rutas absolutas desde la raíz pública (`/brand/logo-badge.png`).
 
 - Espacio libre alrededor del badge igual a la altura de "DE PANAS" en el logo.
-- No deformar, rotar, recolorear fuera de la paleta ni añadir efectos al badge.
+- No deformar, rotar, recolorear fuera de la paleta ni añadir efectos al badge. La arepa recortada lleva la misma sombra sólida Vinotinto que el lettering, para leerse como una pieza con el nombre.
 - El tipográfico debe cumplir los contrastes de la tabla de arriba. Sobre naranja va en Verde Ávila o Vinotinto, y solo en tamaño grande.
 
 ---
@@ -168,9 +169,17 @@ El brandbook incluye un set de íconos e ilustraciones de productos (arepas, emp
 **[Adaptación web]**
 
 - **Íconos de interfaz:** una sola librería de línea (**Lucide**, ya instalada). Su trazo lineal es coherente con las ilustraciones de marca. Grilla de 24px y trazo uniforme.
-- Las **ilustraciones de marca** son para bienvenida, estados vacíos, login y elementos de branding. Nunca dentro de tablas, formularios o junto a cifras.
+- Las **ilustraciones de marca** son para bienvenida, estados vacíos, login y elementos de branding. Nunca dentro de tablas, formularios o junto a cifras. El collage de fondo (abajo) no rompe esta regla: va detrás y las tarjetas lo tapan.
 - No usar emojis como íconos.
 - Los íconos complementan el texto; los botones solo con ícono llevan `aria-label`.
+
+### Collage de fondo [Adaptación web]
+
+- **Numeración del brandbook:** las páginas del PDF van una adelante de su rótulo. "Elementos Gráficos" es la pág. 10 del PDF (rotulada 09) y "Voz de Marca" es la diapositiva rotulada 10 (pág. 11 del PDF).
+- Las 17 ilustraciones de la **pág. 10 del brandbook** ("Elementos Gráficos") forman un mosaico repetible sin costuras: `frontend/public/brand/patron-elementos-graficos.webp`. Conservan su Rojo Vinotinto y el tamaño relativo que tienen en la página.
+- Va en `body::before` (`styles/base.css`): una capa fija detrás de todo, así aparece en **cualquier pantalla con fondo crema** sin tocar cada página. Tarjetas, sidebar, header y modales la tapan con su propio fondo, por lo que nunca queda detrás de tablas o formularios.
+- Tokens en `tokens.css`: `--patron-opacidad` (0.1), `--patron-tamano` (26rem en móvil, 38rem, 46rem desde 1440px).
+- Se oculta con `prefers-contrast: more` y al imprimir. Una pantalla nueva con fondo crema no debe pintar su propio `background`: deja ver el del `body`.
 
 ---
 
@@ -193,12 +202,12 @@ El brandbook no define radios ni sombras. Se derivan del logotipo, que es un cí
 
 ### Materiales (según `apple-design`)
 
-- **Header como capa translúcida:** fondo Crema y Trigo al 80% con `backdrop-filter: blur(20px) saturate(180%)`, y el contenido se desplaza por debajo. En lugar de un borde de 1px, un borde inferior suave de desvanecido aparece solo cuando hay contenido debajo.
-- **El peso del material marca la jerarquía.** La sidebar es una región estructural y va sólida (Verde Ávila). Los elementos interactivos van más ligeros. Nunca se apila una superficie translúcida clara sobre otra.
-- **El texto sobre material translúcido** usa Verde Ávila con un peso más y un poco de tracking extra. Nunca `--color-text-muted`.
+- **Header sobre el collage:** arriba de la página es **transparente** y el collage pasa sin cortes detrás del título. Al hacer scroll aparece un fondo Crema y Trigo sólido y una sombra suave de desvanecido (solo se anima `opacity`, 200ms). Sin `backdrop-filter`: el blur del collage dejaba una banda borrosa con borde marcado.
+- **El peso del material marca la jerarquía.** La sidebar es una región estructural y va sólida (Naranja Sazón). Los elementos interactivos van más ligeros. Nunca se apila una superficie translúcida clara sobre otra.
+- **El texto del header y todo texto directo sobre el collage** usa Verde Ávila, nunca `--color-text-muted`: sobre un trazo del collage el atenuado baja a 3.91:1 (Ávila da 8.18:1).
 - **Modales:** scrim de Verde Ávila al 40% que atenúa el fondo; el modal es sólido (blanco). Un panel paralelo que no bloquea va sin scrim.
 - **Superficies grandes más "gruesas":** los modales llevan sombra difusa más profunda que las cards (`0 24px 48px rgb(20 68 40 / 0.18)`). La sombra de marca sólida es aparte y solo para elementos destacados.
-- **Accesibilidad:** con `prefers-reduced-transparency: reduce` el header es sólido y sin blur. Con `prefers-contrast: more` los fondos son sólidos y se usa un borde `--color-border-input`.
+- **Accesibilidad:** con `prefers-reduced-transparency: reduce` el header es siempre sólido. Con `prefers-contrast: more` los fondos son sólidos y se usa un borde `--color-border-input`.
 
 ---
 
@@ -287,11 +296,18 @@ Mensajes de marca: "Tu antojo venezolano en El Salvador", "Aquí se viene a come
 
 | Contexto               | Tono                                       | Ejemplo                                              |
 | ---------------------- | ------------------------------------------ | ---------------------------------------------------- |
-| Bienvenida / inicio    | Cercano, con la voz de la marca            | "¡Epa! Hoy toca registrar las compras."              |
-| Estados vacíos         | Amigable, invita a la acción               | "Todavía no hay compras. ¡Agreguemos la primera!"   |
-| Éxito                  | Breve y cálido                             | "¡Listo! Compra guardada."                           |
-| Errores y validaciones | Claro y directo, **sin modismos**          | "Ingresa un precio mayor a 0."                       |
+| Bienvenida / acceso    | Cercano, con la voz de la marca            | "¡Épale, pana!"                                      |
+| Encabezados            | Frase de marca del día, en Cardo itálica   | "Hoy toca arepita: anota lo que llegó a la cocina"   |
+| Estados vacíos         | Amigable, invita a la acción               | "Todavía no hay compras. ¡Anota la primera, que hoy toca arepita!" |
+| Éxito                  | Breve y cálido                             | "¡Listo, pana! La compra en Selectos quedó guardada (3 materiales)." |
+| Errores                | Claro y directo, **sin modismos**: qué pasó + qué hacer | "No pudimos guardar la compra: [motivo]. Revisa los datos e inténtalo de nuevo." |
+| Validaciones           | Corto, junto al campo, **sin modismos**    | "El precio debe ser mayor a 0"                        |
 | Datos financieros      | Neutral y preciso                          | Etiquetas literales: "Total gastado", "Costo unitario" |
+
+**Todos los textos que el sistema le dice al usuario viven en `frontend/src/utils/mensajes.js`** (confirmaciones, errores, validaciones, estados vacíos, acceso y frases de encabezado), escritos a partir de la diapositiva 10 del brandbook ("Voz de Marca"). Un componente nuevo importa de ahí en vez de escribir el texto en línea; los tests también los importan, así cambiar una frase no rompe pruebas.
+
+- **Encabezados:** cada página lleva bajo el título una frase de `FRASES_ENCABEZADO` en Cardo itálica (como los "Mensajes" del brandbook). Cambia una vez al día (`fraseDelDia`), no en cada recarga.
+- **Errores:** "No pudimos…" + el detalle del servidor si lo hay + qué hacer. Nunca culpan al usuario.
 
 ---
 
@@ -316,4 +332,5 @@ Todos resueltos:
 
 - **Verdes:** confirmado que Verde Fresco es `#6DAD28` y Verde Ávila es `#144428` (ver nota en la paleta).
 - **Favicon e ícono de app:** se usa el badge ilustrado en 1:1, conectado en `frontend/index.html` y `site.webmanifest`.
-- **Assets del logotipo:** `frontend/public/brand/logo-badge.png` (1197×1197, transparente), sacado de las imágenes incrustadas en el brandbook.
+- **Assets del logotipo:** `frontend/public/brand/logo-badge.png` (1197×1197, transparente), sacado de las imágenes incrustadas en el brandbook. `arepa.png` se recortó de ese badge.
+- **Elementos gráficos:** las 17 ilustraciones de la pág. 10 se extrajeron del PDF (son PNG con transparencia) para armar el collage.

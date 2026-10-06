@@ -1,0 +1,259 @@
+/* Va directo sobre el collage: Verde Ávila, no el atenuado (AA sobre los trazos) */
+.intro {
+  max-width: 65ch;
+  font-size: 1.0625rem;
+  color: var(--color-text);
+}
+
+/* ---------- Las cuatro opciones ---------- */
+.secciones {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  list-style: none;
+}
+
+.seccion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 100%;
+  min-height: 4.5rem;
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 150ms ease-out, transform 100ms ease-out;
+}
+
+.seccion:hover {
+  border-color: var(--color-primary);
+}
+
+.seccion:active {
+  transform: scale(0.98);
+}
+
+/* Elegida: franja y borde naranja, como el resto de la identidad */
+.seccionActiva,
+.seccionActiva:hover {
+  border-color: var(--color-primary);
+  box-shadow: inset 4px 0 0 var(--color-primary);
+}
+
+.seccionIcono {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radio-pildora);
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+}
+
+.seccionActiva .seccionIcono {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.seccionTextos {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.seccionTitulo {
+  padding-top: 0.15em;
+  font-family: var(--fuente-titulos);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.seccionDescripcion {
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.seccionCuenta {
+  flex-shrink: 0;
+}
+
+/* ---------- Lista de una sección ---------- */
+/* Mismo margen lateral que las celdas de la tabla */
+.buscador {
+  max-width: 28rem;
+  padding: var(--space-3) var(--space-4);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--fuente-titulos);
+}
+
+.tabla thead th {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tabla td,
+.tabla tbody th {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  line-height: 1.4;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tabla tbody tr:last-child td,
+.tabla tbody tr:last-child th {
+  border-bottom: none;
+}
+
+.nombre {
+  font-weight: 600;
+}
+
+.tabla .numerico {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.colAcciones {
+  width: 1%;
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.eliminar:hover {
+  color: var(--color-danger);
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 1100px) {
+  .secciones {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* En el teléfono cada opción es una tarjeta: nombre arriba, datos con su etiqueta, acciones al final */
+@media (max-width: 767px) {
+  .tabla thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .tabla tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .tabla tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .tabla td,
+  .tabla tbody th {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .tabla td[data-etiqueta] {
+    grid-column: 1 / -1;
+  }
+
+  .tabla td[data-etiqueta]::before {
+    content: attr(data-etiqueta);
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .tabla .colAcciones {
+    grid-row: 1;
+    grid-column: 2;
+    width: auto;
+  }
+}
+
+/* Teléfono: las cuatro opciones en 2 columnas compactas, para que la lista quede a la vista */
+@media (max-width: 767px) {
+  .secciones {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .seccion {
+    min-height: var(--alto-control);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radio-input);
+  }
+
+  .seccionIcono {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .seccionIcono svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .seccionTitulo {
+    font-size: 0.8125rem;
+    letter-spacing: 0.02em;
+  }
+
+  .seccion {
+    gap: var(--space-2);
+  }
+
+  .seccionTitulo {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .seccionDescripcion,
+  .seccionCuenta {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seccion {
+    transition: none;
+  }
+
+  .seccion:active {
+    transform: none;
+  }
+}

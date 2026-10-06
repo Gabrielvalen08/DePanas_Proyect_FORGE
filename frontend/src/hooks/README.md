@@ -5,7 +5,7 @@ Hooks reutilizables sin UI propia. Lo que dibuja algo va en `components/`.
 | Hook                         | Uso                                                                 |
 | ---------------------------- | ------------------------------------------------------------------- |
 | `useFocoAtrapado(activo, alCerrar, focoInicialRef)` | Devuelve un ref para el contenedor: atrapa Tab/Shift+Tab, cierra con Escape y devuelve el foco al cerrar. Lo usa `Modal`. |
-| `useScrollDetectado()`       | Devuelve `[centinelaRef, hayScroll]` con `IntersectionObserver` (sin listener de scroll). Lo usa `Header`. |
+| `useScrollDetectado()`       | Devuelve `[centinelaRef, hayScroll]` con `IntersectionObserver` (sin listener de scroll). Lo usa `Header`: con scroll aparece su fondo crema sólido y su sombra. |
 | `useConsultaMedia(consulta)` | `true` mientras se cumpla la media query. Lo usa `ToastContext` para elegir el borde de entrada. |
 
 ```jsx

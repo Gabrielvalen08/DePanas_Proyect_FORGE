@@ -47,6 +47,7 @@
 /* ---------- Encabezado ---------- */
 .encabezado {
   display: flex;
+  flex-wrap: wrap; /* en pantallas angostas, la acción baja de línea en vez de tapar el título */
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);

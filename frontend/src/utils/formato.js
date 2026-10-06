@@ -44,3 +44,11 @@ export function fechaHoyISO(fecha = new Date()) {
   const d = String(fecha.getDate()).padStart(2, '0')
   return `${a}-${m}-${d}`
 }
+
+/**
+ * Texto para comparar en búsquedas: minúsculas y sin tildes ("Jamón" → "jamon").
+ * Conserva la longitud (un carácter por carácter) para poder resaltar coincidencias.
+ */
+export function textoBusqueda(texto = '') {
+  return [...texto].map(c => c.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase() || c).join('')
+}

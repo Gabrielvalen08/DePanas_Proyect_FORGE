@@ -15,7 +15,7 @@ import { createHash } from 'crypto'
 import { existsSync, mkdirSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { copiaConsistente, enTransaccion, esBaseDePanas } from '../db.js'
+import { copiaConsistente, enTransaccion, esBaseDePanas, registrarCompra } from '../db.js'
 import { agruparFilas, validarCompra } from './listas.js'
 
 const CARPETA_TEMPORAL = join(tmpdir(), 'depanas-uploads')
@@ -129,8 +129,9 @@ export function crearRutasExport(getDb, reemplazarDB) {
         let omitidas = 0
         for (const c of compras) {
           if (existe.get(c.id)) { omitidas++; continue }
+          registrarCompra(db, c)
           for (const m of c.materiales) {
-            insertar.run(c.id, c.fecha, m.material, m.cantidad, m.unidad, m.monto, c.proveedor, c.categoria, m.producto)
+            insertar.run(c.id, c.fecha, m.material, m.cantidad, m.unidad, m.monto, c.proveedor, m.categoria || c.categoria, m.producto)
           }
           nuevas++
         }

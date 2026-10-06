@@ -1,4 +1,4 @@
-import { fechaHoyISO, formatearFecha, formatearFechaTexto, formatearPrecio } from './formato'
+import { fechaHoyISO, formatearFecha, formatearFechaTexto, formatearPrecio, textoBusqueda } from './formato'
 
 describe('formato', () => {
   it('formatearPrecio usa $ y dos decimales', () => {
@@ -18,5 +18,11 @@ describe('formato', () => {
   it('fechaHoyISO usa la fecha local, no UTC', () => {
     expect(fechaHoyISO(new Date(2026, 9, 3, 23, 30))).toBe('2026-10-03')
     expect(fechaHoyISO(new Date(2026, 0, 5, 0, 5))).toBe('2026-01-05')
+  })
+
+  it('textoBusqueda ignora tildes y mayúsculas sin cambiar la longitud', () => {
+    expect(textoBusqueda('Jamón de Pavo')).toBe('jamon de pavo')
+    expect(textoBusqueda('Tequeños')).toBe('tequenos')
+    expect(textoBusqueda('Plátanos')).toHaveLength('Plátanos'.length)
   })
 })

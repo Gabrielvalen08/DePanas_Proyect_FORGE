@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 import { Boton, Campo } from './common'
 import { springSuave } from '../styles/movimiento'
+import { VALIDACION } from '../utils/mensajes'
 import estilos from './FiltrosEnLinea.module.css'
 
 export const FILTROS_VACIOS = { proveedor: '', material: '', fechaDesde: '', fechaHasta: '' }
@@ -19,7 +20,7 @@ export function contarFiltrosActivos(filtros) {
 export default function FiltrosEnLinea({ id, abierto, filtros, alCambiar }) {
   const errorFechas =
     filtros.fechaDesde && filtros.fechaHasta && filtros.fechaDesde > filtros.fechaHasta
-      ? 'La fecha final debe ser igual o posterior a la inicial'
+      ? VALIDACION.rangoFechas
       : undefined
 
   function cambiar(campo, valor) {

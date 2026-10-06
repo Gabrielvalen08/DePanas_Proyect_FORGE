@@ -76,7 +76,12 @@
   --sombra-modal:    0 24px 48px rgb(20 68 40 / 0.18);
   --sombra-flotante: 0 8px 24px rgb(20 68 40 / 0.12);
   --scrim:           rgb(20 68 40 / 0.4);
-  --material-header: rgb(254 238 204 / 0.85);
+
+  /* Collage de elementos gráficos (brandbook pág. 10) sobre el fondo crema.
+     Mantiene el Rojo Vinotinto de las ilustraciones; solo baja su opacidad. */
+  --patron-imagen:   url('/brand/patron-elementos-graficos.webp');
+  --patron-opacidad: 0.1;
+  --patron-tamano:   38rem;
 }
 
 /* =========================================================
