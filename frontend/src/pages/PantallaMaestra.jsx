@@ -7,6 +7,7 @@ import { Boton, EstadoVacio, Insignia, Tarjeta } from '../components/common'
 import { fetchListas, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { formatearFecha, formatearPrecio } from '../utils/formato'
+import { COMPRA, ESTADOS, fraseDelDia } from '../utils/mensajes'
 import estilos from './PantallaMaestra.module.css'
 
 export default function PantallaMaestra() {
@@ -23,7 +24,7 @@ export default function PantallaMaestra() {
     let vigente = true
     fetchListas(filters)
       .then(data => { if (vigente) setListas(data) })
-      .catch(() => { if (vigente) addToast('Error al cargar las compras', 'error') })
+      .catch(() => { if (vigente) addToast(COMPRA.errorCargar, 'error') })
     return () => { vigente = false } // descarta respuestas viejas si cambian los filtros
   }, [filters, version, addToast])
 
@@ -32,15 +33,15 @@ export default function PantallaMaestra() {
 
   function contenidoTabla() {
     if (listas === null) {
-      return <EstadoVacio cargando icono={<Loader2 />} titulo="Cargando compras…" />
+      return <EstadoVacio cargando icono={<Loader2 />} titulo={ESTADOS.cargando} />
     }
     if (listas.length === 0 && hayFiltros) {
       return (
         <EstadoVacio
           icono={<SlidersHorizontal />}
-          titulo="Sin resultados"
-          texto="Prueba con otros filtros"
-          accion={<Boton variante="fantasma" onClick={() => setFilters(FILTROS_VACIOS)}>Limpiar filtros</Boton>}
+          titulo={ESTADOS.sinResultados.titulo}
+          texto={ESTADOS.sinResultados.texto}
+          accion={<Boton variante="fantasma" onClick={() => setFilters(FILTROS_VACIOS)}>{ESTADOS.sinResultados.accion}</Boton>}
         />
       )
     }
@@ -48,9 +49,9 @@ export default function PantallaMaestra() {
       return (
         <EstadoVacio
           icono={<ShoppingCart />}
-          titulo="Todavía no hay compras."
-          texto="¡Agreguemos la primera!"
-          accion={<Boton variante="primario" icono={<Plus />} a="/">Agregar compra</Boton>}
+          titulo={ESTADOS.sinCompras.titulo}
+          texto={ESTADOS.sinCompras.texto}
+          accion={<Boton variante="primario" icono={<Plus />} a="/">{ESTADOS.sinCompras.accion}</Boton>}
         />
       )
     }
@@ -100,7 +101,7 @@ export default function PantallaMaestra() {
 
   return (
     <>
-      <Header title="Compras" />
+      <Header title="Compras" frase={fraseDelDia('/compras')} />
 
       <main id="contenido" tabIndex={-1}>
         <div className={estilos.toolbar}>

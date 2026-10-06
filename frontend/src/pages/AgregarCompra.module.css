@@ -33,7 +33,8 @@
   max-width: none;
   text-align: center;
   font-size: 0.875rem;
-  color: var(--color-text-muted);
+  /* Va sobre el collage: el atenuado bajaba a 3.91:1 en los trazos; Ávila da 8.18:1 */
+  color: var(--color-text);
 }
 
 @media (max-width: 767px) {

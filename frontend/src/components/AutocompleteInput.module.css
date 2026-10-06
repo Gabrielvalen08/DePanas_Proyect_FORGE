@@ -1,3 +1,43 @@
+/* Espacio a la derecha para la flecha del desplegable */
+.combo input {
+  padding-right: calc(var(--space-3) + 1.75rem);
+}
+
+.flecha {
+  position: absolute;
+  top: 50%;
+  right: var(--space-1);
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: calc(var(--radio-input) - 4px);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.flecha svg {
+  transition: transform 150ms ease-out;
+}
+
+.flecha:hover {
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+}
+
+.flechaAbierta svg {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flecha svg {
+    transition: none;
+  }
+}
+
 /* La lista nace del campo: se ancla arriba y crece hacia abajo */
 .lista {
   position: absolute;

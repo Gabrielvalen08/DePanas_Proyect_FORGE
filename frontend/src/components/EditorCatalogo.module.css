@@ -1,0 +1,6 @@
+/* Categoría y producto del material, bajo el nombre */
+.asignacion {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-2);
+}

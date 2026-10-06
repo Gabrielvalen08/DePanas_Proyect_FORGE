@@ -5,7 +5,8 @@
   justify-content: center;
   min-height: 100dvh;
   padding: var(--space-4);
-  background: var(--crema-trigo);
+  /* Sin fondo propio: deja ver el crema del body con el collage de la marca */
+  background: transparent;
   position: relative;
   overflow: hidden;
 }

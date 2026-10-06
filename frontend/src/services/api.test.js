@@ -2,8 +2,13 @@ import {
   actualizarLista,
   eliminarLista,
   fetchListas,
+  asignarMaterial,
+  getAsignacion,
+  getCategorias,
+  getMateriales,
   getProductos,
   getProveedores,
+  necesitaAsignacion,
   guardarLista,
   reiniciarModo,
   totalLista,
@@ -60,8 +65,45 @@ describe('api: modo servidor', () => {
 
     const escrituras = llamadas.filter(l => l.metodo !== 'GET')
     expect(escrituras.map(l => `${l.metodo} ${l.ruta}`)).toEqual(['POST /compras', 'PUT /compras/c-1', 'DELETE /compras/c-1'])
-    expect(escrituras[0].cuerpo.materiales[0]).toEqual({ material: 'Arroz', cantidad: 5, unidad: 'lb', monto: 4.25, producto: '' })
+    expect(escrituras[0].cuerpo.materiales[0]).toEqual({ material: 'Arroz', cantidad: 5, unidad: 'lb', monto: 4.25, categoria: '', producto: '' })
     expect(localStorage.getItem('depanas_listas')).toBeNull()
+  })
+
+  it('el autocompletado usa el catálogo del servidor (Excel + compras guardadas)', async () => {
+    simularServidor({
+      'GET /catalogo': {
+        cuerpo: {
+          proveedores: ['MMAG', 'Selectos', 'Walmart'], categorias: ['Materia Prima'], productos: ['Todos'],
+          materiales: [{ nombre: 'Arroz', categoria: 'Materia Prima', producto: 'Todos' }, { nombre: 'Jamón de Pavo', categoria: '', producto: '' }],
+        },
+      },
+    })
+    await fetchListas()
+    await vi.waitFor(() => expect(getProveedores()).toContain('Walmart'))
+    expect(getProveedores()).toContain('MMAG')
+    expect(getMateriales()).toEqual(expect.arrayContaining(['Arroz', 'Jamón de Pavo']))
+    expect(getProveedores()).not.toContain('La Colonia') // los datos de ejemplo locales no se mezclan
+  })
+
+  it('asignar categoría y producto va al backend y el formulario lo ve en el acto', async () => {
+    const llamadas = simularServidor({
+      'GET /catalogo': {
+        cuerpo: { proveedores: [], categorias: ['Materia Prima'], productos: ['Todos'], materiales: [{ nombre: 'Queso', categoria: '', producto: '' }] },
+      },
+      'PUT /catalogo/materiales/Queso': {
+        cuerpo: { material: { nombre: 'Queso', categoria: 'Lácteos', producto: 'Tequeños' }, materialNuevo: false, categoriaNueva: true, productoNuevo: true },
+      },
+    })
+    await fetchListas()
+    await vi.waitFor(() => expect(getAsignacion('queso').existe).toBe(true))
+    expect(necesitaAsignacion('Queso')).toBe(true)
+
+    const resultado = await asignarMaterial('Queso', { categoria: 'Lácteos', producto: 'Tequeños' })
+    expect(resultado.categoriaNueva).toBe(true)
+    expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ categoria: 'Lácteos', producto: 'Tequeños' })
+    expect(necesitaAsignacion('Queso')).toBe(false)
+    expect(getCategorias()).toContain('Lácteos')
+    expect(localStorage.getItem('depanas_catalogo')).toBeNull()
   })
 
   it('si el backend rechaza el guardado, el error llega a la UI (no se guarda en local)', async () => {
@@ -125,9 +167,45 @@ describe('api: listas de compra (modo local)', () => {
     expect(localStorage.getItem('depanas_compras')).toBeNull()
   })
 
-  it('total, proveedores y productos para el autocompletado', () => {
+  it('total y opciones del autocompletado: catálogo del Excel + compras locales, sin repetir', () => {
     expect(totalLista({ productos: [{ precio: 1.2 }, { precio: 4.25 }] })).toBeCloseTo(5.45)
-    expect(getProveedores()).toContain('La Colonia')
-    expect(getProductos()).toContain('Plátano maduro')
+    expect(getProveedores()).toEqual(expect.arrayContaining(['Selectos', 'MMAG', 'Pepsi', 'Desechables Diver.', 'La Colonia']))
+    expect(getMateriales()).toEqual(expect.arrayContaining(['Tocino La Rioja', 'Jamón de Pavo', 'Plátano maduro']))
+    expect(getCategorias()).toHaveLength(6)
+    expect(getProductos()).toContain('Tequeños')
+    expect(getMateriales().filter(m => m === 'Cebolla')).toHaveLength(1)
+  })
+})
+
+describe('api: categoría y producto de cada material (modo local)', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('los materiales del Excel ya traen su categoría y producto', () => {
+    expect(getAsignacion('tocino la rioja')).toEqual({
+      existe: true, nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos',
+    })
+    expect(necesitaAsignacion('Tocino La Rioja')).toBe(false)
+    expect(necesitaAsignacion('Queso')).toBe(true) // en el Excel no tiene asignación
+    expect(necesitaAsignacion('Mr Músculo Antigrasa')).toBe(true) // tiene categoría pero no producto
+    expect(necesitaAsignacion('Harina PAN')).toBe(true) // material nuevo
+    expect(necesitaAsignacion('')).toBe(false)
+  })
+
+  it('un material nuevo se guarda con su categoría y producto, y crea los que no existían', async () => {
+    const resultado = await asignarMaterial('Harina PAN', { categoria: 'materia prima', producto: 'Arepas Rellenas' })
+    expect(resultado).toEqual({
+      material: { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas Rellenas' },
+      materialNuevo: true,
+      categoriaNueva: false,
+      productoNuevo: true,
+    })
+    expect(necesitaAsignacion('harina pan')).toBe(false)
+    expect(getMateriales()).toContain('Harina PAN')
+    expect(getProductos()).toContain('Arepas Rellenas')
+    expect(getCategorias().filter(c => c === 'Materia Prima')).toHaveLength(1)
+  })
+
+  it('pide categoría y producto', async () => {
+    await expect(asignarMaterial('Sal', { categoria: '', producto: 'Todos' })).rejects.toThrow('Elige una categoría')
   })
 })

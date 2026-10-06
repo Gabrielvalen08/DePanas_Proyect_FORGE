@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Lock, Eye, EyeOff, AlertCircle, ArrowRight, Delete, RotateCcw } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import Boton from '../components/common/Boton'
+import { ACCESO } from '../utils/mensajes'
 import estilos from './PantallaContrasena.module.css'
 
 export default function PantallaContrasena() {
@@ -19,7 +20,7 @@ export default function PantallaContrasena() {
   const handleSubmit = (e) => {
     e?.preventDefault()
     if (!contrasena) {
-      setError('Por favor escribe la contraseña')
+      setError(ACCESO.faltaContrasena)
       setAnimandoError(true)
       setTimeout(() => setAnimandoError(false), 500)
       inputRef.current?.focus()
@@ -28,7 +29,7 @@ export default function PantallaContrasena() {
 
     const res = ingresar(contrasena)
     if (!res.ok) {
-      setError(res.error || 'Contraseña incorrecta')
+      setError(res.error || ACCESO.incorrecta)
       setAnimandoError(true)
       setTimeout(() => setAnimandoError(false), 500)
       setContrasena('')
@@ -71,15 +72,13 @@ export default function PantallaContrasena() {
           <Lock size={26} strokeWidth={2.2} />
         </div>
 
-        <h1 className={estilos.titulo}>Acceso al sistema</h1>
-        <p className={estilos.descripcion}>
-          Ingresa la contraseña para acceder al registro de compras y costos.
-        </p>
+        <h1 className={estilos.titulo}>{ACCESO.titulo}</h1>
+        <p className={estilos.descripcion}>{ACCESO.descripcion}</p>
 
         <form onSubmit={handleSubmit} className={estilos.formulario} noValidate>
           <div className={estilos.filaInput}>
             <label htmlFor="input-contrasena" className="solo-lector">
-              Contraseña de acceso
+              {ACCESO.etiqueta}
             </label>
             <input
               ref={inputRef}
@@ -162,13 +161,13 @@ export default function PantallaContrasena() {
               ancho={true}
               icono={<ArrowRight size={18} />}
             >
-              Ingresar al sistema
+              {ACCESO.boton}
             </Boton>
           </div>
         </form>
 
         <footer className={estilos.pie}>
-          <span>De Panas SV · Control interno de insumos y costos</span>
+          <span>{ACCESO.pie}</span>
         </footer>
       </div>
     </main>

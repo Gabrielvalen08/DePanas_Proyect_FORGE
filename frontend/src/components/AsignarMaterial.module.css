@@ -1,0 +1,120 @@
+.descripcion {
+  margin-bottom: var(--space-4);
+  font-family: var(--fuente-texto);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.asignado {
+  margin-bottom: var(--space-2);
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+.asignado strong {
+  color: var(--color-text);
+}
+
+.grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.titulo {
+  padding: 0;
+  font-family: var(--fuente-titulos);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+
+/* Botones de selección en forma de píldora; la lista larga hace scroll */
+.opciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: var(--space-2);
+  max-height: 11.5rem;
+  overflow-y: auto;
+  padding: var(--space-1);
+}
+
+.opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--alto-control);
+  padding: 0.2em var(--space-4) 0;
+  border: 1.5px solid var(--color-border-input);
+  border-radius: var(--radio-pildora);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--fuente-titulos);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease-out, transform 150ms ease-out;
+}
+
+.opcion:hover {
+  background: var(--color-surface-soft);
+}
+
+.opcion:active {
+  transform: scale(0.97);
+}
+
+/* Elegida: Verde Ávila con texto Crema y Trigo (9.71:1) */
+.elegida,
+.elegida:hover {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.agregar {
+  border-style: dashed;
+  background: var(--color-surface-soft);
+}
+
+.nueva {
+  margin-left: var(--space-1);
+  font-size: 0.75rem;
+}
+
+.vacio {
+  padding: var(--space-2) 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+.aviso {
+  font-family: var(--fuente-texto);
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+.error {
+  font-family: var(--fuente-titulos);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opcion {
+    transition: none;
+  }
+
+  .opcion:active {
+    transform: none;
+  }
+}

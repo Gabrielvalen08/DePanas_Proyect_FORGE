@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react'
+import { ACCESO } from '../utils/mensajes'
 
 const CLAVE_STORAGE = 'depanas_autenticado'
 const CONTRASENA_CORRECTA = '1234'
@@ -33,7 +34,7 @@ export function AuthProvider({ children }) {
       setAutenticado(true)
       return { ok: true }
     }
-    return { ok: false, error: 'Contraseña incorrecta. Inténtalo de nuevo.' }
+    return { ok: false, error: ACCESO.incorrecta }
   }, [])
 
   const salir = useCallback(() => {

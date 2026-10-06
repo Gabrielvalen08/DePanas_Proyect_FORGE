@@ -2,9 +2,12 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { AlertCircle, Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
+import AsignarMaterial from './AsignarMaterial'
 import { Boton, Campo, Selector } from './common'
-import { getMateriales, getProveedores } from '../services/api'
-import { fechaHoyISO, formatearPrecio } from '../utils/formato'
+import { asignarMaterial, getAsignacion, getMateriales, getProveedores, necesitaAsignacion } from '../services/api'
+import { useToast } from '../context/ToastContext'
+import { ASIGNACION, COMPRA, VALIDACION } from '../utils/mensajes'
+import { fechaHoyISO, formatearPrecio, textoBusqueda } from '../utils/formato'
 import { springSuave } from '../styles/movimiento'
 import estilos from './BloqueCompra.module.css'
 
@@ -41,27 +44,31 @@ function estaVacia(fila) {
 
 function validarFila(fila) {
   const errores = {}
-  if (!fila.material.trim()) errores.material = 'Escribe el material'
+  if (!fila.material.trim()) errores.material = VALIDACION.material
   if (!fila.cantidad || isNaN(fila.cantidad) || Number(fila.cantidad) <= 0)
-    errores.cantidad = 'Ingresa una cantidad mayor a 0'
+    errores.cantidad = VALIDACION.cantidad
   if (!fila.monto || isNaN(fila.monto) || Number(fila.monto) <= 0)
-    errores.monto = 'Ingresa un precio mayor a 0'
+    errores.monto = VALIDACION.precio
   return errores
 }
 
 function validarEncabezado(campo, valor) {
-  if (campo === 'proveedor' && !valor.trim()) return 'Escribe el proveedor'
-  if (campo === 'fecha' && !valor) return 'Elige la fecha de la compra'
+  if (campo === 'proveedor' && !valor.trim()) return VALIDACION.proveedor
+  if (campo === 'fecha' && !valor) return VALIDACION.fecha
   return undefined
 }
 
 const clave   = (filaId, campo) => `${filaId}-${campo}`
-const filtrar = (lista, texto) => lista.filter(x => x.toLowerCase().includes(texto.toLowerCase()))
+// Como el buscador de Excel: coincide en cualquier parte y sin distinguir tildes ni mayúsculas
+const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(textoBusqueda(texto.trim())))
 
 /**
  * BloqueCompra
  * Formulario de una lista de compra: proveedor y fecha en el encabezado,
  * y filas de materiales (material, cantidad + unidad, monto).
+ * Cada material lleva su categoría y su producto (como en el Excel): si se
+ * escribe uno nuevo o sin asignar, se piden en una ventana emergente
+ * (AsignarMaterial) al elegirlo, al salir del campo o, si faltan, al guardar.
  *
  * Props:
  *  - titulo: texto del encabezado (por defecto "Detalle de compra")
@@ -87,6 +94,12 @@ export default function BloqueCompra({
   const [errores, setErrores]     = useState({})
   const [guardando, setGuardando] = useState(false)
   const [intentoGuardar, setIntentoGuardar] = useState(false)
+  const [porAsignar, setPorAsignar] = useState(null) // material en la ventana emergente
+  const { addToast } = useToast()
+
+  const formRef        = useRef(null)
+  const omitidos       = useRef(new Set()) // "Ahora no": no se vuelve a pedir al salir del campo
+  const guardarDespues = useRef(false)     // la ventana se abrió al guardar: se guarda al terminar
 
   const resumenRef     = useRef(null)
   const enfocarResumen = useRef(false)
@@ -150,6 +163,40 @@ export default function BloqueCompra({
     if (fila && !estaVacia(fila)) fijarError(clave(filaId, campo), validarFila(fila)[campo])
   }
 
+  // --- Categoría y producto de cada material ---
+  function revisarMaterial(valor) {
+    const nombre = (valor || '').trim()
+    if (porAsignar || !necesitaAsignacion(nombre) || omitidos.current.has(nombre.toLowerCase())) return
+    setPorAsignar(getAsignacion(nombre))
+  }
+
+  /** Siguiente fila con un material sin categoría o producto */
+  function pendienteDeAsignar() {
+    return filas.find(f => !estaVacia(f) && necesitaAsignacion(f.material))
+  }
+
+  async function asignar(eleccion) {
+    try {
+      addToast(ASIGNACION.asignado(await asignarMaterial(porAsignar.nombre, eleccion)))
+    } catch (error) {
+      addToast(ASIGNACION.errorGuardar(error.message), 'error')
+      throw error
+    }
+    setPorAsignar(null)
+    if (guardarDespues.current) {
+      guardarDespues.current = false
+      // Si otro material también falta, se pide; si no, se guarda la compra
+      setTimeout(() => formRef.current?.requestSubmit(), 0)
+    }
+  }
+
+  function omitirAsignacion() {
+    if (porAsignar) omitidos.current.add(porAsignar.nombre.toLowerCase())
+    if (guardarDespues.current && porAsignar) addToast(COMPRA.faltaAsignacion(porAsignar.nombre), 'error')
+    guardarDespues.current = false
+    setPorAsignar(null)
+  }
+
   function agregarFila() {
     const nueva = filaVacia()
     filaPorEnfocar.current = nueva.id
@@ -189,18 +236,30 @@ export default function BloqueCompra({
       return
     }
 
+    // Todos los materiales necesitan categoría y producto antes de guardar
+    const pendiente = pendienteDeAsignar()
+    if (pendiente) {
+      guardarDespues.current = true
+      setPorAsignar(getAsignacion(pendiente.material))
+      return
+    }
+
     const lista = {
       proveedor,
       fecha,
       categoria: '',
-      materiales: filasConDatos.map(({ material, cantidad, unidad, monto }) => ({
-        material,
-        cantidad: Number(cantidad),
-        unidad,
-        monto: Number(monto),
-        precio: Number(monto),
-        producto: '',
-      })),
+      materiales: filasConDatos.map(({ material, cantidad, unidad, monto }) => {
+        const { categoria, producto } = getAsignacion(material)
+        return {
+          material,
+          cantidad: Number(cantidad),
+          unidad,
+          monto: Number(monto),
+          precio: Number(monto),
+          categoria,
+          producto,
+        }
+      }),
       productos: filasConDatos.map(({ material, cantidad, unidad, monto }) => ({
         producto: material,
         cantidad: Number(cantidad),
@@ -239,175 +298,192 @@ export default function BloqueCompra({
   }
 
   return (
-    <form onSubmit={guardar} noValidate className={estilos.bloque} aria-labelledby={`${id}-titulo`}>
-      <section className={[estilos.tarjeta, plano && estilos.plano].filter(Boolean).join(' ')}>
-        <header className={estilos.encabezado}>
-          <h2 id={`${id}-titulo`} className={estilos.titulo}>{titulo}</h2>
-          <div className={estilos.encabezadoCampos}>
-            <div className={estilos.campoProveedor}>
-              <AutocompleteInput
-                id={`${id}-proveedor`}
-                etiqueta="Proveedor"
-                value={proveedor}
-                onChange={valor => cambiarEncabezado('proveedor', valor)}
-                onBlur={() => salirDeEncabezado('proveedor')}
-                placeholder="Súper Selectos…"
-                getSuggestions={sugerirProveedores}
-                error={errores.proveedor}
+    <>
+      <form ref={formRef} onSubmit={guardar} noValidate className={estilos.bloque} aria-labelledby={`${id}-titulo`}>
+        <section className={[estilos.tarjeta, plano && estilos.plano].filter(Boolean).join(' ')}>
+          <header className={estilos.encabezado}>
+            <h2 id={`${id}-titulo`} className={estilos.titulo}>{titulo}</h2>
+            <div className={estilos.encabezadoCampos}>
+              <div className={estilos.campoProveedor}>
+                <AutocompleteInput
+                  id={`${id}-proveedor`}
+                  etiqueta="Proveedor"
+                  value={proveedor}
+                  onChange={valor => cambiarEncabezado('proveedor', valor)}
+                  onBlur={() => salirDeEncabezado('proveedor')}
+                  placeholder="Selectos…"
+                  getSuggestions={sugerirProveedores}
+                  error={errores.proveedor}
+                />
+              </div>
+              <Campo
+                id={`${id}-fecha`}
+                etiqueta="Fecha"
+                tipo="date"
+                value={fecha}
+                onChange={e => cambiarEncabezado('fecha', e.target.value)}
+                onBlur={() => salirDeEncabezado('fecha')}
+                error={errores.fecha}
+                className={estilos.campoFecha}
               />
             </div>
-            <Campo
-              id={`${id}-fecha`}
-              etiqueta="Fecha"
-              tipo="date"
-              value={fecha}
-              onChange={e => cambiarEncabezado('fecha', e.target.value)}
-              onBlur={() => salirDeEncabezado('fecha')}
-              error={errores.fecha}
-              className={estilos.campoFecha}
-            />
-          </div>
-        </header>
+          </header>
 
-        {resumen.length > 0 && (
-          <div ref={resumenRef} role="alert" tabIndex={-1} className={estilos.resumen} aria-labelledby={`${id}-resumen`}>
-            <h3 id={`${id}-resumen`} className={estilos.resumenTitulo}>
-              <AlertCircle size={18} aria-hidden="true" />
-              Revisa estos campos
-            </h3>
-            <ul className={estilos.resumenLista}>
-              {resumen.map(item => (
-                <li key={item.idCampo}>
-                  <a href={`#${item.idCampo}`} onClick={e => irACampo(e, item.idCampo)}>{item.texto}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+          {resumen.length > 0 && (
+            <div ref={resumenRef} role="alert" tabIndex={-1} className={estilos.resumen} aria-labelledby={`${id}-resumen`}>
+              <h3 id={`${id}-resumen`} className={estilos.resumenTitulo}>
+                <AlertCircle size={18} aria-hidden="true" />
+                {VALIDACION.resumen}
+              </h3>
+              <ul className={estilos.resumenLista}>
+                {resumen.map(item => (
+                  <li key={item.idCampo}>
+                    <a href={`#${item.idCampo}`} onClick={e => irACampo(e, item.idCampo)}>{item.texto}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-        <table className={estilos.tabla}>
-          <caption className="solo-lector">Materiales de la compra</caption>
-          <thead>
-            <tr>
-              <th scope="col" className={estilos.colMaterial}>Material</th>
-              <th scope="col" className={estilos.colCantidad}>Cantidad</th>
-              <th scope="col" className={estilos.colPrecio}>Precio</th>
-              <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            <AnimatePresence initial={false}>
-              {filas.map((fila, i) => {
-                const n = i + 1
-                return (
-                  <motion.tr
-                    key={fila.id}
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={springSuave}
-                  >
-                    {/* Material */}
-                    <td>
-                      <AutocompleteInput
-                        id={`${id}-material-${fila.id}`}
-                        etiqueta={`Material, fila ${n}`}
-                        etiquetaOculta
-                        value={fila.material}
-                        onChange={valor => cambiarFila(fila.id, 'material', valor)}
-                        onBlur={() => salirDeCampoFila(fila.id, 'material')}
-                        placeholder="Ej: Harina de maíz…"
-                        getSuggestions={sugerirMateriales}
-                        error={errores[clave(fila.id, 'material')]}
-                      />
-                    </td>
+          <table className={estilos.tabla}>
+            <caption className="solo-lector">Materiales de la compra</caption>
+            <thead>
+              <tr>
+                <th scope="col" className={estilos.colMaterial}>Material</th>
+                <th scope="col" className={estilos.colCantidad}>Cantidad</th>
+                <th scope="col" className={estilos.colPrecio}>Precio</th>
+                <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <AnimatePresence initial={false}>
+                {filas.map((fila, i) => {
+                  const n = i + 1
+                  return (
+                    <motion.tr
+                      key={fila.id}
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={springSuave}
+                    >
+                      {/* Material */}
+                      <td>
+                        <AutocompleteInput
+                          id={`${id}-material-${fila.id}`}
+                          etiqueta={`Material, fila ${n}`}
+                          etiquetaOculta
+                          value={fila.material}
+                          onChange={valor => cambiarFila(fila.id, 'material', valor)}
+                          onSeleccionar={revisarMaterial}
+                          onBlur={() => {
+                            salirDeCampoFila(fila.id, 'material')
+                            revisarMaterial(fila.material)
+                          }}
+                          ayuda={textoAsignacion(fila.material)}
+                          placeholder="Ej: Jamón de Pavo…"
+                          getSuggestions={sugerirMateriales}
+                          error={errores[clave(fila.id, 'material')]}
+                        />
+                      </td>
 
-                    {/* Cantidad + Unidad */}
-                    <td>
-                      <div className={estilos.cantidadGrupo}>
+                      {/* Cantidad + Unidad */}
+                      <td>
+                        <div className={estilos.cantidadGrupo}>
+                          <Campo
+                            id={`${id}-cantidad-${fila.id}`}
+                            etiqueta={`Cantidad, fila ${n}`}
+                            etiquetaOculta
+                            tipo="number"
+                            inputMode="decimal"
+                            min="0"
+                            step="any"
+                            placeholder="3"
+                            value={fila.cantidad}
+                            onChange={e => cambiarFila(fila.id, 'cantidad', e.target.value)}
+                            onBlur={() => salirDeCampoFila(fila.id, 'cantidad')}
+                            error={errores[clave(fila.id, 'cantidad')]}
+                            className={estilos.cantidad}
+                          />
+                          <Selector
+                            id={`${id}-unidad-${fila.id}`}
+                            etiqueta={`Unidad, fila ${n}`}
+                            etiquetaOculta
+                            opciones={UNIDADES}
+                            value={fila.unidad}
+                            onChange={e => cambiarFila(fila.id, 'unidad', e.target.value)}
+                            className={estilos.unidad}
+                          />
+                        </div>
+                      </td>
+
+                      {/* Precio / Monto */}
+                      <td>
                         <Campo
-                          id={`${id}-cantidad-${fila.id}`}
-                          etiqueta={`Cantidad, fila ${n}`}
+                          id={`${id}-monto-${fila.id}`}
+                          etiqueta={`Precio, fila ${n}`}
                           etiquetaOculta
                           tipo="number"
                           inputMode="decimal"
-                          min="0"
-                          step="any"
-                          placeholder="3"
-                          value={fila.cantidad}
-                          onChange={e => cambiarFila(fila.id, 'cantidad', e.target.value)}
-                          onBlur={() => salirDeCampoFila(fila.id, 'cantidad')}
-                          error={errores[clave(fila.id, 'cantidad')]}
-                          className={estilos.cantidad}
+                          min="0.01"
+                          step="0.01"
+                          prefijo="$"
+                          placeholder="0.00"
+                          value={fila.monto}
+                          onChange={e => cambiarFila(fila.id, 'monto', e.target.value)}
+                          onBlur={() => salirDeCampoFila(fila.id, 'monto')}
+                          error={errores[clave(fila.id, 'monto')]}
                         />
-                        <Selector
-                          id={`${id}-unidad-${fila.id}`}
-                          etiqueta={`Unidad, fila ${n}`}
-                          etiquetaOculta
-                          opciones={UNIDADES}
-                          value={fila.unidad}
-                          onChange={e => cambiarFila(fila.id, 'unidad', e.target.value)}
-                          className={estilos.unidad}
+                      </td>
+
+                      {/* Eliminar fila */}
+                      <td className={estilos.colAcciones}>
+                        <Boton
+                          variante="icono"
+                          icono={<Trash2 />}
+                          aria-label={`Eliminar fila ${n}`}
+                          onClick={() => quitarFila(fila.id)}
+                          disabled={filas.length === 1}
+                          className={estilos.eliminar}
                         />
-                      </div>
-                    </td>
+                      </td>
+                    </motion.tr>
+                  )
+                })}
+              </AnimatePresence>
+            </tbody>
+          </table>
 
-                    {/* Precio / Monto */}
-                    <td>
-                      <Campo
-                        id={`${id}-monto-${fila.id}`}
-                        etiqueta={`Precio, fila ${n}`}
-                        etiquetaOculta
-                        tipo="number"
-                        inputMode="decimal"
-                        min="0.01"
-                        step="0.01"
-                        prefijo="$"
-                        placeholder="0.00"
-                        value={fila.monto}
-                        onChange={e => cambiarFila(fila.id, 'monto', e.target.value)}
-                        onBlur={() => salirDeCampoFila(fila.id, 'monto')}
-                        error={errores[clave(fila.id, 'monto')]}
-                      />
-                    </td>
+          <div className={estilos.pieTabla}>
+            <Boton variante="secundario" icono={<Plus />} onClick={agregarFila} className={estilos.botonPunteado}>
+              Agregar otra fila
+            </Boton>
+            <p className={estilos.total}>
+              <span className={estilos.totalEtiqueta}>Total</span>
+              <span className={estilos.totalValor} aria-live="polite">{formatearPrecio(total)}</span>
+            </p>
+          </div>
+        </section>
 
-                    {/* Eliminar fila */}
-                    <td className={estilos.colAcciones}>
-                      <Boton
-                        variante="icono"
-                        icono={<Trash2 />}
-                        aria-label={`Eliminar fila ${n}`}
-                        onClick={() => quitarFila(fila.id)}
-                        disabled={filas.length === 1}
-                        className={estilos.eliminar}
-                      />
-                    </td>
-                  </motion.tr>
-                )
-              })}
-            </AnimatePresence>
-          </tbody>
-        </table>
-
-        <div className={estilos.pieTabla}>
-          <Boton variante="secundario" icono={<Plus />} onClick={agregarFila} className={estilos.botonPunteado}>
-            Agregar otra fila
+        <div className={estilos.acciones}>
+          <Boton variante="fantasma" onClick={alCancelar}>
+            Cancelar
           </Boton>
-          <p className={estilos.total}>
-            <span className={estilos.totalEtiqueta}>Total</span>
-            <span className={estilos.totalValor} aria-live="polite">{formatearPrecio(total)}</span>
-          </p>
+          <Boton type="submit" variante="primario" sombra icono={<Save />} cargando={guardando}>
+            {guardando ? 'Guardando…' : textoGuardar}
+          </Boton>
         </div>
-      </section>
+      </form>
 
-      <div className={estilos.acciones}>
-        <Boton variante="fantasma" onClick={alCancelar}>
-          Cancelar
-        </Boton>
-        <Boton type="submit" variante="primario" sombra icono={<Save />} cargando={guardando}>
-          {guardando ? 'Guardando…' : textoGuardar}
-        </Boton>
-      </div>
-    </form>
+      {/* Fuera del <form>: los eventos del portal no deben llegar a su onSubmit */}
+      <AsignarMaterial material={porAsignar} alGuardar={asignar} alCancelar={omitirAsignacion} />
+    </>
   )
+}
+
+/** "Materia Prima · Cachitos" bajo el material, cuando ya tiene ambos asignados */
+function textoAsignacion(material) {
+  if (!material.trim() || necesitaAsignacion(material)) return undefined
+  const { categoria, producto } = getAsignacion(material)
+  return `${categoria} · ${producto}`
 }

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import PantallaMaestra from './PantallaMaestra'
+import { COMPRA } from '../utils/mensajes'
 
 function renderizar() {
   return render(
@@ -52,7 +53,7 @@ describe('PantallaMaestra', () => {
     await usuario.type(precio, '10')
     await usuario.click(within(edicion).getByRole('button', { name: /guardar cambios/i }))
 
-    expect(await screen.findByText('Compra actualizada')).toBeInTheDocument()
+    expect(await screen.findByText(COMPRA.actualizada)).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(await screen.findByText('$14.70')).toBeInTheDocument()
   })
@@ -63,11 +64,11 @@ describe('PantallaMaestra', () => {
     await usuario.click(await screen.findByRole('button', { name: LISTA_SELECTOS }))
     await usuario.click(screen.getByRole('button', { name: 'Eliminar' }))
 
-    const confirmacion = screen.getByRole('alertdialog', { name: 'Eliminar compra' })
+    const confirmacion = screen.getByRole('alertdialog', { name: COMPRA.confirmarEliminar.titulo })
     expect(within(confirmacion).getByRole('button', { name: 'Cancelar' })).toHaveFocus()
-    await usuario.click(within(confirmacion).getByRole('button', { name: 'Eliminar' }))
+    await usuario.click(within(confirmacion).getByRole('button', { name: COMPRA.confirmarEliminar.confirmar }))
 
-    expect(await screen.findByText('Compra eliminada')).toBeInTheDocument()
+    expect(await screen.findByText(COMPRA.eliminada)).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('button', { name: LISTA_SELECTOS })).not.toBeInTheDocument())
   })
 

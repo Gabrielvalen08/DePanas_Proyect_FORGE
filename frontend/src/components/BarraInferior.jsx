@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { Lock } from 'lucide-react'
-import { itemsNavegacion } from './navegacion'
+import { itemConfiguracion, itemsNavegacion } from './navegacion'
 import { springSuave } from '../styles/movimiento'
 import estilos from './BarraInferior.module.css'
 
@@ -10,7 +10,7 @@ export default function BarraInferior({ onBloquear }) {
   return (
     <nav className={estilos.barra} aria-label="Menú principal móvil">
       <ul className={estilos.lista}>
-        {itemsNavegacion.map(({ a, Icono, etiquetaCorta }) => (
+        {[...itemsNavegacion, itemConfiguracion].map(({ a, Icono, etiquetaCorta }) => (
           <li key={a} className={estilos.celda}>
             <NavLink
               to={a}

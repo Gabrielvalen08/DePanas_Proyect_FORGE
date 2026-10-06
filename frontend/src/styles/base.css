@@ -22,6 +22,37 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Collage de la marca: capa fija detrás de todo el contenido. Solo se ve donde
+   asoma el fondo crema; tarjetas, sidebar y header lo tapan con su propio fondo. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--patron-imagen) repeat center top / var(--patron-tamano);
+  opacity: var(--patron-opacidad);
+  pointer-events: none;
+}
+
+/* Responsivo: ilustraciones más pequeñas en pantallas angostas */
+@media (max-width: 767px) {
+  :root {
+    --patron-tamano: 26rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --patron-tamano: 46rem;
+  }
+}
+
+@media (prefers-contrast: more), print {
+  body::before {
+    display: none;
+  }
+}
+
 img,
 svg {
   display: block;
@@ -87,7 +118,7 @@ p {
   outline-offset: 2px;
 }
 
-/* Lo que recibe foco o scroll programático no queda bajo el header translúcido */
+/* Lo que recibe foco o scroll programático no queda bajo el header fijo */
 input,
 select,
 textarea,

@@ -4,8 +4,11 @@ import { useScrollDetectado } from '../hooks/useScrollDetectado'
 import { formatearFechaLarga } from '../utils/formato'
 import estilos from './Header.module.css'
 
-/** Header translúcido. Props: title (título de la página), badge (contexto). */
-export default function Header({ title, badge }) {
+/**
+ * Header fijo: transparente sobre el collage y crema sólido al hacer scroll. Props: title (título de la página), badge (contexto),
+ * frase (frase de la voz de marca bajo el título; ver utils/mensajes.js).
+ */
+export default function Header({ title, badge, frase }) {
   const [centinelaRef, hayScroll] = useScrollDetectado()
   const hoy = formatearFechaLarga(new Date())
 
@@ -15,7 +18,10 @@ export default function Header({ title, badge }) {
       <header className={estilos.header} data-scroll={hayScroll}>
         <div className={estilos.izquierda}>
           <span className={estilos.logoMovil} aria-hidden="true">DE PANAS</span>
-          <h1 className={estilos.titulo}>{title}</h1>
+          <div className={estilos.textos}>
+            <h1 className={estilos.titulo}>{title}</h1>
+            {frase && <p className={estilos.frase}>{frase}</p>}
+          </div>
           {badge && <Insignia tono="marca" className={estilos.insignia}>{badge}</Insignia>}
         </div>
         <p className={estilos.fecha}>
