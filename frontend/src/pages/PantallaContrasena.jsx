@@ -13,6 +13,7 @@ export default function PantallaContrasena() {
   const [error, setError] = useState('')
   const [mostrarAyuda, setMostrarAyuda] = useState(false)
   const [animandoError, setAnimandoError] = useState(false)
+  const [enviando, setEnviando] = useState(false)
 
   const usuarioRef = useRef(null)
   const contrasenaRef = useRef(null)
@@ -21,8 +22,9 @@ export default function PantallaContrasena() {
     usuarioRef.current?.focus()
   }, [])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e?.preventDefault()
+    if (enviando) return
 
     if (!usuario.trim()) {
       setError(ACCESO.faltaUsuario)
@@ -40,8 +42,10 @@ export default function PantallaContrasena() {
       return
     }
 
-    const res = ingresar(usuario, contrasena)
+    setEnviando(true)
+    const res = await ingresar(usuario, contrasena)
     if (!res.ok) {
+      setEnviando(false)
       setError(res.error || ACCESO.incorrecta)
       setAnimandoError(true)
       setTimeout(() => setAnimandoError(false), 500)
@@ -153,6 +157,7 @@ export default function PantallaContrasena() {
               type="submit"
               variante="primario"
               ancho={true}
+              cargando={enviando}
               icono={<ArrowRight size={18} />}
             >
               {ACCESO.boton}

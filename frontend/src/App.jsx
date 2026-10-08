@@ -11,11 +11,13 @@ import PantallaContrasena from './pages/PantallaContrasena'
 import PantallaConfiguracion from './pages/PantallaConfiguracion'
 import PantallaExportar from './pages/PantallaExportar'
 import PantallaCargar from './pages/PantallaCargar'
+import PantallaUsuarios from './pages/PantallaUsuarios'
+import { rutaInicio } from './utils/permisos'
 import { ACCESO } from './utils/mensajes'
 import estilos from './App.module.css'
 
 function AppContenido() {
-  const { autenticado, salir, tienePermiso } = useAuth()
+  const { autenticado, sesion, salir, tienePermiso } = useAuth()
   const { addToast } = useToast()
 
   function bloquear() {
@@ -45,7 +47,9 @@ function AppContenido() {
     return <PantallaContrasena />
   }
 
-  const puedeConfiguracion = tienePermiso('/configuracion')
+  // Cada pantalla se abre solo con permiso; si no, se va a la primera que el usuario sí puede ver
+  const inicio = rutaInicio(sesion)
+  const protegida = (permiso, elemento) => (tienePermiso(permiso) ? elemento : <Navigate to={inicio} replace />)
 
   return (
     <>
@@ -55,21 +59,21 @@ function AppContenido() {
         <div className={estilos.areaPrincipal}>
           <Routes>
             {/* Agregar compra es la página principal */}
-            <Route path="/" element={<AgregarCompra />} />
-            <Route path="/compras" element={<PantallaMaestra />} />
             <Route
-              path="/configuracion"
-              element={puedeConfiguracion ? <PantallaConfiguracion /> : <Navigate to="/" replace />}
+              path="/"
+              element={protegida('/', (
+                <AgregarCompra puedeExportar={tienePermiso('/exportar')} puedeCargar={tienePermiso('/cargar')} />
+              ))}
             />
-            <Route
-              path="/configuracion/:seccion"
-              element={puedeConfiguracion ? <PantallaConfiguracion /> : <Navigate to="/" replace />}
-            />
-            <Route path="/exportar" element={<PantallaExportar />} />
-            <Route path="/cargar" element={<PantallaCargar />} />
+            <Route path="/compras" element={protegida('/compras', <PantallaMaestra puedeAgregar={tienePermiso('/')} />)} />
+            <Route path="/configuracion" element={protegida('/configuracion', <PantallaConfiguracion />)} />
+            <Route path="/configuracion/:seccion" element={protegida('/configuracion', <PantallaConfiguracion />)} />
+            <Route path="/exportar" element={protegida('/exportar', <PantallaExportar />)} />
+            <Route path="/cargar" element={protegida('/cargar', <PantallaCargar puedeVolver={tienePermiso('/')} />)} />
+            <Route path="/usuarios" element={protegida('/usuarios', <PantallaUsuarios />)} />
             <Route path="/agregar-compra" element={<Navigate to="/" replace />} />
             {/* Redirige cualquier ruta desconocida a la principal */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to={inicio} replace />} />
           </Routes>
         </div>
         <BarraInferior onBloquear={bloquear} />

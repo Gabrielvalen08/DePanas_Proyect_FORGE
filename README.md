@@ -14,7 +14,8 @@ Aplicación web local para que **De Panas**, un negocio de comida venezolana, re
 
 **Implementado:**
 
-- **Pantalla de acceso** con contraseña (teclado numérico para la tablet). La sesión dura hasta cerrar la pestaña y el menú tiene un botón **Bloquear**.
+- **Pantalla de acceso** con usuario y contraseña. La sesión dura hasta cerrar la pestaña y el menú tiene un botón **Bloquear**.
+- **Gestor de usuarios** (solo el administrador): crear usuarios con su contraseña, editar nombre, contraseña y pantallas, y eliminarlos. No se repiten usuarios ni contraseñas, y las contraseñas se guardan con hash. Cada usuario ve solo las pantallas que se le asignan.
 - **Registro de compras** (página principal). Proveedor y fecha se escriben una vez; cada fila lleva material, cantidad, unidad y precio. El total se calcula en vivo.
 - **Varias compras a la vez.** "Nueva compra" agrega otro bloque, y cada uno tiene su propio Guardar.
 - **Buscador tipo Excel** en Proveedor y Material: un clic muestra todas las opciones, al escribir se filtran (sin distinguir tildes ni mayúsculas) y también se puede escribir un valor nuevo.
@@ -64,7 +65,7 @@ Aplicación web local para que **De Panas**, un negocio de comida venezolana, re
 ```
 frontend/src/
   pages/          AgregarCompra (principal), PantallaMaestra (compras), PantallaConfiguracion,
-                  PantallaExportar, PantallaCargar y PantallaContrasena (acceso)
+                  PantallaExportar, PantallaCargar, PantallaUsuarios y PantallaContrasena (acceso)
   components/     BloqueCompra, AsignarMaterial, EditorCatalogo, DetalleLista, FiltrosEnLinea, navegación…
   components/common/  Piezas base: Boton, Campo, Modal, Tarjeta…
   context/        Toasts y sesión (AuthContext)
@@ -129,7 +130,7 @@ npm run lint
 npm run build      # producción en frontend/dist/
 ```
 
-Sin el backend encendido, el frontend trabaja en modo local con datos de ejemplo. La contraseña de acceso de prueba es `1234` (`frontend/src/context/AuthContext.jsx`).
+Sin el backend encendido, el frontend trabaja en modo local con datos de ejemplo. Usuarios de prueba: `Cesar_01` / `1234` (administrador, entra a todo) y `Marta_02` / `5678` (todo menos el Gestor de usuarios). Se siembran en la base al crearla (`backend/db/usuarios.js`) y, en modo local, en `depanas_usuarios`.
 
 Los comandos se probaron en Windows 11.
 

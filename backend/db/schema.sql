@@ -34,6 +34,19 @@ CREATE TABLE IF NOT EXISTS catalogo (
     UNIQUE (tipo, nombre COLLATE NOCASE)
 );
 
+-- Usuarios del sistema y las pantallas a las que entra cada uno.
+-- contrasena es un hash PBKDF2 (contrasenas.js), nunca el texto.
+-- permisos: JSON con las rutas del frontend; el administrador tiene ["*"].
+-- Se siembra con db/usuarios.js cuando está vacía.
+CREATE TABLE IF NOT EXISTS usuarios (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario    TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    nombre     TEXT NOT NULL,
+    contrasena TEXT NOT NULL,
+    rol        TEXT NOT NULL DEFAULT 'operador' CHECK (rol IN ('admin', 'operador')),
+    permisos   TEXT NOT NULL DEFAULT '[]'
+);
+
 -- Índices para búsquedas y filtros rápidos
 -- (el índice de compra_id se crea en db.js, después de migrar bases antiguas)
 CREATE INDEX IF NOT EXISTS idx_ingresos_fecha ON ingresos(fecha);

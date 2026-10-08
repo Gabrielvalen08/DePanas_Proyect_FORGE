@@ -21,12 +21,15 @@
  */
 
 import { comprasACsv, comprasAJson, nombreArchivo } from '../utils/exportar'
+import { RUTAS_ASIGNABLES, RUTA_USUARIOS } from '../utils/permisos'
+import { USUARIOS as MENSAJES_USUARIOS } from '../utils/mensajes'
 
 const BASE_URL = '/api'
 
 const CLAVE_LISTAS          = 'depanas_listas'
 const CLAVE_COMPRAS_ANTIGUA = 'depanas_compras'
 const CLAVE_CATALOGO        = 'depanas_catalogo'
+const CLAVE_USUARIOS        = 'depanas_usuarios'
 
 // ---------------------------------------------------------------------------
 // Catálogo de los desplegables (de "Datos De Panas.xlsx", igual que
@@ -508,17 +511,23 @@ export function reiniciarModo() {
   catalogoServidor = null
 }
 
-/** fetch al backend; si responde con error, lanza con el mensaje del servidor */
+/**
+ * fetch al backend; si responde con error, lanza con el mensaje del servidor
+ * (y error.campo cuando el servidor dice qué campo del formulario lo causó)
+ */
 async function pedir(ruta, opciones = {}) {
   const res = await fetch(`${BASE_URL}${ruta}`, opciones)
   if (!res.ok) {
     let mensaje = `Error ${res.status}`
+    let campo
     try {
-      mensaje = (await res.json()).error || mensaje
+      const cuerpo = await res.json()
+      mensaje = cuerpo.error || mensaje
+      campo = cuerpo.campo
     } catch {
       // La respuesta de error no traía JSON
     }
-    throw new Error(mensaje)
+    throw Object.assign(new Error(mensaje), campo ? { campo } : {})
   }
   return res
 }
@@ -861,6 +870,175 @@ export async function exportarCompras({ desde = '', hasta = '', formato = 'csv' 
   const tipo = csv ? 'text/csv;charset=utf-8' : 'application/json'
   descargarBlob(new Blob([contenido], { type: tipo }), nombreArchivo(desde, hasta, csv ? 'csv' : 'json'))
   return compras.length
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios: inicio de sesión y Gestor de usuarios
+// ---------------------------------------------------------------------------
+// Un usuario es { usuario, nombre, rol: 'admin' | 'operador', permisos: [rutas] }.
+// La contraseña nunca sale de aquí: se guarda como hash PBKDF2, con el mismo
+// formato que el backend (backend/contrasenas.js). Reglas (iguales en los dos
+// modos): el usuario y la contraseña no se repiten, hay un solo administrador
+// (permisos ['*'], no se elimina) y nadie más recibe el Gestor de usuarios.
+
+/** Iguales a backend/db/usuarios.js: Cesar_01 / 1234 (admin) y Marta_02 / 5678 */
+const USUARIOS_INICIALES = [
+  {
+    usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'],
+    contrasena: 'pbkdf2$100000$5a43060896bd80a84a7d4224a028b545$c19cba8f54fc5c6afa5638a7ac9be25b870d6a132d9a64f6f96f597121b3d54e',
+  },
+  {
+    usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: [...RUTAS_ASIGNABLES],
+    contrasena: 'pbkdf2$100000$d0f24824a99bff7180d523f67b5b6ff5$e1f9aaceda70ab381493fc4662cc7c561c76aef0415446fcb0b3d7c90fdda447',
+  },
+]
+
+const ITERACIONES_HASH = 100_000
+const FORMATO_USUARIO = /^[A-Za-z0-9_.-]{3,30}$/
+const V = MENSAJES_USUARIOS.validacion
+
+const hex = bytes => [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, '0')).join('')
+const deHex = cadena => new Uint8Array(cadena.match(/../g).map(h => parseInt(h, 16)))
+
+/** PBKDF2-SHA256 con WebCrypto (solo modo local; con servidor el hash lo hace el backend) */
+async function derivar(contrasena, sal, iteraciones) {
+  const llave = await crypto.subtle.importKey('raw', new TextEncoder().encode(contrasena), 'PBKDF2', false, ['deriveBits'])
+  return hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: sal, iterations: iteraciones }, llave, 256))
+}
+
+async function hashear(contrasena) {
+  const sal = crypto.getRandomValues(new Uint8Array(16))
+  return `pbkdf2$${ITERACIONES_HASH}$${hex(sal)}$${await derivar(contrasena, sal, ITERACIONES_HASH)}`
+}
+
+async function verificar(contrasena, guardado) {
+  const [algoritmo, iteraciones, sal, hash] = String(guardado).split('$')
+  if (algoritmo !== 'pbkdf2' || !sal || !hash) return false
+  return (await derivar(contrasena, deHex(sal), Number(iteraciones))) === hash
+}
+
+/** Error con el campo del formulario que lo causó, como los del backend */
+const falloCampo = (mensaje, campo) => Object.assign(new Error(mensaje), campo ? { campo } : {})
+const publico = ({ usuario, nombre, rol, permisos }) => ({ usuario, nombre, rol, permisos: [...permisos] })
+const recortado = v => (typeof v === 'string' ? v.trim() : '')
+
+function getUsuariosLocal() {
+  try {
+    const datos = JSON.parse(localStorage.getItem(CLAVE_USUARIOS) || 'null')
+    if (Array.isArray(datos) && datos.length > 0) return datos
+  } catch {
+    // Usuarios guardados ilegibles: se vuelve a los iniciales
+  }
+  return USUARIOS_INICIALES.map(u => ({ ...u, permisos: [...u.permisos] }))
+}
+
+function setUsuariosLocal(usuarios) {
+  localStorage.setItem(CLAVE_USUARIOS, JSON.stringify(usuarios))
+}
+
+const buscarUsuarioLocal = (usuarios, usuario) => usuarios.find(u => clave(u.usuario) === clave(usuario))
+
+function validarNombre(nombre) {
+  if (!nombre) throw falloCampo(V.nombre, 'nombre')
+  if (nombre.length > 60) throw falloCampo(V.nombreLargo, 'nombre')
+}
+
+async function validarContrasena(usuarios, contrasena, excepto = '') {
+  if (contrasena.length < 4) throw falloCampo(V.contrasena, 'contrasena')
+  // Los hashes llevan sal: la única forma de saber si se repite es probarla contra cada uno
+  for (const u of usuarios) {
+    if (clave(u.usuario) !== clave(excepto) && await verificar(contrasena, u.contrasena)) {
+      throw falloCampo(V.contrasenaRepetida, 'contrasena')
+    }
+  }
+}
+
+/** Pantallas sin repetir, todas asignables, al menos una y en el orden del menú */
+function validarPermisos(permisos) {
+  if (!Array.isArray(permisos)) throw falloCampo(V.permisos, 'permisos')
+  const unicos = [...new Set(permisos)]
+  if (unicos.includes(RUTA_USUARIOS) || unicos.includes('*')) throw falloCampo(V.gestor, 'permisos')
+  const desconocida = unicos.find(p => !RUTAS_ASIGNABLES.includes(p))
+  if (desconocida !== undefined) throw falloCampo(V.pantallaDesconocida(desconocida), 'permisos')
+  if (unicos.length === 0) throw falloCampo(V.permisos, 'permisos')
+  return RUTAS_ASIGNABLES.filter(r => unicos.includes(r))
+}
+
+/** Devuelve el usuario ({ usuario, nombre, rol, permisos }) si la contraseña es correcta; si no, lanza */
+export async function iniciarSesion(usuario, contrasena) {
+  if ((await detectarModo()) === 'servidor') {
+    return pedirJSON('/sesion', 'POST', { usuario, contrasena })
+  }
+  const registro = buscarUsuarioLocal(getUsuariosLocal(), recortado(usuario))
+  const limpia = recortado(contrasena)
+  if (!registro || !limpia || !(await verificar(limpia, registro.contrasena))) throw new Error(V.incorrecta)
+  return publico(registro)
+}
+
+/** Todos los usuarios, el administrador primero (sin contraseñas) */
+export async function fetchUsuarios() {
+  if ((await detectarModo()) === 'servidor') return (await pedir('/usuarios')).json()
+  return getUsuariosLocal()
+    .map(publico)
+    .sort((a, b) => (b.rol === 'admin') - (a.rol === 'admin') || a.usuario.localeCompare(b.usuario, 'es', { sensitivity: 'base' }))
+}
+
+/** Crea un operador. datos: { usuario, nombre, contrasena, permisos } */
+export async function crearUsuario(datos) {
+  if ((await detectarModo()) === 'servidor') return pedirJSON('/usuarios', 'POST', datos)
+  const usuarios = getUsuariosLocal()
+  const usuario = recortado(datos.usuario)
+  const nombre = recortado(datos.nombre)
+  const contrasena = recortado(datos.contrasena)
+  if (!FORMATO_USUARIO.test(usuario)) throw falloCampo(V.usuario, 'usuario')
+  const existente = buscarUsuarioLocal(usuarios, usuario)
+  if (existente) throw falloCampo(V.usuarioRepetido(existente.usuario), 'usuario')
+  validarNombre(nombre)
+  await validarContrasena(usuarios, contrasena)
+  const permisos = validarPermisos(datos.permisos)
+  const nuevo = { usuario, nombre, rol: 'operador', permisos, contrasena: await hashear(contrasena) }
+  setUsuariosLocal([...usuarios, nuevo])
+  return publico(nuevo)
+}
+
+/**
+ * Cambia { nombre?, contrasena?, permisos? }. La contraseña vacía no se toca y
+ * los permisos del administrador no se editan (siempre entra a todo).
+ */
+export async function editarUsuario(usuario, datos) {
+  if ((await detectarModo()) === 'servidor') {
+    return pedirJSON(`/usuarios/${encodeURIComponent(usuario)}`, 'PUT', datos)
+  }
+  const usuarios = getUsuariosLocal()
+  const registro = buscarUsuarioLocal(usuarios, usuario)
+  if (!registro) throw falloCampo(V.noExiste(usuario))
+  const cambios = {}
+  if (datos.nombre !== undefined) {
+    cambios.nombre = recortado(datos.nombre)
+    validarNombre(cambios.nombre)
+  }
+  const contrasena = recortado(datos.contrasena)
+  if (contrasena) {
+    await validarContrasena(usuarios, contrasena, registro.usuario)
+    cambios.contrasena = await hashear(contrasena)
+  }
+  if (datos.permisos !== undefined && registro.rol !== 'admin') cambios.permisos = validarPermisos(datos.permisos)
+  Object.assign(registro, cambios)
+  setUsuariosLocal(usuarios)
+  return publico(registro)
+}
+
+/** Elimina un usuario (el administrador no). Devuelve { usuario } */
+export async function eliminarUsuario(usuario) {
+  if ((await detectarModo()) === 'servidor') {
+    return (await pedir(`/usuarios/${encodeURIComponent(usuario)}`, { method: 'DELETE' })).json()
+  }
+  const usuarios = getUsuariosLocal()
+  const registro = buscarUsuarioLocal(usuarios, usuario)
+  if (!registro) throw falloCampo(V.noExiste(usuario))
+  if (registro.rol === 'admin') throw falloCampo(V.adminNoSeElimina)
+  setUsuariosLocal(usuarios.filter(u => u !== registro))
+  return { usuario: registro.usuario }
 }
 
 function descargarBlob(blob, nombre) {

@@ -6,6 +6,10 @@ import { ACCESO } from './utils/mensajes'
 
 vi.mock('./services/api', () => ({
   guardarLista: vi.fn(),
+  fetchListas: () => Promise.resolve([]),
+  actualizarLista: vi.fn(),
+  eliminarLista: vi.fn(),
+  totalLista: () => 0,
   detectarModo: () => Promise.resolve('local'),
   exportarDB: vi.fn(),
   importarDB: vi.fn(),
@@ -19,7 +23,26 @@ vi.mock('./services/api', () => ({
   necesitaAsignacion: () => false,
   asignarMaterial: vi.fn(),
   fetchCatalogo: () => Promise.resolve({ proveedores: [], categorias: [], productos: [], materiales: [], uso: {} }),
+  iniciarSesion: async (usuario, contrasena) => {
+    if (usuario === 'Cesar_01' && contrasena === '1234') return CESAR
+    if (usuario === 'Marta_02' && contrasena === '5678') return MARTA
+    throw new Error('Usuario o contraseña incorrectos')
+  },
+  fetchUsuarios: () => Promise.resolve([CESAR, MARTA]),
+  crearUsuario: vi.fn(),
+  editarUsuario: vi.fn(),
+  eliminarUsuario: vi.fn(),
 }))
+
+// vi.mock se eleva al inicio del archivo: los datos van en vi.hoisted
+const { CESAR, MARTA } = vi.hoisted(() => ({
+  CESAR: { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'] },
+  MARTA: { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/', '/compras', '/configuracion', '/exportar', '/cargar'] },
+}))
+
+function iniciarComo(sesion) {
+  sessionStorage.setItem('depanas_sesion', JSON.stringify(sesion))
+}
 
 function renderizarApp(rutaInicial = '/') {
   return render(
@@ -91,8 +114,7 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
 
   it('para Cesar_01: el menú tiene Configuración y puede navegar a /configuracion', async () => {
     const usuario = userEvent.setup()
-    sessionStorage.setItem('depanas_autenticado', 'true')
-    sessionStorage.setItem('depanas_usuario', 'Cesar_01')
+    iniciarComo(CESAR)
     renderizarApp('/cargar')
     expect(screen.getByText('Estamos trabajando en ello')).toBeInTheDocument()
 
@@ -104,16 +126,31 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     expect(await screen.findByRole('heading', { name: 'Configuración', level: 1 })).toBeInTheDocument()
   })
 
-  it('para Marta_02: el menú NO muestra Configuración y redirige si intenta entrar a /configuracion', async () => {
-    sessionStorage.setItem('depanas_autenticado', 'true')
-    sessionStorage.setItem('depanas_usuario', 'Marta_02')
+  it('para Cesar_01: el menú tiene el Gestor de usuarios y lo abre', async () => {
+    const usuario = userEvent.setup()
+    iniciarComo(CESAR)
+    renderizarApp()
+    await usuario.click(screen.getAllByRole('link', { name: 'Gestor de usuarios' })[0])
+    expect(await screen.findByRole('heading', { name: 'Gestor de usuarios', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('rowheader', { name: /Marta_02/ })).toBeInTheDocument()
+  })
+
+  it('para Marta_02: ve Configuración, pero no el Gestor de usuarios, y si lo abre a mano vuelve al inicio', async () => {
+    iniciarComo(MARTA)
+    renderizarApp('/usuarios')
+
+    expect(screen.getAllByRole('link', { name: 'Configuración' }).length).toBeGreaterThan(0)
+    expect(screen.queryByRole('link', { name: 'Gestor de usuarios' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Gestor de usuarios', level: 1 })).not.toBeInTheDocument()
+  })
+
+  it('un usuario sin una pantalla no la ve en el menú ni puede abrirla; sin Agregar compra empieza en la primera que tiene', async () => {
+    iniciarComo({ usuario: 'Luis_03', nombre: 'Luis', rol: 'operador', permisos: ['/compras'] })
     renderizarApp('/configuracion')
 
-    // No debe tener el enlace en el menú
     expect(screen.queryByRole('link', { name: 'Configuración' })).not.toBeInTheDocument()
-
-    // Debe haber sido redirigido a la página principal (Detalle de compra)
-    expect(await screen.findByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Configuración', level: 1 })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Agregar compra' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Compras', level: 1 })).toBeInTheDocument()
   })
 })

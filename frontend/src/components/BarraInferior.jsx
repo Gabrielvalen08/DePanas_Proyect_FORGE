@@ -2,17 +2,14 @@ import { NavLink } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { Lock } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { itemConfiguracion, itemsNavegacion } from './navegacion'
+import { itemsNavegacion, itemsPie } from './navegacion'
 import { springSuave } from '../styles/movimiento'
 import estilos from './BarraInferior.module.css'
 
 /** Navegación móvil (< 768px). La píldora activa se desliza entre ítems. */
 export default function BarraInferior({ onBloquear }) {
   const { tienePermiso } = useAuth()
-  const itemsVisibles = [
-    ...itemsNavegacion.filter(item => tienePermiso(item.a)),
-    ...(tienePermiso(itemConfiguracion.a) ? [itemConfiguracion] : []),
-  ]
+  const itemsVisibles = [...itemsNavegacion, ...itemsPie].filter(item => tienePermiso(item.a))
 
   return (
     <nav className={estilos.barra} aria-label="Menú principal móvil">

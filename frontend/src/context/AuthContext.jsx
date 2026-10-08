@@ -1,152 +1,80 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react'
+import { iniciarSesion } from '../services/api'
+import { esAdmin, puedeAcceder } from '../utils/permisos'
 import { ACCESO } from '../utils/mensajes'
 
-const CLAVE_STORAGE = 'depanas_autenticado'
-const CLAVE_USUARIO = 'depanas_usuario'
+// { usuario, nombre, rol, permisos } de quien entró; dura hasta cerrar la pestaña
+const CLAVE_SESION = 'depanas_sesion'
 
-/**
- * Configuración de usuarios y permisos por pantalla.
- * Permite editar o agregar pantallas en el futuro fácilmente.
- * - permisos: ['*'] otorga acceso total.
- * - permisos: ['/','/compras',...] restringe solo a las rutas indicadas.
- */
-export const USUARIOS = {
-  'Cesar_01': {
-    contrasena: '1234',
-    nombre: 'César',
-    rol: 'admin',
-    permisos: ['*'],
-  },
-  'Marta_02': {
-    contrasena: '5678',
-    nombre: 'Marta',
-    rol: 'operador',
-    permisos: ['/', '/compras', '/exportar', '/cargar', '/agregar-compra'],
-  },
-}
-
-/**
- * Determina si un usuario tiene permiso para acceder a una ruta determinada.
- */
-export function puedeAcceder(ruta, nombreUsuario) {
-  if (!nombreUsuario) return false
-  const usuarioKey = Object.keys(USUARIOS).find(
-    (u) => u.toLowerCase() === String(nombreUsuario).toLowerCase()
-  )
-  if (!usuarioKey) return false
-  const config = USUARIOS[usuarioKey]
-  if (!config) return false
-
-  const permisos = config.permisos || []
-  if (permisos.includes('*')) return true
-
-  const rutaLimpia = String(ruta || '').split('?')[0]
-  return permisos.some((p) => {
-    if (p === rutaLimpia) return true
-    if (p !== '/' && rutaLimpia.startsWith(`${p}/`)) return true
-    return false
-  })
-}
-
-const AuthContext = createContext({
-  autenticado: false,
-  usuario: null,
-  tienePermiso: () => false,
-  ingresar: () => ({ ok: false }),
-  salir: () => {},
-})
-
-export function AuthProvider({ children }) {
-  const [autenticado, setAutenticado] = useState(() => {
-    try {
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        return window.sessionStorage.getItem(CLAVE_STORAGE) === 'true'
-      }
-    } catch {
-      // Entornos sin acceso a sessionStorage o modo incógnito restrictivo
-    }
-    return false
-  })
-
-  const [usuario, setUsuario] = useState(() => {
-    try {
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        return window.sessionStorage.getItem(CLAVE_USUARIO) || null
-      }
-    } catch {
-      // Entornos sin acceso a sessionStorage
-    }
+/** Sesión guardada en sessionStorage, o null */
+function leerSesion() {
+  try {
+    const sesion = JSON.parse(window.sessionStorage.getItem(CLAVE_SESION) || 'null')
+    return sesion?.usuario && Array.isArray(sesion.permisos) ? sesion : null
+  } catch {
+    // Sin acceso a sessionStorage o con datos ilegibles: hay que volver a entrar
     return null
-  })
+  }
+}
 
-  const tienePermiso = useCallback(
-    (ruta) => puedeAcceder(ruta, usuario),
-    [usuario]
-  )
+const AuthContext = createContext(null)
 
-  const ingresar = useCallback((usuarioEntrada, claveEntrada) => {
-    let user = usuarioEntrada
-    let pass = claveEntrada
+/**
+ * Inicio de sesión con usuario y contraseña. Los usuarios y sus permisos viven en
+ * la base (Gestor de usuarios); aquí solo se guarda quién entró. Es una barrera
+ * de interfaz: la API no pide autenticación.
+ */
+export function AuthProvider({ children }) {
+  const [sesion, setSesion] = useState(leerSesion)
 
-    if (pass === undefined && typeof user === 'string') {
-      pass = user
-      user = 'Cesar_01'
+  const tienePermiso = useCallback(ruta => puedeAcceder(ruta, sesion), [sesion])
+
+  /** Devuelve { ok: true, usuario } o { ok: false, error } */
+  const ingresar = useCallback(async (usuarioEntrada, claveEntrada) => {
+    const usuario = String(usuarioEntrada ?? '').trim()
+    const contrasena = String(claveEntrada ?? '').trim()
+    if (!usuario) return { ok: false, error: ACCESO.faltaUsuario }
+    if (!contrasena) return { ok: false, error: ACCESO.faltaContrasena }
+
+    let datos
+    try {
+      datos = await iniciarSesion(usuario, contrasena)
+    } catch {
+      return { ok: false, error: ACCESO.incorrecta }
     }
-
-    const uLimpio = String(user ?? '').trim()
-    const pLimpio = String(pass ?? '').trim()
-
-    if (!uLimpio) {
-      return { ok: false, error: ACCESO.faltaUsuario }
+    const nueva = { usuario: datos.usuario, nombre: datos.nombre, rol: datos.rol, permisos: datos.permisos }
+    try {
+      window.sessionStorage.setItem(CLAVE_SESION, JSON.stringify(nueva))
+    } catch {
+      // Sin sessionStorage la sesión dura hasta recargar
     }
-    if (!pLimpio) {
-      return { ok: false, error: ACCESO.faltaContrasena }
-    }
-
-    const usuarioEncontrado = Object.keys(USUARIOS).find(
-      (u) => u.toLowerCase() === uLimpio.toLowerCase()
-    )
-
-    if (usuarioEncontrado && USUARIOS[usuarioEncontrado].contrasena === pLimpio) {
-      try {
-        if (typeof window !== 'undefined' && window.sessionStorage) {
-          window.sessionStorage.setItem(CLAVE_STORAGE, 'true')
-          window.sessionStorage.setItem(CLAVE_USUARIO, usuarioEncontrado)
-        }
-      } catch {
-        // Ignorar errores de almacenamiento
-      }
-      setUsuario(usuarioEncontrado)
-      setAutenticado(true)
-      return { ok: true, usuario: usuarioEncontrado }
-    }
-
-    return { ok: false, error: ACCESO.incorrecta }
+    setSesion(nueva)
+    return { ok: true, usuario: nueva.usuario }
   }, [])
 
   const salir = useCallback(() => {
     try {
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        window.sessionStorage.removeItem(CLAVE_STORAGE)
-        window.sessionStorage.removeItem(CLAVE_USUARIO)
-      }
+      window.sessionStorage.removeItem(CLAVE_SESION)
     } catch {
       // Ignorar errores de almacenamiento
     }
-    setUsuario(null)
-    setAutenticado(false)
+    setSesion(null)
   }, [])
 
   const valor = useMemo(
-    () => ({ autenticado, usuario, tienePermiso, ingresar, salir }),
-    [autenticado, usuario, tienePermiso, ingresar, salir]
+    () => ({
+      autenticado: sesion !== null,
+      usuario: sesion?.usuario ?? null,
+      sesion,
+      esAdmin: esAdmin(sesion),
+      tienePermiso,
+      ingresar,
+      salir,
+    }),
+    [sesion, tienePermiso, ingresar, salir]
   )
 
-  return (
-    <AuthContext.Provider value={valor}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

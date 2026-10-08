@@ -47,7 +47,8 @@ describe('PantallaContrasena', () => {
     await usuario.type(inputUsuario, 'Cesar_01')
     await usuario.type(inputContrasena, '9999')
     await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
-    expect(screen.getByRole('alert')).toHaveTextContent(ACCESO.incorrecta)
+    expect(await screen.findByRole('alert')).toHaveTextContent(ACCESO.incorrecta)
+    expect(sessionStorage.getItem('depanas_sesion')).toBeNull()
   })
 
   it('alterna la visibilidad de la contraseña con el botón de ojo', async () => {
@@ -82,8 +83,7 @@ describe('PantallaContrasena', () => {
     await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
 
     await waitFor(() => {
-      expect(sessionStorage.getItem('depanas_autenticado')).toBe('true')
-      expect(sessionStorage.getItem('depanas_usuario')).toBe('Cesar_01')
+      expect(JSON.parse(sessionStorage.getItem('depanas_sesion'))).toMatchObject({ usuario: 'Cesar_01', rol: 'admin' })
     })
   })
 
@@ -98,8 +98,7 @@ describe('PantallaContrasena', () => {
     await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
 
     await waitFor(() => {
-      expect(sessionStorage.getItem('depanas_autenticado')).toBe('true')
-      expect(sessionStorage.getItem('depanas_usuario')).toBe('Marta_02')
+      expect(JSON.parse(sessionStorage.getItem('depanas_sesion'))).toMatchObject({ usuario: 'Marta_02', rol: 'operador' })
     })
   })
 })

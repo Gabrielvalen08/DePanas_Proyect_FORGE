@@ -4,7 +4,7 @@ import { Boton, EstadoVacio, Tarjeta } from '../components/common'
 import { CARGAR, fraseDelDia } from '../utils/mensajes'
 
 /** Cargar datos (/cargar): por ahora solo avisa que está en construcción */
-export default function PantallaCargar() {
+export default function PantallaCargar({ puedeVolver = true }) {
   return (
     <>
       <Header title="Cargar datos" frase={fraseDelDia('/cargar')} />
@@ -15,7 +15,7 @@ export default function PantallaCargar() {
             icono={<Construction />}
             titulo={CARGAR.titulo}
             texto={CARGAR.texto}
-            accion={<Boton variante="secundario" icono={<ArrowLeft />} a="/">{CARGAR.volver}</Boton>}
+            accion={puedeVolver && <Boton variante="secundario" icono={<ArrowLeft />} a="/">{CARGAR.volver}</Boton>}
           />
         </Tarjeta>
       </main>

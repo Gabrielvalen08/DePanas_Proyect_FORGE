@@ -54,6 +54,11 @@ export const FRASES_ENCABEZADO = {
   '/cargar': [
     'Pronto podrás traer tus datos de otro equipo',
   ],
+  '/usuarios': [
+    'Cada pana con su clave y su lugar en la cocina',
+    'Quién entra y a dónde, aquí lo decides tú',
+    'Un equipo bien organizado cocina mejor',
+  ],
 }
 
 /** Día del año (1–366): la frase cambia a medianoche y es la misma en toda la jornada */
@@ -266,6 +271,77 @@ export const CONFIGURACION = {
         ? ` ${n} ${plural(n, 'material')} ${plural(n, 'quedará', 'quedarán')} sin ${SECCIONES[tipo].singular} y se ${plural(n, 'pedirá', 'pedirán')} al registrar una compra.`
         : '')
     },
+    confirmar: 'Sí, eliminar',
+  },
+}
+
+// ---------------------------------------------------------------------------
+// Gestor de usuarios (solo el administrador)
+// ---------------------------------------------------------------------------
+export const USUARIOS = {
+  intro: 'Crea las cuentas del equipo, cambia sus contraseñas y elige a qué pantallas entra cada quien.',
+  titulo: 'Usuarios',
+  agregar: 'Agregar usuario',
+  cargando: 'Buscando los usuarios…',
+  errorCargar: 'No pudimos traer los usuarios. Recarga la página para intentarlo de nuevo.',
+  columnas: { usuario: 'Usuario', nombre: 'Nombre', rol: 'Rol', pantallas: 'Pantallas' },
+  roles: { admin: 'Administrador', operador: 'Operador' },
+  todas: 'Todas',
+  cuentaPantallas: (n, total) => `${n} de ${total}`,
+  tu: 'Tú',
+  editar: usuario => `Editar usuario ${usuario}`,
+  eliminar: usuario => `Eliminar usuario ${usuario}`,
+  tituloNuevo: 'Nuevo usuario',
+  tituloEditar: usuario => `Editar a ${usuario}`,
+  campos: {
+    usuario: 'Usuario',
+    nombre: 'Nombre',
+    contrasena: 'Contraseña',
+    contrasenaNueva: 'Nueva contraseña',
+    confirmar: 'Repite la contraseña',
+  },
+  ayudas: {
+    usuario: 'Con esto inicia sesión. De 3 a 30 letras, números, _ . o -, sin espacios. No se cambia después.',
+    usuarioFijo: 'El usuario no se puede cambiar.',
+    contrasena: 'Mínimo 4 caracteres y distinta a la de los demás usuarios.',
+    contrasenaEditar: 'Déjala en blanco para no cambiarla.',
+  },
+  permisosTitulo: 'Pantallas a las que entra',
+  permisosAdmin: 'El administrador entra a todas las pantallas, también a las que se agreguen más adelante.',
+  permisosNota: 'El Gestor de usuarios es solo del administrador.',
+  /** Lo que se hace en cada pantalla asignable (el título sale de navegacion.js) */
+  pantallas: {
+    '/': 'Registrar lo que llega a la cocina',
+    '/compras': 'Ver, editar y eliminar las compras',
+    '/configuracion': 'Proveedores, categorías, materiales y productos',
+    '/exportar': 'Descargar las compras en CSV o JSON',
+    '/cargar': 'Traer datos de otro equipo',
+  },
+  validacion: {
+    usuario: 'El usuario lleva de 3 a 30 letras, números, _ . o - (sin espacios)',
+    usuarioRepetido: usuario => `Ya existe el usuario «${usuario}». Elige otro`,
+    nombre: 'Escribe el nombre de la persona',
+    nombreLargo: 'El nombre es muy largo (máximo 60 caracteres)',
+    contrasena: 'La contraseña debe tener al menos 4 caracteres',
+    contrasenaRepetida: 'Esa contraseña ya la usa otro usuario. Elige una diferente',
+    noCoinciden: 'Las contraseñas no coinciden',
+    permisos: 'Elige al menos una pantalla',
+    gestor: 'El Gestor de usuarios es solo del administrador',
+    pantallaDesconocida: ruta => `La pantalla «${ruta}» no existe`,
+    adminNoSeElimina: 'El administrador no se puede eliminar',
+    noExiste: usuario => `No existe el usuario «${usuario}»`,
+    incorrecta: 'Usuario o contraseña incorrectos',
+  },
+  guardar: 'Guardar',
+  cancelar: 'Cancelar',
+  creado: u => `¡Listo, pana! ${u.nombre} ya puede entrar como «${u.usuario}».`,
+  editado: u => `¡Chévere! Guardamos los cambios de «${u.usuario}».`,
+  eliminado: usuario => `Eliminamos a «${usuario}». Ya no podrá entrar al sistema.`,
+  error: detalle => `No pudimos guardar el usuario${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
+  errorEliminar: detalle => `No pudimos eliminar el usuario${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
+  confirmarEliminar: {
+    titulo: '¿Eliminamos este usuario?',
+    mensaje: (usuario, nombre) => `${nombre} («${usuario}») ya no podrá entrar al sistema. Esto no se puede deshacer.`,
     confirmar: 'Sí, eliminar',
   },
 }
