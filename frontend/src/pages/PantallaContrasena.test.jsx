@@ -17,84 +17,88 @@ describe('PantallaContrasena', () => {
     sessionStorage.clear()
   })
 
-  it('renderiza el título, el input y el teclado numérico', () => {
+  it('renderiza el título, los inputs de usuario y contraseña y los botones', () => {
     renderizar()
     expect(screen.getByRole('heading', { name: ACCESO.titulo })).toBeInTheDocument()
-    expect(screen.getByLabelText('Contraseña de acceso')).toBeInTheDocument()
+    expect(screen.getByLabelText(ACCESO.etiquetaUsuario)).toBeInTheDocument()
+    expect(screen.getByLabelText(ACCESO.etiquetaContrasena)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: ACCESO.boton })).toBeInTheDocument()
-    // Teclas 0 a 9
-    for (let i = 0; i <= 9; i++) {
-      expect(screen.getByRole('button', { name: String(i) })).toBeInTheDocument()
-    }
+    expect(screen.getByRole('button', { name: ACCESO.olvideContrasena })).toBeInTheDocument()
   })
 
-  it('muestra error al enviar con campo vacío', async () => {
+  it('muestra error al enviar con campos vacíos', async () => {
     const usuario = userEvent.setup()
     renderizar()
+    await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
+    expect(screen.getByRole('alert')).toHaveTextContent(ACCESO.faltaUsuario)
+
+    const inputUsuario = screen.getByLabelText(ACCESO.etiquetaUsuario)
+    await usuario.type(inputUsuario, 'Cesar_01')
     await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
     expect(screen.getByRole('alert')).toHaveTextContent(ACCESO.faltaContrasena)
   })
 
-  it('muestra error cuando la contraseña es incorrecta', async () => {
+  it('muestra error cuando el usuario o la contraseña son incorrectos', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    const input = screen.getByLabelText('Contraseña de acceso')
-    await usuario.type(input, '9999')
+    const inputUsuario = screen.getByLabelText(ACCESO.etiquetaUsuario)
+    const inputContrasena = screen.getByLabelText(ACCESO.etiquetaContrasena)
+
+    await usuario.type(inputUsuario, 'Cesar_01')
+    await usuario.type(inputContrasena, '9999')
     await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
-    expect(screen.getByRole('alert')).toHaveTextContent(ACCESO.incorrecta)
-  })
-
-  it('permite ingresar usando el teclado numérico en pantalla', async () => {
-    const usuario = userEvent.setup()
-    renderizar()
-    const input = screen.getByLabelText('Contraseña de acceso')
-
-    await usuario.click(screen.getByRole('button', { name: '1' }))
-    await usuario.click(screen.getByRole('button', { name: '2' }))
-    await usuario.click(screen.getByRole('button', { name: '3' }))
-    await usuario.click(screen.getByRole('button', { name: '4' }))
-
-    expect(input).toHaveValue('1234')
-  })
-
-  it('permite borrar y limpiar dígitos con los botones del teclado', async () => {
-    const usuario = userEvent.setup()
-    renderizar()
-    const input = screen.getByLabelText('Contraseña de acceso')
-
-    await usuario.click(screen.getByRole('button', { name: '5' }))
-    await usuario.click(screen.getByRole('button', { name: '6' }))
-    expect(input).toHaveValue('56')
-
-    await usuario.click(screen.getByTitle('Borrar'))
-    expect(input).toHaveValue('5')
-
-    await usuario.click(screen.getByTitle('Limpiar'))
-    expect(input).toHaveValue('')
+    expect(await screen.findByRole('alert')).toHaveTextContent(ACCESO.incorrecta)
+    expect(sessionStorage.getItem('depanas_sesion')).toBeNull()
   })
 
   it('alterna la visibilidad de la contraseña con el botón de ojo', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    const input = screen.getByLabelText('Contraseña de acceso')
+    const inputContrasena = screen.getByLabelText(ACCESO.etiquetaContrasena)
     const botonOjo = screen.getByRole('button', { name: 'Ver contraseña' })
 
-    expect(input).toHaveAttribute('type', 'password')
+    expect(inputContrasena).toHaveAttribute('type', 'password')
     await usuario.click(botonOjo)
-    expect(input).toHaveAttribute('type', 'text')
+    expect(inputContrasena).toHaveAttribute('type', 'text')
     await usuario.click(screen.getByRole('button', { name: 'Ocultar contraseña' }))
-    expect(input).toHaveAttribute('type', 'password')
+    expect(inputContrasena).toHaveAttribute('type', 'password')
   })
 
-  it('autentica con éxito al ingresar 1234', async () => {
+  it('muestra el mensaje de ayuda al hacer clic en Olvidé mi contraseña', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    const input = screen.getByLabelText('Contraseña de acceso')
-    await usuario.type(input, '1234')
+    const botonOlvide = screen.getByRole('button', { name: ACCESO.olvideContrasena })
+    await usuario.click(botonOlvide)
+    expect(screen.getByRole('status')).toHaveTextContent(ACCESO.ayudaOlvide)
+  })
+
+  it('autentica con éxito al ingresar Cesar_01 y 1234', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const inputUsuario = screen.getByLabelText(ACCESO.etiquetaUsuario)
+    const inputContrasena = screen.getByLabelText(ACCESO.etiquetaContrasena)
+
+    await usuario.type(inputUsuario, 'Cesar_01')
+    await usuario.type(inputContrasena, '1234')
     await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
 
     await waitFor(() => {
-      expect(sessionStorage.getItem('depanas_autenticado')).toBe('true')
+      expect(JSON.parse(sessionStorage.getItem('depanas_sesion'))).toMatchObject({ usuario: 'Cesar_01', rol: 'admin' })
+    })
+  })
+
+  it('autentica con éxito al ingresar Marta_02 y 5678', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const inputUsuario = screen.getByLabelText(ACCESO.etiquetaUsuario)
+    const inputContrasena = screen.getByLabelText(ACCESO.etiquetaContrasena)
+
+    await usuario.type(inputUsuario, 'Marta_02')
+    await usuario.type(inputContrasena, '5678')
+    await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
+
+    await waitFor(() => {
+      expect(JSON.parse(sessionStorage.getItem('depanas_sesion'))).toMatchObject({ usuario: 'Marta_02', rol: 'operador' })
     })
   })
 })

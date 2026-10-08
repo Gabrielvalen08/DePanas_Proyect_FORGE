@@ -15,9 +15,9 @@ import estilos from './AgregarCompra.module.css'
  * fecha) y se guarda por separado. "Nueva compra" agrega otro bloque debajo.
  *
  * Al final, Exportar datos y Cargar datos abren sus propias pantallas
- * (/exportar y /cargar).
+ * (/exportar y /cargar); cada botón se ve solo si el usuario puede entrar a esa pantalla.
  */
-export default function AgregarCompra() {
+export default function AgregarCompra({ puedeExportar = true, puedeCargar = true }) {
   const { addToast } = useToast()
   const siguiente = useRef(2)
   const [bloques, setBloques] = useState([{ clave: 1, enfocar: false }])
@@ -89,12 +89,16 @@ export default function AgregarCompra() {
 
         {/* Botones de portabilidad de base de datos */}
         <div className={estilos.portabilidad}>
-          <Boton variante="fantasma" icono={<Download size={16} />} a="/exportar">
-            Exportar datos
-          </Boton>
-          <Boton variante="fantasma" icono={<Upload size={16} />} a="/cargar">
-            Cargar datos
-          </Boton>
+          {puedeExportar && (
+            <Boton variante="fantasma" icono={<Download size={16} />} a="/exportar">
+              Exportar datos
+            </Boton>
+          )}
+          {puedeCargar && (
+            <Boton variante="fantasma" icono={<Upload size={16} />} a="/cargar">
+              Cargar datos
+            </Boton>
+          )}
           {modo && (
             <p className={estilos.modo}>
               {modo === 'servidor' ? DATOS.modoServidor : DATOS.modoLocal}

@@ -1,0 +1,139 @@
+/* Va directo sobre el collage: Verde Ávila, no el atenuado (AA sobre los trazos) */
+.intro {
+  max-width: 65ch;
+  font-size: 1.0625rem;
+  color: var(--color-text);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--fuente-titulos);
+}
+
+.tabla thead th {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-soft);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tabla td,
+.tabla tbody th {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  line-height: 1.4;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tabla tbody tr:last-child td,
+.tabla tbody tr:last-child th {
+  border-bottom: none;
+}
+
+.usuario {
+  font-weight: 600;
+}
+
+.usuario > span:first-child {
+  margin-right: var(--space-2);
+}
+
+.todas {
+  font-weight: 600;
+}
+
+.pantallas {
+  display: flex;
+  flex-direction: column;
+}
+
+.cuenta {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.lista {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.colAcciones {
+  width: 1%;
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.eliminar:hover {
+  color: var(--color-danger);
+}
+
+/* En el teléfono cada usuario es una tarjeta: usuario arriba, datos con su etiqueta, acciones al lado */
+@media (max-width: 767px) {
+  .tabla thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .tabla tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .tabla tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .tabla td,
+  .tabla tbody th {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .tabla tbody th {
+    justify-content: flex-start;
+  }
+
+  .tabla td[data-etiqueta] {
+    grid-column: 1 / -1;
+  }
+
+  .tabla td[data-etiqueta]::before {
+    content: attr(data-etiqueta);
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .pantallas {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .tabla .colAcciones {
+    grid-row: 1;
+    grid-column: 2;
+    width: auto;
+  }
+}

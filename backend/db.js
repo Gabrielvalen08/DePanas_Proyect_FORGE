@@ -5,6 +5,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import { readFileSync } from 'fs'
 import { CATALOGO_INICIAL } from './db/catalogo.js'
+import { USUARIOS_INICIALES } from './db/usuarios.js'
 
 // Columnas mínimas para aceptar un archivo .db importado
 export const COLUMNAS_REQUERIDAS = ['fecha', 'material', 'cantidad', 'monto', 'proveedor']
@@ -22,6 +23,7 @@ export function abrirDB(dbPath, schemaPath) {
   db.exec(readFileSync(schemaPath, 'utf8'))
   migrar(db)
   prepararCatalogo(db)
+  prepararUsuarios(db)
   // Lo que quedó en depanas.db-wal de la sesión anterior pasa a depanas.db
   consolidar(db, 'TRUNCATE')
   return db
@@ -51,6 +53,21 @@ export function prepararCatalogo(db) {
     completarDesdeCompras(db)
   })
   db.exec(`PRAGMA user_version = ${VERSION_CATALOGO}`)
+}
+
+/**
+ * Siembra Cesar_01 (administrador) y Marta_02 si la tabla está vacía. Como el
+ * administrador no se puede eliminar, la tabla nunca vuelve a quedar vacía y
+ * lo que el administrador cambia no se pisa al reabrir la base.
+ */
+export function prepararUsuarios(db) {
+  if (db.prepare('SELECT COUNT(*) AS n FROM usuarios').get().n > 0) return
+  const insertar = db.prepare('INSERT INTO usuarios (usuario, nombre, contrasena, rol, permisos) VALUES (?, ?, ?, ?, ?)')
+  enTransaccion(db, () => {
+    for (const u of USUARIOS_INICIALES) {
+      insertar.run(u.usuario, u.nombre, u.contrasena, u.rol, JSON.stringify(u.permisos))
+    }
+  })
 }
 
 /** Completa la categoría o el producto vacíos de un material (no pisa lo asignado) */

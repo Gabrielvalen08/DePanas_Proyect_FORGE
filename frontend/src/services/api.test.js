@@ -1,4 +1,9 @@
 import {
+  crearUsuario,
+  editarUsuario,
+  eliminarUsuario,
+  fetchUsuarios,
+  iniciarSesion,
   actualizarLista,
   eliminarLista,
   fetchListas,
@@ -207,5 +212,89 @@ describe('api: categoría y producto de cada material (modo local)', () => {
 
   it('pide categoría y producto', async () => {
     await expect(asignarMaterial('Sal', { categoria: '', producto: 'Todos' })).rejects.toThrow('Elige una categoría')
+  })
+})
+
+describe('api: usuarios (modo servidor)', () => {
+  function simular(respuestas) {
+    const llamadas = []
+    vi.stubGlobal('fetch', vi.fn(async (url, opciones = {}) => {
+      const metodo = opciones.method || 'GET'
+      const ruta = url.replace('/api', '')
+      llamadas.push({ metodo, ruta, cuerpo: opciones.body ? JSON.parse(opciones.body) : undefined })
+      if (ruta === '/health') return Response.json({ ok: true })
+      const r = respuestas[`${metodo} ${ruta}`] ?? { cuerpo: {} }
+      return Response.json(r.cuerpo, { status: r.status ?? 200 })
+    }))
+    return llamadas
+  }
+  const MARTA = { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/'] }
+
+  it('inicia sesión y gestiona usuarios en el backend, sin guardar nada en localStorage', async () => {
+    const llamadas = simular({
+      'POST /sesion': { cuerpo: MARTA },
+      'GET /usuarios': { cuerpo: [MARTA] },
+      'POST /usuarios': { status: 201, cuerpo: MARTA },
+      'PUT /usuarios/Marta_02': { cuerpo: MARTA },
+      'DELETE /usuarios/Marta_02': { cuerpo: { usuario: 'Marta_02' } },
+    })
+    expect(await iniciarSesion('Marta_02', '5678')).toEqual(MARTA)
+    expect(await fetchUsuarios()).toEqual([MARTA])
+    await crearUsuario({ usuario: 'Marta_02', nombre: 'Marta', contrasena: '5678', permisos: ['/'] })
+    await editarUsuario('Marta_02', { contrasena: 'nueva' })
+    expect(await eliminarUsuario('Marta_02')).toEqual({ usuario: 'Marta_02' })
+
+    const escrituras = llamadas.filter(l => l.metodo !== 'GET').map(l => `${l.metodo} ${l.ruta}`)
+    expect(escrituras).toEqual(['POST /sesion', 'POST /usuarios', 'PUT /usuarios/Marta_02', 'DELETE /usuarios/Marta_02'])
+    expect(localStorage.getItem('depanas_usuarios')).toBeNull()
+  })
+
+  it('el error del backend llega con el campo que hay que cambiar', async () => {
+    simular({ 'POST /usuarios': { status: 409, cuerpo: { error: 'Esa contraseña ya la usa otro usuario. Elige una diferente', campo: 'contrasena' } } })
+    await expect(crearUsuario({ usuario: 'Luis_03' })).rejects.toMatchObject({
+      message: 'Esa contraseña ya la usa otro usuario. Elige una diferente', campo: 'contrasena',
+    })
+  })
+
+  it('una contraseña incorrecta rechaza el inicio de sesión', async () => {
+    simular({ 'POST /sesion': { status: 401, cuerpo: { error: 'Usuario o contraseña incorrectos' } } })
+    await expect(iniciarSesion('Cesar_01', '0000')).rejects.toThrow('Usuario o contraseña incorrectos')
+  })
+})
+
+describe('api: usuarios (modo local)', () => {
+  const NUEVO = { usuario: 'Luis_03', nombre: 'Luis', contrasena: 'arepa99', permisos: ['/compras', '/'] }
+
+  it('trae a Cesar_01 (administrador) y a Marta_02 con todo menos el gestor', async () => {
+    expect(await fetchUsuarios()).toEqual([
+      { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'] },
+      { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/', '/compras', '/configuracion', '/exportar', '/cargar'] },
+    ])
+    expect(await iniciarSesion('cesar_01', '1234')).toMatchObject({ usuario: 'Cesar_01', rol: 'admin' })
+    await expect(iniciarSesion('Cesar_01', '5678')).rejects.toThrow()
+  })
+
+  it('crea un operador y guarda solo el hash de su contraseña', async () => {
+    expect(await crearUsuario({ ...NUEVO, rol: 'admin' })).toEqual({ usuario: 'Luis_03', nombre: 'Luis', rol: 'operador', permisos: ['/', '/compras'] })
+    const guardado = localStorage.getItem('depanas_usuarios')
+    expect(guardado).not.toContain('arepa99')
+    expect(guardado).toContain('pbkdf2$')
+    expect(await iniciarSesion('Luis_03', 'arepa99')).toMatchObject({ usuario: 'Luis_03' })
+  })
+
+  it('no repite usuario ni contraseña, y no da el gestor', async () => {
+    await expect(crearUsuario({ ...NUEVO, usuario: 'MARTA_02' })).rejects.toMatchObject({ campo: 'usuario' })
+    await expect(crearUsuario({ ...NUEVO, contrasena: '1234' })).rejects.toMatchObject({ campo: 'contrasena' })
+    await expect(crearUsuario({ ...NUEVO, permisos: ['/usuarios'] })).rejects.toMatchObject({ campo: 'permisos' })
+    await expect(crearUsuario({ ...NUEVO, permisos: [] })).rejects.toMatchObject({ campo: 'permisos' })
+    await expect(editarUsuario('Marta_02', { contrasena: '1234' })).rejects.toMatchObject({ campo: 'contrasena' })
+    expect(await fetchUsuarios()).toHaveLength(2)
+  })
+
+  it('el administrador conserva todas las pantallas y no se elimina', async () => {
+    expect((await editarUsuario('Cesar_01', { permisos: ['/'] })).permisos).toEqual(['*'])
+    await expect(eliminarUsuario('Cesar_01')).rejects.toThrow('El administrador no se puede eliminar')
+    expect(await eliminarUsuario('marta_02')).toEqual({ usuario: 'Marta_02' })
+    await expect(iniciarSesion('Marta_02', '5678')).rejects.toThrow()
   })
 })

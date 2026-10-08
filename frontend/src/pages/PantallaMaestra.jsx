@@ -10,7 +10,7 @@ import { formatearFecha, formatearPrecio } from '../utils/formato'
 import { COMPRA, ESTADOS, fraseDelDia } from '../utils/mensajes'
 import estilos from './PantallaMaestra.module.css'
 
-export default function PantallaMaestra() {
+export default function PantallaMaestra({ puedeAgregar = true }) {
   const { addToast } = useToast()
 
   const [listas, setListas] = useState(null) // null = primera carga
@@ -51,7 +51,7 @@ export default function PantallaMaestra() {
           icono={<ShoppingCart />}
           titulo={ESTADOS.sinCompras.titulo}
           texto={ESTADOS.sinCompras.texto}
-          accion={<Boton variante="primario" icono={<Plus />} a="/">{ESTADOS.sinCompras.accion}</Boton>}
+          accion={puedeAgregar && <Boton variante="primario" icono={<Plus />} a="/">{ESTADOS.sinCompras.accion}</Boton>}
         />
       )
     }
@@ -121,9 +121,11 @@ export default function PantallaMaestra() {
             <FiltrosEnLinea id="panel-filtros" abierto={filtrosAbiertos} filtros={filters} alCambiar={setFilters} />
           </div>
 
-          <Boton id="go-agregar-compra-btn" variante="primario" sombra icono={<Plus />} a="/" className={estilos.agregar}>
-            Agregar compra
-          </Boton>
+          {puedeAgregar && (
+            <Boton id="go-agregar-compra-btn" variante="primario" sombra icono={<Plus />} a="/" className={estilos.agregar}>
+              Agregar compra
+            </Boton>
+          )}
         </div>
 
         <Tarjeta

@@ -1,9 +1,14 @@
 import { NavLink } from 'react-router-dom'
 import { Lock } from 'lucide-react'
-import { itemConfiguracion, itemsNavegacion } from './navegacion'
+import { useAuth } from '../context/AuthContext'
+import { itemsNavegacion, itemsPie } from './navegacion'
 import estilos from './Sidebar.module.css'
 
 export default function Sidebar({ onBloquear }) {
+  const { tienePermiso } = useAuth()
+  const navegacionFiltrada = itemsNavegacion.filter(item => tienePermiso(item.a))
+  const pieFiltrado = itemsPie.filter(item => tienePermiso(item.a))
+
   return (
     <aside className={estilos.sidebar}>
       <div className={estilos.logo}>
@@ -17,7 +22,7 @@ export default function Sidebar({ onBloquear }) {
 
       <nav aria-label="Menú principal">
         <ul className={estilos.lista}>
-          {itemsNavegacion.map(({ a, Icono, etiqueta }) => (
+          {navegacionFiltrada.map(({ a, Icono, etiqueta }) => (
             <li key={a}>
               <NavLink
                 to={a}
@@ -33,13 +38,16 @@ export default function Sidebar({ onBloquear }) {
       </nav>
 
       <div className={estilos.pie}>
-        <NavLink
-          to={itemConfiguracion.a}
-          className={({ isActive }) => [estilos.item, isActive && estilos.activo].filter(Boolean).join(' ')}
-        >
-          <itemConfiguracion.Icono size={20} aria-hidden="true" />
-          <span className={estilos.etiqueta}>{itemConfiguracion.etiqueta}</span>
-        </NavLink>
+        {pieFiltrado.map(({ a, Icono, etiqueta }) => (
+          <NavLink
+            key={a}
+            to={a}
+            className={({ isActive }) => [estilos.item, isActive && estilos.activo].filter(Boolean).join(' ')}
+          >
+            <Icono size={20} aria-hidden="true" />
+            <span className={estilos.etiqueta}>{etiqueta}</span>
+          </NavLink>
+        ))}
         {onBloquear && (
           <button
             type="button"
@@ -55,4 +63,3 @@ export default function Sidebar({ onBloquear }) {
     </aside>
   )
 }
-

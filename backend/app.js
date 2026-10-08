@@ -12,6 +12,7 @@ import { crearRutasCompras } from './routes/compras.js'
 import { crearRutasListas } from './routes/listas.js'
 import { crearRutasExport } from './routes/db_export.js'
 import { crearRutasCatalogo } from './routes/catalogo.js'
+import { crearRutaSesion, crearRutasUsuarios } from './routes/usuarios.js'
 
 /**
  * @param {Object} opciones
@@ -70,6 +71,8 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
   app.use('/api/ingresos', crearRutasCompras(getDb))
   app.use('/api/db', crearRutasExport(getDb, reemplazarDB))
   app.use('/api/catalogo', crearRutasCatalogo(getDb))
+  app.use('/api/usuarios', crearRutasUsuarios(getDb))
+  app.use('/api/sesion', crearRutaSesion(getDb))
 
   // Health-check: el frontend lo usa para decidir si trabaja con el servidor
   app.get('/api/health', (_req, res) => res.json({ ok: true }))
@@ -84,7 +87,7 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
           <p>Este puerto es la API y base de datos SQLite.</p>
           <p>Para ver la aplicación, abre <a href="http://localhost:5173">http://localhost:5173</a>.</p>
           <hr/>
-          <p style="color: #666; font-size: 0.9rem;">Endpoints: <code>/api/health</code>, <code>/api/compras</code>, <code>/api/ingresos</code>, <code>/api/catalogo</code>, <code>/api/db/exportar</code></p>
+          <p style="color: #666; font-size: 0.9rem;">Endpoints: <code>/api/health</code>, <code>/api/compras</code>, <code>/api/ingresos</code>, <code>/api/catalogo</code>, <code>/api/usuarios</code>, <code>/api/db/exportar</code></p>
         </body>
       </html>
     `)
