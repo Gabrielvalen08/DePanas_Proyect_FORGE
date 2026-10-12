@@ -138,6 +138,14 @@
   width: 1%;
 }
 
+/* Nombres de los materiales de una categoría o un producto: secundarios a su nombre */
+.tabla .listaMateriales {
+  min-width: 14rem;
+  font-family: var(--fuente-texto);
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
 .acciones {
   display: flex;
   justify-content: flex-end;
@@ -255,5 +263,12 @@
 
   .seccion:active {
     transform: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .tabla .listaMateriales {
+    min-width: 0;
+    text-align: right;
   }
 }

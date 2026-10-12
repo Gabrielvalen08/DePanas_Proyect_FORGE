@@ -56,7 +56,7 @@ test('la base nueva trae a Cesar_01 (administrador) y a Marta_02 con todo menos 
   const { cuerpo } = await pedir(`${base}/usuarios`)
   assert.deepEqual(cuerpo, [
     { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'] },
-    { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/', '/compras', '/configuracion', '/exportar', '/cargar'] },
+    { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/', '/compras', '/catalogo', '/exportar', '/cargar'] },
   ])
   // Las contraseñas no están en texto plano en la base
   const db = new DatabaseSync(dbPath, { readOnly: true })
@@ -169,4 +169,17 @@ test('los cambios de usuarios se conservan al reabrir la base (no se vuelve a se
   const usuarios = db.prepare('SELECT usuario FROM usuarios').all().map(u => u.usuario)
   db.close()
   assert.deepEqual(usuarios, ['Cesar_01'])
+})
+
+test('los permisos guardados con /configuracion pasan a /catalogo al abrir la base', t => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'depanas-usuarios-'))
+  t.after(() => rmSync(carpeta, { recursive: true, force: true }))
+  const dbPath = join(carpeta, 'depanas.db')
+  let db = abrirDB(dbPath, SCHEMA)
+  db.prepare("UPDATE usuarios SET permisos = ? WHERE usuario = 'Marta_02'").run(JSON.stringify(['/compras', '/configuracion']))
+  db.close()
+  db = abrirDB(dbPath, SCHEMA)
+  const { permisos } = db.prepare("SELECT permisos FROM usuarios WHERE usuario = 'Marta_02'").get()
+  db.close()
+  assert.deepEqual(JSON.parse(permisos), ['/compras', '/catalogo'])
 })

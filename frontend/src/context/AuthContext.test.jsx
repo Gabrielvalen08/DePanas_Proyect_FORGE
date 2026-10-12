@@ -11,7 +11,7 @@ function ComponentePrueba() {
       <span data-testid="estado">{autenticado ? 'autenticado' : 'bloqueado'}</span>
       <span data-testid="usuario">{usuario || 'ninguno'}</span>
       <span data-testid="admin">{esAdmin ? 'si' : 'no'}</span>
-      <span data-testid="permiso-config">{tienePermiso('/configuracion') ? 'si' : 'no'}</span>
+      <span data-testid="permiso-config">{tienePermiso('/catalogo') ? 'si' : 'no'}</span>
       <span data-testid="permiso-compras">{tienePermiso('/compras') ? 'si' : 'no'}</span>
       <span data-testid="permiso-usuarios">{tienePermiso('/usuarios') ? 'si' : 'no'}</span>
       <button onClick={() => ingresar('Cesar_01', '1234')}>Ingresar Cesar</button>
@@ -71,7 +71,7 @@ describe('AuthContext', () => {
     })
   })
 
-  it('Marta_02 entra a compras y configuración, pero no al Gestor de usuarios', async () => {
+  it('Marta_02 entra a compras y el catálogo, pero no al Gestor de usuarios', async () => {
     const usuario = userEvent.setup()
     renderizar()
     await usuario.click(screen.getByText('Ingresar Marta'))

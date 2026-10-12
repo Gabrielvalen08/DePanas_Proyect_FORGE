@@ -8,12 +8,18 @@
  *                                               materiales: [{ nombre, categoria, producto }], uso }
  *   PUT    /api/catalogo/materiales/:nombre → asigna { categoria, producto } a un material
  *                                             (lo crea si no existe; usado al registrar compras)
- *   POST   /api/catalogo/:tipo              → agrega { nombre } (material: + categoria y producto)
+ *   POST   /api/catalogo/:tipo              → agrega { nombre } (material: + categoria y producto;
+ *                                             categoría o producto: + materiales opcional)
  *   PUT    /api/catalogo/:tipo/:nombre      → cambia el nombre (y, en un material, su categoría y
- *                                             producto) y lo actualiza en todas las compras
+ *                                             producto; en una categoría o un producto, sus
+ *                                             materiales) y lo actualiza en todas las compras
  *   DELETE /api/catalogo/:tipo/:nombre      → quita la opción; las compras conservan su texto
  *
  * :tipo es proveedor | categoria | material | producto
+ *
+ * Cada material tiene una sola categoría y un solo producto. `materiales` en una
+ * categoría o un producto es la lista completa de los que la llevan: los que se
+ * agregan la toman (y dejan la que tenían) y los que se quitan quedan sin asignar.
  */
 
 import { Router } from 'express'
@@ -76,6 +82,46 @@ function asignar(db, material, categoria, producto) {
   return { cat, prod }
 }
 
+/** `materiales` del cuerpo: undefined (no se tocan), o una lista de nombres sin repetidos */
+function leerMateriales(cuerpo) {
+  if (cuerpo?.materiales === undefined) return undefined
+  if (!Array.isArray(cuerpo.materiales) || cuerpo.materiales.some(m => typeof m !== 'string')) {
+    throw fallo(400, 'La lista de materiales no es válida')
+  }
+  const vistos = new Set()
+  return cuerpo.materiales.map(texto).filter(m => m && !vistos.has(m.toLowerCase()) && vistos.add(m.toLowerCase()))
+}
+
+/**
+ * Deja en la categoría o el producto `nombre` exactamente esos materiales (que
+ * deben existir) y lo propaga a sus compras. Devuelve cuántos materiales cambiaron.
+ */
+function fijarMateriales(db, tipo, nombre, materiales) {
+  const registrados = materiales.map(m => {
+    const mat = buscar(db, 'material', m)
+    if (!mat) throw fallo(400, `No existe un material llamado «${m}»`)
+    return mat
+  })
+  const elegidos = new Set(registrados.map(m => m.nombre.toLowerCase()))
+  let cambios = 0
+  // Los que ya no van quedan sin asignar (las compras conservan su texto, como al eliminar)
+  const actuales = db.prepare(`SELECT nombre FROM catalogo WHERE tipo = 'material' AND ${tipo} = ? COLLATE NOCASE`).all(nombre)
+  for (const { nombre: material } of actuales) {
+    if (elegidos.has(material.toLowerCase())) continue
+    db.prepare(`UPDATE catalogo SET ${tipo} = '' WHERE tipo = 'material' AND nombre = ?`).run(material)
+    cambios++
+  }
+  for (const mat of registrados) {
+    if (mat[tipo] === nombre) continue
+    db.prepare(`UPDATE catalogo SET ${tipo} = ? WHERE tipo = 'material' AND nombre = ?`).run(nombre, mat.nombre)
+    db.prepare(`UPDATE ingresos SET ${tipo} = ? WHERE material = ? COLLATE NOCASE`).run(nombre, mat.nombre)
+    cambios++
+  }
+  return cambios
+}
+
+const conMateriales = tipo => tipo === 'categoria' || tipo === 'producto'
+
 export function crearRutasCatalogo(getDb) {
   const router = Router()
 
@@ -122,10 +168,14 @@ export function crearRutasCatalogo(getDb) {
     if (tipo === 'material' && !producto) return res.status(400).json({ error: 'Elige un producto' })
 
     responder(res, db => enTransaccion(db, () => {
+      const materiales = conMateriales(tipo) ? leerMateriales(req.body) : undefined
       const existente = buscar(db, tipo, nombre)
       if (existente) throw fallo(409, `Ya existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${existente.nombre}»`)
       registrarEnCatalogo(db, tipo, nombre)
-      if (tipo !== 'material') return { nombre, categoriaNueva: false, productoNuevo: false }
+      if (tipo !== 'material') {
+        const cambiados = materiales ? fijarMateriales(db, tipo, nombre, materiales) : 0
+        return { nombre, materiales: cambiados, categoriaNueva: false, productoNuevo: false }
+      }
       const { cat, prod } = asignar(db, nombre, categoria, producto)
       return { nombre, categoria: cat.nombre, producto: prod.nombre, categoriaNueva: cat.nuevo, productoNuevo: prod.nuevo }
     }))
@@ -143,6 +193,7 @@ export function crearRutasCatalogo(getDb) {
     }
 
     responder(res, db => enTransaccion(db, () => {
+      const materiales = conMateriales(tipo) ? leerMateriales(req.body) : undefined
       const registro = buscar(db, tipo, actual)
       if (!registro) throw fallo(404, `No existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${actual}»`)
       const choque = buscar(db, tipo, nuevo)
@@ -170,7 +221,8 @@ export function crearRutasCatalogo(getDb) {
         categoriaNueva = cat.nuevo
         productoNuevo = prod.nuevo
       }
-      return { anterior: registro.nombre, nombre: nuevo, ...buscar(db, tipo, nuevo), compras, categoriaNueva, productoNuevo }
+      const cambiados = materiales ? fijarMateriales(db, tipo, nuevo, materiales) : 0
+      return { anterior: registro.nombre, nombre: nuevo, ...buscar(db, tipo, nuevo), compras, materiales: cambiados, categoriaNueva, productoNuevo }
     }))
   })
 

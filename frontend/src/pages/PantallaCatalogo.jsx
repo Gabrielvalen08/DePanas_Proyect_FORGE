@@ -8,12 +8,12 @@ import { Boton, Campo, EstadoVacio, Insignia, Tarjeta } from '../components/comm
 import { agregarAlCatalogo, editarEnCatalogo, eliminarDelCatalogo, fetchCatalogo } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { textoBusqueda } from '../utils/formato'
-import { CONFIGURACION, fraseDelDia } from '../utils/mensajes'
-import estilos from './PantallaConfiguracion.module.css'
+import { PANTALLA_CATALOGO, fraseDelDia } from '../utils/mensajes'
+import estilos from './PantallaCatalogo.module.css'
 
 const TIPOS = ['proveedor', 'categoria', 'material', 'producto']
 const ICONOS = { proveedor: Truck, categoria: Tags, material: Package, producto: UtensilsCrossed }
-const TIPO_DE_RUTA = Object.fromEntries(TIPOS.map(t => [CONFIGURACION.secciones[t].ruta, t]))
+const TIPO_DE_RUTA = Object.fromEntries(TIPOS.map(t => [PANTALLA_CATALOGO.secciones[t].ruta, t]))
 
 /** Opciones de un tipo como filas { nombre, categoria?, producto? } */
 function filasDe(catalogo, tipo) {
@@ -24,13 +24,18 @@ function filasDe(catalogo, tipo) {
 
 const usoDe = (catalogo, tipo, nombre) => catalogo.uso?.[tipo]?.[nombre.toLowerCase()] ?? 0
 
+/** Nombres de los materiales que llevan esa categoría o ese producto */
+const materialesDe = (catalogo, tipo, nombre) =>
+  catalogo.materiales.filter(m => m[tipo]?.toLowerCase() === nombre.toLowerCase()).map(m => m.nombre)
+
 /**
- * Configuración (/configuracion y /configuracion/:seccion).
+ * Catálogo (/catalogo y /catalogo/:seccion).
  * Cuatro opciones (proveedores, categorías, materiales, productos); cada una
- * abre su lista para agregar, cambiar el nombre o eliminar. Los cambios de
- * nombre se aplican también a las compras guardadas.
+ * abre su lista para agregar, cambiar el nombre o eliminar. Las categorías y los
+ * productos también eligen sus materiales. Los cambios se aplican también a las
+ * compras guardadas.
  */
-export default function PantallaConfiguracion() {
+export default function PantallaCatalogo() {
   const { seccion } = useParams()
   const tipo = TIPO_DE_RUTA[seccion] ?? null
   const { addToast } = useToast()
@@ -41,28 +46,28 @@ export default function PantallaConfiguracion() {
     let vigente = true
     fetchCatalogo()
       .then(datos => { if (vigente) setCatalogo(datos) })
-      .catch(() => { if (vigente) addToast(CONFIGURACION.errorCargar, 'error') })
+      .catch(() => { if (vigente) addToast(PANTALLA_CATALOGO.errorCargar, 'error') })
     return () => { vigente = false }
   }, [version, addToast])
 
-  if (seccion && !tipo) return <Navigate to="/configuracion" replace />
+  if (seccion && !tipo) return <Navigate to="/catalogo" replace />
 
   return (
     <>
-      <Header title="Configuración" frase={fraseDelDia('/configuracion')} />
+      <Header title="Catálogo" frase={fraseDelDia('/catalogo')} />
 
       <main id="contenido" tabIndex={-1}>
-        <p className={estilos.intro}>{CONFIGURACION.intro}</p>
+        <p className={estilos.intro}>{PANTALLA_CATALOGO.intro}</p>
 
-        <nav aria-label="Secciones de configuración">
+        <nav aria-label="Secciones del catálogo">
           <ul className={estilos.secciones}>
             {TIPOS.map(t => {
               const Icono = ICONOS[t]
-              const { titulo, descripcion, ruta } = CONFIGURACION.secciones[t]
+              const { titulo, descripcion, ruta } = PANTALLA_CATALOGO.secciones[t]
               return (
                 <li key={t}>
                   <NavLink
-                    to={`/configuracion/${ruta}`}
+                    to={`/catalogo/${ruta}`}
                     className={({ isActive }) => [estilos.seccion, isActive && estilos.seccionActiva].filter(Boolean).join(' ')}
                   >
                     <span className={estilos.seccionIcono} aria-hidden="true"><Icono size={22} /></span>
@@ -82,11 +87,11 @@ export default function PantallaConfiguracion() {
 
         {!tipo ? (
           <Tarjeta>
-            <EstadoVacio icono={<Tags />} titulo={CONFIGURACION.elegir.titulo} texto={CONFIGURACION.elegir.texto} />
+            <EstadoVacio icono={<Tags />} titulo={PANTALLA_CATALOGO.elegir.titulo} texto={PANTALLA_CATALOGO.elegir.texto} />
           </Tarjeta>
         ) : catalogo === null ? (
           <Tarjeta>
-            <EstadoVacio cargando icono={<Loader2 />} titulo={CONFIGURACION.cargando} />
+            <EstadoVacio cargando icono={<Loader2 />} titulo={PANTALLA_CATALOGO.cargando} />
           </Tarjeta>
         ) : (
           // key: al cambiar de sección se reinicia la búsqueda
@@ -102,9 +107,10 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
   const [busqueda, setBusqueda] = useState('')
   const [edicion, setEdicion] = useState(null) // null | { registro: null } | { registro, uso }
   const [porEliminar, setPorEliminar] = useState(null)
-  const { titulo, singular } = CONFIGURACION.secciones[tipo]
+  const { titulo, singular } = PANTALLA_CATALOGO.secciones[tipo]
   const Icono = ICONOS[tipo]
   const esMaterial = tipo === 'material'
+  const conMateriales = tipo === 'categoria' || tipo === 'producto'
 
   const todas = filasDe(catalogo, tipo)
   const filas = todas.filter(f => textoBusqueda(f.nombre).includes(textoBusqueda(busqueda.trim())))
@@ -114,21 +120,21 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
       const resultado = edicion.registro
         ? await editarEnCatalogo(tipo, edicion.registro.nombre, datos)
         : await agregarAlCatalogo(tipo, datos)
-      addToast(edicion.registro ? CONFIGURACION.editado(tipo, resultado) : CONFIGURACION.agregado(tipo, resultado))
+      addToast(edicion.registro ? PANTALLA_CATALOGO.editado(tipo, resultado) : PANTALLA_CATALOGO.agregado(tipo, resultado))
       setEdicion(null)
       alCambio()
     } catch (error) {
-      addToast(CONFIGURACION.error(error.message), 'error')
+      addToast(PANTALLA_CATALOGO.error(error.message), 'error')
       throw error
     }
   }
 
   async function eliminar(registro) {
     try {
-      addToast(CONFIGURACION.eliminado(tipo, await eliminarDelCatalogo(tipo, registro.nombre)))
+      addToast(PANTALLA_CATALOGO.eliminado(tipo, await eliminarDelCatalogo(tipo, registro.nombre)))
       alCambio()
     } catch (error) {
-      addToast(CONFIGURACION.errorEliminar(error.message), 'error')
+      addToast(PANTALLA_CATALOGO.errorEliminar(error.message), 'error')
     }
   }
 
@@ -139,17 +145,17 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
         icono={<Icono />}
         accion={
           <Boton variante="primario" icono={<Plus />} onClick={() => setEdicion({ registro: null })}>
-            {CONFIGURACION.agregar(tipo)}
+            {PANTALLA_CATALOGO.agregar(tipo)}
           </Boton>
         }
       >
         <div className={estilos.buscador}>
           <Campo
             id={`buscar-${tipo}`}
-            etiqueta={CONFIGURACION.buscar(tipo)}
+            etiqueta={PANTALLA_CATALOGO.buscar(tipo)}
             etiquetaOculta
             prefijo={<Search size={16} />}
-            placeholder={`${CONFIGURACION.buscar(tipo)}…`}
+            placeholder={`${PANTALLA_CATALOGO.buscar(tipo)}…`}
             value={busqueda}
             autoComplete="off"
             onChange={e => setBusqueda(e.target.value)}
@@ -157,18 +163,19 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
         </div>
 
         {todas.length === 0 ? (
-          <EstadoVacio icono={<Icono />} titulo={CONFIGURACION.vacio(tipo)} />
+          <EstadoVacio icono={<Icono />} titulo={PANTALLA_CATALOGO.vacio(tipo)} />
         ) : filas.length === 0 ? (
-          <EstadoVacio icono={<Search />} titulo={CONFIGURACION.sinResultados} />
+          <EstadoVacio icono={<Search />} titulo={PANTALLA_CATALOGO.sinResultados} />
         ) : (
           <table className={estilos.tabla}>
             <caption className="solo-lector">{titulo}</caption>
             <thead>
               <tr>
-                <th scope="col">{CONFIGURACION.nombre}</th>
+                <th scope="col">{PANTALLA_CATALOGO.nombre}</th>
                 {esMaterial && <th scope="col">Categoría</th>}
                 {esMaterial && <th scope="col">Producto</th>}
-                <th scope="col" className={estilos.numerico}>{CONFIGURACION.columnaUso(tipo)}</th>
+                {conMateriales && <th scope="col">{PANTALLA_CATALOGO.columnaMateriales}</th>}
+                <th scope="col" className={estilos.numerico}>{PANTALLA_CATALOGO.columnaUso(tipo)}</th>
                 <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
               </tr>
             </thead>
@@ -180,29 +187,36 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
                     <th scope="row" className={estilos.nombre}>{f.nombre}</th>
                     {esMaterial && (
                       <td data-etiqueta="Categoría">
-                        {f.categoria || <Insignia tono="aviso">{CONFIGURACION.sinAsignar}</Insignia>}
+                        {f.categoria || <Insignia tono="aviso">{PANTALLA_CATALOGO.sinAsignar}</Insignia>}
                       </td>
                     )}
                     {esMaterial && (
                       <td data-etiqueta="Producto">
-                        {f.producto || <Insignia tono="aviso">{CONFIGURACION.sinAsignar}</Insignia>}
+                        {f.producto || <Insignia tono="aviso">{PANTALLA_CATALOGO.sinAsignar}</Insignia>}
                       </td>
                     )}
-                    <td className={estilos.numerico} data-etiqueta={CONFIGURACION.columnaUso(tipo)}>
-                      {CONFIGURACION.uso(tipo, uso)}
+                    {conMateriales && (
+                      <td data-etiqueta={PANTALLA_CATALOGO.columnaMateriales} className={estilos.listaMateriales}>
+                        {uso > 0
+                          ? PANTALLA_CATALOGO.listaMateriales(materialesDe(catalogo, tipo, f.nombre))
+                          : <Insignia tono="aviso">{PANTALLA_CATALOGO.uso(tipo, 0)}</Insignia>}
+                      </td>
+                    )}
+                    <td className={estilos.numerico} data-etiqueta={PANTALLA_CATALOGO.columnaUso(tipo)}>
+                      {PANTALLA_CATALOGO.uso(tipo, uso)}
                     </td>
                     <td className={estilos.colAcciones}>
                       <div className={estilos.acciones}>
                         <Boton
                           variante="icono"
                           icono={<Pencil />}
-                          aria-label={CONFIGURACION.editar(tipo, f.nombre)}
+                          aria-label={PANTALLA_CATALOGO.editar(tipo, f.nombre)}
                           onClick={() => setEdicion({ registro: f, uso: esMaterial || tipo === 'proveedor' ? uso : 0 })}
                         />
                         <Boton
                           variante="icono"
                           icono={<Trash2 />}
-                          aria-label={CONFIGURACION.eliminar(tipo, f.nombre)}
+                          aria-label={PANTALLA_CATALOGO.eliminar(tipo, f.nombre)}
                           onClick={() => setPorEliminar({ ...f, uso })}
                           className={estilos.eliminar}
                         />
@@ -216,15 +230,21 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
         )}
       </Tarjeta>
 
-      <EditorCatalogo tipo={tipo} edicion={edicion} alGuardar={guardar} alCerrar={() => setEdicion(null)} />
+      <EditorCatalogo
+        tipo={tipo}
+        edicion={edicion}
+        materiales={catalogo.materiales}
+        alGuardar={guardar}
+        alCerrar={() => setEdicion(null)}
+      />
 
       <ConfirmModal
         isOpen={porEliminar !== null}
         onClose={() => setPorEliminar(null)}
         onConfirm={() => eliminar(porEliminar)}
-        title={CONFIGURACION.confirmarEliminar.titulo(tipo)}
-        message={porEliminar ? CONFIGURACION.confirmarEliminar.mensaje(tipo, porEliminar.nombre, porEliminar.uso) : ''}
-        confirmLabel={CONFIGURACION.confirmarEliminar.confirmar}
+        title={PANTALLA_CATALOGO.confirmarEliminar.titulo(tipo)}
+        message={porEliminar ? PANTALLA_CATALOGO.confirmarEliminar.mensaje(tipo, porEliminar.nombre, porEliminar.uso) : ''}
+        confirmLabel={PANTALLA_CATALOGO.confirmarEliminar.confirmar}
         danger
       />
       <span className="solo-lector" aria-live="polite">{`${filas.length} ${filas.length === 1 ? singular : titulo.toLowerCase()}`}</span>

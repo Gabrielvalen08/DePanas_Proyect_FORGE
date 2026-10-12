@@ -61,6 +61,8 @@ export function prepararCatalogo(db) {
  * lo que el administrador cambia no se pisa al reabrir la base.
  */
 export function prepararUsuarios(db) {
+  // Configuración pasó a llamarse Catálogo (/configuracion → /catalogo)
+  db.prepare(`UPDATE usuarios SET permisos = REPLACE(permisos, '"/configuracion"', '"/catalogo"') WHERE permisos LIKE '%"/configuracion"%'`).run()
   if (db.prepare('SELECT COUNT(*) AS n FROM usuarios').get().n > 0) return
   const insertar = db.prepare('INSERT INTO usuarios (usuario, nombre, contrasena, rol, permisos) VALUES (?, ?, ?, ?, ?)')
   enTransaccion(db, () => {

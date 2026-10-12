@@ -21,7 +21,7 @@
  */
 
 import { comprasACsv, comprasAJson, nombreArchivo } from '../utils/exportar'
-import { RUTAS_ASIGNABLES, RUTA_USUARIOS } from '../utils/permisos'
+import { RUTAS_ASIGNABLES, RUTA_USUARIOS, migrarPermisos } from '../utils/permisos'
 import { USUARIOS as MENSAJES_USUARIOS } from '../utils/mensajes'
 
 const BASE_URL = '/api'
@@ -295,11 +295,11 @@ function propagarAsignacionLocal(material, categoria, producto) {
 }
 
 // ---------------------------------------------------------------------------
-// Configuración: agregar, editar y eliminar opciones del catálogo
+// Catálogo: agregar, editar y eliminar opciones del catálogo
 // ---------------------------------------------------------------------------
 
 /**
- * Catálogo completo para la pantalla de Configuración, recién leído, con `uso`:
+ * Catálogo completo para la pantalla del Catálogo, recién leído, con `uso`:
  * { proveedores, categorias, productos, materiales, uso: { proveedor: { nombre: compras },
  *   material: { … }, categoria: { nombre: materiales }, producto: { … } } } (claves en minúsculas)
  */
@@ -338,6 +338,53 @@ export async function fetchCatalogo() {
   }
 }
 
+/**
+ * Deja en la categoría o el producto `nombre` exactamente esos materiales (como
+ * el backend): los elegidos la toman, los quitados quedan sin asignar. Cambia
+ * `cat` y las compras locales de los elegidos. Devuelve cuántos materiales cambiaron.
+ */
+function fijarMaterialesLocal(cat, tipo, nombre, materiales) {
+  const registrados = resolverMateriales(cat, materiales)
+  const elegidos = new Set(registrados.map(m => clave(m.nombre)))
+  let cambios = 0
+  for (const m of cat.materiales) {
+    if (clave(m[tipo]) === clave(nombre) && !elegidos.has(clave(m.nombre))) {
+      m[tipo] = ''
+      cambios++
+    }
+  }
+  const movidos = new Set()
+  for (const m of registrados) {
+    if (m[tipo] === nombre || movidos.has(m)) continue
+    m[tipo] = nombre
+    movidos.add(m)
+    cambios++
+  }
+  if (movidos.size > 0) {
+    const nombres = new Set([...movidos].map(m => clave(m.nombre)))
+    const listas = getListas()
+    for (const l of listas) {
+      for (const linea of l.materiales) if (nombres.has(clave(linea.material))) linea[tipo] = nombre
+    }
+    setListas(listas)
+  }
+  return cambios
+}
+
+const conMateriales = tipo => tipo === 'categoria' || tipo === 'producto'
+
+/** Los materiales del catálogo con esos nombres; lanza si la lista no es válida o alguno no existe */
+function resolverMateriales(cat, materiales) {
+  if (!Array.isArray(materiales) || materiales.some(m => typeof m !== 'string')) {
+    throw new Error('La lista de materiales no es válida')
+  }
+  return materiales.map(m => m.trim()).filter(Boolean).map(m => {
+    const mat = cat.materiales.find(x => clave(x.nombre) === clave(m))
+    if (!mat) throw new Error(`No existe un material llamado «${m}»`)
+    return mat
+  })
+}
+
 const yaExiste = (tipo, nombre) => `Ya existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${nombre}»`
 const noExiste = (tipo, nombre) => `No existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${nombre}»`
 
@@ -348,7 +395,8 @@ function buscarLocal(cat, tipo, nombre) {
 
 /**
  * Agrega una opción. datos: { nombre } y, para un material, { categoria, producto }
- * (si no existen, se crean). Devuelve { nombre, categoria?, producto?, categoriaNueva, productoNuevo }
+ * (si no existen, se crean); para una categoría o un producto, { materiales? }: los
+ * materiales que la llevan. Devuelve { nombre, categoria?, producto?, materiales?, categoriaNueva, productoNuevo }
  */
 export async function agregarAlCatalogo(tipo, datos) {
   if ((await detectarModo()) === 'servidor') {
@@ -364,8 +412,11 @@ export async function agregarAlCatalogo(tipo, datos) {
   if (existente) throw new Error(yaExiste(tipo, existente))
   if (tipo !== 'material') {
     registrarEn(cat, tipo, nombre)
+    const materiales = conMateriales(tipo) && datos.materiales !== undefined
+      ? fijarMaterialesLocal(cat, tipo, nombre, datos.materiales)
+      : 0
     setCatalogoLocal(cat)
-    return { nombre, categoriaNueva: false, productoNuevo: false }
+    return { nombre, materiales, categoriaNueva: false, productoNuevo: false }
   }
   if (!datos.categoria?.trim()) throw new Error('Elige una categoría')
   if (!datos.producto?.trim()) throw new Error('Elige un producto')
@@ -378,9 +429,10 @@ export async function agregarAlCatalogo(tipo, datos) {
 }
 
 /**
- * Cambia el nombre de una opción (y, en un material, su categoría y producto) y lo
- * actualiza en todas las compras. datos: { nombre, categoria?, producto? }.
- * Devuelve { anterior, nombre, compras, categoriaNueva, productoNuevo }
+ * Cambia el nombre de una opción (y, en un material, su categoría y producto; en una
+ * categoría o un producto, sus materiales) y lo actualiza en todas las compras.
+ * datos: { nombre, categoria?, producto?, materiales? }.
+ * Devuelve { anterior, nombre, compras, materiales, categoriaNueva, productoNuevo }
  */
 export async function editarEnCatalogo(tipo, nombreActual, datos) {
   if ((await detectarModo()) === 'servidor') {
@@ -395,6 +447,8 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
   const nuevo = (datos.nombre || '').trim() || anterior
   const choque = buscarLocal(cat, tipo, nuevo)
   if (choque && clave(choque) !== clave(anterior)) throw new Error(yaExiste(tipo, choque))
+  // Se valida antes de tocar nada, para no dejar el cambio a medias
+  if (conMateriales(tipo) && datos.materiales !== undefined) resolverMateriales(cat, datos.materiales)
 
   // Catálogo
   if (tipo === 'material') {
@@ -437,8 +491,15 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
     }
   }
   if (compras.size > 0) setListas(listas)
+
+  // Materiales de la categoría o el producto (después del renombre, con el nombre nuevo)
+  let materiales = 0
+  if (conMateriales(tipo) && datos.materiales !== undefined) {
+    materiales = fijarMaterialesLocal(cat, tipo, nuevo, datos.materiales)
+    setCatalogoLocal(cat)
+  }
   const extra = tipo === 'material' ? { categoria: asignado.categoria, producto: asignado.producto } : {}
-  return { anterior, nombre: nuevo, ...extra, compras: compras.size, categoriaNueva, productoNuevo }
+  return { anterior, nombre: nuevo, ...extra, compras: compras.size, materiales, categoriaNueva, productoNuevo }
 }
 
 /**
@@ -925,7 +986,7 @@ const recortado = v => (typeof v === 'string' ? v.trim() : '')
 function getUsuariosLocal() {
   try {
     const datos = JSON.parse(localStorage.getItem(CLAVE_USUARIOS) || 'null')
-    if (Array.isArray(datos) && datos.length > 0) return datos
+    if (Array.isArray(datos) && datos.length > 0) return datos.map(u => ({ ...u, permisos: migrarPermisos(u.permisos) }))
   } catch {
     // Usuarios guardados ilegibles: se vuelve a los iniciales
   }

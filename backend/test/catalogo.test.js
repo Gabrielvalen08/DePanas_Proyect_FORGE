@@ -1,5 +1,5 @@
 /**
- * Tests del catálogo editable (Configuración). Cada test usa una base temporal propia.
+ * Tests del catálogo editable (Catálogo). Cada test usa una base temporal propia.
  */
 
 import { test } from 'node:test'
@@ -160,4 +160,55 @@ test('una base anterior al catálogo se completa una vez con lo que hay en sus c
   assert.deepEqual({ ...fila('material', 'Mantequilla') }, { nombre: 'Mantequilla', categoria: 'Lácteos', producto: 'Panadería' })
   assert.ok(fila('proveedor', 'Selectos'), 'también trae el catálogo del Excel')
   db.close()
+})
+
+test('una categoría o un producto fija sus materiales: los nuevos se mudan, los quitados quedan sin asignar', async t => {
+  const base = await levantar(t)
+  for (const nombre of ['Harina PAN', 'Queso duro', 'Aceite']) {
+    await pedir(url(base, 'material'), 'POST', { nombre, categoria: 'Materia Prima', producto: 'Arepas' })
+  }
+  assert.equal((await pedir(`${base}/compras`, 'POST', {
+    proveedor: 'Selectos', fecha: '2026-10-01',
+    materiales: [{ material: 'Aceite', cantidad: 1, unidad: 'l', monto: 3, categoria: 'Materia Prima', producto: 'Arepas' }],
+  })).status, 201)
+
+  // Nueva categoría con Aceite: deja Materia Prima y su compra se actualiza
+  const nueva = await pedir(url(base, 'categoria'), 'POST', { nombre: 'Grasas', materiales: ['aceite'] })
+  assert.equal(nueva.status, 200)
+  assert.equal(nueva.cuerpo.materiales, 1)
+  let cat = await catalogo(base)
+  assert.equal(material(cat, 'Aceite').categoria, 'Grasas')
+  const [compra] = (await pedir(`${base}/compras`)).cuerpo
+  assert.equal(compra.materiales[0].categoria, 'Grasas')
+
+  // El producto Arepas se queda solo con Harina PAN: Queso duro y Aceite quedan sin producto
+  const editado = await pedir(url(base, 'producto', 'Arepas'), 'PUT', { nombre: 'Arepas', materiales: ['Harina PAN'] })
+  assert.equal(editado.status, 200)
+  assert.equal(editado.cuerpo.materiales, 2)
+  cat = await catalogo(base)
+  assert.equal(material(cat, 'Harina PAN').producto, 'Arepas')
+  assert.equal(material(cat, 'Queso duro').producto, '')
+  assert.equal(material(cat, 'Aceite').producto, '')
+
+  // Renombrar y cambiar materiales a la vez
+  await pedir(url(base, 'producto', 'Arepas'), 'PUT', { nombre: 'Arepitas', materiales: ['Harina PAN', 'Queso duro'] })
+  cat = await catalogo(base)
+  assert.equal(material(cat, 'Queso duro').producto, 'Arepitas')
+  assert.equal(material(cat, 'Harina PAN').producto, 'Arepitas')
+
+  // Sin `materiales` no se tocan
+  await pedir(url(base, 'categoria', 'Grasas'), 'PUT', { nombre: 'Aceites y grasas' })
+  assert.equal(material(await catalogo(base), 'Aceite').categoria, 'Aceites y grasas')
+})
+
+test('materiales: un material que no existe o una lista inválida se rechazan sin cambiar nada', async t => {
+  const base = await levantar(t)
+  await pedir(url(base, 'material'), 'POST', { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas' })
+  const inexistente = await pedir(url(base, 'categoria'), 'POST', { nombre: 'Harinas', materiales: ['Harina PAN', 'Unicornio'] })
+  assert.equal(inexistente.status, 400)
+  assert.match(inexistente.cuerpo.error, /Unicornio/)
+  const cat = await catalogo(base)
+  assert.ok(!cat.categorias.includes('Harinas'))
+  assert.equal(material(cat, 'Harina PAN').categoria, 'Materia Prima')
+  assert.equal((await pedir(url(base, 'producto', 'Arepas'), 'PUT', { materiales: 'Harina PAN' })).status, 400)
 })

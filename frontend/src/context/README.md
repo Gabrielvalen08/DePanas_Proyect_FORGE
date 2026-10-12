@@ -21,7 +21,7 @@ addToast(COMPRA.errorGuardar(error.message), 'error') // error
 ```jsx
 const { autenticado, usuario, sesion, esAdmin, tienePermiso, ingresar, salir } = useAuth()
 await ingresar('Marta_02', '5678') // { ok: true, usuario } o { ok: false, error: ACCESO.incorrecta }
-tienePermiso('/configuracion')     // según utils/permisos.js
+tienePermiso('/catalogo')     // según utils/permisos.js
 ```
 
 - `ingresar` es asíncrono: comprueba la contraseña con `iniciarSesion` de `services/api.js` (backend `POST /api/sesion` o, en modo local, `depanas_usuarios`). Las contraseñas solo existen como hash PBKDF2; el navegador nunca las tiene en el código.

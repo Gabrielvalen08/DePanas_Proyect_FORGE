@@ -36,7 +36,7 @@ Funciones puras, sin React. Cada archivo tiene su `*.test.js`.
 | `ASIGNACION` | Ventana de categoría y producto y su confirmación |
 | `ESTADOS` | Cargando y pantallas vacías |
 | `DATOS` | Dónde se guardan las compras (servidor o este navegador) |
-| `CONFIGURACION` | Pantalla de Configuración: secciones, ventana de edición, confirmaciones (con el género de cada tipo: "Nueva categoría", "Nuevo proveedor") |
+| `PANTALLA_CATALOGO` | Pantalla del Catálogo: secciones, ventana de edición, confirmaciones (con el género de cada tipo: "Nueva categoría", "Nuevo proveedor") |
 | `EXPORTAR`, `CARGAR` | Pantallas de Exportar y Cargar datos |
 
 Los mensajes con datos son funciones: `COMPRA.guardada('Selectos', 3)` → `"¡Listo, pana! La compra en Selectos quedó guardada (3 materiales)."`.

@@ -10,7 +10,16 @@
  * dársela a otros usuarios; el administrador la ve sin hacer nada.
  */
 
-export const RUTAS_ASIGNABLES = ['/', '/compras', '/configuracion', '/exportar', '/cargar']
+export const RUTAS_ASIGNABLES = ['/', '/compras', '/catalogo', '/exportar', '/cargar']
+
+/** Rutas que cambiaron de nombre: los permisos guardados con la vieja pasan a la nueva */
+const RUTAS_RENOMBRADAS = { '/configuracion': '/catalogo' }
+
+/** Permisos con las rutas renombradas al día, sin repetidos */
+export function migrarPermisos(permisos) {
+  if (!Array.isArray(permisos)) return permisos
+  return [...new Set(permisos.map(p => RUTAS_RENOMBRADAS[p] ?? p))]
+}
 
 /** Gestor de usuarios: solo el administrador, nunca se asigna */
 export const RUTA_USUARIOS = '/usuarios'
