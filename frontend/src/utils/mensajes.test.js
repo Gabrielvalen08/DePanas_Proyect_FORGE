@@ -1,4 +1,4 @@
-import { ASIGNACION, COMPRA, CONFIGURACION, EXPORTAR, FRASES_ENCABEZADO, FRASES_MARCA, fraseDelDia } from './mensajes'
+import { ASIGNACION, COMPRA, PANTALLA_CATALOGO, EXPORTAR, FRASES_ENCABEZADO, FRASES_MARCA, fraseDelDia } from './mensajes'
 
 describe('mensajes (voz de marca)', () => {
   it('la frase del encabezado es la misma todo el día y cambia al día siguiente', () => {
@@ -37,15 +37,15 @@ describe('mensajes (voz de marca)', () => {
       .toBe('¡Anotado! «Queso» va a Lácteos · Tequeños.')
   })
 
-  it('configuración: género y plural correctos en títulos y confirmaciones', () => {
-    expect(CONFIGURACION.tituloNuevo('categoria')).toBe('Nueva categoría')
-    expect(CONFIGURACION.tituloNuevo('proveedor')).toBe('Nuevo proveedor')
-    expect(CONFIGURACION.confirmarEliminar.titulo('categoria')).toBe('¿Eliminamos esta categoría?')
-    expect(CONFIGURACION.uso('proveedor', 1)).toBe('1 compra')
-    expect(CONFIGURACION.uso('producto', 3)).toBe('3 materiales')
-    expect(CONFIGURACION.editado('proveedor', { anterior: 'Selectos', nombre: 'Súper Selectos', compras: 2 }))
+  it('catálogo: género y plural correctos en títulos y confirmaciones', () => {
+    expect(PANTALLA_CATALOGO.tituloNuevo('categoria')).toBe('Nueva categoría')
+    expect(PANTALLA_CATALOGO.tituloNuevo('proveedor')).toBe('Nuevo proveedor')
+    expect(PANTALLA_CATALOGO.confirmarEliminar.titulo('categoria')).toBe('¿Eliminamos esta categoría?')
+    expect(PANTALLA_CATALOGO.uso('proveedor', 1)).toBe('1 compra')
+    expect(PANTALLA_CATALOGO.uso('producto', 3)).toBe('3 materiales')
+    expect(PANTALLA_CATALOGO.editado('proveedor', { anterior: 'Selectos', nombre: 'Súper Selectos', compras: 2 }))
       .toBe('¡Chévere! «Selectos» ahora se llama «Súper Selectos» y se actualizó en 2 compras.')
-    expect(CONFIGURACION.eliminado('producto', { nombre: 'Cachitos', materiales: 1 }))
+    expect(PANTALLA_CATALOGO.eliminado('producto', { nombre: 'Cachitos', materiales: 1 }))
       .toBe('Eliminamos «Cachitos». 1 material quedó sin producto; se pedirá al registrar una compra.')
   })
 })

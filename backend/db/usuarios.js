@@ -9,7 +9,7 @@
  */
 
 /** Pantallas que el administrador puede dar a los demás usuarios (rutas del frontend) */
-export const RUTAS_ASIGNABLES = ['/', '/compras', '/configuracion', '/exportar', '/cargar']
+export const RUTAS_ASIGNABLES = ['/', '/compras', '/catalogo', '/exportar', '/cargar']
 
 /** El Gestor de usuarios: solo el administrador entra, nunca se asigna */
 export const RUTA_USUARIOS = '/usuarios'

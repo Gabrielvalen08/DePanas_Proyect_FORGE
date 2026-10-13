@@ -1,4 +1,4 @@
-import { PlusCircle, Settings, ShoppingCart, UsersRound } from 'lucide-react'
+import { BookOpen, PlusCircle, ShoppingCart, UsersRound } from 'lucide-react'
 
 // Lista única de navegación: la usan Sidebar, BarraInferior y App (títulos).
 // etiquetaCorta se usa en la barra inferior, donde el espacio es menor.
@@ -6,20 +6,16 @@ import { PlusCircle, Settings, ShoppingCart, UsersRound } from 'lucide-react'
 export const itemsNavegacion = [
   { a: '/', Icono: PlusCircle, etiqueta: 'Agregar compra', etiquetaCorta: 'Agregar', titulo: 'Agregar compra' },
   { a: '/compras', Icono: ShoppingCart, etiqueta: 'Compras', etiquetaCorta: 'Compras', titulo: 'Compras' },
+  { a: '/catalogo', Icono: BookOpen, etiqueta: 'Catálogo', etiquetaCorta: 'Catálogo', titulo: 'Catálogo' },
 ]
 
-// Van aparte, al pie del menú y justo arriba de "Bloquear"
-export const itemConfiguracion = {
-  a: '/configuracion', Icono: Settings, etiqueta: 'Configuración', etiquetaCorta: 'Configuración', titulo: 'Configuración',
-}
-
-// Solo lo ve el administrador (ver utils/permisos.js)
+// Va aparte, al pie del menú y justo arriba de "Bloquear". Solo lo ve el administrador (ver utils/permisos.js)
 export const itemUsuarios = {
   a: '/usuarios', Icono: UsersRound, etiqueta: 'Gestor de usuarios', etiquetaCorta: 'Usuarios', titulo: 'Gestor de usuarios',
 }
 
 /** Ítems del pie del menú, en orden */
-export const itemsPie = [itemUsuarios, itemConfiguracion]
+export const itemsPie = [itemUsuarios]
 
 // Páginas sin botón propio en el menú (se abren desde Agregar compra)
 const otrasPaginas = [

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from './App'
@@ -37,7 +37,7 @@ vi.mock('./services/api', () => ({
 // vi.mock se eleva al inicio del archivo: los datos van en vi.hoisted
 const { CESAR, MARTA } = vi.hoisted(() => ({
   CESAR: { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'] },
-  MARTA: { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/', '/compras', '/configuracion', '/exportar', '/cargar'] },
+  MARTA: { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/', '/compras', '/catalogo', '/exportar', '/cargar'] },
 }))
 
 function iniciarComo(sesion) {
@@ -112,18 +112,23 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     expect(await screen.findByText(ACCESO.bloqueado)).toBeInTheDocument()
   })
 
-  it('para Cesar_01: el menú tiene Configuración y puede navegar a /configuracion', async () => {
+  it('para Cesar_01: el menú tiene Catálogo justo debajo de Compras y puede navegar a /catalogo', async () => {
     const usuario = userEvent.setup()
     iniciarComo(CESAR)
     renderizarApp('/cargar')
     expect(screen.getByText('Estamos trabajando en ello')).toBeInTheDocument()
 
-    const configuracion = screen.getAllByRole('link', { name: 'Configuración' })[0]
-    const bloquear = screen.getAllByRole('button', { name: /Bloquear/ })[0]
-    // DOCUMENT_POSITION_FOLLOWING: Bloquear va después de Configuración
-    expect(configuracion.compareDocumentPosition(bloquear) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    await usuario.click(configuracion)
-    expect(await screen.findByRole('heading', { name: 'Configuración', level: 1 })).toBeInTheDocument()
+    const menu = screen.getByRole('navigation', { name: 'Menú principal' })
+    const enlaces = within(menu).getAllByRole('link').map(e => e.textContent)
+    expect(enlaces).toEqual(['Agregar compra', 'Compras', 'Catálogo'])
+    await usuario.click(within(menu).getByRole('link', { name: 'Catálogo' }))
+    expect(await screen.findByRole('heading', { name: 'Catálogo', level: 1 })).toBeInTheDocument()
+  })
+
+  it('la ruta vieja /configuracion lleva al Catálogo', async () => {
+    iniciarComo(CESAR)
+    renderizarApp('/configuracion/proveedores')
+    expect(await screen.findByRole('heading', { name: 'Catálogo', level: 1 })).toBeInTheDocument()
   })
 
   it('para Cesar_01: el menú tiene el Gestor de usuarios y lo abre', async () => {
@@ -135,11 +140,11 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     expect(await screen.findByRole('rowheader', { name: /Marta_02/ })).toBeInTheDocument()
   })
 
-  it('para Marta_02: ve Configuración, pero no el Gestor de usuarios, y si lo abre a mano vuelve al inicio', async () => {
+  it('para Marta_02: ve el Catálogo, pero no el Gestor de usuarios, y si lo abre a mano vuelve al inicio', async () => {
     iniciarComo(MARTA)
     renderizarApp('/usuarios')
 
-    expect(screen.getAllByRole('link', { name: 'Configuración' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: 'Catálogo' }).length).toBeGreaterThan(0)
     expect(screen.queryByRole('link', { name: 'Gestor de usuarios' })).not.toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Gestor de usuarios', level: 1 })).not.toBeInTheDocument()
@@ -147,9 +152,9 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
 
   it('un usuario sin una pantalla no la ve en el menú ni puede abrirla; sin Agregar compra empieza en la primera que tiene', async () => {
     iniciarComo({ usuario: 'Luis_03', nombre: 'Luis', rol: 'operador', permisos: ['/compras'] })
-    renderizarApp('/configuracion')
+    renderizarApp('/catalogo')
 
-    expect(screen.queryByRole('link', { name: 'Configuración' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Catálogo' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Agregar compra' })).not.toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Compras', level: 1 })).toBeInTheDocument()
   })

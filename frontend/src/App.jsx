@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import { ToastProvider, useToast } from './context/ToastContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Sidebar from './components/Sidebar'
@@ -8,13 +8,19 @@ import { tituloDeRuta } from './components/navegacion'
 import PantallaMaestra from './pages/PantallaMaestra'
 import AgregarCompra from './pages/AgregarCompra'
 import PantallaContrasena from './pages/PantallaContrasena'
-import PantallaConfiguracion from './pages/PantallaConfiguracion'
+import PantallaCatalogo from './pages/PantallaCatalogo'
 import PantallaExportar from './pages/PantallaExportar'
 import PantallaCargar from './pages/PantallaCargar'
 import PantallaUsuarios from './pages/PantallaUsuarios'
 import { rutaInicio } from './utils/permisos'
 import { ACCESO } from './utils/mensajes'
 import estilos from './App.module.css'
+
+/** /configuracion y sus secciones se llaman ahora /catalogo */
+function RedirigirACatalogo() {
+  const { seccion } = useParams()
+  return <Navigate to={seccion ? `/catalogo/${seccion}` : '/catalogo'} replace />
+}
 
 function AppContenido() {
   const { autenticado, sesion, salir, tienePermiso } = useAuth()
@@ -66,8 +72,10 @@ function AppContenido() {
               ))}
             />
             <Route path="/compras" element={protegida('/compras', <PantallaMaestra puedeAgregar={tienePermiso('/')} />)} />
-            <Route path="/configuracion" element={protegida('/configuracion', <PantallaConfiguracion />)} />
-            <Route path="/configuracion/:seccion" element={protegida('/configuracion', <PantallaConfiguracion />)} />
+            <Route path="/catalogo" element={protegida('/catalogo', <PantallaCatalogo />)} />
+            <Route path="/catalogo/:seccion" element={protegida('/catalogo', <PantallaCatalogo />)} />
+            <Route path="/configuracion" element={<RedirigirACatalogo />} />
+            <Route path="/configuracion/:seccion" element={<RedirigirACatalogo />} />
             <Route path="/exportar" element={protegida('/exportar', <PantallaExportar />)} />
             <Route path="/cargar" element={protegida('/cargar', <PantallaCargar puedeVolver={tienePermiso('/')} />)} />
             <Route path="/usuarios" element={protegida('/usuarios', <PantallaUsuarios />)} />

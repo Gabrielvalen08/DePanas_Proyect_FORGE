@@ -42,7 +42,7 @@ export const FRASES_ENCABEZADO = {
     'Todo lo que compramos, en un solo lugar',
     'Tu antojo venezolano en El Salvador empieza aquí',
   ],
-  '/configuracion': [
+  '/catalogo': [
     'Cada cosa en su sitio, como en la cocina de la abuela',
     'Ordena tus proveedores, materiales y productos',
     'Un catálogo bien hecho, una sazón bien medida',
@@ -192,7 +192,7 @@ export const DATOS = {
 }
 
 // ---------------------------------------------------------------------------
-// Configuración: editar proveedores, categorías, materiales y productos
+// Catálogo: editar proveedores, categorías, materiales y productos
 // ---------------------------------------------------------------------------
 // Género de cada tipo: "una categoría nueva" pero "un proveedor nuevo"
 const GENERO = {
@@ -204,9 +204,9 @@ const GENERO = {
 
 const SECCIONES = {
   proveedor: { titulo: 'Proveedores', singular: 'proveedor', ruta: 'proveedores', descripcion: 'A quién le compramos' },
-  categoria: { titulo: 'Categorías', singular: 'categoría', ruta: 'categorias', descripcion: 'Materia prima, limpieza, bebidas…' },
+  categoria: { titulo: 'Categorías', singular: 'categoría', ruta: 'categorias', descripcion: 'Agrupan los materiales: materia prima, limpieza…' },
   material: { titulo: 'Materiales', singular: 'material', ruta: 'materiales', descripcion: 'Cada insumo con su categoría y su producto' },
-  producto: { titulo: 'Productos', singular: 'producto', ruta: 'productos', descripcion: 'Cachitos, arepas, tequeños…' },
+  producto: { titulo: 'Productos', singular: 'producto', ruta: 'productos', descripcion: 'Cachitos, arepas… y los materiales que lleva cada uno' },
 }
 
 /** "la categoría «Lácteos» y el producto «Arepas»" cuando se estrenan al guardar */
@@ -220,8 +220,12 @@ function estrenos(r) {
 
 const usaCompras = tipo => tipo === 'proveedor' || tipo === 'material'
 
-export const CONFIGURACION = {
-  intro: 'Elige qué quieres editar. Si le cambias el nombre a algo, también se cambia en las compras que ya guardaste.',
+/** " Actualizamos 2 materiales." cuando cambian los materiales de una categoría o un producto */
+const materialesCambiados = r =>
+  (r.materiales ? ` Actualizamos ${r.materiales} ${plural(r.materiales, 'material')}.` : '')
+
+export const PANTALLA_CATALOGO = {
+  intro: 'Elige qué quieres editar. Todo cambio se aplica a las compras que ya guardaste.',
   secciones: SECCIONES,
   elegir: { titulo: 'Elige qué quieres editar', texto: 'Proveedores, categorías, materiales o productos.' },
   cargando: 'Buscando el catálogo…',
@@ -238,8 +242,24 @@ export const CONFIGURACION = {
   cancelar: 'Cancelar',
   editar: (tipo, nombre) => `Editar ${SECCIONES[tipo].singular} ${nombre}`,
   eliminar: (tipo, nombre) => `Eliminar ${SECCIONES[tipo].singular} ${nombre}`,
-  columnaUso: tipo => (usaCompras(tipo) ? 'Compras' : 'Materiales'),
+  columnaUso: tipo => (usaCompras(tipo) ? 'Compras' : 'Cantidad'),
   sinAsignar: 'Sin asignar',
+  columnaMateriales: 'Materiales',
+  listaMateriales: (nombres, max = 4) =>
+    nombres.length <= max ? nombres.join(', ') : `${nombres.slice(0, max).join(', ')} y ${nombres.length - max} más`,
+  // Ventana de edición de una categoría o un producto: qué materiales lleva
+  materiales: {
+    titulo: tipo => (tipo === 'categoria' ? 'Materiales de esta categoría' : 'Materiales que lleva este producto'),
+    nota: tipo =>
+      tipo === 'categoria'
+        ? 'Cada material va en una sola categoría: si eliges uno que está en otra, se cambia a esta. El que quites queda sin categoría.'
+        : 'Cada material va en un solo producto: si eliges uno que está en otro, se cambia a este. El que quites queda sin producto.',
+    buscar: 'Buscar material',
+    elegidos: n => `${n} ${plural(n, 'elegido', 'elegidos')}`,
+    ahoraEn: (tipo, nombre) => (nombre ? `Ahora en «${nombre}»` : tipo === 'categoria' ? 'Sin categoría' : 'Sin producto'),
+    ninguno: 'Todavía no hay materiales. Agrégalos en la sección Materiales.',
+    sinResultados: 'Ningún material con ese nombre',
+  },
   sinResultados: 'Nada por aquí con ese nombre',
   vacio: tipo => `Todavía no hay ${SECCIONES[tipo].titulo.toLowerCase()}.`,
   uso: (tipo, n) =>
@@ -247,12 +267,12 @@ export const CONFIGURACION = {
       ? (n === 0 ? 'Sin compras' : `${n} ${plural(n, 'compra', 'compras')}`)
       : (n === 0 ? 'Sin materiales' : `${n} ${plural(n, 'material')}`),
   agregado: (tipo, r) =>
-    `¡Listo, pana! Agregamos ${GENERO[tipo].un} ${SECCIONES[tipo].singular}: «${r.nombre}».` + estrenos(r),
+    `¡Listo, pana! Agregamos ${GENERO[tipo].un} ${SECCIONES[tipo].singular}: «${r.nombre}».` + estrenos(r) + materialesCambiados(r),
   editado: (tipo, r) =>
     (r.anterior !== r.nombre
       ? `¡Chévere! «${r.anterior}» ahora se llama «${r.nombre}»` +
         (r.compras ? ` y se actualizó en ${r.compras} ${plural(r.compras, 'compra', 'compras')}.` : '.')
-      : `¡Chévere! Guardamos los cambios de «${r.nombre}».`) + estrenos(r),
+      : `¡Chévere! Guardamos los cambios de «${r.nombre}».`) + estrenos(r) + materialesCambiados(r),
   eliminado: (tipo, r) =>
     `Eliminamos «${r.nombre}».` +
     (r.materiales
@@ -313,7 +333,7 @@ export const USUARIOS = {
   pantallas: {
     '/': 'Registrar lo que llega a la cocina',
     '/compras': 'Ver, editar y eliminar las compras',
-    '/configuracion': 'Proveedores, categorías, materiales y productos',
+    '/catalogo': 'Proveedores, categorías, materiales y productos',
     '/exportar': 'Descargar las compras en CSV o JSON',
     '/cargar': 'Traer datos de otro equipo',
   },

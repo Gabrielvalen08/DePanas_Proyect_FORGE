@@ -128,7 +128,7 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 | Header | Transparente arriba; fondo crema y sombra aparecen con `opacity` cuando `useScrollDetectado` detecta scroll. Sin `backdrop-filter` | El blur del collage dejaba una banda borrosa con borde marcado. Se anima solo `opacity`, como pide `DESIGN_DECISIONS.md` |
 | Logo del menú | Arepa recortada de `logo-badge.png` (`/brand/arepa.png`, 192 px) junto al logotipo tipográfico, con la sombra Vinotinto de las letras | Pedido del cliente: el badge completo es ilegible a 40 px |
 
-## Configuración del catálogo
+## Pantalla Catálogo (antes Configuración)
 
 | Tema | Decisión | Por qué |
 | ---- | -------- | ------- |
@@ -139,7 +139,9 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 | Eliminar | Quita la opción; las compras conservan su texto. Una categoría o producto deja vacío ese campo en sus materiales, que lo vuelven a pedir al registrar una compra | Borrar historial de compras sería peor; la confirmación avisa cuántas compras o materiales la usan |
 | Repetidos | Agregar o renombrar a un nombre que ya existe (sin distinguir mayúsculas) responde 409 | Fusionar dos opciones queda fuera de alcance |
 | `uso` | `GET /api/catalogo` trae cuántas compras usan cada proveedor o material, y cuántos materiales cada categoría o producto | La lista y la confirmación de eliminar lo muestran |
-| Rutas | `/configuracion/:seccion` (`proveedores`, `categorias`, `materiales`, `productos`) | El botón Atrás del navegador vuelve a la sección anterior |
+| Rutas | `/catalogo/:seccion` (`proveedores`, `categorias`, `materiales`, `productos`). `/configuracion/*` redirige, y los permisos guardados con `/configuracion` pasan a `/catalogo` al abrir la base (backend), al leer los usuarios locales y la sesión | El botón Atrás del navegador vuelve a la sección anterior; nadie pierde el acceso con el cambio de nombre |
+| Materiales de una categoría o un producto | Se eligen con casillas en su ventana; `materiales` es la lista completa. Cada material sigue teniendo **una sola** categoría y **un solo** producto: elegir uno que está en otra lo cambia (también en sus compras) y quitar uno lo deja sin asignar (sus compras conservan el texto, como al eliminar) | Es el modelo de datos de las compras (una fila de `ingresos` lleva una categoría y un producto); un material en varios productos sería otro modelo |
+| Menú | Catálogo va en el menú principal, debajo de Compras | Pedido del cliente: es un módulo más, no un ajuste |
 | Móvil | Las cuatro opciones van en 2 columnas compactas; cada fila de la lista es una tarjeta | Que la lista quede a la vista |
 
 ## Conexión con SQLite

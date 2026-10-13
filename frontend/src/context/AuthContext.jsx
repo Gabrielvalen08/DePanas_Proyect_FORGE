@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react'
 import { iniciarSesion } from '../services/api'
-import { esAdmin, puedeAcceder } from '../utils/permisos'
+import { esAdmin, migrarPermisos, puedeAcceder } from '../utils/permisos'
 import { ACCESO } from '../utils/mensajes'
 
 // { usuario, nombre, rol, permisos } de quien entró; dura hasta cerrar la pestaña
@@ -10,7 +10,7 @@ const CLAVE_SESION = 'depanas_sesion'
 function leerSesion() {
   try {
     const sesion = JSON.parse(window.sessionStorage.getItem(CLAVE_SESION) || 'null')
-    return sesion?.usuario && Array.isArray(sesion.permisos) ? sesion : null
+    return sesion?.usuario && Array.isArray(sesion.permisos) ? { ...sesion, permisos: migrarPermisos(sesion.permisos) } : null
   } catch {
     // Sin acceso a sessionStorage o con datos ilegibles: hay que volver a entrar
     return null

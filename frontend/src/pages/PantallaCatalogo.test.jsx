@@ -3,24 +3,24 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import { reiniciarModo } from '../services/api'
-import { CONFIGURACION } from '../utils/mensajes'
-import PantallaConfiguracion from './PantallaConfiguracion'
+import { PANTALLA_CATALOGO } from '../utils/mensajes'
+import PantallaCatalogo from './PantallaCatalogo'
 
 // Usa api.js real en modo local (sin servidor), sobre localStorage
-function renderizar(ruta = '/configuracion') {
+function renderizar(ruta = '/catalogo') {
   return render(
     <MemoryRouter initialEntries={[ruta]}>
       <ToastProvider>
         <Routes>
-          <Route path="/configuracion" element={<PantallaConfiguracion />} />
-          <Route path="/configuracion/:seccion" element={<PantallaConfiguracion />} />
+          <Route path="/catalogo" element={<PantallaCatalogo />} />
+          <Route path="/catalogo/:seccion" element={<PantallaCatalogo />} />
         </Routes>
       </ToastProvider>
     </MemoryRouter>
   )
 }
 
-describe('PantallaConfiguracion', () => {
+describe('PantallaCatalogo', () => {
   beforeEach(() => {
     localStorage.clear()
     reiniciarModo()
@@ -28,16 +28,16 @@ describe('PantallaConfiguracion', () => {
 
   it('muestra las cuatro opciones y pide elegir una', async () => {
     renderizar()
-    const secciones = screen.getByRole('navigation', { name: 'Secciones de configuración' })
+    const secciones = screen.getByRole('navigation', { name: 'Secciones del catálogo' })
     for (const nombre of ['Proveedores', 'Categorías', 'Materiales', 'Productos']) {
       expect(within(secciones).getByRole('link', { name: new RegExp(nombre) })).toBeInTheDocument()
     }
-    expect(screen.getByText(CONFIGURACION.elegir.titulo)).toBeInTheDocument()
+    expect(screen.getByText(PANTALLA_CATALOGO.elegir.titulo)).toBeInTheDocument()
   })
 
   it('agrega un proveedor y avisa', async () => {
     const usuario = userEvent.setup()
-    renderizar('/configuracion/proveedores')
+    renderizar('/catalogo/proveedores')
     await usuario.click(await screen.findByRole('button', { name: 'Agregar proveedor' }))
     const ventana = screen.getByRole('dialog', { name: 'Nuevo proveedor' })
     await usuario.type(within(ventana).getByLabelText('Nombre'), 'La Colonia Escalón')
@@ -49,7 +49,7 @@ describe('PantallaConfiguracion', () => {
 
   it('renombra un proveedor: avisa en cuántas compras se cambió', async () => {
     const usuario = userEvent.setup()
-    renderizar('/configuracion/proveedores')
+    renderizar('/catalogo/proveedores')
     await usuario.click(await screen.findByRole('button', { name: 'Editar proveedor Súper Selectos' }))
     const ventana = screen.getByRole('dialog', { name: 'Editar proveedor' })
     const nombre = within(ventana).getByLabelText('Nombre')
@@ -63,7 +63,7 @@ describe('PantallaConfiguracion', () => {
 
   it('un nombre repetido no se guarda y la ventana sigue abierta', async () => {
     const usuario = userEvent.setup()
-    renderizar('/configuracion/proveedores')
+    renderizar('/catalogo/proveedores')
     await usuario.click(await screen.findByRole('button', { name: 'Agregar proveedor' }))
     const ventana = screen.getByRole('dialog', { name: 'Nuevo proveedor' })
     await usuario.type(within(ventana).getByLabelText('Nombre'), 'mmag')
@@ -74,7 +74,7 @@ describe('PantallaConfiguracion', () => {
 
   it('en Materiales se ven y se cambian la categoría y el producto de cada uno', async () => {
     const usuario = userEvent.setup()
-    renderizar('/configuracion/materiales')
+    renderizar('/catalogo/materiales')
     const fila = (await screen.findByRole('rowheader', { name: 'Tocino La Rioja' })).closest('tr')
     expect(within(fila).getByText('Materia Prima')).toBeInTheDocument()
     expect(within(fila).getByText('Cachitos')).toBeInTheDocument()
@@ -94,7 +94,7 @@ describe('PantallaConfiguracion', () => {
 
   it('elimina una categoría con confirmación y avisa qué materiales quedaron sin ella', async () => {
     const usuario = userEvent.setup()
-    renderizar('/configuracion/categorias')
+    renderizar('/catalogo/categorias')
     await usuario.click(await screen.findByRole('button', { name: 'Eliminar categoría Bebidas' }))
     const confirmacion = screen.getByRole('alertdialog', { name: '¿Eliminamos esta categoría?' })
     expect(within(confirmacion).getByText(/4 materiales quedarán sin categoría/)).toBeInTheDocument()
@@ -104,9 +104,35 @@ describe('PantallaConfiguracion', () => {
     await waitFor(() => expect(screen.queryByRole('rowheader', { name: 'Bebidas' })).not.toBeInTheDocument())
   })
 
+  it('una categoría muestra sus materiales y desde su ventana se eligen cuáles lleva', async () => {
+    const usuario = userEvent.setup()
+    renderizar('/catalogo/categorias')
+    const fila = (await screen.findByRole('rowheader', { name: 'Bebidas' })).closest('tr')
+    expect(within(fila).getByText('Agua, Gatorade, Lipton, Pepsi')).toBeInTheDocument()
+
+    await usuario.click(within(fila).getByRole('button', { name: 'Editar categoría Bebidas' }))
+    const ventana = screen.getByRole('dialog', { name: 'Editar categoría' })
+    expect(within(ventana).getByText(PANTALLA_CATALOGO.materiales.elegidos(4))).toBeInTheDocument()
+    expect(within(ventana).getByRole('checkbox', { name: 'Pepsi' })).toBeChecked()
+
+    // Quita Lipton y suma Arroz, que hoy está en otra categoría
+    await usuario.click(within(ventana).getByRole('checkbox', { name: 'Lipton' }))
+    await usuario.type(within(ventana).getByLabelText(PANTALLA_CATALOGO.materiales.buscar), 'arroz')
+    const arroz = within(ventana).getByRole('checkbox', { name: /^Arroz/ })
+    expect(arroz.closest('label')).toHaveTextContent('Ahora en «Materia Prima»')
+    await usuario.click(arroz)
+    await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByText(/Actualizamos 2 materiales\./)).toBeInTheDocument()
+    await waitFor(() => {
+      const actualizada = screen.getByRole('rowheader', { name: 'Bebidas' }).closest('tr')
+      expect(within(actualizada).getByText('Agua, Arroz, Gatorade, Pepsi')).toBeInTheDocument()
+    })
+  })
+
   it('el buscador filtra sin distinguir tildes', async () => {
     const usuario = userEvent.setup()
-    renderizar('/configuracion/materiales')
+    renderizar('/catalogo/materiales')
     await usuario.type(await screen.findByLabelText('Buscar material'), 'jamon')
     const nombres = screen.getAllByRole('rowheader').map(c => c.textContent)
     expect(nombres).toEqual(['Jamón de Pavo', 'Jamon Picnic', 'Jamon Virginia'])

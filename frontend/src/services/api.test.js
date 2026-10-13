@@ -268,7 +268,7 @@ describe('api: usuarios (modo local)', () => {
   it('trae a Cesar_01 (administrador) y a Marta_02 con todo menos el gestor', async () => {
     expect(await fetchUsuarios()).toEqual([
       { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'] },
-      { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/', '/compras', '/configuracion', '/exportar', '/cargar'] },
+      { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/', '/compras', '/catalogo', '/exportar', '/cargar'] },
     ])
     expect(await iniciarSesion('cesar_01', '1234')).toMatchObject({ usuario: 'Cesar_01', rol: 'admin' })
     await expect(iniciarSesion('Cesar_01', '5678')).rejects.toThrow()

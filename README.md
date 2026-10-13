@@ -25,7 +25,7 @@ Aplicación web local para que **De Panas**, un negocio de comida venezolana, re
 - **Listas de compra**: tabla con proveedor, cantidad de materiales, gasto total y fecha.
 - **Detalle de cada compra** para ver, editar o eliminar (con confirmación).
 - **Filtros en línea** por proveedor, material y rango de fechas.
-- **Configuración** (menú, arriba de Bloquear): cuatro opciones para administrar proveedores, categorías, materiales y productos. Se pueden agregar, cambiar de nombre y eliminar; cambiar un nombre lo actualiza también en las compras guardadas. En cada material se ven y se cambian su categoría y su producto, y al agregarlo se pueden crear categorías o productos nuevos.
+- **Catálogo** (menú, debajo de Compras): cuatro opciones para administrar proveedores, categorías, materiales y productos. Se pueden agregar, cambiar de nombre y eliminar; cambiar un nombre lo actualiza también en las compras guardadas. En cada material se ven y se cambian su categoría y su producto, y al agregarlo se pueden crear categorías o productos nuevos. En cada categoría y cada producto se ven sus materiales y se eligen con casillas cuáles lleva; el cambio llega también a las compras.
 - **Base de datos SQLite** (backend Node.js + Express). Sin servidor, la app funciona igual guardando en el navegador (modo local); los dos modos nunca se mezclan.
 - **Exportar datos** (pantalla propia): eliges un rango de fechas (o este mes, mes pasado, este año, todo) y el formato, Excel (`.csv`) o respaldo (`.json`), y ves cuántas compras y cuánto dinero entran antes de descargar.
 - **Cargar datos** (pantalla propia): por ahora muestra "Estamos trabajando en ello". La API ya acepta un `.db` (reemplaza la base con respaldo) o un `.json` (agrega sin duplicar).
@@ -64,7 +64,7 @@ Aplicación web local para que **De Panas**, un negocio de comida venezolana, re
 
 ```
 frontend/src/
-  pages/          AgregarCompra (principal), PantallaMaestra (compras), PantallaConfiguracion,
+  pages/          AgregarCompra (principal), PantallaMaestra (compras), PantallaCatalogo,
                   PantallaExportar, PantallaCargar, PantallaUsuarios y PantallaContrasena (acceso)
   components/     BloqueCompra, AsignarMaterial, EditorCatalogo, DetalleLista, FiltrosEnLinea, navegación…
   components/common/  Piezas base: Boton, Campo, Modal, Tarjeta…
@@ -165,7 +165,7 @@ Más detalle en [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) y [docs/DECISIONS.md]
 
 ## Estado y próximos pasos
 
-**Estado:** registro y consulta de compras con base de datos SQLite, catálogo del Excel editable desde Configuración, exportación por rango y pantalla de acceso, con 105 tests en el frontend y 24 en el backend.
+**Estado:** registro y consulta de compras con base de datos SQLite, catálogo del Excel editable desde Catálogo, exportación por rango y pantalla de acceso, con 105 tests en el frontend y 24 en el backend.
 
 **Próximos pasos:**
 

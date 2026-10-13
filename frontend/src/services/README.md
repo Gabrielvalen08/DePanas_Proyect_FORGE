@@ -20,7 +20,7 @@ No agregues caídas silenciosas a `localStorage` cuando el backend falla.
 | `exportarCompras({ desde, hasta, formato })` | Descarga las compras del rango como `csv` o `json`; si no hay compras, lanza un error en vez de bajar un archivo vacío |
 | `exportarDB`, `importarDB(archivo)` | `.db` (reemplaza la base, solo con servidor) o `.json` (fusiona sin duplicar). Sin pantalla por ahora: la usará Cargar datos |
 | `fetchCatalogo()` | Catálogo completo recién leído, con `uso` (compras por proveedor/material, materiales por categoría/producto) |
-| `agregarAlCatalogo(tipo, datos)`, `editarEnCatalogo(tipo, nombre, datos)`, `eliminarDelCatalogo(tipo, nombre)` | Configuración. `tipo`: `proveedor`, `categoria`, `material`, `producto`. Editar renombra también en las compras; eliminar no toca las compras |
+| `agregarAlCatalogo(tipo, datos)`, `editarEnCatalogo(tipo, nombre, datos)`, `eliminarDelCatalogo(tipo, nombre)` | Catálogo. `tipo`: `proveedor`, `categoria`, `material`, `producto`. Editar renombra también en las compras; eliminar no toca las compras |
 | `getProveedores()`, `getMateriales()`, `getCategorias()`, `getProductos()` | **Síncronas.** Opciones para los desplegables, desde el catálogo (que ya incluye lo de cada compra guardada), sin repetir y en orden alfabético |
 | `getAsignacion(material)` | **Síncrona.** `{ existe, nombre, categoria, producto }` del material (`''` en lo que falte) |
 | `necesitaAsignacion(material)` | `true` si al material le falta la categoría o el producto |

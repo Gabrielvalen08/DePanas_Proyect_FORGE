@@ -120,7 +120,7 @@ describe('PantallaUsuarios', () => {
     expect(within(ventana).getByLabelText(USUARIOS.campos.usuario)).toBeDisabled()
     await usuario.type(within(ventana).getByLabelText(USUARIOS.campos.contrasenaNueva), 'cachito7')
     await usuario.type(within(ventana).getByLabelText(USUARIOS.campos.confirmar), 'cachito7')
-    await usuario.click(within(ventana).getByRole('checkbox', { name: /Configuración/ }))
+    await usuario.click(within(ventana).getByRole('checkbox', { name: /Catálogo/ }))
     await usuario.click(within(ventana).getByRole('button', { name: USUARIOS.guardar }))
 
     expect(await screen.findByText(USUARIOS.editado({ usuario: 'Marta_02' }))).toBeInTheDocument()

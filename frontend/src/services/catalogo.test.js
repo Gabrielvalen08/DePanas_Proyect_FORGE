@@ -12,7 +12,7 @@ import {
   reiniciarModo,
 } from './api'
 
-// Catálogo editable (Configuración) y exportar por rango
+// Catálogo editable (Catálogo) y exportar por rango
 beforeEach(() => {
   reiniciarModo()
   localStorage.clear()
@@ -56,6 +56,28 @@ describe('catálogo en modo local', () => {
     expect(getCategorias()).not.toContain('Bebidas')
   })
 
+  it('una categoría o un producto fija sus materiales: los nuevos se mudan con sus compras y los quitados quedan sin asignar', async () => {
+    const nueva = await agregarAlCatalogo('categoria', { nombre: 'Granos', materiales: ['arroz'] })
+    expect(nueva.materiales).toBe(1)
+    expect(getAsignacion('Arroz').categoria).toBe('Granos')
+    const [lista] = await fetchListas({ material: 'Arroz' })
+    expect(lista.materiales.find(m => m.material === 'Arroz').categoria).toBe('Granos')
+
+    const antes = (await fetchCatalogo()).materiales.filter(m => m.categoria === 'Bebidas').map(m => m.nombre)
+    expect(antes.length).toBeGreaterThan(1)
+    const r = await editarEnCatalogo('categoria', 'Bebidas', { nombre: 'Refrescos', materiales: [antes[0]] })
+    expect(r.materiales).toBe(antes.length - 1)
+    const cat = await fetchCatalogo()
+    expect(cat.materiales.find(m => m.nombre === antes[0]).categoria).toBe('Refrescos')
+    expect(cat.materiales.find(m => m.nombre === antes[1]).categoria).toBe('')
+  })
+
+  it('un material que no existe se rechaza sin cambiar nada', async () => {
+    await expect(editarEnCatalogo('producto', 'Arepas', { nombre: 'Arepitas', materiales: ['Unicornio'] }))
+      .rejects.toThrow('No existe un material llamado «Unicornio»')
+    expect((await fetchCatalogo()).productos).toContain('Arepas')
+  })
+
   it('una compra con un proveedor nuevo lo registra en el catálogo', async () => {
     await guardarLista({ proveedor: 'Walmart Escalón', fecha: '2026-10-01', materiales: [{ material: 'Sal', cantidad: 1, unidad: 'kg', monto: 1 }] })
     expect(getProveedores()).toContain('Walmart Escalón')
@@ -91,6 +113,15 @@ describe('catálogo en modo servidor', () => {
     const escrituras = llamadas.filter(l => l.metodo !== 'GET').map(l => `${l.metodo} ${l.ruta}`)
     expect(escrituras).toEqual(['POST /catalogo/proveedor', 'PUT /catalogo/material/Queso', 'DELETE /catalogo/producto/Salsa', 'POST /catalogo/categoria'])
     expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ nombre: 'Queso duro', categoria: 'Lácteos', producto: 'Tequeños' })
+    expect(localStorage.getItem('depanas_catalogo')).toBeNull()
+  })
+
+  it('los materiales de una categoría viajan en el cuerpo del PUT', async () => {
+    const llamadas = simularServidor({
+      'PUT /catalogo/categoria/Bebidas': { cuerpo: { anterior: 'Bebidas', nombre: 'Bebidas', compras: 0, materiales: 1 } },
+    })
+    expect((await editarEnCatalogo('categoria', 'Bebidas', { nombre: 'Bebidas', materiales: ['Pepsi'] })).materiales).toBe(1)
+    expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ nombre: 'Bebidas', materiales: ['Pepsi'] })
     expect(localStorage.getItem('depanas_catalogo')).toBeNull()
   })
 })

@@ -53,7 +53,7 @@
   border-color: var(--color-text);
 }
 
-/* Elegida: borde y franja naranja, como las secciones de Configuración */
+/* Elegida: borde y franja naranja, como las secciones del Catálogo */
 .opcion:has(.casilla:checked) {
   border-color: var(--color-primary);
   box-shadow: inset 4px 0 0 var(--color-primary);
