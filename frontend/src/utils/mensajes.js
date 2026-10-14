@@ -53,6 +53,7 @@ export const FRASES_ENCABEZADO = {
   ],
   '/cargar': [
     'Trae tus compras completas desde otro equipo',
+    'Que no se pierda ni una compra, pana',
   ],
   '/usuarios': [
     'Cada pana con su clave y su lugar en la cocina',
@@ -186,9 +187,10 @@ export const ESTADOS = {
 // ---------------------------------------------------------------------------
 // Datos: exportar, cargar y dónde se guardan
 // ---------------------------------------------------------------------------
+// Se muestra en Exportar y Cargar: ahí importa saber de qué base salen y a cuál van los datos
 export const DATOS = {
-  modoServidor: 'Todo se guarda en la base de datos de la cocina.',
-  modoLocal: 'Sin conexión con el servidor: por ahora las compras se guardan solo en este navegador.',
+  modoServidor: 'Conectado al servidor: los datos salen de la base de datos de la cocina y se guardan en ella.',
+  modoLocal: 'Sin conexión con el servidor: los datos salen de este navegador y se guardan solo en él.',
 }
 
 // ---------------------------------------------------------------------------
@@ -389,34 +391,57 @@ export const EXPORTAR = {
 }
 
 export const CARGAR = {
-  intro: 'Trae las compras de otro equipo usando el respaldo JSON de Exportar datos. Elige cuáles quieres guardar aquí.',
+  intro: '¿Traes compras de otro equipo, pana? Sube el respaldo .json de Exportar datos y elige cuáles se quedan aquí.',
   titulo: 'Archivo de compras',
-  archivo: 'Seleccionar archivo JSON',
-  ayuda: 'Solo archivos .json exportados por De Panas. Cada compra se carga con todos sus materiales.',
-  extension: 'No es posible cargar los datos: selecciona un archivo con extensión .json.',
-  jsonInvalido: 'No es posible cargar los datos: el archivo no contiene un JSON válido.',
-  seleccion: 'Elegir compras',
+  archivo: 'Elegir archivo',
+  ningunArchivo: 'Todavía no has elegido un archivo',
+  soltar: 'También puedes soltarlo aquí',
+  ayuda: 'Usa el respaldo .json que descargaste en Exportar datos. Cada compra llega con todos sus materiales.',
+  // Errores: claros y sin modismos
+  extension: 'Ese archivo no es .json. Elige el respaldo que descargaste en Exportar datos.',
+  jsonInvalido: 'No pudimos leer el archivo: no es un JSON válido.',
+  sinSeleccion: 'Elige al menos una compra.',
+  minimo: 'Marca al menos un material o no traigas esta compra.',
+  error: detalle => `No pudimos cargar los datos: ${detalle}`,
+  // Selección
+  seleccion: 'Elige las compras',
   proveedor: 'Proveedor', fecha: 'Fecha', total: 'Total',
-  todas: 'Seleccionar todas', ninguna: 'Quitar selección',
-  elegir: n => `Seleccionar compra ${n}`,
-  resumen: (n, total) => `${n} ${plural(n, 'compra seleccionada', 'compras seleccionadas')} · ${total}`,
-  importar: 'Cargar compras seleccionadas',
-  sinSeleccion: 'Selecciona al menos una compra.',
-  estadoTitulo: 'Estado',
-  comparar: 'Comparar compras',
-  compararAyuda: 'Esta compra ya existe y tiene diferencias. Marca los materiales completos que quieres conservar. La compra final tendrá exactamente las filas elegidas de ambos lados.',
+  todas: 'Elegir todas', ninguna: 'Quitar selección',
+  elegir: n => `Elegir compra ${n}`,
+  resumen: (n, total) => `${n} ${plural(n, 'compra elegida', 'compras elegidas')} · ${total}`,
+  importar: 'Cargar compras',
+  estado: { nueva: 'Nueva', identica: 'Ya está guardada', conflicto: 'Trae cambios' },
+  // Comparación
+  comparar: 'Comparar compra',
+  compararAyuda: 'Esta compra ya está guardada, pero el archivo trae cambios. Marca los materiales que se quedan: la compra final lleva exactamente los que marques de cada lado.',
   existente: 'Compra guardada', entrante: 'Compra del archivo',
   material: 'Material', cantidad: 'Cantidad', unidad: 'Unidad', monto: 'Precio', categoria: 'Categoría', producto: 'Producto',
   conservar: (lado, n) => `Conservar material ${n} de ${lado}`,
-  descartar: 'Descartar esta compra del archivo',
-  aplicar: 'Guardar selección y cargar compras',
-  volver: 'Volver a elegir compras',
   final: 'Compra final',
-  minimo: 'Conserva al menos un material o descarta la compra del archivo.',
-  pendiente: 'Revisa todas las compras modificadas antes de continuar.',
-  estado: { nueva: 'Nueva', identica: 'Duplicada · se omitirá', conflicto: 'Modificada · requiere comparación' },
-  resultado: ({ nuevas = 0, actualizadas = 0, omitidas = 0, descartadas = 0 }) => `¡Listo! ${nuevas} compras cargadas, ${actualizadas} actualizadas, ${omitidas} omitidas por duplicadas y ${descartadas} descartadas o conservadas sin cambios.`,
-  vacio: 'El archivo es válido, pero no contiene compras.',
-  exito: n => `¡Listo! Se cargaron exitosamente ${n} ${plural(n, 'compra', 'compras')} con todos sus materiales.`,
-  error: detalle => `No se lograron cargar los datos: ${detalle}`,
+  leyendaMuestra: 'Así',
+  leyenda: 'se marca lo que cambió entre las dos compras.',
+  cambio: 'cambió',
+  soloAqui: 'Solo en esta compra',
+  descartar: 'No traer esta compra',
+  recuperar: 'Mejor sí traerla',
+  descartadaNota: 'Tranquilo, pana: la compra guardada se queda tal como está.',
+  aplicar: 'Guardar y cargar',
+  volver: 'Volver a elegir compras',
+  // Confirmación: con la voz de la casa, y solo nombra lo que pasó
+  resultado: ({ nuevas = 0, actualizadas = 0, omitidas = 0, descartadas = 0 }) => {
+    const hechas = [
+      nuevas && `${nuevas} ${plural(nuevas, 'compra nueva llegó a la cocina', 'compras nuevas llegaron a la cocina')}`,
+      actualizadas && `${actualizadas} ${plural(actualizadas, 'se actualizó', 'se actualizaron')}`,
+    ].filter(Boolean)
+    const intactas = [
+      omitidas && `${omitidas} ya ${plural(omitidas, 'estaba guardada', 'estaban guardadas')}`,
+      descartadas && `${descartadas} ${plural(descartadas, 'quedó', 'quedaron')} como ${plural(descartadas, 'estaba', 'estaban')}`,
+    ].filter(Boolean)
+    const unir = partes => (partes.length > 1 ? `${partes[0]} y ${partes[1]}` : partes[0])
+    if (!hechas.length && !intactas.length) return 'Nada que cargar esta vez: el archivo no trajo compras nuevas.'
+    if (!hechas.length) return `¡Todo en orden, pana! ${unir(intactas)}, así que no cambiamos nada.`
+    const extra = intactas.length ? ` ${unir(intactas)}.` : ''
+    return `¡Listo, pana! ${unir(hechas)}.${extra}`
+  },
+  vacio: 'El archivo está bien, pero viene vacío: no trae compras.',
 }

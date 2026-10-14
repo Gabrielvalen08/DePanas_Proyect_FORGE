@@ -71,8 +71,9 @@ export default function PantallaContrasena() {
           </div>
         </div>
 
-        <div className={estilos.iconoCandado} aria-hidden="true">
-          <Lock size={26} strokeWidth={2.2} />
+        {/* La arepa del logo en lugar del candado: la bienvenida lleva la marca */}
+        <div className={estilos.arepa} aria-hidden="true">
+          <img src="/brand/arepa.png" alt="" width="56" height="56" className={estilos.arepaImagen} />
         </div>
 
         <h1 className={estilos.titulo}>{ACCESO.titulo}</h1>

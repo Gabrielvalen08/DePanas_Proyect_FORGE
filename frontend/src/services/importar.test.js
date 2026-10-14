@@ -1,3 +1,4 @@
+import { CARGAR } from '../utils/mensajes'
 import { contenidoCompra } from '../../../shared/carga-compras.js'
 import { actualizarLista, analizarCompras, fetchListas, importarCompras, leerComprasJSON, reiniciarModo } from './api'
 import { comprasAJson } from '../utils/exportar'
@@ -8,8 +9,8 @@ const compra = { id: 'origen', proveedor: 'Distribuidor', fecha: '2026-10-13', c
 beforeEach(() => { localStorage.clear(); localStorage.setItem('depanas_listas', '[]'); reiniciarModo() })
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 it('valida extensión, JSON, fecha real y tipos antes de guardar', async () => {
-  await expect(leerComprasJSON({ name: 'datos.csv', text: async () => '[]' })).rejects.toThrow('extensión')
-  await expect(leerComprasJSON({ name: 'datos.json', text: async () => '{' })).rejects.toThrow('JSON válido')
+  await expect(leerComprasJSON({ name: 'datos.csv', text: async () => '[]' })).rejects.toThrow(CARGAR.extension)
+  await expect(leerComprasJSON({ name: 'datos.json', text: async () => '{' })).rejects.toThrow(CARGAR.jsonInvalido)
   for (const dato of [null, { ...compra, fecha: '2026-02-30' }, { ...compra, materiales: [{ ...compra.materiales[0], monto: '4.75' }] }]) {
     await expect(importarCompras([compra, dato])).rejects.toThrow()
     expect(localStorage.getItem('depanas_listas')).toBe('[]')
@@ -78,4 +79,16 @@ it('descarte conserva la compra original y no afecta otras compras nuevas del lo
   const decision = { origen: 'origen', base: contenidoCompra(existente), accion: 'omitir' }
   expect(await importarCompras([modificada, nueva], [decision])).toMatchObject({ nuevas: 1, descartadas: 1 })
   expect((await fetchListas()).find(c => c.origen_id === 'origen').proveedor).toBe(compra.proveedor)
+})
+it('recorta los espacios al cargar en modo local: " Distribuidor " es el mismo proveedor', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Sin servidor')))
+  const conEspacios = { ...compra, proveedor: ' Distribuidor ', materiales: compra.materiales.map(m => ({ ...m, material: ` ${m.material} ` })) }
+  const datos = await leerComprasJSON({ name: 'compras.json', text: async () => JSON.stringify([conEspacios]) })
+  expect(datos[0].proveedor).toBe('Distribuidor')
+  await importarCompras([conEspacios])
+  const [guardada] = await fetchListas()
+  expect(guardada.proveedor).toBe('Distribuidor')
+  expect(guardada.materiales.map(m => m.material)).toEqual(['Harina', 'Jabón'])
+  const catalogo = JSON.parse(localStorage.getItem('depanas_catalogo'))
+  expect(JSON.stringify(catalogo)).not.toContain(' Distribuidor ')
 })

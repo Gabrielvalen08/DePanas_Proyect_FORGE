@@ -77,16 +77,22 @@
   line-height: 1;
 }
 
-.iconoCandado {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 50%;
-  background: var(--crema-claro);
-  border: 2px solid var(--amarillo-criollo);
+.arepa {
   display: grid;
   place-items: center;
-  color: var(--color-primary);
+  width: 4.5rem;
+  height: 4.5rem;
   margin-bottom: var(--space-3);
+  border: 2px solid var(--amarillo-criollo);
+  border-radius: 50%;
+  background: var(--crema-claro);
+}
+
+/* Con la sombra Vinotinto del logotipo, como en el menú */
+.arepaImagen {
+  width: 3.5rem;
+  height: 3.5rem;
+  filter: drop-shadow(2px 2px 0 var(--rojo-vinotinto));
 }
 
 .titulo {

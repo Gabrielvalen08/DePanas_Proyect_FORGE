@@ -16,6 +16,12 @@ export const variantesModal = {
   visible: { opacity: 1, scale: 1 },
 }
 
+// Hoja que sube desde el borde inferior (menú "Más" en móvil)
+export const variantesHoja = {
+  oculto: { y: '100%' },
+  visible: { y: 0 },
+}
+
 export const variantesScrim = {
   oculto: { opacity: 0 },
   visible: { opacity: 1 },

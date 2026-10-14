@@ -15,31 +15,3 @@
     width: 100%;
   }
 }
-
-/* Botones de portabilidad (Exportar / Importar).
-   Sin opacity: al 70% el texto bajaba a 4.34:1, por debajo de AA. */
-.portabilidad {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  padding-top: var(--space-6);
-  border-top: 1px solid var(--color-border);
-}
-
-/* Indica dónde se guardan las compras (servidor o este navegador) */
-.modo {
-  flex-basis: 100%;
-  max-width: none;
-  text-align: center;
-  font-size: 0.875rem;
-  /* Va sobre el collage: el atenuado bajaba a 3.91:1 en los trazos; Ávila da 8.18:1 */
-  color: var(--color-text);
-}
-
-@media (max-width: 767px) {
-  .portabilidad {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { analizarCarga, contenidoCompra, resolverCarga } from '../../shared/carga-compras.js'
+import { validarComprasJSON } from '../../shared/compras-json.js'
 
 const original = { id: 'local', origen_id: 'origen', proveedor: 'Marta', fecha: '2026-10-13', categoria: '', materiales: [
   { material: 'Harina', cantidad: 2, unidad: 'kg', monto: 6, categoria: 'Materia Prima', producto: 'Arepas' },
@@ -43,4 +44,13 @@ test('rechaza decisiones pendientes, fuera de rango, vacías y comparaciones obs
 test('rechaza identidades repetidas o ambiguas sin elegir una compra arbitrariamente', () => {
   assert.throws(() => analizarCarga([entrante, entrante], [original]), /repite/)
   assert.throws(() => analizarCarga([entrante], [original, { ...original, id: 'duplicada' }]), /varias compras/)
+})
+test('recorta los espacios de los textos sin tocar el archivo original', () => {
+  const conEspacios = { ...structuredClone(original), proveedor: ' Marta ', categoria: ' ', materiales: original.materiales.map(m => ({ ...m, material: ` ${m.material}  `, unidad: `${m.unidad} ` })) }
+  const [limpia] = validarComprasJSON([conEspacios])
+  assert.equal(limpia.proveedor, 'Marta')
+  assert.equal(limpia.categoria, '')
+  assert.deepEqual(limpia.materiales.map(m => [m.material, m.unidad]), [['Harina', 'kg'], ['Jabón', 'botella']])
+  assert.equal(conEspacios.proveedor, ' Marta ')
+  assert.equal(analizarCarga([conEspacios], [original])[0].estado, 'identica')
 })

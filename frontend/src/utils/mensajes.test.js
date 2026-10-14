@@ -1,4 +1,4 @@
-import { ASIGNACION, COMPRA, PANTALLA_CATALOGO, EXPORTAR, FRASES_ENCABEZADO, FRASES_MARCA, fraseDelDia } from './mensajes'
+import { ASIGNACION, CARGAR, COMPRA, PANTALLA_CATALOGO, EXPORTAR, FRASES_ENCABEZADO, FRASES_MARCA, fraseDelDia } from './mensajes'
 
 describe('mensajes (voz de marca)', () => {
   it('la frase del encabezado es la misma todo el día y cambia al día siguiente', () => {
@@ -47,5 +47,15 @@ describe('mensajes (voz de marca)', () => {
       .toBe('¡Chévere! «Selectos» ahora se llama «Súper Selectos» y se actualizó en 2 compras.')
     expect(PANTALLA_CATALOGO.eliminado('producto', { nombre: 'Cachitos', materiales: 1 }))
       .toBe('Eliminamos «Cachitos». 1 material quedó sin producto; se pedirá al registrar una compra.')
+  })
+
+  it('cargar: la confirmación tiene la voz de la casa y solo nombra lo que pasó', () => {
+    expect(CARGAR.resultado({ nuevas: 1 })).toBe('¡Listo, pana! 1 compra nueva llegó a la cocina.')
+    expect(CARGAR.resultado({ nuevas: 2, omitidas: 1 }))
+      .toBe('¡Listo, pana! 2 compras nuevas llegaron a la cocina. 1 ya estaba guardada.')
+    expect(CARGAR.resultado({ nuevas: 1, actualizadas: 1, omitidas: 2 }))
+      .toBe('¡Listo, pana! 1 compra nueva llegó a la cocina y 1 se actualizó. 2 ya estaban guardadas.')
+    expect(CARGAR.resultado({ omitidas: 2 })).toBe('¡Todo en orden, pana! 2 ya estaban guardadas, así que no cambiamos nada.')
+    expect(CARGAR.resultado({})).toBe('Nada que cargar esta vez: el archivo no trajo compras nuevas.')
   })
 })
