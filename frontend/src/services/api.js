@@ -916,8 +916,8 @@ export async function analizarCompras(compras) {
 }
 
 /** Las filas de la comparación se vuelven a validar contra la compra vigente al guardar. */
-export async function importarCompras(datos, decisiones = []) {
-  validarComprasJSON(datos)
+export async function importarCompras(entrada, decisiones = []) {
+  const datos = validarComprasJSON(entrada)
   if (!datos.length) throw new Error(CARGAR.sinSeleccion)
   if ((await detectarModo()) === 'servidor') {
     const resultado = await pedirJSON('/db/importar-json', 'POST', { compras: datos, decisiones })

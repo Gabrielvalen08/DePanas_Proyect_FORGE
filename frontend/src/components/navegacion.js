@@ -3,10 +3,11 @@ import { BookOpen, Download, Upload, PlusCircle, ShoppingCart, UsersRound } from
 // Lista única de navegación: la usan Sidebar, BarraInferior y App (títulos).
 // etiquetaCorta se usa en la barra inferior, donde el espacio es menor.
 // Agregar compra es la página principal: es lo que el cliente hace más seguido.
+// enBarra: va directo en la barra inferior; el resto se abre desde "Más".
 export const itemsNavegacion = [
-  { a: '/', Icono: PlusCircle, etiqueta: 'Agregar compra', etiquetaCorta: 'Agregar', titulo: 'Agregar compra' },
-  { a: '/compras', Icono: ShoppingCart, etiqueta: 'Compras', etiquetaCorta: 'Compras', titulo: 'Compras' },
-  { a: '/catalogo', Icono: BookOpen, etiqueta: 'Catálogo', etiquetaCorta: 'Catálogo', titulo: 'Catálogo' },
+  { a: '/', Icono: PlusCircle, etiqueta: 'Agregar compra', etiquetaCorta: 'Agregar', titulo: 'Agregar compra', enBarra: true },
+  { a: '/compras', Icono: ShoppingCart, etiqueta: 'Compras', etiquetaCorta: 'Compras', titulo: 'Compras', enBarra: true },
+  { a: '/catalogo', Icono: BookOpen, etiqueta: 'Catálogo', etiquetaCorta: 'Catálogo', titulo: 'Catálogo', enBarra: true },
   { a: '/exportar', Icono: Download, etiqueta: 'Exportar datos', etiquetaCorta: 'Exportar', titulo: 'Exportar datos' },
   { a: '/cargar', Icono: Upload, etiqueta: 'Cargar datos', etiquetaCorta: 'Cargar', titulo: 'Cargar datos' },
 ]
@@ -18,7 +19,6 @@ export const itemUsuarios = {
 
 /** Ítems del pie del menú, en orden */
 export const itemsPie = [itemUsuarios]
-
 
 /** Título de la página para document.title según la ruta (las subrutas heredan el de su sección) */
 export function tituloDeRuta(ruta) {

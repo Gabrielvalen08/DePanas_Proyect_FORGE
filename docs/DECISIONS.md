@@ -34,7 +34,7 @@ Escala de espaciado `--space-1` … `--space-12` (base 4px, en `rem`). Radios: i
 | Animación | **`motion`** 14 (`motion/react`) | Springs interrumpibles que parten del valor actual (skill `apple-design`) |
 | Springs | `springSuave` `{ bounce: 0, duration: 0.35 }`; `springConImpulso` `{ bounce: 0.2, duration: 0.3 }` | Damping 1.0 por defecto; rebote solo con inercia |
 | Feedback de presión | CSS `:active`, 100ms (`scale(0.97)` o hundirse en la sombra) | Debe ser instantáneo; Motion agregaría latencia |
-| Navegación móvil | **Barra inferior** de 3 ítems | Siempre visible y más simple que un drawer con gestos; el drawer queda para una fase futura |
+| Navegación móvil | **Barra inferior** con los ítems `enBarra` de `navegacion.js` (Agregar, Compras, Catálogo) y **"Más"**, que abre una hoja desde abajo con Exportar, Cargar, Gestor de usuarios y Bloquear | Con 7 ítems la barra necesitaba scroll horizontal y Usuarios y Bloquear quedaban fuera de la pantalla sin aviso. La hoja atrapa el foco como `Modal` y se cierra con Escape, con el scrim o al elegir |
 | Calidad | Vitest 2 + Testing Library, ESLint 9 con `jsx-a11y` (strict) y `react-hooks` v7 | `@eslint/js` fijado en `^9`: la v10 exige ESLint 10, que `jsx-a11y` no soporta |
 | Tests y Motion | `MotionGlobalConfig.skipAnimations = true` en `src/test/setup.js` | Las salidas animadas no hacen esperar a los tests |
 
@@ -160,11 +160,27 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 
 - **Exportar** (`/exportar`) arma el archivo en el navegador con `fetchListas({ fechaDesde, fechaHasta })`, así funciona igual con o sin servidor. CSV con BOM (Excel lee bien las tildes), coma como separador (configuración regional de El Salvador) y una fila por material con las columnas del Excel del negocio. El JSON tiene el formato que acepta `importar-json`.
 - Un rango sin compras no descarga un archivo vacío: el botón se desactiva y lo dice.
-- **Cargar** (`/cargar`) queda en construcción por pedido del cliente. La API `POST /api/db/importar` y `importar-json` y `importarDB()` en `api.js` siguen disponibles para cuando se haga la pantalla.
+- Exportar y Cargar están en el menú (en móvil, dentro de "Más") y respetan los permisos. Las dos pantallas dicen si los datos salen del servidor o de este navegador (`AvisoModo`, textos en `DATOS`).
+
+### Cargar datos (`/cargar`)
+
+- Acepta el JSON de Exportar. `leerComprasJSON` valida la extensión, el JSON y **todas** las compras antes de mostrar la lista. No acepta filas planas de `ingresos` ni archivos sin `id`, `categoria` o `producto`.
+- La validación y el análisis viven en `shared/` (`compras-json.js` y `carga-compras.js`) y los usan igual el frontend y el backend. `validarComprasJSON` devuelve una copia con los textos recortados (`" MMAG "` queda `"MMAG"`, como al guardar a mano); siempre se usa lo que devuelve.
+- Cada compra del archivo sale como **nueva**, **duplicada** (se omite) o **modificada** (se compara). En las modificadas se ven la compra guardada y la del archivo: las filas guardadas empiezan marcadas y las del archivo no, la compra final lleva exactamente las filas marcadas de ambos lados y se elige de cuál tomar el proveedor y la fecha. También se puede descartar. No se guarda una compra sin materiales.
+- Las decisiones viajan como índices de filas, no como materiales: el servidor no acepta filas arbitrarias. Cada decisión lleva el contenido (`base`) de la compra guardada que se vio; si cambió antes de guardar, se rechaza (409) y hay que volver a revisar. Todo el lote va en una transacción (servidor) o se restaura si falla `localStorage` (local).
+- Tras cargar o tras un error, el selector de archivo se vacía para que se pueda elegir el mismo archivo otra vez (si no, el navegador no avisa del cambio).
+
+| Tema | Decisión | Por qué |
+| ---- | -------- | ------- |
+| Identidad | `origen_id` cuando existe; si no, `id`. Se conserva al importar, editar y reexportar. Las compras locales nuevas reciben un UUID como `origen_id` | Reconocer la misma compra entre equipos aunque su id interno cambie |
+| Igualdad | Proveedor, fecha, categoría general y todos los atributos de cada material, sin ids internos y sin importar el orden de las filas | Una reexportación que solo reordena filas sigue siendo la misma compra |
+| Ambigüedad | Se rechaza un archivo que repite una identidad, o una identidad que ya tienen varias compras guardadas | No actualizar una compra elegida al azar |
+| Datos anteriores | Las importaciones hechas antes de `origen_id` no guardaron su identidad original: la primera vez que se vuelva a cargar su respaldo pueden salir como nuevas. No se vinculan por parecido | No hay forma segura de recuperarla |
+| Esquema | `ingresos.origen_id` y `ingresos.compra_categoria` (categoría de la compra, aparte de la de cada material), agregadas por la migración de `db.js` | Las bases existentes abren sin pasos manuales |
 
 ## Mensajes del sistema
 
-- Todo texto que el sistema le dice al usuario vive en `frontend/src/utils/mensajes.js`, agrupado por tema (`ACCESO`, `COMPRA`, `VALIDACION`, `ASIGNACION`, `ESTADOS`, `DATOS`). Los mensajes con datos son funciones (`COMPRA.guardada(proveedor, n)`).
+- Todo texto que el sistema le dice al usuario vive en `frontend/src/utils/mensajes.js`, agrupado por tema (`ACCESO`, `COMPRA`, `VALIDACION`, `ASIGNACION`, `ESTADOS`, `DATOS`, `EXPORTAR`, `CARGAR`, etc.). Los mensajes con datos son funciones (`COMPRA.guardada(proveedor, n)`).
 - Los tests importan los textos de ahí: cambiar una frase no rompe pruebas.
 - La frase del encabezado cambia una vez al día (`fraseDelDia`, por día del año), no en cada recarga, para que la interfaz no "salte".
 

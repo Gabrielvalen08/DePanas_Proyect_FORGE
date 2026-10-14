@@ -288,6 +288,24 @@ test('JSON exportado conserva todos los materiales y rechaza un lote inválido s
 })
 
 
+test('importar JSON recorta los espacios: " MMAG " no crea otro proveedor', async t => {
+  const { base } = await levantar(t)
+  const compra = { id: 'con-espacios', proveedor: ' MMAG ', fecha: '2026-10-13', categoria: 'Materia Prima', materiales: [
+    { material: ' Ajo Chino ', cantidad: 1, unidad: ' lb', monto: 2, categoria: 'Materia Prima ', producto: ' Arepas/Empanadas' },
+  ] }
+  const respuesta = await pedir(`${base}/db/importar-json`, { method: 'POST', body: JSON.stringify([compra]) })
+  assert.equal(respuesta.status, 200)
+  const [guardada] = (await pedir(`${base}/compras`)).cuerpo
+  assert.equal(guardada.proveedor, 'MMAG')
+  assert.deepEqual(
+    [guardada.materiales[0].material, guardada.materiales[0].unidad, guardada.materiales[0].categoria, guardada.materiales[0].producto],
+    ['Ajo Chino', 'lb', 'Materia Prima', 'Arepas/Empanadas']
+  )
+  const { cuerpo } = await pedir(`${base}/catalogo`)
+  assert.ok(cuerpo.proveedores.includes('MMAG'))
+  assert.ok(!cuerpo.proveedores.some(p => p !== p.trim()))
+})
+
 test('compras modificadas se comparan antes de guardar y la decisión conserva filas completas', async t => {
   const { contenidoCompra } = await import('../../shared/carga-compras.js')
   const { base } = await levantar(t)

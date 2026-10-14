@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { FileJson, Upload } from 'lucide-react'
 import Header from '../components/Header'
+import AvisoModo from '../components/AvisoModo'
 import CompararCompra from '../components/CompararCompra'
 import { contenidoCompra } from '../../../shared/carga-compras.js'
 import { Boton, Campo, Tarjeta } from '../components/common'
@@ -13,6 +14,7 @@ import estilos from './PantallaCargar.module.css'
 export default function PantallaCargar() {
   const { addToast } = useToast()
   const lectura = useRef(0)
+  const archivoRef = useRef(null)
   const [compras, setCompras] = useState(null)
   const [seleccion, setSeleccion] = useState([])
   const [ocupado, setOcupado] = useState(false)
@@ -39,10 +41,15 @@ export default function PantallaCargar() {
       const vista = await analizarCompras(datos)
       if (turno === lectura.current) { setCompras(datos); setAnalisis(vista) }
     } catch (err) {
-      if (turno === lectura.current) setError(CARGAR.error(err.message))
+      if (turno === lectura.current) { setError(CARGAR.error(err.message)); limpiarArchivo() }
     } finally {
       if (turno === lectura.current) setOcupado(false)
     }
+  }
+
+  // Vacía el selector: así se puede volver a elegir el mismo archivo (si no, no hay evento change)
+  function limpiarArchivo() {
+    if (archivoRef.current) archivoRef.current.value = ''
   }
 
   async function cargar() {
@@ -72,7 +79,9 @@ export default function PantallaCargar() {
       setDecisiones([])
       setCompras(null)
       setSeleccion([])
+      limpiarArchivo()
     } catch (err) {
+      limpiarArchivo()
       const mensaje = CARGAR.error(err.message)
       setError(mensaje)
       addToast(mensaje, 'error')
@@ -88,9 +97,10 @@ export default function PantallaCargar() {
       <Header title="Cargar datos" frase={fraseDelDia('/cargar')} />
       <main id="contenido" tabIndex={-1}>
         <p className={estilos.intro}>{CARGAR.intro}</p>
+        <AvisoModo />
         <Tarjeta titulo={CARGAR.titulo} icono={<FileJson />}>
           <div className={estilos.cuerpo}>
-            <Campo id="cargar-archivo" etiqueta={CARGAR.archivo} tipo="file" accept=".json,application/json"
+            <Campo ref={archivoRef} id="cargar-archivo" etiqueta={CARGAR.archivo} tipo="file" accept=".json,application/json"
               ayuda={CARGAR.ayuda} disabled={ocupado} onChange={abrir} />
             {error && <p className={estilos.error} role="alert">{error}</p>}
             {resultado && <p role="status">{resultado}</p>}

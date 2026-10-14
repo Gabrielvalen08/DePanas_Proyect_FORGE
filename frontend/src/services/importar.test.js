@@ -79,3 +79,15 @@ it('descarte conserva la compra original y no afecta otras compras nuevas del lo
   expect(await importarCompras([modificada, nueva], [decision])).toMatchObject({ nuevas: 1, descartadas: 1 })
   expect((await fetchListas()).find(c => c.origen_id === 'origen').proveedor).toBe(compra.proveedor)
 })
+it('recorta los espacios al cargar en modo local: " Distribuidor " es el mismo proveedor', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Sin servidor')))
+  const conEspacios = { ...compra, proveedor: ' Distribuidor ', materiales: compra.materiales.map(m => ({ ...m, material: ` ${m.material} ` })) }
+  const datos = await leerComprasJSON({ name: 'compras.json', text: async () => JSON.stringify([conEspacios]) })
+  expect(datos[0].proveedor).toBe('Distribuidor')
+  await importarCompras([conEspacios])
+  const [guardada] = await fetchListas()
+  expect(guardada.proveedor).toBe('Distribuidor')
+  expect(guardada.materiales.map(m => m.material)).toEqual(['Harina', 'Jabón'])
+  const catalogo = JSON.parse(localStorage.getItem('depanas_catalogo'))
+  expect(JSON.stringify(catalogo)).not.toContain(' Distribuidor ')
+})

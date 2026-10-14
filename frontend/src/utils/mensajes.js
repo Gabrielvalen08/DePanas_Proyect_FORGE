@@ -186,9 +186,10 @@ export const ESTADOS = {
 // ---------------------------------------------------------------------------
 // Datos: exportar, cargar y dónde se guardan
 // ---------------------------------------------------------------------------
+// Se muestra en Exportar y Cargar: ahí importa saber de qué base salen y a cuál van los datos
 export const DATOS = {
-  modoServidor: 'Todo se guarda en la base de datos de la cocina.',
-  modoLocal: 'Sin conexión con el servidor: por ahora las compras se guardan solo en este navegador.',
+  modoServidor: 'Conectado al servidor: los datos salen de la base de datos de la cocina y se guardan en ella.',
+  modoLocal: 'Sin conexión con el servidor: los datos salen de este navegador y se guardan solo en él.',
 }
 
 // ---------------------------------------------------------------------------
@@ -413,10 +414,19 @@ export const CARGAR = {
   volver: 'Volver a elegir compras',
   final: 'Compra final',
   minimo: 'Conserva al menos un material o descarta la compra del archivo.',
-  pendiente: 'Revisa todas las compras modificadas antes de continuar.',
   estado: { nueva: 'Nueva', identica: 'Duplicada · se omitirá', conflicto: 'Modificada · requiere comparación' },
-  resultado: ({ nuevas = 0, actualizadas = 0, omitidas = 0, descartadas = 0 }) => `¡Listo! ${nuevas} compras cargadas, ${actualizadas} actualizadas, ${omitidas} omitidas por duplicadas y ${descartadas} descartadas o conservadas sin cambios.`,
+  // Solo nombra lo que pasó: "1 compra cargada y 2 omitidas por duplicadas"
+  resultado: ({ nuevas = 0, actualizadas = 0, omitidas = 0, descartadas = 0 }) => {
+    const partes = [
+      nuevas && `${nuevas} ${plural(nuevas, 'compra cargada', 'compras cargadas')}`,
+      actualizadas && `${actualizadas} ${plural(actualizadas, 'actualizada', 'actualizadas')}`,
+      omitidas && `${omitidas} ${plural(omitidas, 'omitida por duplicada', 'omitidas por duplicadas')}`,
+      descartadas && `${descartadas} ${plural(descartadas, 'descartada o sin cambios', 'descartadas o sin cambios')}`,
+    ].filter(Boolean)
+    if (!partes.length) return 'No hubo cambios: ninguna compra se cargó ni se actualizó.'
+    const lista = partes.length > 1 ? `${partes.slice(0, -1).join(', ')} y ${partes.at(-1)}` : partes[0]
+    return `¡Listo! ${lista}.`
+  },
   vacio: 'El archivo es válido, pero no contiene compras.',
-  exito: n => `¡Listo! Se cargaron exitosamente ${n} ${plural(n, 'compra', 'compras')} con todos sus materiales.`,
   error: detalle => `No se lograron cargar los datos: ${detalle}`,
 }

@@ -9,12 +9,12 @@ Una página por ruta (definidas en `App.jsx`). Cada página renderiza `<Header>`
 
 | `/catalogo`, `/catalogo/:seccion` | `PantallaCatalogo` | Cuatro opciones (proveedores, categorías, materiales, productos); cada una abre su lista para agregar, renombrar o eliminar, con buscador y cuánto se usa cada opción. Las categorías y los productos muestran sus materiales y los eligen en su ventana. Edita con `EditorCatalogo` y elimina con `ConfirmModal` |
 | `/exportar` | `PantallaExportar` | Rango de fechas (o rápido: este mes, mes pasado, este año, todo), formato CSV o JSON y resumen en vivo de compras y total antes de descargar |
-| `/cargar` | `PantallaCargar` | "Estamos trabajando en ello" |
+| `/cargar` | `PantallaCargar` | Elige compras de un JSON de Exportar: las nuevas se cargan, las duplicadas se omiten y las modificadas se comparan (`CompararCompra`) antes de guardar |
 | `/usuarios` | `PantallaUsuarios` | Gestor de usuarios (solo el administrador). Tabla con usuario, nombre, rol y pantallas; crea y edita con `EditorUsuario` (usuario, nombre, contraseña con confirmación y las pantallas a las que entra) y elimina con `ConfirmModal`. Un usuario o una contraseña repetidos se marcan en su campo para cambiarlos |
 
-`/agregar-compra` redirige a `/` (ruta antigua). Los botones Exportar datos y Cargar datos de Agregar compra son enlaces a `/exportar` y `/cargar`.
+`/agregar-compra` redirige a `/` (ruta antigua).
 
-Cada ruta pide su permiso (`protegida` en `App.jsx`, reglas en `utils/permisos.js`): sin él, redirige a la primera pantalla que el usuario sí puede ver. Los enlaces a otras pantallas (Exportar, Cargar, Agregar compra) solo se muestran si el usuario puede entrar.
+Cada ruta pide su permiso (`protegida` en `App.jsx`, reglas en `utils/permisos.js`): sin él, redirige a la primera pantalla que el usuario sí puede ver. El menú y los enlaces a otras pantallas solo muestran lo que el usuario puede abrir.
 
 `PantallaContrasena` no es una ruta: `App.jsx` la muestra en lugar de todo lo demás mientras `useAuth().autenticado` sea `false`. Pide usuario y contraseña, y su fondo es transparente para dejar ver el collage.
 

@@ -5,8 +5,10 @@ Componentes de la app. Las piezas genéricas y reutilizables están en [`common/
 | Componente          | Qué hace                                                                    |
 | ------------------- | --------------------------------------------------------------------------- |
 | `Sidebar`           | Navegación de escritorio (≥ 768px). Naranja Sazón sólido, ítem activo en píldora Crema y Trigo. Arriba, la arepa del logo (`/brand/arepa.png`) junto a "DE PANAS"; abajo, el botón Bloquear (`onBloquear`) |
-| `BarraInferior`     | Navegación móvil (< 768px). La píldora activa se desliza con `layoutId`. También tiene Bloquear |
-| `navegacion.js`     | Lista única de rutas, íconos y títulos; la usan `Sidebar`, `BarraInferior` y `App`. Catálogo va debajo de Compras; `itemsPie` (Gestor de usuarios) va al pie del menú, arriba de Bloquear (en la barra móvil, antes de Bloquear) |
+| `BarraInferior`     | Navegación móvil (< 768px). La píldora activa se desliza con `layoutId`. Muestra los ítems `enBarra` y "Más", que abre una hoja con el resto y Bloquear |
+| `AvisoModo`         | Dice si los datos van al servidor o se quedan en el navegador (Exportar y Cargar) |
+| `CompararCompra`    | Compra guardada frente a la del archivo en Cargar datos: filas a conservar, proveedor, fecha y vista previa |
+| `navegacion.js`     | Lista única de rutas, íconos y títulos; la usan `Sidebar`, `BarraInferior` y `App`. Catálogo va debajo de Compras; `itemsPie` (Gestor de usuarios) va al pie del menú, arriba de Bloquear (en móvil, dentro de "Más"); `enBarra` marca lo que va directo en la barra inferior |
 | `Header`            | Header fijo: transparente arriba, crema sólido al hacer scroll. Props: `title`, `badge`, `frase` |
 | `BloqueCompra`      | Formulario de una compra: proveedor y fecha una vez, filas de material/cantidad/unidad/precio, total en vivo, validación con resumen y su propio Cancelar/Guardar. Bajo cada material muestra su categoría · producto; si falta alguno abre `AsignarMaterial` (al elegirlo, al salir del campo o al guardar) y guarda la compra con la categoría y el producto de cada fila. Se usa en Agregar compra y, con `plano`, para editar dentro de `DetalleLista`. Decide tabla o tarjetas por su propio ancho (container query) |
 | `DetalleLista`      | Modal con los materiales de una compra; permite editarla y eliminarla (con `ConfirmModal`) |

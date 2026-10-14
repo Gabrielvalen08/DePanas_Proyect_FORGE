@@ -1,4 +1,4 @@
-import { ASIGNACION, COMPRA, PANTALLA_CATALOGO, EXPORTAR, FRASES_ENCABEZADO, FRASES_MARCA, fraseDelDia } from './mensajes'
+import { ASIGNACION, CARGAR, COMPRA, PANTALLA_CATALOGO, EXPORTAR, FRASES_ENCABEZADO, FRASES_MARCA, fraseDelDia } from './mensajes'
 
 describe('mensajes (voz de marca)', () => {
   it('la frase del encabezado es la misma todo el día y cambia al día siguiente', () => {
@@ -47,5 +47,14 @@ describe('mensajes (voz de marca)', () => {
       .toBe('¡Chévere! «Selectos» ahora se llama «Súper Selectos» y se actualizó en 2 compras.')
     expect(PANTALLA_CATALOGO.eliminado('producto', { nombre: 'Cachitos', materiales: 1 }))
       .toBe('Eliminamos «Cachitos». 1 material quedó sin producto; se pedirá al registrar una compra.')
+  })
+
+  it('cargar: el resultado solo nombra lo que pasó, en singular o plural', () => {
+    expect(CARGAR.resultado({ nuevas: 1 })).toBe('¡Listo! 1 compra cargada.')
+    expect(CARGAR.resultado({ nuevas: 2, omitidas: 1 })).toBe('¡Listo! 2 compras cargadas y 1 omitida por duplicada.')
+    expect(CARGAR.resultado({ nuevas: 1, actualizadas: 1, omitidas: 2 }))
+      .toBe('¡Listo! 1 compra cargada, 1 actualizada y 2 omitidas por duplicadas.')
+    expect(CARGAR.resultado({ descartadas: 1 })).toBe('¡Listo! 1 descartada o sin cambios.')
+    expect(CARGAR.resultado({})).toBe('No hubo cambios: ninguna compra se cargó ni se actualizó.')
   })
 })

@@ -16,8 +16,7 @@
 .lista {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(4.5rem, 1fr);
-  overflow-x: auto;
+  grid-auto-columns: minmax(0, 1fr);
   height: var(--alto-barra-inferior);
   list-style: none;
 }
@@ -103,3 +102,82 @@
   line-height: 1;
 }
 
+/* Hoja "Más": sube desde abajo, solo en móvil */
+.capaHoja {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+}
+
+@media (min-width: 768px) {
+  .capaHoja { display: none; }
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+}
+
+.hoja {
+  position: relative;
+  width: 100%;
+  padding: var(--space-2) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom));
+  border-radius: var(--radio-modal) var(--radio-modal) 0 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--sombra-modal);
+}
+
+.hoja:focus-visible {
+  outline: none;
+}
+
+.agarradera {
+  display: block;
+  width: 2.5rem;
+  height: 4px;
+  margin: 0 auto var(--space-3);
+  border-radius: var(--radio-pildora);
+  background: var(--color-border-input);
+}
+
+.tituloHoja {
+  padding: 0 var(--space-2) var(--space-2);
+  font-size: 1rem;
+}
+
+.listaHoja {
+  list-style: none;
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--alto-control);
+  padding: var(--space-3) var(--space-2);
+  border: none;
+  border-radius: var(--radio-input);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--fuente-titulos);
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.opcion:active {
+  background: var(--color-surface-soft);
+}
+
+.opcionActiva {
+  background: var(--color-surface-soft);
+  box-shadow: inset 4px 0 0 var(--color-primary);
+}

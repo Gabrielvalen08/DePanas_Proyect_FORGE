@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Download, FileJson, FileSpreadsheet, Loader2 } from 'lucide-react'
 import Header from '../components/Header'
+import AvisoModo from '../components/AvisoModo'
 import { Boton, Campo, Tarjeta } from '../components/common'
 import { exportarCompras, fetchListas, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
@@ -71,6 +72,7 @@ export default function PantallaExportar() {
 
       <main id="contenido" tabIndex={-1}>
         <p className={estilos.intro}>{EXPORTAR.intro}</p>
+        <AvisoModo />
 
         <Tarjeta titulo={EXPORTAR.rangoTitulo} icono={<Download />}>
           <div className={estilos.cuerpo}>

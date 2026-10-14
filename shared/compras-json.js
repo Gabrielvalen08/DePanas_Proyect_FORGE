@@ -1,6 +1,32 @@
-/** Formato real de exportarCompras: compras completas, sin convertir ni completar datos. */
-export function validarComprasJSON(datos) {
-  if (!Array.isArray(datos)) throw new Error('Formato inválido: se esperaba una lista de compras exportada por De Panas')
+const recortar = v => (typeof v === 'string' ? v.trim() : v)
+
+/** Copia con los textos sin espacios al inicio ni al final (" MMAG " es "MMAG", como al guardar a mano) */
+function recortarCompra(c) {
+  if (!c || typeof c !== 'object' || Array.isArray(c)) return c
+  const copia = { ...c }
+  for (const campo of ['id', 'origen_id', 'proveedor', 'fecha', 'categoria']) {
+    if (campo in copia) copia[campo] = recortar(copia[campo])
+  }
+  if (Array.isArray(c.materiales)) {
+    copia.materiales = c.materiales.map(m => {
+      if (!m || typeof m !== 'object') return m
+      const material = { ...m }
+      for (const campo of ['material', 'unidad', 'categoria', 'producto']) {
+        if (campo in material) material[campo] = recortar(material[campo])
+      }
+      return material
+    })
+  }
+  return copia
+}
+
+/**
+ * Formato real de exportarCompras: compras completas, sin completar datos.
+ * Devuelve una copia con los textos recortados; usa siempre lo que devuelve.
+ */
+export function validarComprasJSON(entrada) {
+  if (!Array.isArray(entrada)) throw new Error('Formato inválido: se esperaba una lista de compras exportada por De Panas')
+  const datos = entrada.map(recortarCompra)
   const texto = v => typeof v === 'string'
   const positivo = v => typeof v === 'number' && Number.isFinite(v) && v > 0
   for (const [i, c] of datos.entries()) {

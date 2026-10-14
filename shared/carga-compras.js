@@ -20,8 +20,8 @@ export function contenidoCompra(c, ordenar = false) {
   })
 }
 
-export function analizarCarga(compras, existentes) {
-  validarComprasJSON(compras)
+export function analizarCarga(entrada, existentes) {
+  const compras = validarComprasJSON(entrada)
   const vistas = new Set()
   const porOrigen = new Map()
   for (const c of existentes) {

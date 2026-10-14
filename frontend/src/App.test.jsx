@@ -160,3 +160,45 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     expect(await screen.findByRole('heading', { name: 'Compras', level: 1 })).toBeInTheDocument()
   })
 })
+
+describe('App - barra inferior en móvil', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
+  it('la barra lleva Agregar, Compras, Catálogo y "Más"; el resto se abre en la hoja', async () => {
+    const usuario = userEvent.setup()
+    iniciarComo(CESAR)
+    renderizarApp('/')
+
+    const barra = await screen.findByRole('navigation', { name: 'Menú principal móvil' })
+    const enBarra = within(barra).getAllByRole('listitem').map(li => li.textContent)
+    expect(enBarra).toEqual(['Agregar', 'Compras', 'Catálogo', 'Más'])
+
+    await usuario.click(within(barra).getByRole('button', { name: 'Más' }))
+    const hoja = await screen.findByRole('dialog', { name: 'Más opciones' })
+    const opciones = within(hoja).getAllByRole('listitem').map(li => li.textContent)
+    expect(opciones).toEqual(['Exportar datos', 'Cargar datos', 'Gestor de usuarios', 'Bloquear'])
+
+    // Elegir una opción navega y cierra la hoja
+    await usuario.click(within(hoja).getByRole('link', { name: 'Cargar datos' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Más opciones' })).not.toBeInTheDocument())
+    expect(await screen.findByRole('heading', { name: 'Cargar datos', level: 1 })).toBeInTheDocument()
+  })
+
+  it('un operador solo ve en "Más" lo que tiene permitido, y siempre Bloquear', async () => {
+    const usuario = userEvent.setup()
+    iniciarComo({ ...MARTA, permisos: ['/', '/compras'] })
+    renderizarApp('/')
+
+    const barra = await screen.findByRole('navigation', { name: 'Menú principal móvil' })
+    expect(within(barra).getAllByRole('listitem').map(li => li.textContent)).toEqual(['Agregar', 'Compras', 'Más'])
+
+    await usuario.click(within(barra).getByRole('button', { name: 'Más' }))
+    const hoja = await screen.findByRole('dialog', { name: 'Más opciones' })
+    expect(within(hoja).getAllByRole('listitem').map(li => li.textContent)).toEqual(['Bloquear'])
+
+    await usuario.click(within(hoja).getByRole('button', { name: 'Bloquear' }))
+    expect(await screen.findByRole('button', { name: /ingresar/i })).toBeInTheDocument()
+  })
+})
