@@ -1,3 +1,4 @@
+import { CARGAR } from '../utils/mensajes'
 import { contenidoCompra } from '../../../shared/carga-compras.js'
 import { actualizarLista, analizarCompras, fetchListas, importarCompras, leerComprasJSON, reiniciarModo } from './api'
 import { comprasAJson } from '../utils/exportar'
@@ -8,8 +9,8 @@ const compra = { id: 'origen', proveedor: 'Distribuidor', fecha: '2026-10-13', c
 beforeEach(() => { localStorage.clear(); localStorage.setItem('depanas_listas', '[]'); reiniciarModo() })
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 it('valida extensión, JSON, fecha real y tipos antes de guardar', async () => {
-  await expect(leerComprasJSON({ name: 'datos.csv', text: async () => '[]' })).rejects.toThrow('extensión')
-  await expect(leerComprasJSON({ name: 'datos.json', text: async () => '{' })).rejects.toThrow('JSON válido')
+  await expect(leerComprasJSON({ name: 'datos.csv', text: async () => '[]' })).rejects.toThrow(CARGAR.extension)
+  await expect(leerComprasJSON({ name: 'datos.json', text: async () => '{' })).rejects.toThrow(CARGAR.jsonInvalido)
   for (const dato of [null, { ...compra, fecha: '2026-02-30' }, { ...compra, materiales: [{ ...compra.materiales[0], monto: '4.75' }] }]) {
     await expect(importarCompras([compra, dato])).rejects.toThrow()
     expect(localStorage.getItem('depanas_listas')).toBe('[]')

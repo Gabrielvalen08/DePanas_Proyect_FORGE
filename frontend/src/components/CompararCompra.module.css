@@ -1,0 +1,276 @@
+.cuerpo {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+.ayuda {
+  max-width: 65ch;
+}
+
+/* ---------- Guardada frente a la del archivo ---------- */
+.lados {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.lado {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-surface-soft);
+}
+
+.ladoTitulo {
+  font-size: 1rem;
+}
+
+.resumen {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-family: var(--fuente-titulos);
+  font-weight: 600;
+}
+
+.total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Materiales: cada fila es una tarjeta ---------- */
+.materiales,
+.materiales tbody {
+  display: block;
+}
+
+/* Cifras y datos en Josefin, como en las tablas */
+.materiales {
+  font-family: var(--fuente-titulos);
+}
+
+.materiales tbody {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.materiales tr {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radio-input);
+  background: var(--color-surface);
+  transition: border-color 150ms ease-out;
+}
+
+.conCasilla tr {
+  grid-template-columns: 1.75rem repeat(2, minmax(0, 1fr));
+}
+
+.materiales td {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.casillaCelda {
+  grid-row: span 4;
+  padding-top: 0.1em;
+}
+
+.nombre {
+  grid-column: 1 / -1;
+  font-family: var(--fuente-titulos);
+  font-weight: 700;
+}
+
+.conCasilla .nombre {
+  grid-column: 2 / -1;
+}
+
+/* Elegida: borde y franja naranja, como las opciones del Catálogo */
+.materiales tr.elegido {
+  border-color: var(--color-primary);
+  box-shadow: inset 4px 0 0 var(--color-primary);
+}
+
+.casilla {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--color-text);
+  cursor: pointer;
+}
+
+.etiqueta {
+  display: block;
+  font-family: var(--fuente-titulos);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.monto {
+  font-weight: 700;
+}
+
+/* ---------- Proveedor y fecha: opciones como en Exportar ---------- */
+.datos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.grupo {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.grupo:disabled {
+  opacity: 0.6;
+}
+
+.legenda {
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-family: var(--fuente-titulos);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.opcion {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  padding-right: var(--space-8);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radio-input);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: border-color 150ms ease-out;
+}
+
+.opcion:hover {
+  border-color: var(--color-primary);
+}
+
+.opcionActiva,
+.opcionActiva:hover {
+  border-color: var(--color-primary);
+  box-shadow: inset 4px 0 0 var(--color-primary);
+}
+
+.grupo:disabled .opcion {
+  cursor: not-allowed;
+}
+
+/* El radio real queda para teclado y lectores; el foco se ve en toda la opción */
+.radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.opcion:has(.radio:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.opcionLado {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.opcionValor {
+  font-family: var(--fuente-titulos);
+  font-weight: 700;
+}
+
+.opcionCheck {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  width: 1.125rem;
+  height: 1.125rem;
+  transform: translateY(-50%);
+}
+
+/* ---------- Compra final ---------- */
+.final {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 2px dashed var(--color-primary);
+  border-radius: var(--radio-tarjeta);
+}
+
+.finalTitulo {
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.descartadaNota {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radio-input);
+  background: var(--tinte-aviso);
+}
+
+.error {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radio-input);
+  background: var(--tinte-error);
+  color: var(--color-danger);
+}
+
+.pie {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1100px) {
+  .lados {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .cuerpo {
+    padding: var(--space-4);
+  }
+
+  .datos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pie > * {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .materiales tr,
+  .opcion {
+    transition: none;
+  }
+}

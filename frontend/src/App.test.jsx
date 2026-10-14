@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from './App'
-import { ACCESO } from './utils/mensajes'
+import { ACCESO, CARGAR } from './utils/mensajes'
 
 vi.mock('./services/api', () => ({
   guardarLista: vi.fn(),
@@ -117,7 +117,7 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     const usuario = userEvent.setup()
     iniciarComo(CESAR)
     renderizarApp('/cargar')
-    expect(screen.getByLabelText('Seleccionar archivo JSON')).toBeInTheDocument()
+    expect(screen.getByLabelText(CARGAR.archivo)).toBeInTheDocument()
 
     const menu = screen.getByRole('navigation', { name: 'Menú principal' })
     const enlaces = within(menu).getAllByRole('link').map(e => e.textContent)

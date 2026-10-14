@@ -3,7 +3,7 @@
 Biblioteca de componentes base. Todo lo visual de la app se arma con estas piezas. Se importan desde el índice:
 
 ```js
-import { Boton, Campo, Selector, Tarjeta, Insignia, Modal, CuerpoModal, PieModal, EstadoVacio } from '../components/common'
+import { Boton, Campo, Selector, Tarjeta, Insignia, Modal, CuerpoModal, PieModal, EstadoVacio, SelectorArchivo } from '../components/common'
 ```
 
 | Componente    | Props principales                                                              |
@@ -15,6 +15,7 @@ import { Boton, Campo, Selector, Tarjeta, Insignia, Modal, CuerpoModal, PieModal
 | `Insignia`    | `tono` (`neutro` · `marca` · `exito` · `aviso` · `error`)                       |
 | `Modal`       | `abierto`, `alCerrar`, `titulo`, `icono`, `rol` (`dialog` · `alertdialog`), `anchoMax` (`sm` · `md`), `focoInicial` (ref) |
 | `EstadoVacio` | `icono`, `titulo`, `texto`, `accion`, `cargando`                                |
+| `SelectorArchivo` | `id`, `etiqueta`, `ayuda`, `accept`, `nombre`, `textoVacio`, `textoSoltar`, `disabled`, `onElegir(archivo)`; `ref` al input. En lugar del botón nativo de archivo, que no sigue la marca |
 
 ## Ejemplo: modal
 ```jsx

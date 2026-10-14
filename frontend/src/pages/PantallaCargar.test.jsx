@@ -94,7 +94,7 @@ it('compara ambas compras, conserva filas completas elegidas y permite elegir pr
   expect(importarCompras).toHaveBeenCalledWith([entrante], [{
     origen: '1', base: contenidoCompra(compra), accion: 'combinar', existentes: [1], entrantes: [0], proveedor: 'entrante', fecha: 'entrante',
   }])
-  expect(await within(screen.getByRole('main')).findByRole('status')).toHaveTextContent('1 actualizada')
+  expect(await within(screen.getByRole('main')).findByRole('status')).toHaveTextContent(CARGAR.resultado({ actualizadas: 1 }))
 })
 it('no permite dejar una compra vacía y permite descartarla sin seleccionar materiales', async () => {
   const usuario = userEvent.setup()
@@ -122,7 +122,7 @@ it('omite compras idénticas sin abrir comparación y muestra el recuento', asyn
   await usuario.click(await screen.findByRole('checkbox'))
   vi.mocked(importarCompras).mockResolvedValue({ nuevas: 0, omitidas: 1 })
   await usuario.click(screen.getByRole('button', { name: CARGAR.importar }))
-  expect(await within(screen.getByRole('main')).findByRole('status')).toHaveTextContent('1 omitida por duplicada')
+  expect(await within(screen.getByRole('main')).findByRole('status')).toHaveTextContent(CARGAR.resultado({ omitidas: 1 }))
   expect(screen.queryByRole('table', { name: CARGAR.existente })).not.toBeInTheDocument()
 })
 it('cambiar de archivo abandona la comparación anterior sin guardar', async () => {
