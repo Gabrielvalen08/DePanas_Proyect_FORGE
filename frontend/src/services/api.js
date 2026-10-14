@@ -20,6 +20,8 @@
  * `producto` es el destino final del material (opcional, puede ser vacío).
  */
 
+import { validarComprasJSON } from '../../../shared/compras-json.js'
+import { CARGAR } from '../utils/mensajes'
 import { comprasACsv, comprasAJson, nombreArchivo } from '../utils/exportar'
 import { RUTAS_ASIGNABLES, RUTA_USUARIOS, migrarPermisos } from '../utils/permisos'
 import { USUARIOS as MENSAJES_USUARIOS } from '../utils/mensajes'
@@ -707,6 +709,7 @@ function migrarCompras(compras) {
 function enriquecerLista(lista) {
   if (!lista) return lista
   const mat = (lista.materiales || lista.productos || []).map(m => ({
+    ...m,
     material: m.material || m.producto || '',
     cantidad: Number(m.cantidad) || 1,
     unidad:   m.unidad || 'unidad',
@@ -719,7 +722,7 @@ function enriquecerLista(lista) {
 
   return {
     ...lista,
-    categoria:  lista.categoria || 'Materia Prima',
+    categoria:  lista.categoria ?? 'Materia Prima',
     materiales: mat,
     // compatibilidad para código/tests que lean productos:
     productos:  mat.map(m => ({ ...m, producto: m.material, precio: m.monto })),
@@ -897,26 +900,49 @@ export async function exportarJSON() {
   descargarBlob(blob, 'depanas_compras.json')
 }
 
-/** Acepta compras (con materiales) o filas planas de `ingresos` */
-export async function importarJSON(archivo) {
-  const datos = JSON.parse(await archivo.text())
-  if (!Array.isArray(datos)) throw new Error('Formato inválido: se esperaba una lista de compras')
+/** Lee y valida todo el archivo antes de ofrecer la selección. */
+export async function leerComprasJSON(archivo) {
+  if (!archivo || !/\.json$/i.test(archivo.name)) throw new Error(CARGAR.extension)
+  let datos
+  try { datos = JSON.parse((await archivo.text()).replace(/^\uFEFF/, '')) }
+  catch { throw new Error(CARGAR.jsonInvalido) }
+  return validarComprasJSON(datos)
+}
 
+/** Guarda la selección completa de una vez, sin deduplicar ni reemplazar compras. */
+export async function importarCompras(datos) {
+  validarComprasJSON(datos)
+  if (!datos.length) throw new Error(CARGAR.sinSeleccion)
   if ((await detectarModo()) === 'servidor') {
     const resultado = await pedirJSON('/db/importar-json', 'POST', datos)
     refrescarCache()
     return resultado
   }
 
-  // Local: se fusionan con las listas existentes (no se reemplazan)
-  const entrantes = datos.every(d => Array.isArray(d?.materiales)) ? datos.map(enriquecerLista) : migrarCompras(datos)
-  const listas = getListas()
-  let id = siguienteId(listas)
-  setListas([...listas, ...entrantes.map(l => ({ ...l, id: id++ }))])
-  const cat = getCatalogoLocal()
-  for (const l of entrantes) registrarCompraEn(cat, l)
-  setCatalogoLocal(cat)
-  return { ok: true, nuevas: entrantes.length }
+  const anterior = localStorage.getItem(CLAVE_LISTAS)
+  const catalogoAnterior = localStorage.getItem(CLAVE_CATALOGO)
+  try {
+    const listas = getListas()
+    let id = siguienteId(listas)
+    const entrantes = structuredClone(datos).map(c => ({ ...c, id: id++ }))
+    const cat = getCatalogoLocal()
+    for (const c of entrantes) registrarCompraEn(cat, c)
+    setCatalogoLocal(cat)
+    setListas([...listas, ...entrantes])
+    return { ok: true, nuevas: entrantes.length }
+  } catch (error) {
+    for (const [clave, valor] of [[CLAVE_LISTAS, anterior], [CLAVE_CATALOGO, catalogoAnterior]]) {
+      if (localStorage.getItem(clave) !== valor) {
+        if (valor === null) localStorage.removeItem(clave)
+        else localStorage.setItem(clave, valor)
+      }
+    }
+    throw error
+  }
+}
+
+export async function importarJSON(archivo) {
+  return importarCompras(await leerComprasJSON(archivo))
 }
 
 /**
@@ -1115,3 +1141,4 @@ function descargarBlob(blob, nombre) {
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
+

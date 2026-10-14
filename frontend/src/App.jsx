@@ -68,7 +68,7 @@ function AppContenido() {
             <Route
               path="/"
               element={protegida('/', (
-                <AgregarCompra puedeExportar={tienePermiso('/exportar')} puedeCargar={tienePermiso('/cargar')} />
+                <AgregarCompra />
               ))}
             />
             <Route path="/compras" element={protegida('/compras', <PantallaMaestra puedeAgregar={tienePermiso('/')} />)} />
@@ -77,7 +77,7 @@ function AppContenido() {
             <Route path="/configuracion" element={<RedirigirACatalogo />} />
             <Route path="/configuracion/:seccion" element={<RedirigirACatalogo />} />
             <Route path="/exportar" element={protegida('/exportar', <PantallaExportar />)} />
-            <Route path="/cargar" element={protegida('/cargar', <PantallaCargar puedeVolver={tienePermiso('/')} />)} />
+            <Route path="/cargar" element={protegida('/cargar', <PantallaCargar />)} />
             <Route path="/usuarios" element={protegida('/usuarios', <PantallaUsuarios />)} />
             <Route path="/agregar-compra" element={<Navigate to="/" replace />} />
             {/* Redirige cualquier ruta desconocida a la principal */}
@@ -99,3 +99,4 @@ export default function App() {
     </ToastProvider>
   )
 }
+

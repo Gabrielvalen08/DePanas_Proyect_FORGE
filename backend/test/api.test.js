@@ -236,7 +236,7 @@ test('exportar en un equipo e importar en otro traslada las compras y deja respa
   assert.equal((await crear(destino.base, WALMART_2)).status, 201)
 })
 
-test('importar JSON dos veces no duplica compras', async t => {
+test('importar JSON dos veces crea compras independientes, sin deduplicar', async t => {
   const origen = await levantar(t)
   await crear(origen.base, WALMART_1)
   const json = (await pedir(`${origen.base}/db/exportar-json`)).cuerpo
@@ -244,8 +244,8 @@ test('importar JSON dos veces no duplica compras', async t => {
   const destino = await levantar(t)
   const primera = await pedir(`${destino.base}/db/importar-json`, { method: 'POST', body: JSON.stringify(json) })
   const segunda = await pedir(`${destino.base}/db/importar-json`, { method: 'POST', body: JSON.stringify(json) })
-  assert.deepEqual([primera.cuerpo.nuevas, segunda.cuerpo.nuevas, segunda.cuerpo.omitidas], [1, 0, 1])
-  assert.equal((await pedir(`${destino.base}/compras`)).cuerpo.length, 1)
+  assert.deepEqual([primera.cuerpo.nuevas, segunda.cuerpo.nuevas], [1, 1])
+  assert.equal((await pedir(`${destino.base}/compras`)).cuerpo.length, 2)
 })
 
 test('una base con el esquema anterior se migra al abrirla', async t => {
@@ -263,4 +263,26 @@ test('una base con el esquema anterior se migra al abrirla', async t => {
   const compras = (await pedir(`${base}/compras`)).cuerpo
   assert.equal(compras.length, 1)
   assert.equal(compras[0].materiales[0].unidad, 'unidad')
+})
+
+
+test('JSON exportado conserva todos los materiales y rechaza un lote inválido sin guardar', async t => {
+  const origen = await levantar(t)
+  const compra = { proveedor: 'Distribuidor', fecha: '2026-10-13', categoria: '', materiales: [
+    { material: 'Harina', cantidad: 2.5, unidad: 'kg', monto: 4.75, categoria: 'Materia Prima', producto: 'Arepas' },
+    { material: 'Jabón', cantidad: 3, unidad: 'botella', monto: 8.25, categoria: 'Limpieza', producto: 'Todos' },
+  ] }
+  await crear(origen.base, compra)
+  const json = (await pedir(`${origen.base}/db/exportar-json`)).cuerpo
+  const destino = await levantar(t)
+  const importada = await pedir(`${destino.base}/db/importar-json`, { method: 'POST', body: JSON.stringify(json) })
+  assert.equal(importada.status, 200)
+  const guardadas = (await pedir(`${destino.base}/compras`)).cuerpo
+  const sinIds = c => ({ ...c, id: undefined, materiales: c.materiales.map(m => ({ ...m, id: undefined })) })
+  assert.deepEqual(sinIds(guardadas[0]), sinIds(json[0]))
+  for (const invalida of [null, { ...json[0], fecha: '2026-02-30' }, { ...json[0], materiales: [{ ...json[0].materiales[0], cantidad: '2' }] }]) {
+    const respuesta = await pedir(`${destino.base}/db/importar-json`, { method: 'POST', body: JSON.stringify([json[0], invalida]) })
+    assert.equal(respuesta.status, 400)
+    assert.equal((await pedir(`${destino.base}/compras`)).cuerpo.length, 1)
+  }
 })

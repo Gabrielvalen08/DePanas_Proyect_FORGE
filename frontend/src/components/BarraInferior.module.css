@@ -16,7 +16,8 @@
 .lista {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-columns: minmax(4.5rem, 1fr);
+  overflow-x: auto;
   height: var(--alto-barra-inferior);
   list-style: none;
 }
@@ -101,3 +102,4 @@
   font-weight: 600;
   line-height: 1;
 }
+

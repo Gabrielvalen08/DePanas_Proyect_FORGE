@@ -52,7 +52,7 @@ export const FRASES_ENCABEZADO = {
     'Las compras, listas para el Excel',
   ],
   '/cargar': [
-    'Pronto podrás traer tus datos de otro equipo',
+    'Trae tus compras completas desde otro equipo',
   ],
   '/usuarios': [
     'Cada pana con su clave y su lugar en la cocina',
@@ -389,7 +389,22 @@ export const EXPORTAR = {
 }
 
 export const CARGAR = {
-  titulo: 'Estamos trabajando en ello',
-  texto: 'Muy pronto vas a poder traer tus compras desde otro equipo. ¡Aguanta un poquito, pana!',
-  volver: 'Volver a Agregar compra',
+  intro: 'Trae las compras de otro equipo usando el respaldo JSON de Exportar datos. Elige cuáles quieres guardar aquí.',
+  titulo: 'Archivo de compras',
+  archivo: 'Seleccionar archivo JSON',
+  ayuda: 'Solo archivos .json exportados por De Panas. Cada compra se carga con todos sus materiales.',
+  extension: 'No es posible cargar los datos: selecciona un archivo con extensión .json.',
+  jsonInvalido: 'No es posible cargar los datos: el archivo no contiene un JSON válido.',
+  seleccion: 'Elegir compras',
+  proveedor: 'Proveedor', fecha: 'Fecha', total: 'Total',
+  todas: 'Seleccionar todas', ninguna: 'Quitar selección',
+  elegir: n => `Seleccionar compra ${n}`,
+  resumen: (n, total) => `${n} ${plural(n, 'compra seleccionada', 'compras seleccionadas')} · ${total}`,
+  importar: 'Cargar compras seleccionadas',
+  sinSeleccion: 'Selecciona al menos una compra.',
+  vacio: 'El archivo es válido, pero no contiene compras.',
+  exito: n => `¡Listo! Se cargaron exitosamente ${n} ${plural(n, 'compra', 'compras')} con todos sus materiales.`,
+  error: detalle => `No se lograron cargar los datos: ${detalle}`,
 }
+
+

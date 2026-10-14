@@ -116,11 +116,11 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     const usuario = userEvent.setup()
     iniciarComo(CESAR)
     renderizarApp('/cargar')
-    expect(screen.getByText('Estamos trabajando en ello')).toBeInTheDocument()
+    expect(screen.getByLabelText('Seleccionar archivo JSON')).toBeInTheDocument()
 
     const menu = screen.getByRole('navigation', { name: 'Menú principal' })
     const enlaces = within(menu).getAllByRole('link').map(e => e.textContent)
-    expect(enlaces).toEqual(['Agregar compra', 'Compras', 'Catálogo'])
+    expect(enlaces).toEqual(['Agregar compra', 'Compras', 'Catálogo', 'Exportar datos', 'Cargar datos'])
     await usuario.click(within(menu).getByRole('link', { name: 'Catálogo' }))
     expect(await screen.findByRole('heading', { name: 'Catálogo', level: 1 })).toBeInTheDocument()
   })
@@ -159,3 +159,4 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     expect(await screen.findByRole('heading', { name: 'Compras', level: 1 })).toBeInTheDocument()
   })
 })
+
