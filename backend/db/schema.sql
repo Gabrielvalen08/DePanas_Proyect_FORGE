@@ -19,7 +19,9 @@ CREATE TABLE IF NOT EXISTS ingresos (
     monto      REAL NOT NULL,               -- Total pagado por esta línea
     proveedor  TEXT NOT NULL,               -- Proveedor o comercio
     categoria  TEXT DEFAULT '',             -- Categoría (definida en DB, aún no en web)
-    producto   TEXT DEFAULT ''              -- Producto destino (definido en DB, aún no en web)
+    producto   TEXT DEFAULT '',             -- Producto destino
+    origen_id TEXT,                         -- Identidad original al transferir entre equipos
+    compra_categoria TEXT                   -- Categoría de la compra, independiente de cada material
 );
 
 -- Opciones de los desplegables (proveedor, categoría, material, producto).

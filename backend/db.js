@@ -155,6 +155,8 @@ export function migrar(db) {
     "WHERE compra_id IS NULL OR compra_id = ''"
   )
   db.exec('CREATE INDEX IF NOT EXISTS idx_ingresos_compra ON ingresos(compra_id)')
+  if (!columnas.includes('origen_id')) db.exec('ALTER TABLE ingresos ADD COLUMN origen_id TEXT')
+  if (!columnas.includes('compra_categoria')) db.exec('ALTER TABLE ingresos ADD COLUMN compra_categoria TEXT')
 
   // Catálogos creados antes de que los materiales guardaran categoría y producto
   const columnasCatalogo = db.prepare('PRAGMA table_info(catalogo)').all().map(c => c.name)

@@ -31,6 +31,7 @@ export function comprasACsv(compras) {
 export function comprasAJson(compras) {
   const limpias = porFecha(compras).map(c => ({
     id: c.id,
+    ...(c.origen_id ? { origen_id: c.origen_id } : {}),
     proveedor: c.proveedor,
     fecha: c.fecha,
     categoria: c.categoria ?? '',

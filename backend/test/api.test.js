@@ -236,7 +236,7 @@ test('exportar en un equipo e importar en otro traslada las compras y deja respa
   assert.equal((await crear(destino.base, WALMART_2)).status, 201)
 })
 
-test('importar JSON dos veces no duplica compras', async t => {
+test('importar JSON dos veces omite la compra idéntica por su identificador original', async t => {
   const origen = await levantar(t)
   await crear(origen.base, WALMART_1)
   const json = (await pedir(`${origen.base}/db/exportar-json`)).cuerpo
@@ -263,4 +263,77 @@ test('una base con el esquema anterior se migra al abrirla', async t => {
   const compras = (await pedir(`${base}/compras`)).cuerpo
   assert.equal(compras.length, 1)
   assert.equal(compras[0].materiales[0].unidad, 'unidad')
+})
+
+
+test('JSON exportado conserva todos los materiales y rechaza un lote inválido sin guardar', async t => {
+  const origen = await levantar(t)
+  const compra = { proveedor: 'Distribuidor', fecha: '2026-10-13', categoria: '', materiales: [
+    { material: 'Harina', cantidad: 2.5, unidad: 'kg', monto: 4.75, categoria: 'Materia Prima', producto: 'Arepas' },
+    { material: 'Jabón', cantidad: 3, unidad: 'botella', monto: 8.25, categoria: 'Limpieza', producto: 'Todos' },
+  ] }
+  await crear(origen.base, compra)
+  const json = (await pedir(`${origen.base}/db/exportar-json`)).cuerpo
+  const destino = await levantar(t)
+  const importada = await pedir(`${destino.base}/db/importar-json`, { method: 'POST', body: JSON.stringify(json) })
+  assert.equal(importada.status, 200)
+  const guardadas = (await pedir(`${destino.base}/compras`)).cuerpo
+  const sinIds = c => ({ ...c, id: undefined, materiales: c.materiales.map(m => ({ ...m, id: undefined })) })
+  assert.deepEqual(sinIds(guardadas[0]), { ...sinIds(json[0]), origen_id: json[0].id })
+  for (const invalida of [null, { ...json[0], fecha: '2026-02-30' }, { ...json[0], materiales: [{ ...json[0].materiales[0], cantidad: '2' }] }]) {
+    const respuesta = await pedir(`${destino.base}/db/importar-json`, { method: 'POST', body: JSON.stringify([json[0], invalida]) })
+    assert.equal(respuesta.status, 400)
+    assert.equal((await pedir(`${destino.base}/compras`)).cuerpo.length, 1)
+  }
+})
+
+
+test('compras modificadas se comparan antes de guardar y la decisión conserva filas completas', async t => {
+  const { contenidoCompra } = await import('../../shared/carga-compras.js')
+  const { base } = await levantar(t)
+  const inicial = { id: 'original', proveedor: 'Marta', fecha: '2026-10-13', categoria: '', materiales: [
+    { material: 'Harina', cantidad: 2, unidad: 'kg', monto: 6, categoria: 'Materia Prima', producto: 'Arepas' },
+    { material: 'Jabón', cantidad: 1, unidad: 'botella', monto: 3, categoria: 'Limpieza', producto: 'Todos' },
+  ] }
+  const cargar = payload => pedir(`${base}/db/importar-json`, { method: 'POST', body: JSON.stringify(payload) })
+  await cargar([inicial])
+  let existente = (await pedir(`${base}/compras`)).cuerpo[0]
+  const modificada = { ...inicial, proveedor: 'César', fecha: '2026-10-14', materiales: [{ ...inicial.materiales[0], cantidad: 4, monto: 12 }] }
+  assert.equal((await cargar([modificada])).status, 409)
+  assert.equal((await pedir(`${base}/compras`)).cuerpo.length, 1)
+  const d = { origen: 'original', base: contenidoCompra(existente), accion: 'combinar', existentes: [1], entrantes: [0], proveedor: 'entrante', fecha: 'existente' }
+  const combinada = await cargar({ compras: [modificada], decisiones: [d] })
+  assert.equal(combinada.status, 200)
+  assert.equal(combinada.cuerpo.actualizadas, 1)
+  const final = (await pedir(`${base}/compras`)).cuerpo[0]
+  assert.equal(final.id, existente.id)
+  assert.equal(final.origen_id, 'original')
+  assert.equal(final.proveedor, 'César')
+  assert.equal(final.fecha, inicial.fecha)
+  assert.deepEqual(final.materiales.map(({ id, ...m }) => m), [inicial.materiales[1], modificada.materiales[0]])
+  // Una decisión antigua no puede sobrescribir el resultado.
+  assert.equal((await cargar({ compras: [modificada], decisiones: [d] })).status, 409)
+  // La identidad original sobrevive exportación a otro equipo y edición habitual.
+  const exportadas = (await pedir(`${base}/db/exportar-json`)).cuerpo
+  const otro = await levantar(t)
+  await pedir(`${otro.base}/db/importar-json`, { method: 'POST', body: JSON.stringify(exportadas) })
+  const repetida = await pedir(`${otro.base}/db/importar-json`, { method: 'POST', body: JSON.stringify(exportadas) })
+  assert.equal(repetida.cuerpo.omitidas, 1)
+  await pedir(`${base}/compras/${final.id}`, { method: 'PUT', body: JSON.stringify(final) })
+  existente = (await pedir(`${base}/compras`)).cuerpo[0]
+  assert.equal(existente.origen_id, 'original')
+})
+
+test('un error de escritura deshace todo el lote y una selección inválida no agrega compras', async t => {
+  const { base, ruta } = await levantar(t)
+  const json = { id: 'compra-a', proveedor: 'Proveedor', fecha: '2026-10-13', categoria: '', materiales: [
+    { material: 'Harina', cantidad: 1, unidad: 'kg', monto: 2, categoria: '', producto: '' },
+  ] }
+  // El servidor de prueba expone la misma conexión para simular un fallo real de SQLite.
+  const db = new DatabaseSync(ruta)
+  db.exec("CREATE TRIGGER falla_importacion BEFORE INSERT ON ingresos WHEN NEW.material = 'Falla' BEGIN SELECT RAISE(ABORT, 'fallo simulado'); END")
+  db.close()
+  const respuesta = await pedir(`${base}/db/importar-json`, { method: 'POST', body: JSON.stringify([json, { ...json, id: 'compra-b', materiales: [{ ...json.materiales[0], material: 'Falla' }] }]) })
+  assert.ok(respuesta.status >= 400)
+  assert.equal((await pedir(`${base}/compras`)).cuerpo.length, 0)
 })

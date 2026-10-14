@@ -1,0 +1,35 @@
+.intro { max-width: 65ch; font-size: 1.0625rem; color: var(--color-text); }
+.cuerpo { padding: var(--space-4) var(--space-6) var(--space-6); }
+.acciones, .pie { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
+.acciones { margin-bottom: var(--space-4); }
+.pie { justify-content: space-between; padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
+.resumen { font-family: var(--fuente-titulos); font-weight: 600; font-variant-numeric: tabular-nums; }
+.error { color: var(--color-danger); margin-top: var(--space-4); }
+.tablaContenedor { overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; margin-bottom: var(--space-4); }
+.tabla th, .tabla td { text-align: left; padding: var(--space-3); border-bottom: 1px solid var(--color-border); }
+.tabla th { font-family: var(--fuente-titulos); }
+.precio { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tabla input { width: 1.25rem; height: 1.25rem; accent-color: var(--color-primary); cursor: pointer; }
+@media (max-width: 767px) { .cuerpo { padding: var(--space-4); } .pie > * { flex-basis: 100%; } }
+
+
+.comparacion { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin-block: var(--space-4); }
+.lado { min-width: 0; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radio-input); }
+.datosFinales { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-4); }
+.opciones { display: grid; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radio-input); }
+.opciones legend { font-family: var(--fuente-titulos); font-weight: 700; }
+.opciones label { display: flex; align-items: center; gap: var(--space-2); }
+.opciones input { accent-color: var(--color-primary); }
+.final { border-top: 1px solid var(--color-border); margin-top: var(--space-4); padding-top: var(--space-4); }
+@media (max-width: 1100px) { .comparacion { grid-template-columns: minmax(0, 1fr); } }
+
+/* Cada material muestra todos sus atributos sin ocultar categoría o producto. */
+.tablaComparacion, .tablaComparacion tbody { display: block; }
+.tablaComparacion tbody { display: grid; gap: var(--space-3); }
+.tablaComparacion tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radio-input); }
+.tablaComparacion tbody td { padding: var(--space-2); border: none; overflow-wrap: anywhere; }
+.casillaMaterial, .nombreMaterial, .productoMaterial { grid-column: 1 / -1; }
+.nombreMaterial { font-family: var(--fuente-titulos); font-weight: 700; }
+.etiquetaCelda { display: block; font-family: var(--fuente-titulos); font-size: 0.875rem; font-weight: 600; color: var(--color-text-muted); }
+.materialElegido { box-shadow: inset 4px 0 0 var(--color-primary); }

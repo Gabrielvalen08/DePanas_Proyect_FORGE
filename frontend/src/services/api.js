@@ -20,6 +20,9 @@
  * `producto` es el destino final del material (opcional, puede ser vacío).
  */
 
+import { analizarCarga, resolverCarga } from '../../../shared/carga-compras.js'
+import { validarComprasJSON } from '../../../shared/compras-json.js'
+import { CARGAR } from '../utils/mensajes'
 import { comprasACsv, comprasAJson, nombreArchivo } from '../utils/exportar'
 import { RUTAS_ASIGNABLES, RUTA_USUARIOS, migrarPermisos } from '../utils/permisos'
 import { USUARIOS as MENSAJES_USUARIOS } from '../utils/mensajes'
@@ -707,6 +710,7 @@ function migrarCompras(compras) {
 function enriquecerLista(lista) {
   if (!lista) return lista
   const mat = (lista.materiales || lista.productos || []).map(m => ({
+    ...m,
     material: m.material || m.producto || '',
     cantidad: Number(m.cantidad) || 1,
     unidad:   m.unidad || 'unidad',
@@ -719,7 +723,7 @@ function enriquecerLista(lista) {
 
   return {
     ...lista,
-    categoria:  lista.categoria || 'Materia Prima',
+    categoria:  lista.categoria ?? 'Materia Prima',
     materiales: mat,
     // compatibilidad para código/tests que lean productos:
     productos:  mat.map(m => ({ ...m, producto: m.material, precio: m.monto })),
@@ -822,7 +826,7 @@ export async function guardarLista(lista) {
 
   await delay(200)
   const listas = getListas()
-  const nueva = enriquecerLista({ id: siguienteId(listas), ...normalizar(lista) })
+  const nueva = enriquecerLista({ id: siguienteId(listas), origen_id: crypto.randomUUID(), ...normalizar(lista) })
   setListas([...listas, nueva])
   registrarCompraLocal(nueva)
   return nueva
@@ -838,7 +842,7 @@ export async function actualizarLista(id, lista) {
   await delay(200)
   const listas = getListas()
   if (!listas.some(l => l.id === id)) throw new Error('La lista no existe')
-  const actualizada = enriquecerLista({ id, ...normalizar(lista) })
+  const actualizada = enriquecerLista({ ...listas.find(l => l.id === id), id, ...normalizar(lista) })
   setListas(listas.map(l => (l.id === id ? actualizada : l)))
   registrarCompraLocal(actualizada)
   return actualizada
@@ -897,26 +901,60 @@ export async function exportarJSON() {
   descargarBlob(blob, 'depanas_compras.json')
 }
 
-/** Acepta compras (con materiales) o filas planas de `ingresos` */
-export async function importarJSON(archivo) {
-  const datos = JSON.parse(await archivo.text())
-  if (!Array.isArray(datos)) throw new Error('Formato inválido: se esperaba una lista de compras')
+/** Lee y valida todo el archivo antes de ofrecer la selección. */
+export async function leerComprasJSON(archivo) {
+  if (!archivo || !/\.json$/i.test(archivo.name)) throw new Error(CARGAR.extension)
+  let datos
+  try { datos = JSON.parse((await archivo.text()).replace(/^\uFEFF/, '')) }
+  catch { throw new Error(CARGAR.jsonInvalido) }
+  return validarComprasJSON(datos)
+}
 
+/** Previsualiza identidades y diferencias sin escribir datos. */
+export async function analizarCompras(compras) {
+  return analizarCarga(compras, await fetchListas())
+}
+
+/** Las filas de la comparación se vuelven a validar contra la compra vigente al guardar. */
+export async function importarCompras(datos, decisiones = []) {
+  validarComprasJSON(datos)
+  if (!datos.length) throw new Error(CARGAR.sinSeleccion)
   if ((await detectarModo()) === 'servidor') {
-    const resultado = await pedirJSON('/db/importar-json', 'POST', datos)
+    const resultado = await pedirJSON('/db/importar-json', 'POST', { compras: datos, decisiones })
     refrescarCache()
     return resultado
   }
+  const anterior = localStorage.getItem(CLAVE_LISTAS)
+  const catalogoAnterior = localStorage.getItem(CLAVE_CATALOGO)
+  try {
+    const listas = getListas()
+    const plan = resolverCarga(datos, listas, decisiones)
+    if (!plan.escrituras.length) return { ok: true, ...plan.resultado }
+    let id = siguienteId(listas)
+    const finales = [...listas]
+    const cat = getCatalogoLocal()
+    for (const { compra, nueva } of plan.escrituras) {
+      const guardada = enriquecerLista({ ...structuredClone(compra), id: nueva ? id++ : compra.id })
+      if (nueva) finales.push(guardada)
+      else finales[finales.findIndex(c => c.id === compra.id)] = guardada
+      registrarCompraEn(cat, guardada)
+    }
+    setCatalogoLocal(cat)
+    setListas(finales)
+    return { ok: true, ...plan.resultado }
+  } catch (error) {
+    for (const [clave, valor] of [[CLAVE_LISTAS, anterior], [CLAVE_CATALOGO, catalogoAnterior]]) {
+      if (localStorage.getItem(clave) !== valor) {
+        if (valor === null) localStorage.removeItem(clave)
+        else localStorage.setItem(clave, valor)
+      }
+    }
+    throw error
+  }
+}
 
-  // Local: se fusionan con las listas existentes (no se reemplazan)
-  const entrantes = datos.every(d => Array.isArray(d?.materiales)) ? datos.map(enriquecerLista) : migrarCompras(datos)
-  const listas = getListas()
-  let id = siguienteId(listas)
-  setListas([...listas, ...entrantes.map(l => ({ ...l, id: id++ }))])
-  const cat = getCatalogoLocal()
-  for (const l of entrantes) registrarCompraEn(cat, l)
-  setCatalogoLocal(cat)
-  return { ok: true, nuevas: entrantes.length }
+export async function importarJSON(archivo) {
+  return importarCompras(await leerComprasJSON(archivo))
 }
 
 /**
