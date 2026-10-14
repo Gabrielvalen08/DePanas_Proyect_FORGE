@@ -402,9 +402,21 @@ export const CARGAR = {
   resumen: (n, total) => `${n} ${plural(n, 'compra seleccionada', 'compras seleccionadas')} · ${total}`,
   importar: 'Cargar compras seleccionadas',
   sinSeleccion: 'Selecciona al menos una compra.',
+  estadoTitulo: 'Estado',
+  comparar: 'Comparar compras',
+  compararAyuda: 'Esta compra ya existe y tiene diferencias. Marca los materiales completos que quieres conservar. La compra final tendrá exactamente las filas elegidas de ambos lados.',
+  existente: 'Compra guardada', entrante: 'Compra del archivo',
+  material: 'Material', cantidad: 'Cantidad', unidad: 'Unidad', monto: 'Precio', categoria: 'Categoría', producto: 'Producto',
+  conservar: (lado, n) => `Conservar material ${n} de ${lado}`,
+  descartar: 'Descartar esta compra del archivo',
+  aplicar: 'Guardar selección y cargar compras',
+  volver: 'Volver a elegir compras',
+  final: 'Compra final',
+  minimo: 'Conserva al menos un material o descarta la compra del archivo.',
+  pendiente: 'Revisa todas las compras modificadas antes de continuar.',
+  estado: { nueva: 'Nueva', identica: 'Duplicada · se omitirá', conflicto: 'Modificada · requiere comparación' },
+  resultado: ({ nuevas = 0, actualizadas = 0, omitidas = 0, descartadas = 0 }) => `¡Listo! ${nuevas} compras cargadas, ${actualizadas} actualizadas, ${omitidas} omitidas por duplicadas y ${descartadas} descartadas o conservadas sin cambios.`,
   vacio: 'El archivo es válido, pero no contiene compras.',
   exito: n => `¡Listo! Se cargaron exitosamente ${n} ${plural(n, 'compra', 'compras')} con todos sus materiales.`,
   error: detalle => `No se lograron cargar los datos: ${detalle}`,
 }
-
-

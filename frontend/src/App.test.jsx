@@ -15,6 +15,7 @@ vi.mock('./services/api', () => ({
   importarDB: vi.fn(),
   exportarJSON: vi.fn(),
   importarJSON: vi.fn(),
+  analizarCompras: vi.fn(),
   getProveedores: () => ['Súper Selectos', 'Walmart'],
   getMateriales: () => ['Tocino La Rioja', 'Pechugas de Pollo'],
   getCategorias: () => ['Materia Prima', 'Bebidas'],
@@ -159,4 +160,3 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     expect(await screen.findByRole('heading', { name: 'Compras', level: 1 })).toBeInTheDocument()
   })
 })
-

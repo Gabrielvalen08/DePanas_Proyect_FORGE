@@ -7,6 +7,7 @@ export function validarComprasJSON(datos) {
     const fallo = detalle => { throw new Error(`Compra ${i + 1}: ${detalle}`) }
     if (!c || typeof c !== 'object' || Array.isArray(c)) fallo('estructura inválida')
     if (!(texto(c.id) && c.id.trim()) && !(Number.isSafeInteger(c.id) && c.id > 0)) fallo('identificador inválido')
+    if (c.origen_id !== undefined && (!texto(c.origen_id) || !c.origen_id.trim())) fallo('identificador original inválido')
     if (!texto(c.proveedor) || !c.proveedor.trim()) fallo('falta el proveedor')
     if (!texto(c.fecha) || !/^\d{4}-\d{2}-\d{2}$/.test(c.fecha)) fallo('fecha inválida')
     const fecha = new Date(`${c.fecha}T00:00:00Z`)

@@ -12,7 +12,7 @@
 import { Router } from 'express'
 import multer from 'multer'
 import { randomUUID } from 'crypto'
-import { validarComprasJSON } from '../../shared/compras-json.js'
+import { resolverCarga } from '../../shared/carga-compras.js'
 import { existsSync, mkdirSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
@@ -82,41 +82,37 @@ export function crearRutasExport(getDb, reemplazarDB) {
     }
   })
 
-  // Cada carga crea compras independientes; no se deduplican.
+  // Valida y resuelve el lote completo dentro de la misma transacción.
   router.post('/importar-json', (req, res) => {
-    let compras
-    try {
-      compras = validarComprasJSON(req.body)
-      if (!compras.length) throw new Error('Selecciona al menos una compra')
-    } catch (err) {
-      return res.status(400).json({ error: err.message })
-    }
+    const compras = Array.isArray(req.body) ? req.body : req.body?.compras
+    const decisiones = Array.isArray(req.body) ? [] : req.body?.decisiones ?? []
     const db = getDb()
-    const insertar = db.prepare(
-      'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto) ' +
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    )
-
     try {
       const resultado = enTransaccion(db, () => {
-        let nuevas = 0
-
-        for (const c of compras) {
-          const id = randomUUID()
+        const existentes = agruparFilas(db.prepare('SELECT * FROM ingresos ORDER BY id').all())
+        let plan
+        try { plan = resolverCarga(compras, existentes, decisiones) }
+        catch (err) { err.status ??= 400; throw err }
+        if (!compras.length) { const err = new Error('Selecciona al menos una compra'); err.status = 400; throw err }
+        const insertar = db.prepare(
+          'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto, origen_id, compra_categoria) ' +
+          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )
+        for (const { compra: c, nueva } of plan.escrituras) {
+          const id = nueva ? randomUUID() : c.id
+          if (!nueva) db.prepare('DELETE FROM ingresos WHERE compra_id = ?').run(id)
           registrarCompra(db, c)
           for (const m of c.materiales) {
-            insertar.run(id, c.fecha, m.material, m.cantidad, m.unidad, m.monto, c.proveedor, m.categoria, m.producto)
+            insertar.run(id, c.fecha, m.material, m.cantidad, m.unidad, m.monto, c.proveedor, m.categoria, m.producto, c.origen_id, c.categoria)
           }
-          nuevas++
         }
-        return { nuevas }
+        return plan.resultado
       })
       res.json({ ok: true, ...resultado })
     } catch (err) {
-      res.status(500).json({ error: err.message })
+      res.status(err.status ?? 500).json({ error: err.message })
     }
   })
 
   return router
 }
-

@@ -20,6 +20,7 @@
  * `producto` es el destino final del material (opcional, puede ser vacío).
  */
 
+import { analizarCarga, resolverCarga } from '../../../shared/carga-compras.js'
 import { validarComprasJSON } from '../../../shared/compras-json.js'
 import { CARGAR } from '../utils/mensajes'
 import { comprasACsv, comprasAJson, nombreArchivo } from '../utils/exportar'
@@ -825,7 +826,7 @@ export async function guardarLista(lista) {
 
   await delay(200)
   const listas = getListas()
-  const nueva = enriquecerLista({ id: siguienteId(listas), ...normalizar(lista) })
+  const nueva = enriquecerLista({ id: siguienteId(listas), origen_id: crypto.randomUUID(), ...normalizar(lista) })
   setListas([...listas, nueva])
   registrarCompraLocal(nueva)
   return nueva
@@ -841,7 +842,7 @@ export async function actualizarLista(id, lista) {
   await delay(200)
   const listas = getListas()
   if (!listas.some(l => l.id === id)) throw new Error('La lista no existe')
-  const actualizada = enriquecerLista({ id, ...normalizar(lista) })
+  const actualizada = enriquecerLista({ ...listas.find(l => l.id === id), id, ...normalizar(lista) })
   setListas(listas.map(l => (l.id === id ? actualizada : l)))
   registrarCompraLocal(actualizada)
   return actualizada
@@ -909,27 +910,38 @@ export async function leerComprasJSON(archivo) {
   return validarComprasJSON(datos)
 }
 
-/** Guarda la selección completa de una vez, sin deduplicar ni reemplazar compras. */
-export async function importarCompras(datos) {
+/** Previsualiza identidades y diferencias sin escribir datos. */
+export async function analizarCompras(compras) {
+  return analizarCarga(compras, await fetchListas())
+}
+
+/** Las filas de la comparación se vuelven a validar contra la compra vigente al guardar. */
+export async function importarCompras(datos, decisiones = []) {
   validarComprasJSON(datos)
   if (!datos.length) throw new Error(CARGAR.sinSeleccion)
   if ((await detectarModo()) === 'servidor') {
-    const resultado = await pedirJSON('/db/importar-json', 'POST', datos)
+    const resultado = await pedirJSON('/db/importar-json', 'POST', { compras: datos, decisiones })
     refrescarCache()
     return resultado
   }
-
   const anterior = localStorage.getItem(CLAVE_LISTAS)
   const catalogoAnterior = localStorage.getItem(CLAVE_CATALOGO)
   try {
     const listas = getListas()
+    const plan = resolverCarga(datos, listas, decisiones)
+    if (!plan.escrituras.length) return { ok: true, ...plan.resultado }
     let id = siguienteId(listas)
-    const entrantes = structuredClone(datos).map(c => ({ ...c, id: id++ }))
+    const finales = [...listas]
     const cat = getCatalogoLocal()
-    for (const c of entrantes) registrarCompraEn(cat, c)
+    for (const { compra, nueva } of plan.escrituras) {
+      const guardada = enriquecerLista({ ...structuredClone(compra), id: nueva ? id++ : compra.id })
+      if (nueva) finales.push(guardada)
+      else finales[finales.findIndex(c => c.id === compra.id)] = guardada
+      registrarCompraEn(cat, guardada)
+    }
     setCatalogoLocal(cat)
-    setListas([...listas, ...entrantes])
-    return { ok: true, nuevas: entrantes.length }
+    setListas(finales)
+    return { ok: true, ...plan.resultado }
   } catch (error) {
     for (const [clave, valor] of [[CLAVE_LISTAS, anterior], [CLAVE_CATALOGO, catalogoAnterior]]) {
       if (localStorage.getItem(clave) !== valor) {
@@ -1141,4 +1153,3 @@ function descargarBlob(blob, nombre) {
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
-

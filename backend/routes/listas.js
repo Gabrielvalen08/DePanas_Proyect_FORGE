@@ -25,9 +25,10 @@ export function agruparFilas(filas) {
     if (!compras.has(f.compra_id)) {
       compras.set(f.compra_id, {
         id: f.compra_id,
+        ...(f.origen_id ? { origen_id: f.origen_id } : {}),
         proveedor: f.proveedor,
         fecha: f.fecha,
-        categoria: f.categoria ?? '',
+        categoria: f.compra_categoria ?? f.categoria ?? '',
         materiales: [],
       })
     }
@@ -86,17 +87,17 @@ export function validarCompra(cuerpo) {
   }
 }
 
-const COLUMNAS = 'id, compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto'
+const COLUMNAS = 'id, origen_id, compra_categoria, compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto'
 
-function insertarMateriales(db, compraId, compra) {
+function insertarMateriales(db, compraId, compra, origenId = null) {
   const insertar = db.prepare(
-    'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto) ' +
-    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto, origen_id, compra_categoria) ' +
+    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   )
   registrarCompra(db, compra)
   for (const m of compra.materiales) {
     // La categoría es de cada material (como en el Excel); la de la compra queda como respaldo
-    insertar.run(compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, m.categoria || compra.categoria, m.producto)
+    insertar.run(compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, m.categoria || compra.categoria, m.producto, origenId, compra.categoria)
   }
 }
 
@@ -168,12 +169,12 @@ export function crearRutasListas(getDb) {
     const db = getDb()
     const compraId = req.params.id
     try {
-      const existe = db.prepare('SELECT 1 FROM ingresos WHERE compra_id = ? LIMIT 1').get(compraId)
+      const existe = leerCompra(db, compraId)
       if (!existe) return res.status(404).json({ error: 'Compra no encontrada' })
       // Reemplazo completo: se borran las filas de la compra y se insertan las nuevas
       enTransaccion(db, () => {
         db.prepare('DELETE FROM ingresos WHERE compra_id = ?').run(compraId)
-        insertarMateriales(db, compraId, compra)
+        insertarMateriales(db, compraId, compra, existe.origen_id ?? null)
       })
       res.json(leerCompra(db, compraId))
     } catch (err) {
