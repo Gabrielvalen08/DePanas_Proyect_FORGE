@@ -157,3 +157,27 @@ it('después de cargar o de un error se puede volver a elegir el mismo archivo',
   await within(screen.getByRole('main')).findByRole('alert')
   expect(selector.value).toBe('')
 })
+it('marca en la comparación lo que cambió y lo que solo trae una compra', async () => {
+  const usuario = userEvent.setup()
+  montar()
+  // Harina cambia de cantidad y monto; Jabón no viene en el archivo; Agua solo viene en el archivo
+  const entrante = { ...compra, materiales: [
+    { ...compra.materiales[0], cantidad: 4, monto: 12 },
+    { material: 'Agua', cantidad: 1, unidad: 'litro', monto: 1, categoria: 'Bebidas', producto: 'Todos' },
+  ] }
+  vi.mocked(analizarCompras).mockImplementation(async compras => analizarCarga(compras, [compra]))
+  await usuario.upload(screen.getByLabelText(CARGAR.archivo), archivo([entrante]))
+  await usuario.click(await screen.findByRole('checkbox'))
+  await usuario.click(screen.getByRole('button', { name: CARGAR.importar }))
+  const guardada = await screen.findByRole('table', { name: CARGAR.existente })
+  const delArchivo = screen.getByRole('table', { name: CARGAR.entrante })
+  const [harinaGuardada, jabon] = within(guardada).getAllByRole('row').slice(1)
+  expect(within(harinaGuardada).getAllByText(`(${CARGAR.cambio})`, { exact: false })).toHaveLength(2)
+  expect(within(harinaGuardada).queryByText(CARGAR.soloAqui)).not.toBeInTheDocument()
+  expect(within(jabon).getByText(CARGAR.soloAqui)).toBeInTheDocument()
+  const [harinaArchivo, agua] = within(delArchivo).getAllByRole('row').slice(1)
+  expect(within(harinaArchivo).getAllByText(`(${CARGAR.cambio})`, { exact: false })).toHaveLength(2)
+  expect(within(agua).getByText(CARGAR.soloAqui)).toBeInTheDocument()
+  // La compra final no lleva marcas: es el resultado
+  expect(within(screen.getByRole('table', { name: CARGAR.final })).queryByText(CARGAR.soloAqui)).not.toBeInTheDocument()
+})

@@ -5,7 +5,40 @@
 }
 
 .ayuda {
+  display: grid;
+  gap: var(--space-2);
   max-width: 65ch;
+}
+
+.leyenda {
+  font-size: 0.875rem;
+}
+
+/* ---------- Diferencias: en Vinotinto, con fondo y negrita (no solo color) ---------- */
+.valorDistinto {
+  padding: 0.1em 0.35em 0;
+  border-radius: 6px;
+  background: var(--tinte-error);
+  color: var(--color-danger);
+  font-weight: 700;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Material que solo trae una de las dos compras */
+.materiales tr.soloAqui {
+  border-width: 2px;
+  border-style: dashed;
+  border-color: var(--color-danger);
+}
+
+.distinto {
+  color: var(--color-danger);
+}
+
+.insigniaSolo {
+  margin-left: var(--space-2);
+  vertical-align: 0.1em;
 }
 
 /* ---------- Guardada frente a la del archivo ---------- */
@@ -98,8 +131,12 @@
 
 /* Elegida: borde y franja naranja, como las opciones del Catálogo */
 .materiales tr.elegido {
-  border-color: var(--color-primary);
   box-shadow: inset 4px 0 0 var(--color-primary);
+}
+
+/* Si además es solo de un lado, conserva el borde punteado Vinotinto */
+.materiales tr.elegido:not(.soloAqui) {
+  border-color: var(--color-primary);
 }
 
 .casilla {

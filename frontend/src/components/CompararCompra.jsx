@@ -13,8 +13,38 @@ const ATRIBUTOS = [
   ['producto', m => m.producto || '—'],
 ]
 
+const nombreNormal = texto => (texto ?? '').trim().toLowerCase()
+const valorNormal = (m, clave) => m[clave] ?? ''
+const huella = m => JSON.stringify(ATRIBUTOS.map(([clave]) => valorNormal(m, clave)).concat(nombreNormal(m.material)))
+
+/**
+ * Qué cambió en cada material frente a la otra compra:
+ *  - null: hay uno idéntico del otro lado
+ *  - { campos: [...] }: el mismo material, con esos atributos distintos
+ *  - { solo: true }: el material no está del otro lado
+ * Primero empareja los idénticos y luego por nombre, sin usar dos veces la misma fila.
+ */
+function diferenciasMateriales(propios, otros) {
+  const usados = new Set()
+  const libre = condicion => otros.findIndex((o, k) => !usados.has(k) && condicion(o))
+  const resultado = propios.map(m => {
+    const j = libre(o => huella(o) === huella(m))
+    if (j < 0) return undefined
+    usados.add(j)
+    return null
+  })
+  return resultado.map((r, i) => {
+    if (r !== undefined) return r
+    const m = propios[i]
+    const j = libre(o => nombreNormal(o.material) === nombreNormal(m.material))
+    if (j < 0) return { solo: true }
+    usados.add(j)
+    return { campos: ATRIBUTOS.map(([clave]) => clave).filter(clave => valorNormal(m, clave) !== valorNormal(otros[j], clave)) }
+  })
+}
+
 /** Materiales como tarjetas: se ven todos sus atributos sin scroll horizontal */
-function TablaMateriales({ materiales, lado, seleccion, cambiar, disabled }) {
+function TablaMateriales({ materiales, lado, seleccion, cambiar, disabled, diferencias }) {
   const conCasilla = Boolean(seleccion)
   return (
     <table className={[estilos.materiales, conCasilla && estilos.conCasilla].filter(Boolean).join(' ')} aria-label={lado}>
@@ -28,8 +58,9 @@ function TablaMateriales({ materiales, lado, seleccion, cambiar, disabled }) {
       <tbody>
         {materiales.map((m, i) => {
           const elegido = seleccion?.includes(i)
+          const diferencia = diferencias?.[i]
           return (
-            <tr key={i} className={elegido ? estilos.elegido : undefined}>
+            <tr key={i} className={[elegido && estilos.elegido, diferencia?.solo && estilos.soloAqui].filter(Boolean).join(' ') || undefined}>
               {conCasilla && (
                 <td className={estilos.casillaCelda}>
                   <input
@@ -42,13 +73,20 @@ function TablaMateriales({ materiales, lado, seleccion, cambiar, disabled }) {
                   />
                 </td>
               )}
-              <td className={estilos.nombre}>{m.material}</td>
-              {ATRIBUTOS.map(([clave, valor]) => (
-                <td key={clave} className={clave === 'monto' ? estilos.monto : undefined}>
-                  <span className={estilos.etiqueta}>{CARGAR[clave]}</span>
-                  {valor(m)}
-                </td>
-              ))}
+              <td className={[estilos.nombre, diferencia?.solo && estilos.distinto].filter(Boolean).join(' ')}>
+                {m.material}
+                {diferencia?.solo && <Insignia tono="error" className={estilos.insigniaSolo}>{CARGAR.soloAqui}</Insignia>}
+              </td>
+              {ATRIBUTOS.map(([clave, valor]) => {
+                const cambio = diferencia?.solo || diferencia?.campos?.includes(clave)
+                return (
+                  <td key={clave} className={clave === 'monto' ? estilos.monto : undefined}>
+                    <span className={estilos.etiqueta}>{CARGAR[clave]}</span>
+                    <span className={cambio && !diferencia?.solo ? estilos.valorDistinto : undefined}>{valor(m)}</span>
+                    {cambio && !diferencia?.solo && <span className="solo-lector"> ({CARGAR.cambio})</span>}
+                  </td>
+                )
+              })}
             </tr>
           )
         })}
@@ -57,11 +95,18 @@ function TablaMateriales({ materiales, lado, seleccion, cambiar, disabled }) {
   )
 }
 
-function Resumen({ compra }) {
+/** otra: la compra del otro lado; lo que no coincide se marca en Vinotinto */
+function Resumen({ compra, otra }) {
+  const marca = distinto => (otra && distinto ? estilos.valorDistinto : undefined)
+  const total = totalLista(compra)
   return (
     <p className={estilos.resumen}>
-      <span>{compra.proveedor} · {formatearFecha(compra.fecha)}</span>
-      <span className={estilos.total}>{formatearPrecio(totalLista(compra))}</span>
+      <span>
+        <span className={marca(compra.proveedor !== otra?.proveedor)}>{compra.proveedor}</span>
+        {' · '}
+        <span className={marca(compra.fecha !== otra?.fecha)}>{formatearFecha(compra.fecha)}</span>
+      </span>
+      <span className={`${estilos.total} ${marca(otra && Math.abs(total - totalLista(otra)) > 0.004) ?? ''}`}>{formatearPrecio(total)}</span>
     </p>
   )
 }
@@ -79,21 +124,28 @@ export default function CompararCompra({ comparacion, decision, alCambiar, ocupa
   return (
     <Tarjeta titulo={`${CARGAR.comparar}: ${existente.proveedor}`} icono={<ArrowLeftRight />} franja>
       <div className={estilos.cuerpo}>
-        <p className={estilos.ayuda}>{CARGAR.compararAyuda}</p>
+        <div className={estilos.ayuda}>
+          <p>{CARGAR.compararAyuda}</p>
+          <p className={estilos.leyenda}>
+            <span className={estilos.valorDistinto}>{CARGAR.leyendaMuestra}</span> {CARGAR.leyenda}
+          </p>
+        </div>
 
         <div className={estilos.lados}>
           {['existente', 'entrante'].map(lado => {
             const compra = comparacion[lado]
             const etiqueta = CARGAR[lado]
             const clave = lado === 'existente' ? 'existentes' : 'entrantes'
+            const otra = comparacion[lado === 'existente' ? 'entrante' : 'existente']
             return (
               <section key={lado} className={estilos.lado} aria-label={`${etiqueta}: ${compra.proveedor}`}>
                 <h3 className={estilos.ladoTitulo}>
                   <Insignia tono={lado === 'existente' ? 'neutro' : 'aviso'}>{etiqueta}</Insignia>
                 </h3>
-                <Resumen compra={compra} />
+                <Resumen compra={compra} otra={otra} />
                 <TablaMateriales
                   materiales={compra.materiales}
+                  diferencias={diferenciasMateriales(compra.materiales, otra.materiales)}
                   lado={etiqueta}
                   seleccion={decision[clave]}
                   cambiar={indices => alCambiar({ [clave]: indices })}
@@ -111,6 +163,7 @@ export default function CompararCompra({ comparacion, decision, alCambiar, ocupa
               {['existente', 'entrante'].map(lado => {
                 const valor = campo === 'fecha' ? formatearFecha(comparacion[lado][campo]) : comparacion[lado][campo]
                 const activa = decision[campo] === lado
+                const distinto = comparacion.existente[campo] !== comparacion.entrante[campo]
                 return (
                   <label key={lado} className={[estilos.opcion, activa && estilos.opcionActiva].filter(Boolean).join(' ')}>
                     <input
@@ -122,7 +175,7 @@ export default function CompararCompra({ comparacion, decision, alCambiar, ocupa
                       onChange={() => alCambiar({ [campo]: lado })}
                     />
                     <span className={estilos.opcionLado}>{CARGAR[lado]}:</span>{' '}
-                    <span className={estilos.opcionValor}>{valor}</span>
+                    <span className={[estilos.opcionValor, distinto && estilos.valorDistinto].filter(Boolean).join(' ')}>{valor}</span>
                     {activa && <Check className={estilos.opcionCheck} aria-hidden="true" />}
                   </label>
                 )
