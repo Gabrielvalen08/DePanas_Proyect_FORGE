@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 App web de contabilidad para el restaurante **De Panas SV**: registro de compras e insumos y, más adelante, costos, gastos y márgenes. Es un proyecto académico de POO. Los requisitos y el descubrimiento están en los PDF de la raíz (`Documento de requerimientos - De Panas.pdf`, `Documento de descubrimiento - De Panas.pdf`).
 
-Hay un **frontend** (`frontend/`) y un **backend** (`backend/`): Node.js + Express con SQLite (`node:sqlite`, Node ≥ 22.13) en `http://localhost:3000`. El frontend funciona también sin backend (modo local, ver abajo).
+Hay un **frontend** (`frontend/`) y un **backend** (`backend/`): Node.js + Express con SQLite (`node:sqlite`, Node ≥ 22.13) en `http://localhost:3000`. El frontend funciona también sin backend (modo local, ver abajo). **Publicación:** solo el frontend, en Vercel y en modo local (`vercel.json` en la raíz; guía y reglas de respaldo en `docs/PUBLICAR_VERCEL.md`). El backend aún no se publica: necesita un hosting con disco y autenticación en la API.
 
 ## Comandos
 
