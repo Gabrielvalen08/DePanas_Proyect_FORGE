@@ -387,7 +387,6 @@ export default function BloqueCompra({
                   value={proveedor}
                   onChange={valor => cambiarEncabezado('proveedor', valor)}
                   onBlur={() => salirDeEncabezado('proveedor')}
-                  placeholder="Selectos…"
                   getSuggestions={sugerirProveedores}
                   error={errores.proveedor}
                 />
@@ -452,7 +451,6 @@ export default function BloqueCompra({
                             revisarMaterial(fila.material)
                           }}
                           ayuda={textoAsignacion(fila.material)}
-                          placeholder="Ej: Jamón de Pavo…"
                           getSuggestions={sugerirMateriales}
                           error={errores[clave(fila.id, 'material')]}
                         />
@@ -469,7 +467,6 @@ export default function BloqueCompra({
                             inputMode="decimal"
                             min="0"
                             step="any"
-                            placeholder="3"
                             value={fila.cantidad}
                             onChange={e => cambiarFila(fila.id, 'cantidad', e.target.value)}
                             onBlur={() => salirDeCampoFila(fila.id, 'cantidad')}

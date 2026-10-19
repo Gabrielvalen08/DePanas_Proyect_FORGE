@@ -44,7 +44,6 @@ export default function FiltrosEnLinea({ id, abierto, filtros, alCambiar }) {
           <Campo
             id="filtro-proveedor"
             etiqueta="Proveedor"
-            placeholder="Ej: Súper Selectos"
             value={filtros.proveedor}
             onChange={e => cambiar('proveedor', e.target.value)}
             className={estilos.campoTexto}
@@ -52,7 +51,6 @@ export default function FiltrosEnLinea({ id, abierto, filtros, alCambiar }) {
           <Campo
             id="filtro-material"
             etiqueta="Material"
-            placeholder="Ej: Tocino"
             value={filtros.material}
             onChange={e => cambiar('material', e.target.value)}
             className={estilos.campoTexto}
