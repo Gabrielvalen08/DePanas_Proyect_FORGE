@@ -75,6 +75,7 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
  *  - inicial: { proveedor, fecha, materiales } para editar
  *  - alGuardar(lista): async; si se resuelve, se llama a alGuardado
  *  - alGuardado(lista), alCancelar()
+ *  - cancelarVacio: deja Cancelar activo aunque no haya nada (para quitar un bloque vacío)
  *  - textoGuardar, enfocarAlMontar, plano (sin tarjeta, p. ej. dentro de un modal;
  *    el título solo queda para lectores de pantalla porque el modal ya trae el suyo)
  */
@@ -87,6 +88,7 @@ export default function BloqueCompra({
   textoGuardar = 'Guardar compra',
   enfocarAlMontar = false,
   plano = false,
+  cancelarVacio = false,
 }) {
   const id = useId().replace(/:/g, '')
   const [proveedor, setProveedor] = useState(inicial?.proveedor ?? '')
@@ -280,6 +282,9 @@ export default function BloqueCompra({
     }
   }
 
+  // Sin proveedor ni filas con datos no hay nada que guardar ni que cancelar
+  const hayDatos = Boolean(proveedor.trim()) || filas.some(f => !estaVacia(f))
+
   const total = filas.reduce((suma, f) => suma + (Number(f.monto) > 0 ? Number(f.monto) : 0), 0)
 
   const resumen = [
@@ -467,10 +472,10 @@ export default function BloqueCompra({
         </section>
 
         <div className={estilos.acciones}>
-          <Boton variante="fantasma" onClick={alCancelar}>
+          <Boton variante="fantasma" onClick={alCancelar} disabled={!hayDatos && !cancelarVacio}>
             Cancelar
           </Boton>
-          <Boton type="submit" variante="primario" sombra icono={<Save />} cargando={guardando}>
+          <Boton type="submit" variante="primario" sombra icono={<Save />} cargando={guardando} disabled={!hayDatos}>
             {guardando ? 'Guardando…' : textoGuardar}
           </Boton>
         </div>

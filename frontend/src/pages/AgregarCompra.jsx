@@ -66,6 +66,7 @@ export default function AgregarCompra() {
                 alGuardado={lista => alGuardado(bloque.clave, lista)}
                 alCancelar={() => retirarBloque(bloque.clave)}
                 enfocarAlMontar={bloque.enfocar}
+                cancelarVacio={bloques.length > 1}
               />
             </motion.div>
           ))}

@@ -92,6 +92,7 @@ describe('AgregarCompra', () => {
   it('tras intentar guardar, el error queda enlazado al campo y desaparece al corregirlo', async () => {
     const usuario = userEvent.setup()
     renderizar()
+    await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
     const precio = screen.getByLabelText('Precio, fila 1')
     expect(precio).toHaveAccessibleDescription(VALIDACION.precio)
@@ -115,6 +116,7 @@ describe('AgregarCompra', () => {
   it('guardar con errores muestra el resumen con foco y no guarda', async () => {
     const usuario = userEvent.setup()
     renderizar()
+    await usuario.type(screen.getByLabelText('Precio, fila 1'), '5')
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
 
     const resumen = await screen.findByRole('alert', { name: VALIDACION.resumen })
@@ -147,6 +149,17 @@ describe('AgregarCompra', () => {
     }))
     expect(await screen.findByText(COMPRA.guardada('Walmart', 1))).toBeInTheDocument()
     await waitFor(() => expect(screen.getByRole('combobox', { name: 'Proveedor' })).toHaveValue(''))
+  })
+
+  it('sin proveedor ni filas con datos, Guardar y Cancelar están deshabilitados', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    expect(screen.getByRole('button', { name: /guardar compra/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled()
+
+    await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'W')
+    expect(screen.getByRole('button', { name: /guardar compra/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeEnabled()
   })
 
   it('"Nueva compra" agrega otro bloque con su propio guardar; cancelar lo quita', async () => {
