@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Lock, User, Eye, EyeOff, AlertCircle, ArrowRight, HelpCircle, Info } from 'lucide-react'
+import { Lock, User, Eye, EyeOff, AlertCircle, HelpCircle, Info } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import Boton from '../components/common/Boton'
 import { ACCESO } from '../utils/mensajes'
@@ -159,7 +159,6 @@ export default function PantallaContrasena() {
               variante="primario"
               ancho={true}
               cargando={enviando}
-              icono={<ArrowRight size={18} />}
             >
               {ACCESO.boton}
             </Boton>

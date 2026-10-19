@@ -64,7 +64,7 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
 
 /**
  * BloqueCompra
- * Formulario de una lista de compra: proveedor y fecha en el encabezado,
+ * Formulario de una lista de compra: fecha y proveedor en el encabezado,
  * y filas de materiales (material, cantidad + unidad, monto).
  * Cada material lleva su categoría y su producto (como en el Excel): si se
  * escribe uno nuevo o sin asignar, se piden en una ventana emergente
@@ -75,7 +75,8 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
  *  - inicial: { proveedor, fecha, materiales } para editar
  *  - alGuardar(lista): async; si se resuelve, se llama a alGuardado
  *  - alGuardado(lista), alCancelar()
- *  - textoGuardar, enfocarAlMontar, plano (sin tarjeta, p. ej. dentro de un modal)
+ *  - textoGuardar, enfocarAlMontar, plano (sin tarjeta, p. ej. dentro de un modal;
+ *    el título solo queda para lectores de pantalla porque el modal ya trae el suyo)
  */
 export default function BloqueCompra({
   titulo = 'Detalle de compra',
@@ -282,8 +283,8 @@ export default function BloqueCompra({
   const total = filas.reduce((suma, f) => suma + (Number(f.monto) > 0 ? Number(f.monto) : 0), 0)
 
   const resumen = [
-    errores.proveedor && { idCampo: `${id}-proveedor`, texto: `Proveedor: ${errores.proveedor}` },
     errores.fecha     && { idCampo: `${id}-fecha`,     texto: `Fecha: ${errores.fecha}` },
+    errores.proveedor && { idCampo: `${id}-proveedor`, texto: `Proveedor: ${errores.proveedor}` },
     ...filas.flatMap((fila, i) =>
       CAMPOS_FILA.filter(({ clave: campo }) => errores[clave(fila.id, campo)]).map(({ clave: campo, nombre }) => ({
         idCampo: `${id}-${campo}-${fila.id}`,
@@ -302,8 +303,18 @@ export default function BloqueCompra({
       <form ref={formRef} onSubmit={guardar} noValidate className={estilos.bloque} aria-labelledby={`${id}-titulo`}>
         <section className={[estilos.tarjeta, plano && estilos.plano].filter(Boolean).join(' ')}>
           <header className={estilos.encabezado}>
-            <h2 id={`${id}-titulo`} className={estilos.titulo}>{titulo}</h2>
+            <h2 id={`${id}-titulo`} className={plano ? 'solo-lector' : estilos.titulo}>{titulo}</h2>
             <div className={estilos.encabezadoCampos}>
+              <Campo
+                id={`${id}-fecha`}
+                etiqueta="Fecha"
+                tipo="date"
+                value={fecha}
+                onChange={e => cambiarEncabezado('fecha', e.target.value)}
+                onBlur={() => salirDeEncabezado('fecha')}
+                error={errores.fecha}
+                className={estilos.campoFecha}
+              />
               <div className={estilos.campoProveedor}>
                 <AutocompleteInput
                   id={`${id}-proveedor`}
@@ -316,16 +327,6 @@ export default function BloqueCompra({
                   error={errores.proveedor}
                 />
               </div>
-              <Campo
-                id={`${id}-fecha`}
-                etiqueta="Fecha"
-                tipo="date"
-                value={fecha}
-                onChange={e => cambiarEncabezado('fecha', e.target.value)}
-                onBlur={() => salirDeEncabezado('fecha')}
-                error={errores.fecha}
-                className={estilos.campoFecha}
-              />
             </div>
           </header>
 
