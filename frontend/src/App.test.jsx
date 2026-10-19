@@ -22,6 +22,7 @@ vi.mock('./services/api', () => ({
   getProductos: () => ['Cachitos', 'Todos'],
   getAsignacion: m => ({ existe: false, nombre: m, categoria: '', producto: '' }),
   necesitaAsignacion: () => false,
+  getPrecioSugerido: () => null,
   asignarMaterial: vi.fn(),
   fetchCatalogo: () => Promise.resolve({ proveedores: [], categorias: [], productos: [], materiales: [], uso: {} }),
   iniciarSesion: async (usuario, contrasena) => {

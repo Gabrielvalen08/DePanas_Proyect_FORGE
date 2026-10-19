@@ -4,7 +4,7 @@ import { AlertCircle, Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import AsignarMaterial from './AsignarMaterial'
 import { Boton, Campo, ConfirmDialog, Selector } from './common'
-import { asignarMaterial, getAsignacion, getMateriales, getProveedores, necesitaAsignacion } from '../services/api'
+import { asignarMaterial, getAsignacion, getMateriales, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { ASIGNACION, COMPRA, VALIDACION } from '../utils/mensajes'
 import { fechaHoyISO, formatearPrecio, textoBusqueda } from '../utils/formato'
@@ -17,38 +17,58 @@ export const UNIDADES = ['lb', 'kg', 'g', 'oz', 'galon', 'litro', 'ml', 'unidad'
 const CAMPOS_FILA = [
   { clave: 'material', nombre: 'Material' },
   { clave: 'cantidad', nombre: 'Cantidad' },
-  { clave: 'monto',    nombre: 'Precio' },
+  { clave: 'precio',   nombre: 'Precio unitario' },
 ]
 
 let siguienteIdFila = 1
 
+const redondear = (valor, decimales) => Math.round(valor * 10 ** decimales) / 10 ** decimales
+
 function filaVacia() {
-  return { id: siguienteIdFila++, material: '', cantidad: '', unidad: 'lb', monto: '' }
+  return { id: siguienteIdFila++, material: '', cantidad: '', unidad: 'lb', precio: '' }
+}
+
+/**
+ * Monto de la fila: cantidad × precio unitario, redondeado a centavos. Una fila
+ * que viene de una compra guardada conserva su monto exacto hasta que se toque
+ * la cantidad o el precio (el precio unitario mostrado va redondeado).
+ */
+function montoDe(fila) {
+  if (fila.montoOriginal !== undefined) return fila.montoOriginal
+  const cantidad = Number(fila.cantidad)
+  const precio = Number(fila.precio)
+  return cantidad > 0 && precio > 0 ? redondear(cantidad * precio, 2) : 0
 }
 
 function filasDesde(materiales) {
   if (!materiales?.length) return [filaVacia()]
-  return materiales.map(m => ({
-    id: siguienteIdFila++,
-    material: m.material,
-    cantidad: String(m.cantidad),
-    unidad: m.unidad || 'lb',
-    monto: String(m.monto !== undefined ? m.monto : m.precio || ''),
-  }))
+  return materiales.map(m => {
+    const monto = Number(m.monto !== undefined ? m.monto : m.precio) || 0
+    const cantidad = Number(m.cantidad)
+    return {
+      id: siguienteIdFila++,
+      material: m.material,
+      cantidad: String(m.cantidad),
+      unidad: m.unidad || 'lb',
+      precio: monto > 0 && cantidad > 0 ? String(redondear(monto / cantidad, 4)) : '',
+      montoOriginal: monto > 0 ? monto : undefined,
+    }
+  })
 }
 
 // Una fila sin material, cantidad ni monto no cuenta: se ignora al guardar
 function estaVacia(fila) {
-  return !fila.material.trim() && !fila.cantidad && !fila.monto
+  return !fila.material.trim() && !fila.cantidad && !fila.precio
 }
 
 function validarFila(fila) {
   const errores = {}
   if (!fila.material.trim()) errores.material = VALIDACION.material
-  if (!fila.cantidad || isNaN(fila.cantidad) || Number(fila.cantidad) <= 0)
-    errores.cantidad = VALIDACION.cantidad
-  if (!fila.monto || isNaN(fila.monto) || Number(fila.monto) <= 0)
-    errores.monto = VALIDACION.precio
+  const cantidadValida = Boolean(fila.cantidad) && !isNaN(fila.cantidad) && Number(fila.cantidad) > 0
+  if (!cantidadValida) errores.cantidad = VALIDACION.cantidad
+  // Con cantidad válida, el monto (cantidad × precio, a centavos) tampoco puede quedar en 0
+  if (!fila.precio || isNaN(fila.precio) || Number(fila.precio) <= 0 || (cantidadValida && montoDe(fila) <= 0))
+    errores.precio = VALIDACION.precio
   return errores
 }
 
@@ -65,7 +85,10 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
 /**
  * BloqueCompra
  * Formulario de una lista de compra: fecha y proveedor en el encabezado,
- * y filas de materiales (material, cantidad + unidad, monto).
+ * y filas de materiales (material, cantidad + unidad, precio unitario y monto).
+ * El monto de cada fila es cantidad × precio unitario. Al elegir un material se
+ * sugiere el precio unitario de su última compra (con su unidad); se puede cambiar
+ * y la compra guardada pasa a ser la nueva referencia.
  * Cada material lleva su categoría y su producto (como en el Excel): si se
  * escribe uno nuevo o sin asignar, se piden en una ventana emergente
  * (AsignarMaterial) al elegirlo, al salir del campo o, si faltan, al guardar.
@@ -157,9 +180,28 @@ export default function BloqueCompra({
   function cambiarFila(filaId, campo, valor) {
     const filaActual = filas.find(f => f.id === filaId)
     const actualizada = { ...filaActual, [campo]: valor }
+    // Tocar la cantidad o el precio vuelve a calcular el monto; el precio escrito deja de ser el sugerido
+    if (campo === 'cantidad' || campo === 'precio') actualizada.montoOriginal = undefined
+    if (campo === 'precio') actualizada.precioSugerido = false
 
     setFilas(prev => prev.map(f => (f.id === filaId ? actualizada : f)))
     if (errores[clave(filaId, campo)]) fijarError(clave(filaId, campo), validarFila(actualizada)[campo])
+  }
+
+  /** Pone el precio y la unidad de la última compra del material, salvo que el precio ya lo haya escrito la persona */
+  function sugerirPrecio(filaId, material) {
+    const sugerido = getPrecioSugerido(material)
+    setFilas(prev => prev.map(f => {
+      if (f.id !== filaId || (f.precio !== '' && !f.precioSugerido)) return f
+      if (!sugerido) return f.precioSugerido ? { ...f, precio: '', precioSugerido: false } : f
+      return {
+        ...f,
+        precio: String(sugerido.precio),
+        unidad: UNIDADES.includes(sugerido.unidad) ? sugerido.unidad : f.unidad,
+        precioSugerido: true,
+        montoOriginal: undefined,
+      }
+    }))
   }
 
   function salirDeCampoFila(filaId, campo) {
@@ -253,23 +295,24 @@ export default function BloqueCompra({
       proveedor,
       fecha,
       categoria: '',
-      materiales: filasConDatos.map(({ material, cantidad, unidad, monto }) => {
-        const { categoria, producto } = getAsignacion(material)
+      materiales: filasConDatos.map(fila => {
+        const { categoria, producto } = getAsignacion(fila.material)
+        const monto = montoDe(fila)
         return {
-          material,
-          cantidad: Number(cantidad),
-          unidad,
-          monto: Number(monto),
-          precio: Number(monto),
+          material: fila.material,
+          cantidad: Number(fila.cantidad),
+          unidad: fila.unidad,
+          monto,
+          precio: monto,
           categoria,
           producto,
         }
       }),
-      productos: filasConDatos.map(({ material, cantidad, unidad, monto }) => ({
-        producto: material,
-        cantidad: Number(cantidad),
-        unidad,
-        precio: Number(monto),
+      productos: filasConDatos.map(fila => ({
+        producto: fila.material,
+        cantidad: Number(fila.cantidad),
+        unidad: fila.unidad,
+        precio: montoDe(fila),
       })),
     }
 
@@ -302,7 +345,7 @@ export default function BloqueCompra({
   // No se abre una fila nueva mientras la última no tenga material, cantidad y precio
   const ultimaIncompleta = Object.keys(validarFila(filas[filas.length - 1])).length > 0
 
-  const total = filas.reduce((suma, f) => suma + (Number(f.monto) > 0 ? Number(f.monto) : 0), 0)
+  const total = filas.reduce((suma, f) => suma + montoDe(f), 0)
 
   const resumen = [
     errores.fecha     && { idCampo: `${id}-fecha`,     texto: `Fecha: ${errores.fecha}` },
@@ -374,7 +417,8 @@ export default function BloqueCompra({
               <tr>
                 <th scope="col" className={estilos.colMaterial}>Material</th>
                 <th scope="col" className={estilos.colCantidad}>Cantidad</th>
-                <th scope="col" className={estilos.colPrecio}>Precio</th>
+                <th scope="col" className={estilos.colPrecio}>Precio unitario</th>
+                <th scope="col" className={estilos.colMonto}>Monto</th>
                 <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
               </tr>
             </thead>
@@ -398,9 +442,13 @@ export default function BloqueCompra({
                           etiquetaOculta
                           value={fila.material}
                           onChange={valor => cambiarFila(fila.id, 'material', valor)}
-                          onSeleccionar={revisarMaterial}
+                          onSeleccionar={valor => {
+                            sugerirPrecio(fila.id, valor)
+                            revisarMaterial(valor)
+                          }}
                           onBlur={() => {
                             salirDeCampoFila(fila.id, 'material')
+                            sugerirPrecio(fila.id, fila.material)
                             revisarMaterial(fila.material)
                           }}
                           ayuda={textoAsignacion(fila.material)}
@@ -440,22 +488,37 @@ export default function BloqueCompra({
                         </div>
                       </td>
 
-                      {/* Precio / Monto */}
+                      {/* Precio unitario (editable; sugerido desde la última compra) */}
                       <td>
                         <Campo
-                          id={`${id}-monto-${fila.id}`}
-                          etiqueta={`Precio, fila ${n}`}
+                          id={`${id}-precio-${fila.id}`}
+                          etiqueta={`Precio unitario, fila ${n}`}
                           etiquetaOculta
                           tipo="number"
                           inputMode="decimal"
-                          min="0.01"
-                          step="0.01"
+                          min="0.0001"
+                          step="any"
                           prefijo="$"
                           placeholder="0.00"
-                          value={fila.monto}
-                          onChange={e => cambiarFila(fila.id, 'monto', e.target.value)}
-                          onBlur={() => salirDeCampoFila(fila.id, 'monto')}
-                          error={errores[clave(fila.id, 'monto')]}
+                          value={fila.precio}
+                          onChange={e => cambiarFila(fila.id, 'precio', e.target.value)}
+                          onBlur={() => salirDeCampoFila(fila.id, 'precio')}
+                          ayuda={textoUltimoPrecio(fila.material)}
+                          error={errores[clave(fila.id, 'precio')]}
+                        />
+                      </td>
+
+                      {/* Monto = cantidad × precio unitario (se calcula solo) */}
+                      <td>
+                        <Campo
+                          id={`${id}-monto-${fila.id}`}
+                          etiqueta={`Monto, fila ${n}`}
+                          etiquetaOculta
+                          prefijo="$"
+                          placeholder="0.00"
+                          readOnly
+                          tabIndex={-1}
+                          value={montoDe(fila) > 0 ? montoDe(fila).toFixed(2) : ''}
                         />
                       </td>
 
@@ -538,6 +601,12 @@ export default function BloqueCompra({
       />
     </>
   )
+}
+
+/** "Última compra: $1.00 por bolsa" bajo el precio, cuando el material ya se compró antes */
+function textoUltimoPrecio(material) {
+  const sugerido = getPrecioSugerido(material)
+  return sugerido ? COMPRA.ultimoPrecio(formatearPrecio(sugerido.precio), sugerido.unidad) : undefined
 }
 
 /** "Materia Prima · Cachitos" bajo el material, cuando ya tiene ambos asignados */

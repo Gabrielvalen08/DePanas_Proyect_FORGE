@@ -81,7 +81,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
                   <tr>
                     <th scope="col">Material</th>
                     <th scope="col">Cantidad</th>
-                    <th scope="col" className={estilos.numerico}>Precio</th>
+                    <th scope="col" className={estilos.numerico}>Monto</th>
                   </tr>
                 </thead>
                 <tbody>

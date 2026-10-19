@@ -129,6 +129,7 @@
 .colMaterial  { width: 50%; }
 .colCantidad  { min-width: 12rem; }
 .colPrecio    { min-width: 9rem; }
+.colMonto     { min-width: 8rem; }
 .colAcciones  { width: 1%; }
 
 .cantidadGrupo {
