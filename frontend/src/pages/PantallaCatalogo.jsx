@@ -170,7 +170,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
             <caption className="solo-lector">{titulo}</caption>
             <thead>
               <tr>
-                <th scope="col">{PANTALLA_CATALOGO.nombre}</th>
+                <th scope="col">{PANTALLA_CATALOGO.etiquetaNombre(tipo)}</th>
                 {esMaterial && <th scope="col">Categoría</th>}
                 {esMaterial && <th scope="col">Producto</th>}
                 {conMateriales && <th scope="col">{PANTALLA_CATALOGO.columnaMateriales}</th>}

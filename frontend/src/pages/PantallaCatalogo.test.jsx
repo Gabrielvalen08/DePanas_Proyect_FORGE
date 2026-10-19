@@ -47,6 +47,20 @@ describe('PantallaCatalogo', () => {
     expect(await screen.findByRole('rowheader', { name: 'La Colonia Escalón' })).toBeInTheDocument()
   })
 
+  it('en Categorías la columna y el campo del nombre dicen «Categoría» y se habla de artículos', async () => {
+    const usuario = userEvent.setup()
+    renderizar('/catalogo/categorias')
+    const tabla = await screen.findByRole('table')
+    expect(within(tabla).getByRole('columnheader', { name: 'Categoría' })).toBeInTheDocument()
+    expect(within(tabla).getByRole('columnheader', { name: 'Artículos' })).toBeInTheDocument()
+    expect(within(tabla).queryByRole('columnheader', { name: 'Nombre' })).not.toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Agregar categoría' }))
+    const ventana = screen.getByRole('dialog', { name: 'Nueva categoría' })
+    expect(within(ventana).getByLabelText('Categoría')).toBeInTheDocument()
+    expect(within(ventana).getByText('Artículos de esta categoría')).toBeInTheDocument()
+  })
+
   it('renombra un proveedor: avisa en cuántas compras se cambió', async () => {
     const usuario = userEvent.setup()
     renderizar('/catalogo/proveedores')
@@ -97,10 +111,10 @@ describe('PantallaCatalogo', () => {
     renderizar('/catalogo/categorias')
     await usuario.click(await screen.findByRole('button', { name: 'Eliminar categoría Bebidas' }))
     const confirmacion = screen.getByRole('alertdialog', { name: '¿Eliminamos esta categoría?' })
-    expect(within(confirmacion).getByText(/4 materiales quedarán sin categoría/)).toBeInTheDocument()
+    expect(within(confirmacion).getByText(/4 artículos quedarán sin categoría/)).toBeInTheDocument()
     await usuario.click(within(confirmacion).getByRole('button', { name: 'Sí, eliminar' }))
 
-    expect(await screen.findByText(/Eliminamos «Bebidas»\. 4 materiales quedaron sin categoría/)).toBeInTheDocument()
+    expect(await screen.findByText(/Eliminamos «Bebidas»\. 4 artículos quedaron sin categoría/)).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('rowheader', { name: 'Bebidas' })).not.toBeInTheDocument())
   })
 
@@ -123,7 +137,7 @@ describe('PantallaCatalogo', () => {
     await usuario.click(arroz)
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
 
-    expect(await screen.findByText(/Actualizamos 2 materiales\./)).toBeInTheDocument()
+    expect(await screen.findByText(/Actualizamos 2 artículos\./)).toBeInTheDocument()
     await waitFor(() => {
       const actualizada = screen.getByRole('rowheader', { name: 'Bebidas' }).closest('tr')
       expect(within(actualizada).getByText('Agua, Arroz, Gatorade, Pepsi')).toBeInTheDocument()

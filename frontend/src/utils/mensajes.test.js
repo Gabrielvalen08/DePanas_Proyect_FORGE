@@ -43,11 +43,11 @@ describe('mensajes (voz de marca)', () => {
     expect(PANTALLA_CATALOGO.tituloNuevo('proveedor')).toBe('Nuevo proveedor')
     expect(PANTALLA_CATALOGO.confirmarEliminar.titulo('categoria')).toBe('¿Eliminamos esta categoría?')
     expect(PANTALLA_CATALOGO.uso('proveedor', 1)).toBe('1 compra')
-    expect(PANTALLA_CATALOGO.uso('producto', 3)).toBe('3 materiales')
+    expect(PANTALLA_CATALOGO.uso('producto', 3)).toBe('3 artículos')
     expect(PANTALLA_CATALOGO.editado('proveedor', { anterior: 'Selectos', nombre: 'Súper Selectos', compras: 2 }))
       .toBe('¡Chévere! «Selectos» ahora se llama «Súper Selectos» y se actualizó en 2 compras.')
     expect(PANTALLA_CATALOGO.eliminado('producto', { nombre: 'Cachitos', materiales: 1 }))
-      .toBe('Eliminamos «Cachitos». 1 material quedó sin producto; se pedirá al registrar una compra.')
+      .toBe('Eliminamos «Cachitos». 1 artículo quedó sin producto; se pedirá al registrar una compra.')
   })
 
   it('cargar: la confirmación tiene la voz de la casa y solo nombra lo que pasó', () => {

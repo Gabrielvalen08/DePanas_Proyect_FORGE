@@ -93,7 +93,7 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
         <Campo
           ref={nombreRef}
           id="editor-catalogo-nombre"
-          etiqueta={PANTALLA_CATALOGO.nombre}
+          etiqueta={PANTALLA_CATALOGO.etiquetaNombre(tipo)}
           value={nombre}
           autoComplete="off"
           onChange={e => {
