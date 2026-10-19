@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from './App'
-import { ACCESO, CARGAR } from './utils/mensajes'
+import { ACCESO, CARGAR, CONFIRMAR } from './utils/mensajes'
 
 vi.mock('./services/api', () => ({
   guardarLista: vi.fn(),
@@ -106,6 +106,14 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
 
     // Hacer clic en Cerrar sesión
     await usuario.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+
+    // Pide confirmar; «Cancelar» conserva la sesión
+    const confirmacion = await screen.findByRole('alertdialog', { name: CONFIRMAR.cerrarSesion.titulo })
+    await usuario.click(within(confirmacion).getByRole('button', { name: 'Cancelar' }))
+    expect(screen.getByRole('navigation', { name: 'Menú principal' })).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cerrarSesion.confirmar }))
 
     // Debe volver a la pantalla de contraseña
     expect(screen.getByRole('heading', { name: ACCESO.titulo })).toBeInTheDocument()
@@ -212,6 +220,7 @@ describe('App - barra inferior en móvil', () => {
     expect(within(hoja).getAllByRole('listitem').map(li => li.textContent)).toEqual(['Cerrar sesión'])
 
     await usuario.click(within(hoja).getByRole('button', { name: 'Cerrar sesión' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cerrarSesion.confirmar }))
     expect(await screen.findByRole('button', { name: /ingresar/i })).toBeInTheDocument()
   })
 })

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import { reiniciarModo } from '../services/api'
-import { PANTALLA_CATALOGO } from '../utils/mensajes'
+import { PANTALLA_CATALOGO, CONFIRMAR } from '../utils/mensajes'
 import PantallaCatalogo from './PantallaCatalogo'
 
 // Usa api.js real en modo local (sin servidor), sobre localStorage
@@ -42,6 +42,7 @@ describe('PantallaCatalogo', () => {
     const ventana = screen.getByRole('dialog', { name: 'Nuevo proveedor' })
     await usuario.type(within(ventana).getByLabelText('Nombre'), 'La Colonia Escalón')
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
 
     expect(await screen.findByText('¡Listo, pana! Agregamos un proveedor: «La Colonia Escalón».')).toBeInTheDocument()
     expect(await screen.findByRole('rowheader', { name: 'La Colonia Escalón' })).toBeInTheDocument()
@@ -61,6 +62,40 @@ describe('PantallaCatalogo', () => {
     expect(within(ventana).getByText('Artículos de esta categoría')).toBeInTheDocument()
   })
 
+  it('el editor pide confirmar al guardar y, si hay cambios, al cancelar; sin cambios se cierra solo', async () => {
+    const usuario = userEvent.setup()
+    renderizar('/catalogo/proveedores')
+    await usuario.click(await screen.findByRole('button', { name: 'Editar proveedor Súper Selectos' }))
+    const ventana = screen.getByRole('dialog', { name: 'Editar proveedor' })
+
+    // Sin cambios: Cancelar cierra sin preguntar
+    await usuario.click(within(ventana).getByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Editar proveedor' })).not.toBeInTheDocument())
+
+    // Con cambios: pregunta; «Seguir editando» conserva el texto y «Sí, descartar» cierra
+    await usuario.click(await screen.findByRole('button', { name: 'Editar proveedor Súper Selectos' }))
+    const editor = screen.getByRole('dialog', { name: 'Editar proveedor' })
+    await usuario.type(within(editor).getByLabelText('Nombre'), ' Centro')
+    await usuario.click(within(editor).getByRole('button', { name: 'Cancelar' }))
+    const descartar = await screen.findByRole('alertdialog', { name: CONFIRMAR.descartar.titulo })
+    await usuario.click(within(descartar).getByRole('button', { name: CONFIRMAR.descartar.volver }))
+    expect(within(editor).getByLabelText('Nombre')).toHaveValue('Súper Selectos Centro')
+
+    await usuario.click(within(editor).getByRole('button', { name: 'Cancelar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.descartar.confirmar }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Editar proveedor' })).not.toBeInTheDocument())
+
+    // Guardar pide confirmar; «Cancelar» de la confirmación no guarda
+    await usuario.click(await screen.findByRole('button', { name: 'Editar proveedor Súper Selectos' }))
+    const otro = screen.getByRole('dialog', { name: 'Editar proveedor' })
+    await usuario.type(within(otro).getByLabelText('Nombre'), ' Centro')
+    await usuario.click(within(otro).getByRole('button', { name: 'Guardar' }))
+    const guardar = await screen.findByRole('alertdialog', { name: CONFIRMAR.guardarCambios.titulo })
+    await usuario.click(within(guardar).getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByText(/ahora se llama/)).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Editar proveedor' })).toBeInTheDocument()
+  })
+
   it('renombra un proveedor: avisa en cuántas compras se cambió', async () => {
     const usuario = userEvent.setup()
     renderizar('/catalogo/proveedores')
@@ -71,6 +106,7 @@ describe('PantallaCatalogo', () => {
     await usuario.clear(nombre)
     await usuario.type(nombre, 'Selectos Centro')
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
 
     expect(await screen.findByText('¡Chévere! «Súper Selectos» ahora se llama «Selectos Centro» y se actualizó en 2 compras.')).toBeInTheDocument()
   })
@@ -82,6 +118,7 @@ describe('PantallaCatalogo', () => {
     const ventana = screen.getByRole('dialog', { name: 'Nuevo proveedor' })
     await usuario.type(within(ventana).getByLabelText('Nombre'), 'mmag')
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
     expect(await screen.findByText(/Ya existe un proveedor llamado «MMAG»/)).toBeInTheDocument()
     expect(screen.getByRole('dialog', { name: 'Nuevo proveedor' })).toBeInTheDocument()
   })
@@ -98,6 +135,7 @@ describe('PantallaCatalogo', () => {
     expect(within(ventana).getByRole('button', { name: /Materia Prima/ })).toHaveAttribute('aria-pressed', 'true')
     await usuario.type(within(ventana).getByRole('textbox', { name: 'Buscar o agregar producto' }), 'Pastelitos{Enter}')
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
 
     expect(await screen.findByText(/Guardamos los cambios de «Tocino La Rioja»\. Y estrenamos el producto «Pastelitos»\./)).toBeInTheDocument()
     await waitFor(() => {
@@ -136,6 +174,7 @@ describe('PantallaCatalogo', () => {
     expect(arroz.closest('label')).toHaveTextContent('Ahora en «Materia Prima»')
     await usuario.click(arroz)
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
 
     expect(await screen.findByText(/Actualizamos 2 artículos\./)).toBeInTheDocument()
     await waitFor(() => {

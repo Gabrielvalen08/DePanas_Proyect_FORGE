@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import { reiniciarModo } from '../services/api'
-import { EXPORTAR, VALIDACION } from '../utils/mensajes'
+import { CONFIRMAR, EXPORTAR, VALIDACION } from '../utils/mensajes'
 import PantallaExportar from './PantallaExportar'
 
 // api.js real en modo local, con las 5 compras de ejemplo ($57.50 en total)
@@ -68,6 +68,7 @@ describe('PantallaExportar', () => {
     await screen.findByText(EXPORTAR.resumen(5, '$57.50'))
     await usuario.click(screen.getByRole('radio', { name: /Respaldo \(\.json\)/ }))
     await usuario.click(screen.getByRole('button', { name: EXPORTAR.descargar }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.descargar.confirmar }))
     expect(await screen.findByText(EXPORTAR.descargado(5))).toBeInTheDocument()
     expect(clic).toHaveBeenCalledTimes(1)
     clic.mockRestore()

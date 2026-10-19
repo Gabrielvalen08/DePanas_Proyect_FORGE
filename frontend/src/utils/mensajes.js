@@ -464,3 +464,37 @@ export const CARGAR = {
   },
   vacio: 'El archivo está bien, pero viene vacío: no trae compras.',
 }
+
+// ---------------------------------------------------------------------------
+// Confirmaciones de los botones de acción (guardar, descartar, cargar, descargar…)
+// Las de Compras y las de eliminar viven en COMPRA y en cada pantalla.
+// ---------------------------------------------------------------------------
+export const CONFIRMAR = {
+  guardarCambios: {
+    titulo: '¿Guardamos los cambios?',
+    mensaje: 'Se aplicarán de inmediato.',
+    confirmar: 'Sí, guardar',
+  },
+  descartar: {
+    titulo: '¿Descartamos los cambios?',
+    mensaje: 'Se perderá lo que escribiste hasta ahora.',
+    confirmar: 'Sí, descartar',
+    volver: 'Seguir editando',
+  },
+  cerrarSesion: {
+    titulo: '¿Cerramos la sesión?',
+    mensaje: 'Para volver a entrar necesitarás tu usuario y tu contraseña.',
+    confirmar: 'Sí, cerrar sesión',
+  },
+  cargar: {
+    titulo: '¿Cargamos estas compras?',
+    mensaje: (n, total) => `Se cargarán ${n} ${plural(n, 'compra', 'compras')} por ${total}.`,
+    confirmar: 'Sí, cargar',
+  },
+  descargar: {
+    titulo: '¿Descargamos el archivo?',
+    mensaje: (n, total, formato) =>
+      `Se descargarán ${n} ${plural(n, 'compra', 'compras')} por ${total} en formato ${formato.toUpperCase()}.`,
+    confirmar: 'Sí, descargar',
+  },
+}

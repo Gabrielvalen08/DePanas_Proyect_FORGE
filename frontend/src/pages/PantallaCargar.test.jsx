@@ -5,7 +5,7 @@ import PantallaCargar from './PantallaCargar'
 import { ToastProvider } from '../context/ToastContext'
 import { analizarCarga, contenidoCompra } from '../../../shared/carga-compras.js'
 import { analizarCompras, importarCompras } from '../services/api'
-import { CARGAR } from '../utils/mensajes'
+import { CARGAR, CONFIRMAR } from '../utils/mensajes'
 
 vi.mock('../services/api', async importar => {
   const real = await importar()
@@ -37,6 +37,7 @@ it('muestra proveedor, fecha y total y carga únicamente la compra elegida compl
   await usuario.click(screen.getByRole('checkbox', { name: CARGAR.elegir(2) }))
   vi.mocked(importarCompras).mockResolvedValue({ ok: true, nuevas: 1 })
   await usuario.click(screen.getByRole('button', { name: CARGAR.importar }))
+  await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   await waitFor(() => expect(importarCompras).toHaveBeenCalledWith([otra], []))
   expect(await within(screen.getByRole('main')).findByRole('status')).toHaveTextContent(CARGAR.resultado({ nuevas: 1 }))
 })
@@ -57,6 +58,7 @@ it('muestra error de guardado y permite reintentar', async () => {
   await usuario.click(await screen.findByRole('checkbox'))
   vi.mocked(importarCompras).mockRejectedValue(new Error('Sin espacio'))
   await usuario.click(screen.getByRole('button', { name: CARGAR.importar }))
+  await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   expect(await within(screen.getByRole('main')).findByRole('alert')).toHaveTextContent(CARGAR.error('Sin espacio'))
   expect(screen.getByRole('checkbox')).toBeChecked()
   expect(screen.getByRole('button', { name: CARGAR.importar })).toBeEnabled()
@@ -76,6 +78,7 @@ it('compara ambas compras, conserva filas completas elegidas y permite elegir pr
   await usuario.upload(screen.getByLabelText(CARGAR.archivo), archivo([entrante]))
   await usuario.click(await screen.findByRole('checkbox'))
   await usuario.click(screen.getByRole('button', { name: CARGAR.importar }))
+  await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   const guardada = await screen.findByRole('table', { name: CARGAR.existente })
   const delArchivo = screen.getByRole('table', { name: CARGAR.entrante })
   expect(within(guardada).getByText('Jabón')).toBeInTheDocument()
@@ -91,6 +94,7 @@ it('compara ambas compras, conserva filas completas elegidas y permite elegir pr
   await usuario.click(screen.getByRole('radio', { name: 'Compra del archivo: 14/10/2026' }))
   vi.mocked(importarCompras).mockResolvedValue({ nuevas: 0, actualizadas: 1, omitidas: 0, descartadas: 0 })
   await usuario.click(screen.getByRole('button', { name: CARGAR.aplicar }))
+  await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   expect(importarCompras).toHaveBeenCalledWith([entrante], [{
     origen: '1', base: contenidoCompra(compra), accion: 'combinar', existentes: [1], entrantes: [0], proveedor: 'entrante', fecha: 'entrante',
   }])
@@ -104,6 +108,7 @@ it('no permite dejar una compra vacía y permite descartarla sin seleccionar mat
   await usuario.upload(screen.getByLabelText(CARGAR.archivo), archivo([entrante]))
   await usuario.click(await screen.findByRole('checkbox'))
   await usuario.click(screen.getByRole('button', { name: CARGAR.importar }))
+  await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   const guardada = await screen.findByRole('table', { name: CARGAR.existente })
   for (const casilla of within(guardada).getAllByRole('checkbox')) await usuario.click(casilla)
   expect(screen.getByRole('button', { name: CARGAR.aplicar })).toBeDisabled()
@@ -112,6 +117,7 @@ it('no permite dejar una compra vacía y permite descartarla sin seleccionar mat
   expect(screen.getByRole('button', { name: CARGAR.aplicar })).toBeEnabled()
   vi.mocked(importarCompras).mockResolvedValue({ descartadas: 1 })
   await usuario.click(screen.getByRole('button', { name: CARGAR.aplicar }))
+  await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   expect(importarCompras.mock.calls[0][1][0].accion).toBe('omitir')
 })
 it('omite compras idénticas sin abrir comparación y muestra el recuento', async () => {
@@ -122,6 +128,7 @@ it('omite compras idénticas sin abrir comparación y muestra el recuento', asyn
   await usuario.click(await screen.findByRole('checkbox'))
   vi.mocked(importarCompras).mockResolvedValue({ nuevas: 0, omitidas: 1 })
   await usuario.click(screen.getByRole('button', { name: CARGAR.importar }))
+  await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   expect(await within(screen.getByRole('main')).findByRole('status')).toHaveTextContent(CARGAR.resultado({ omitidas: 1 }))
   expect(screen.queryByRole('table', { name: CARGAR.existente })).not.toBeInTheDocument()
 })
@@ -132,6 +139,7 @@ it('cambiar de archivo abandona la comparación anterior sin guardar', async () 
   await usuario.upload(screen.getByLabelText(CARGAR.archivo), archivo([{ ...compra, proveedor: 'Otro' }]))
   await usuario.click(await screen.findByRole('checkbox'))
   await usuario.click(screen.getByRole('button', { name: CARGAR.importar }))
+  await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   expect(await screen.findByRole('table', { name: CARGAR.existente })).toBeInTheDocument()
   await usuario.upload(screen.getByLabelText(CARGAR.archivo), archivo([compra], 'nuevo.json'))
   expect(await screen.findByText(CARGAR.estado.identica)).toBeInTheDocument()
@@ -147,6 +155,7 @@ it('después de cargar o de un error se puede volver a elegir el mismo archivo',
   await usuario.click(await screen.findByRole('checkbox'))
   vi.mocked(importarCompras).mockResolvedValue({ ok: true, nuevas: 1 })
   await usuario.click(screen.getByRole('button', { name: CARGAR.importar }))
+  await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   await within(screen.getByRole('main')).findByRole('status')
   expect(selector.value).toBe('')
   // Sin vaciar el selector, elegir el mismo archivo no dispara change
@@ -169,6 +178,7 @@ it('marca en la comparación lo que cambió y lo que solo trae una compra', asyn
   await usuario.upload(screen.getByLabelText(CARGAR.archivo), archivo([entrante]))
   await usuario.click(await screen.findByRole('checkbox'))
   await usuario.click(screen.getByRole('button', { name: CARGAR.importar }))
+  await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   const guardada = await screen.findByRole('table', { name: CARGAR.existente })
   const delArchivo = screen.getByRole('table', { name: CARGAR.entrante })
   const [harinaGuardada, jabon] = within(guardada).getAllByRole('row').slice(1)
