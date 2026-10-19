@@ -19,7 +19,7 @@ function renderizar() {
 const LISTA_SELECTOS = /Ver compra en Súper Selectos del 29\/09\/2026/
 
 describe('PantallaMaestra', () => {
-  it('muestra cada lista con proveedor, cantidad de productos, gasto total y fecha', async () => {
+  it('muestra cada lista con proveedor, cantidad de productos, cost y fecha', async () => {
     renderizar()
     const tabla = await screen.findByRole('table', { name: /listas de compra/i })
     expect(within(tabla).getAllByRole('row')).toHaveLength(6) // encabezado + 5 listas

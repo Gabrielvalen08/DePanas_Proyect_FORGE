@@ -6,7 +6,7 @@ import { BookOpen, Download, Upload, PlusCircle, ShoppingCart, UsersRound } from
 // enBarra: va directo en la barra inferior; el resto se abre desde "Más".
 export const itemsNavegacion = [
   { a: '/', Icono: PlusCircle, etiqueta: 'Agregar compra', etiquetaCorta: 'Agregar', titulo: 'Agregar compra', enBarra: true },
-  { a: '/compras', Icono: ShoppingCart, etiqueta: 'Compras', etiquetaCorta: 'Compras', titulo: 'Compras', enBarra: true },
+  { a: '/compras', Icono: ShoppingCart, etiqueta: 'Lista de compras', etiquetaCorta: 'Lista', titulo: 'Lista de compras', enBarra: true },
   { a: '/catalogo', Icono: BookOpen, etiqueta: 'Catálogo', etiquetaCorta: 'Catálogo', titulo: 'Catálogo', enBarra: true },
   { a: '/exportar', Icono: Download, etiqueta: 'Exportar datos', etiquetaCorta: 'Exportar', titulo: 'Exportar datos' },
   { a: '/cargar', Icono: Upload, etiqueta: 'Cargar datos', etiquetaCorta: 'Cargar', titulo: 'Cargar datos' },

@@ -95,7 +95,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <th scope="row" colSpan={2}>Gasto total</th>
+                    <th scope="row" colSpan={2}>Cost</th>
                     <td className={`${estilos.numerico} ${estilos.total}`}>{formatearPrecio(totalLista(lista))}</td>
                   </tr>
                 </tfoot>

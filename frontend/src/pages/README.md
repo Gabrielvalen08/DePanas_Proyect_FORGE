@@ -5,7 +5,7 @@ Una página por ruta (definidas en `App.jsx`). Cada página renderiza `<Header>`
 | Ruta       | Página            | Notas                                                         |
 | ---------- | ----------------- | ------------------------------------------------------------- |
 | `/`        | `AgregarCompra`   | Página principal. Uno o varios `BloqueCompra` (una compra = un proveedor y una fecha); cada uno se guarda por separado. "Nueva compra" agrega otro bloque. Al guardar, el bloque se vacía (o se quita si hay varios) |
-| `/compras` | `PantallaMaestra` | Tabla de compras (proveedor, materiales, gasto total, fecha). Toda la fila abre `DetalleLista`. Filtros en línea con `FiltrosEnLinea`, en vivo |
+| `/compras` | `PantallaMaestra` | Tabla de compras (proveedor, materiales, cost, fecha). Toda la fila abre `DetalleLista`. Filtros en línea con `FiltrosEnLinea`, en vivo |
 
 | `/catalogo`, `/catalogo/:seccion` | `PantallaCatalogo` | Cuatro opciones (proveedores, categorías, materiales, productos); cada una abre su lista para agregar, renombrar o eliminar, con buscador y cuánto se usa cada opción. Las categorías y los productos muestran sus materiales y los eligen en su ventana. Edita con `EditorCatalogo` y elimina con `ConfirmDialog` |
 | `/exportar` | `PantallaExportar` | Rango de fechas (o rápido: este mes, mes pasado, este año, todo), formato CSV o JSON y resumen en vivo de compras y total antes de descargar |
