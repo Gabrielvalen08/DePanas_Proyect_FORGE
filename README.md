@@ -130,6 +130,18 @@ npm run lint
 npm run build      # producción en frontend/dist/
 ```
 
+**Pruebas end-to-end** (Playwright, desde `frontend/`): un navegador real recorre la app completa con su propio backend y una base temporal, así que no tocan `backend/db/depanas.db` y se pueden correr con `npm run dev` abierto.
+
+```bash
+npx playwright install chromium   # solo la primera vez (descarga el navegador)
+npm run test:e2e                  # todas, sin ventana
+npm run test:e2e -- --headed      # viendo el navegador
+npm run test:e2e:ui               # modo interactivo
+npx playwright show-report        # reporte con capturas y video de lo que falló
+```
+
+Detalle en [`frontend/e2e/README.md`](frontend/e2e/README.md).
+
 Sin el backend encendido, el frontend trabaja en modo local con datos de ejemplo. Usuarios de prueba: `Cesar_01` / `1234` (administrador, entra a todo) y `Marta_02` / `5678` (todo menos el Gestor de usuarios). Se siembran en la base al crearla (`backend/db/usuarios.js`) y, en modo local, en `depanas_usuarios`.
 
 Los comandos se probaron en Windows 11.
