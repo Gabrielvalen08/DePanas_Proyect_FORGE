@@ -39,6 +39,11 @@ describe('ConfirmDialog', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
+  it('cancelLabel cambia el texto del botón que cierra', () => {
+    montar({ cancelLabel: 'Seguir editando' })
+    expect(screen.getByRole('button', { name: 'Seguir editando' })).toHaveFocus()
+  })
+
   it('cancelar solo cierra', async () => {
     const { onConfirm, onClose } = montar()
     await userEvent.setup().click(screen.getByRole('button', { name: 'Cancelar' }))

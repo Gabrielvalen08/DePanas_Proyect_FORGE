@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { AlertCircle, Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import AsignarMaterial from './AsignarMaterial'
-import { Boton, Campo, Selector } from './common'
+import { Boton, Campo, ConfirmDialog, Selector } from './common'
 import { asignarMaterial, getAsignacion, getMateriales, getProveedores, necesitaAsignacion } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { ASIGNACION, COMPRA, VALIDACION } from '../utils/mensajes'
@@ -98,6 +98,8 @@ export default function BloqueCompra({
   const [guardando, setGuardando] = useState(false)
   const [intentoGuardar, setIntentoGuardar] = useState(false)
   const [porAsignar, setPorAsignar] = useState(null) // material en la ventana emergente
+  const [porConfirmar, setPorConfirmar] = useState(null) // lista lista para guardar, a la espera del Sí
+  const [confirmandoCancelar, setConfirmandoCancelar] = useState(false)
   const { addToast } = useToast()
 
   const formRef        = useRef(null)
@@ -271,6 +273,12 @@ export default function BloqueCompra({
       })),
     }
 
+    // Todo en orden: se pide confirmar antes de guardar
+    setPorConfirmar(lista)
+  }
+
+  async function guardarConfirmada() {
+    const lista = porConfirmar
     setGuardando(true)
     try {
       const guardada = await alGuardar(lista)
@@ -280,6 +288,12 @@ export default function BloqueCompra({
     } finally {
       setGuardando(false)
     }
+  }
+
+  // Con datos escritos se confirma; un bloque vacío se quita sin preguntar
+  function pedirCancelar() {
+    if (hayDatos) setConfirmandoCancelar(true)
+    else alCancelar?.()
   }
 
   // Sin proveedor ni filas con datos no hay nada que guardar ni que cancelar
@@ -472,7 +486,7 @@ export default function BloqueCompra({
         </section>
 
         <div className={estilos.acciones}>
-          <Boton variante="fantasma" onClick={alCancelar} disabled={!hayDatos && !cancelarVacio}>
+          <Boton variante="fantasma" onClick={pedirCancelar} disabled={!hayDatos && !cancelarVacio}>
             Cancelar
           </Boton>
           <Boton type="submit" variante="primario" sombra icono={<Save />} cargando={guardando} disabled={!hayDatos}>
@@ -483,6 +497,30 @@ export default function BloqueCompra({
 
       {/* Fuera del <form>: los eventos del portal no deben llegar a su onSubmit */}
       <AsignarMaterial material={porAsignar} alGuardar={asignar} alCancelar={omitirAsignacion} />
+
+      <ConfirmDialog
+        isOpen={porConfirmar !== null}
+        onClose={() => setPorConfirmar(null)}
+        onConfirm={guardarConfirmada}
+        title={COMPRA.confirmarGuardar.titulo}
+        message={COMPRA.confirmarGuardar.mensaje(
+          porConfirmar?.proveedor ?? '',
+          porConfirmar?.materiales.length ?? 0,
+          formatearPrecio(total),
+        )}
+        confirmLabel={COMPRA.confirmarGuardar.confirmar}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmandoCancelar}
+        onClose={() => setConfirmandoCancelar(false)}
+        onConfirm={() => alCancelar?.()}
+        title={COMPRA.confirmarCancelar.titulo}
+        message={COMPRA.confirmarCancelar.mensaje}
+        confirmLabel={COMPRA.confirmarCancelar.confirmar}
+        cancelLabel={COMPRA.confirmarCancelar.volver}
+        danger
+      />
     </>
   )
 }

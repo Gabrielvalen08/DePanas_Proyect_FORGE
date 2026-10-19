@@ -52,6 +52,7 @@ describe('PantallaMaestra', () => {
     await usuario.clear(precio)
     await usuario.type(precio, '10')
     await usuario.click(within(edicion).getByRole('button', { name: /guardar cambios/i }))
+    await usuario.click(await screen.findByRole('button', { name: COMPRA.confirmarGuardar.confirmar }))
 
     expect(await screen.findByText(COMPRA.actualizada)).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())

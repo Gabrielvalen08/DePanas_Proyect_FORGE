@@ -52,6 +52,11 @@ function renderizar() {
   )
 }
 
+const guardarYConfirmar = async usuario => {
+  await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+  await usuario.click(await screen.findByRole('button', { name: COMPRA.confirmarGuardar.confirmar }))
+}
+
 async function llenarCompraValida(usuario, bloque = document.body) {
   const en = within(bloque)
   await usuario.type(en.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
@@ -106,7 +111,7 @@ describe('AgregarCompra', () => {
     await llenarCompraValida(usuario)
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
-    await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+    await guardarYConfirmar(usuario)
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
     expect(vi.mocked(guardarLista).mock.calls[0][0].materiales).toHaveLength(1)
@@ -140,14 +145,14 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await llenarCompraValida(usuario)
-    await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+    await guardarYConfirmar(usuario)
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
     expect(guardarLista).toHaveBeenCalledWith(expect.objectContaining({
       proveedor: 'Walmart',
       fecha: fechaHoyISO(),
     }))
-    expect(await screen.findByText(COMPRA.guardada('Walmart', 1))).toBeInTheDocument()
+    expect(await screen.findByText(COMPRA.guardada)).toBeInTheDocument()
     await waitFor(() => expect(screen.getByRole('combobox', { name: 'Proveedor' })).toHaveValue(''))
   })
 
@@ -160,6 +165,36 @@ describe('AgregarCompra', () => {
     await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'W')
     expect(screen.getByRole('button', { name: /guardar compra/i })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeEnabled()
+  })
+
+  it('pide confirmar antes de guardar; Cancelar en la confirmación no guarda', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await llenarCompraValida(usuario)
+    await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+
+    const confirmacion = await screen.findByRole('alertdialog', { name: COMPRA.confirmarGuardar.titulo })
+    expect(within(confirmacion).getByText(COMPRA.confirmarGuardar.mensaje('Walmart', 1, '$3.50'))).toBeInTheDocument()
+    expect(guardarLista).not.toHaveBeenCalled()
+
+    await usuario.click(within(confirmacion).getByRole('button', { name: 'Cancelar' }))
+    expect(guardarLista).not.toHaveBeenCalled()
+    expect(screen.getByRole('combobox', { name: 'Proveedor' })).toHaveValue('Walmart')
+  })
+
+  it('con datos, Cancelar pide confirmar; "Seguir editando" conserva todo y "Sí, cancelar" vacía el formulario', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
+    await usuario.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+    const confirmacion = await screen.findByRole('alertdialog', { name: COMPRA.confirmarCancelar.titulo })
+    await usuario.click(within(confirmacion).getByRole('button', { name: COMPRA.confirmarCancelar.volver }))
+    expect(screen.getByRole('combobox', { name: 'Proveedor' })).toHaveValue('Walmart')
+
+    await usuario.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await usuario.click(await screen.findByRole('button', { name: COMPRA.confirmarCancelar.confirmar }))
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Proveedor' })).toHaveValue(''))
   })
 
   it('"Nueva compra" agrega otro bloque con su propio guardar; cancelar lo quita', async () => {
@@ -189,7 +224,7 @@ describe('AgregarCompra', () => {
     renderizar()
     await llenarCompraValida(usuario)
     expect(screen.getByRole('combobox', { name: 'Material, fila 1' })).toHaveAccessibleDescription('Materia Prima · Cachitos')
-    await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+    await guardarYConfirmar(usuario)
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
     expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({
@@ -265,6 +300,7 @@ describe('AgregarCompra', () => {
     await usuario.click(within(otra).getByRole('button', { name: 'Bebidas' }))
     await usuario.click(within(otra).getByRole('button', { name: 'Todos' }))
     await usuario.click(within(otra).getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: COMPRA.confirmarGuardar.confirmar }))
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
     expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({ material: 'Queso', categoria: 'Bebidas', producto: 'Todos' })

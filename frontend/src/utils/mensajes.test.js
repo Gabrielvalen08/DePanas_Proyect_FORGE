@@ -17,8 +17,9 @@ describe('mensajes (voz de marca)', () => {
   })
 
   it('confirma con singular y plural correctos', () => {
-    expect(COMPRA.guardada('Selectos', 1)).toBe('¡Listo, pana! La compra en Selectos quedó guardada (1 material).')
-    expect(COMPRA.guardada('Selectos', 3)).toMatch(/\(3 materiales\)/)
+    expect(COMPRA.guardada).toBe('¡Listo, pana! Compra guardada.')
+    expect(COMPRA.confirmarGuardar.mensaje('Selectos', 1, '$5.00')).toBe('Se guardará la compra en Selectos con 1 material por $5.00.')
+    expect(COMPRA.confirmarGuardar.mensaje('Selectos', 3, '$5.00')).toMatch(/con 3 materiales/)
     expect(EXPORTAR.descargado(1)).toMatch(/^¡Listo! Descargamos 1 compra\./)
     expect(EXPORTAR.resumen(2, '$9.77')).toBe('2 compras en el rango · $9.77 en total')
   })

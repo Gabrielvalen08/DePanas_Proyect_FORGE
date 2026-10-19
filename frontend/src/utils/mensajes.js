@@ -98,8 +98,7 @@ export const ACCESO = {
 // Compras
 // ---------------------------------------------------------------------------
 export const COMPRA = {
-  guardada: (proveedor, n) =>
-    `¡Listo, pana! La compra en ${proveedor} quedó guardada (${n} ${plural(n, 'material')}).`,
+  guardada: '¡Listo, pana! Compra guardada.',
   errorGuardar: detalle =>
     `No pudimos guardar la compra${detalle ? `: ${detalle}` : ''}. Revisa los datos e inténtalo de nuevo.`,
   actualizada: '¡Chévere! La compra quedó actualizada.',
@@ -113,6 +112,18 @@ export const COMPRA = {
     mensaje: (proveedor, n) =>
       `Se borrará la compra en ${proveedor} con ${n} ${plural(n, 'material')}. Esto no se puede deshacer.`,
     confirmar: 'Sí, eliminar',
+  },
+  confirmarGuardar: {
+    titulo: '¿Guardamos esta compra?',
+    mensaje: (proveedor, n, total) =>
+      `Se guardará la compra en ${proveedor} con ${n} ${plural(n, 'material')} por ${total}.`,
+    confirmar: 'Sí, guardar',
+  },
+  confirmarCancelar: {
+    titulo: '¿Cancelamos esta compra?',
+    mensaje: 'Se perderá lo que escribiste hasta ahora.',
+    confirmar: 'Sí, cancelar',
+    volver: 'Seguir editando',
   },
   faltaAsignacion: material =>
     `La compra no se guardó: falta decirnos la categoría y el producto de «${material}».`,

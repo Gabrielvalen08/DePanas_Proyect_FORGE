@@ -8,7 +8,7 @@ import estilos from './ConfirmDialog.module.css'
  * ConfirmDialog
  * Confirmación (alertdialog). Al abrir, el foco va a "Cancelar", nunca a la
  * acción destructiva. Props: isOpen, onClose, onConfirm, title, message,
- * confirmLabel, danger
+ * confirmLabel, cancelLabel, danger
  */
 export default function ConfirmDialog({
   isOpen,
@@ -17,6 +17,7 @@ export default function ConfirmDialog({
   title = '¿Estás seguro?',
   message = 'Esta acción no se puede deshacer.',
   confirmLabel = 'Confirmar',
+  cancelLabel = 'Cancelar',
   danger = false,
 }) {
   const cancelarRef = useRef(null)
@@ -36,7 +37,7 @@ export default function ConfirmDialog({
       </CuerpoModal>
       <PieModal>
         <Boton ref={cancelarRef} variante="fantasma" onClick={onClose} id="confirm-cancel-btn">
-          Cancelar
+          {cancelLabel}
         </Boton>
         <Boton
           variante={danger ? 'peligro' : 'primario'}

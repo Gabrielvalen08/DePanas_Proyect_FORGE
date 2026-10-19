@@ -14,7 +14,7 @@ import { Boton, Campo, Selector, Tarjeta, Insignia, Modal, ConfirmDialog, Cuerpo
 | `Tarjeta`     | `titulo`, `icono`, `accion`, `sombra`, `franja`, `interactiva` + `a` u `onClick` |
 | `Insignia`    | `tono` (`neutro` · `marca` · `exito` · `aviso` · `error`)                       |
 | `Modal`       | `abierto`, `alCerrar`, `titulo`, `icono`, `rol` (`dialog` · `alertdialog`), `anchoMax` (`sm` · `md`), `focoInicial` (ref) |
-| `ConfirmDialog` | `isOpen`, `onClose`, `onConfirm`, `title`, `message`, `confirmLabel`, `danger`. Confirmación (`alertdialog`): el foco inicial va a «Cancelar», nunca a la acción. Úsalo antes de cualquier acción que guarde, cancele o elimine |
+| `ConfirmDialog` | `isOpen`, `onClose`, `onConfirm`, `title`, `message`, `confirmLabel`, `cancelLabel`, `danger`. Confirmación (`alertdialog`): el foco inicial va a «Cancelar», nunca a la acción. Úsalo antes de cualquier acción que guarde, cancele o elimine |
 | `EstadoVacio` | `icono`, `titulo`, `texto`, `accion`, `cargando`                                |
 | `SelectorArchivo` | `id`, `etiqueta`, `ayuda`, `accept`, `nombre`, `textoVacio`, `textoSoltar`, `disabled`, `onElegir(archivo)`; `ref` al input. En lugar del botón nativo de archivo, que no sigue la marca |
 
