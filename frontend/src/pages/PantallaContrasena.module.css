@@ -11,14 +11,18 @@
   overflow: hidden;
 }
 
-/* Patrón de fondo sutil con los colores de la marca */
+/*
+ * Fondo claro: un velo de Crema claro sobre el crema y el collage del body, con los
+ * toques de marca apenas insinuados. El collage sigue viéndose, más suave.
+ */
 .fondoDecorativo {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgb(239 125 5 / 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgb(20 68 40 / 0.06) 0%, transparent 40%);
+  background-image:
+    radial-gradient(circle at 10% 20%, rgb(239 125 5 / 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgb(20 68 40 / 0.03) 0%, transparent 40%),
+    linear-gradient(color-mix(in srgb, var(--crema-claro) 72%, transparent), color-mix(in srgb, var(--crema-claro) 72%, transparent));
 }
 
 .tarjeta {

@@ -18,7 +18,7 @@ export default function BarraInferior({ onCerrarSesion }) {
   const { tienePermiso } = useAuth()
   const { pathname } = useLocation()
   const [masAbierto, setMasAbierto] = useState(false)
-  const visibles = [...itemsNavegacion, ...itemsPie].filter(item => tienePermiso(item.a))
+  const visibles = [...itemsNavegacion, ...itemsPie].filter(item => !item.oculto && tienePermiso(item.a))
   const enBarra = visibles.filter(item => item.enBarra)
   const enMas = visibles.filter(item => !item.enBarra)
   const masActivo = enMas.some(({ a }) => pathname === a || pathname.startsWith(`${a}/`))

@@ -121,9 +121,22 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
 
     const menu = screen.getByRole('navigation', { name: 'Menú principal' })
     const enlaces = within(menu).getAllByRole('link').map(e => e.textContent)
-    expect(enlaces).toEqual(['Agregar compra', 'Lista de compras', 'Catálogo', 'Exportar datos', 'Cargar datos'])
+    // Exportar y Cargar datos ya no salen en el menú, pero sus rutas siguen funcionando
+    expect(enlaces).toEqual(['Agregar compra', 'Lista de compras', 'Catálogo'])
     await usuario.click(within(menu).getByRole('link', { name: 'Catálogo' }))
     expect(await screen.findByRole('heading', { name: 'Catálogo', level: 1 })).toBeInTheDocument()
+  })
+
+  it('Exportar y Cargar datos no están en el menú, pero se abren por su ruta', async () => {
+    iniciarComo(CESAR)
+    const { unmount } = renderizarApp('/exportar')
+    expect(await screen.findByRole('heading', { name: 'Exportar datos', level: 1 })).toBeInTheDocument()
+    const menu = screen.getByRole('navigation', { name: 'Menú principal' })
+    expect(within(menu).queryByRole('link', { name: /exportar datos|cargar datos/i })).not.toBeInTheDocument()
+    unmount()
+
+    renderizarApp('/cargar')
+    expect(await screen.findByRole('heading', { name: 'Cargar datos', level: 1 })).toBeInTheDocument()
   })
 
   it('la ruta vieja /configuracion lleva al Catálogo', async () => {
@@ -178,12 +191,12 @@ describe('App - barra inferior en móvil', () => {
     await usuario.click(within(barra).getByRole('button', { name: 'Más' }))
     const hoja = await screen.findByRole('dialog', { name: 'Más opciones' })
     const opciones = within(hoja).getAllByRole('listitem').map(li => li.textContent)
-    expect(opciones).toEqual(['Exportar datos', 'Cargar datos', 'Gestor de usuarios', 'Cerrar sesión'])
+    expect(opciones).toEqual(['Gestor de usuarios', 'Cerrar sesión'])
 
     // Elegir una opción navega y cierra la hoja
-    await usuario.click(within(hoja).getByRole('link', { name: 'Cargar datos' }))
+    await usuario.click(within(hoja).getByRole('link', { name: 'Gestor de usuarios' }))
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Más opciones' })).not.toBeInTheDocument())
-    expect(await screen.findByRole('heading', { name: 'Cargar datos', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Gestor de usuarios', level: 1 })).toBeInTheDocument()
   })
 
   it('un operador solo ve en "Más" lo que tiene permitido, y siempre Cerrar sesión', async () => {
