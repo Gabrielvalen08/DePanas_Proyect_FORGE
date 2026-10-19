@@ -26,7 +26,7 @@ function AppContenido() {
   const { autenticado, sesion, salir, tienePermiso } = useAuth()
   const { addToast } = useToast()
 
-  function bloquear() {
+  function cerrarSesion() {
     salir()
     addToast(ACCESO.bloqueado)
   }
@@ -61,7 +61,7 @@ function AppContenido() {
     <>
       <a href="#contenido" className="saltar-contenido">Saltar al contenido</a>
       <div className={estilos.layout}>
-        <Sidebar onBloquear={bloquear} />
+        <Sidebar onCerrarSesion={cerrarSesion} />
         <div className={estilos.areaPrincipal}>
           <Routes>
             {/* Agregar compra es la página principal */}
@@ -84,7 +84,7 @@ function AppContenido() {
             <Route path="*" element={<Navigate to={inicio} replace />} />
           </Routes>
         </div>
-        <BarraInferior onBloquear={bloquear} />
+        <BarraInferior onCerrarSesion={cerrarSesion} />
       </div>
     </>
   )

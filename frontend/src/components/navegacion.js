@@ -12,7 +12,7 @@ export const itemsNavegacion = [
   { a: '/cargar', Icono: Upload, etiqueta: 'Cargar datos', etiquetaCorta: 'Cargar', titulo: 'Cargar datos' },
 ]
 
-// Va aparte, al pie del menú y justo arriba de "Bloquear". Solo lo ve el administrador (ver utils/permisos.js)
+// Va aparte, al pie del menú y justo arriba de "Cerrar sesión". Solo lo ve el administrador (ver utils/permisos.js)
 export const itemUsuarios = {
   a: '/usuarios', Icono: UsersRound, etiqueta: 'Gestor de usuarios', etiquetaCorta: 'Usuarios', titulo: 'Gestor de usuarios',
 }

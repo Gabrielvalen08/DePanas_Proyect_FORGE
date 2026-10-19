@@ -12,7 +12,7 @@ const V = USUARIOS.validacion
 /**
  * EditorUsuario
  * Ventana para crear un usuario o editar uno existente (Gestor de usuarios):
- * usuario, nombre, contraseña (con confirmación) y las pantallas a las que entra.
+ * nombre, nombre de usuario para ingresar, contraseña (con confirmación) y las pantallas a las que entra.
  * El administrador entra a todo: sus pantallas no se eligen.
  *
  * Props:
@@ -56,10 +56,9 @@ function Formulario({ registro, usuarios, alGuardar, alCerrar, primerCampoRef })
   const [errores, setErrores] = useState({})
   const [guardando, setGuardando] = useState(false)
   const propioUsuarioRef = useRef(null)
-  const propioNombreRef = useRef(null)
-  // Al abrir, el foco va al usuario (crear) o al nombre (editar: el usuario no se cambia)
-  const usuarioRef = nuevo ? primerCampoRef : propioUsuarioRef
-  const nombreRef = nuevo ? propioNombreRef : primerCampoRef
+  // Al abrir, el foco va al nombre (el usuario para ingresar va debajo y, al editar, no se cambia)
+  const usuarioRef = propioUsuarioRef
+  const nombreRef = primerCampoRef
   const contrasenaRef = useRef(null)
   const confirmacionRef = useRef(null)
   const permisosRef = useRef(null)
@@ -76,7 +75,7 @@ function Formulario({ registro, usuarios, alGuardar, alCerrar, primerCampoRef })
   /** Marca los errores y lleva el foco al primero */
   function mostrarErrores(nuevos) {
     setErrores(nuevos)
-    const refs = { usuario: usuarioRef, nombre: nombreRef, contrasena: contrasenaRef, confirmacion: confirmacionRef, permisos: permisosRef }
+    const refs = { nombre: nombreRef, usuario: usuarioRef, contrasena: contrasenaRef, confirmacion: confirmacionRef, permisos: permisosRef }
     const primero = Object.keys(refs).find(c => nuevos[c])
     refs[primero]?.current?.focus()
   }
@@ -131,6 +130,18 @@ function Formulario({ registro, usuarios, alGuardar, alCerrar, primerCampoRef })
       <CuerpoModal>
         <div className={estilos.campos}>
           <Campo
+            ref={nombreRef}
+            id="editor-usuario-nombre"
+            etiqueta={USUARIOS.campos.nombre}
+            value={nombre}
+            autoComplete="off"
+            onChange={e => {
+              setNombre(e.target.value)
+              limpiarError('nombre')
+            }}
+            error={errores.nombre}
+          />
+          <Campo
             ref={usuarioRef}
             id="editor-usuario-usuario"
             etiqueta={USUARIOS.campos.usuario}
@@ -144,18 +155,6 @@ function Formulario({ registro, usuarios, alGuardar, alCerrar, primerCampoRef })
             }}
             error={errores.usuario}
             ayuda={nuevo ? USUARIOS.ayudas.usuario : USUARIOS.ayudas.usuarioFijo}
-          />
-          <Campo
-            ref={nombreRef}
-            id="editor-usuario-nombre"
-            etiqueta={USUARIOS.campos.nombre}
-            value={nombre}
-            autoComplete="off"
-            onChange={e => {
-              setNombre(e.target.value)
-              limpiarError('nombre')
-            }}
-            error={errores.nombre}
           />
           <div className={estilos.par}>
             <Campo

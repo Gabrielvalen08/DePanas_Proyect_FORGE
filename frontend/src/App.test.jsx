@@ -89,7 +89,7 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     })
   })
 
-  it('permite bloquear el sistema y volver a pedir contraseña', async () => {
+  it('permite cerrar sesión y volver a pedir contraseña', async () => {
     const usuario = userEvent.setup()
     renderizarApp()
 
@@ -104,9 +104,8 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
       expect(screen.getByRole('navigation', { name: 'Menú principal' })).toBeInTheDocument()
     })
 
-    // Hacer clic en Bloquear
-    const botonBloquear = screen.getByRole('button', { name: 'Bloquear' })
-    await usuario.click(botonBloquear)
+    // Hacer clic en Cerrar sesión
+    await usuario.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
 
     // Debe volver a la pantalla de contraseña
     expect(screen.getByRole('heading', { name: ACCESO.titulo })).toBeInTheDocument()
@@ -179,7 +178,7 @@ describe('App - barra inferior en móvil', () => {
     await usuario.click(within(barra).getByRole('button', { name: 'Más' }))
     const hoja = await screen.findByRole('dialog', { name: 'Más opciones' })
     const opciones = within(hoja).getAllByRole('listitem').map(li => li.textContent)
-    expect(opciones).toEqual(['Exportar datos', 'Cargar datos', 'Gestor de usuarios', 'Bloquear'])
+    expect(opciones).toEqual(['Exportar datos', 'Cargar datos', 'Gestor de usuarios', 'Cerrar sesión'])
 
     // Elegir una opción navega y cierra la hoja
     await usuario.click(within(hoja).getByRole('link', { name: 'Cargar datos' }))
@@ -187,7 +186,7 @@ describe('App - barra inferior en móvil', () => {
     expect(await screen.findByRole('heading', { name: 'Cargar datos', level: 1 })).toBeInTheDocument()
   })
 
-  it('un operador solo ve en "Más" lo que tiene permitido, y siempre Bloquear', async () => {
+  it('un operador solo ve en "Más" lo que tiene permitido, y siempre Cerrar sesión', async () => {
     const usuario = userEvent.setup()
     iniciarComo({ ...MARTA, permisos: ['/', '/compras'] })
     renderizarApp('/')
@@ -197,9 +196,9 @@ describe('App - barra inferior en móvil', () => {
 
     await usuario.click(within(barra).getByRole('button', { name: 'Más' }))
     const hoja = await screen.findByRole('dialog', { name: 'Más opciones' })
-    expect(within(hoja).getAllByRole('listitem').map(li => li.textContent)).toEqual(['Bloquear'])
+    expect(within(hoja).getAllByRole('listitem').map(li => li.textContent)).toEqual(['Cerrar sesión'])
 
-    await usuario.click(within(hoja).getByRole('button', { name: 'Bloquear' }))
+    await usuario.click(within(hoja).getByRole('button', { name: 'Cerrar sesión' }))
     expect(await screen.findByRole('button', { name: /ingresar/i })).toBeInTheDocument()
   })
 })

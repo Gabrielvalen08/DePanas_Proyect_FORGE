@@ -37,12 +37,14 @@
   border-bottom: none;
 }
 
+/* El usuario y su rol (y «Tú») van en una sola línea */
 .usuario {
   font-weight: 600;
+  white-space: nowrap;
 }
 
-.usuario > span:first-child {
-  margin-right: var(--space-2);
+.usuario > * + * {
+  margin-left: var(--space-2);
 }
 
 .todas {

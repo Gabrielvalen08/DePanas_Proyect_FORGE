@@ -325,7 +325,7 @@ export const USUARIOS = {
   agregar: 'Agregar usuario',
   cargando: 'Buscando los usuarios…',
   errorCargar: 'No pudimos traer los usuarios. Recarga la página para intentarlo de nuevo.',
-  columnas: { usuario: 'Usuario', nombre: 'Nombre', rol: 'Rol', pantallas: 'Pantallas' },
+  columnas: { usuario: 'Usuario', nombre: 'Nombre', pantallas: 'Pantallas' },
   roles: { admin: 'Administrador', operador: 'Operador' },
   todas: 'Todas',
   cuentaPantallas: (n, total) => `${n} de ${total}`,
@@ -335,7 +335,7 @@ export const USUARIOS = {
   tituloNuevo: 'Nuevo usuario',
   tituloEditar: usuario => `Editar a ${usuario}`,
   campos: {
-    usuario: 'Usuario',
+    usuario: 'Nombre de usuario para ingresar',
     nombre: 'Nombre',
     contrasena: 'Contraseña',
     contrasenaNueva: 'Nueva contraseña',
