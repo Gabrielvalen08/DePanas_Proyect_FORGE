@@ -5,7 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 
 export default [
-  { ignores: ['dist', 'node_modules'] },
+  { ignores: ['dist', 'node_modules', 'playwright-report', 'test-results', 'e2e/.tmp'] },
   js.configs.recommended,
   {
     files: ['**/*.{js,jsx}'],

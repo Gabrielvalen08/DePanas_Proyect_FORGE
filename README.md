@@ -125,6 +125,7 @@ La base se crea sola en `backend/db/depanas.db` (ignorada por git) con el catál
 npm install
 npm run dev        # http://localhost:5173 (redirige /api al backend)
 npm run test:run   # tests
+npm run test:e2e   # pruebas end-to-end con Playwright (ver frontend/e2e/README.md)
 npm run lint
 npm run build      # producción en frontend/dist/
 ```
@@ -153,7 +154,7 @@ Más detalle en [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) y [docs/DECISIONS.md]
 
 - Una rama por cambio (por ejemplo `refactor/frontend-marca`, `fix/db-bloqueantes`) y Pull Request hacia `main`.
 - Commits con prefijo y área: `feat(compras): …`, `fix(agregar-compra): …`, `refactor(estilos): …`, `chore: …`, `docs: …`, `test: …`.
-- Antes de abrir un PR: `npm run lint`, `npm run test:run` y `npm run build` en `frontend/`, y `npm test` en `backend/`.
+- Antes de abrir un PR: `npm run lint`, `npm run test:run`, `npm run test:e2e` y `npm run build` en `frontend/`, y `npm test` en `backend/`.
 - Comandos básicos de Git: [PASOS_GIT.md](PASOS_GIT.md).
 
 ## Equipo FORGE

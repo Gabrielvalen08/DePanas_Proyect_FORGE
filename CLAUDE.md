@@ -24,6 +24,7 @@ Hay un **frontend** (`frontend/`) y un **backend** (`backend/`): Node.js + Expre
 - `npm run lint`: ESLint 9 con `jsx-a11y` (strict) y `react-hooks` v7. Prohíbe `style={{}}`
 - `npm run test`: Vitest en modo watch; `npm run test:run` una sola vez
 - Un solo archivo de test: `npx vitest run src/pages/AgregarCompra.test.jsx`
+- `npm run test:e2e`: pruebas end-to-end con Playwright (`e2e/`, config en `playwright.config.js`). Levantan su propio backend (puerto 3100, base temporal `e2e/.tmp/e2e.db` vía `DEPANAS_DB`) y Vite (5174, `DEPANAS_API`), así que no tocan `depanas.db` y conviven con `npm run dev`. Proyectos `escritorio` y `movil` (Pixel 7). `e2e/ayudantes.js` hace fallar una prueba si la página lanza una excepción, escribe un error en consola o el backend responde 5xx. La primera vez: `npx playwright install chromium`. `--headed` para ver el navegador, `npm run test:e2e:ui` para el modo interactivo y `npx playwright show-report` para el reporte con capturas, video y trace de lo que falló. Una pantalla o un flujo nuevo lleva su prueba en `e2e/`; los textos se importan de `src/utils/mensajes.js`.
 
 `react-hooks` v7 rechaza `setState` síncrono dentro de `useEffect`: actualiza estado desde callbacks o promesas (ver la carga en `PantallaMaestra.jsx`).
 

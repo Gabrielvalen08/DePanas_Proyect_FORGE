@@ -7,7 +7,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        // DEPANAS_API: otro backend (las pruebas e2e levantan uno aparte, ver playwright.config.js)
+        target: process.env.DEPANAS_API || 'http://localhost:3000',
         changeOrigin: true,
       }
     }
@@ -17,5 +18,7 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.js',
     css: { modules: { classNameStrategy: 'non-scoped' } },
+    // Las pruebas de e2e/ son de Playwright (npm run test:e2e), no de Vitest
+    exclude: ['**/node_modules/**', 'e2e/**'],
   },
 })
