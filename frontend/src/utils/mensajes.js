@@ -139,6 +139,7 @@ export const VALIDACION = {
   material: 'Escribe qué compraste',
   cantidad: 'La cantidad debe ser mayor a 0',
   precio: 'El precio debe ser mayor a 0',
+  filaIncompleta: 'Completa la fila anterior para agregar otra',
   rangoFechas: 'La fecha final debe ser igual o posterior a la inicial',
 }
 

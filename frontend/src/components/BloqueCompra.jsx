@@ -299,6 +299,9 @@ export default function BloqueCompra({
   // Sin proveedor ni filas con datos no hay nada que guardar ni que cancelar
   const hayDatos = Boolean(proveedor.trim()) || filas.some(f => !estaVacia(f))
 
+  // No se abre una fila nueva mientras la última no tenga material, cantidad y precio
+  const ultimaIncompleta = Object.keys(validarFila(filas[filas.length - 1])).length > 0
+
   const total = filas.reduce((suma, f) => suma + (Number(f.monto) > 0 ? Number(f.monto) : 0), 0)
 
   const resumen = [
@@ -475,9 +478,21 @@ export default function BloqueCompra({
           </table>
 
           <div className={estilos.pieTabla}>
-            <Boton variante="secundario" icono={<Plus />} onClick={agregarFila} className={estilos.botonPunteado}>
-              Agregar otra fila
-            </Boton>
+            <div className={estilos.agregarFila}>
+              <Boton
+                variante="secundario"
+                icono={<Plus />}
+                onClick={agregarFila}
+                disabled={ultimaIncompleta}
+                aria-describedby={ultimaIncompleta ? `${id}-ayuda-fila` : undefined}
+                className={estilos.botonPunteado}
+              >
+                Agregar otra fila
+              </Boton>
+              {ultimaIncompleta && (
+                <p id={`${id}-ayuda-fila`} className={estilos.ayudaFila}>{VALIDACION.filaIncompleta}</p>
+              )}
+            </div>
             <p className={estilos.total}>
               <span className={estilos.totalEtiqueta}>Total</span>
               <span className={estilos.totalValor} aria-live="polite">{formatearPrecio(total)}</span>

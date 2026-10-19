@@ -57,6 +57,12 @@ const guardarYConfirmar = async usuario => {
   await usuario.click(await screen.findByRole('button', { name: COMPRA.confirmarGuardar.confirmar }))
 }
 
+async function llenarFila(usuario, n, { material = 'Tocino La Rioja', cantidad = '2', monto = '3.5' } = {}) {
+  await usuario.type(screen.getByRole('combobox', { name: `Material, fila ${n}` }), material)
+  await usuario.type(screen.getByLabelText(`Cantidad, fila ${n}`), cantidad)
+  await usuario.type(screen.getByLabelText(`Precio, fila ${n}`), monto)
+}
+
 async function llenarCompraValida(usuario, bloque = document.body) {
   const en = within(bloque)
   await usuario.type(en.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
@@ -84,9 +90,9 @@ describe('AgregarCompra', () => {
   it('no muestra errores al salir de los campos ni al agregar filas antes de guardar', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    await usuario.click(screen.getByRole('combobox', { name: 'Material, fila 1' }))
+    await llenarFila(usuario, 1)
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
-    await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
+    await usuario.click(screen.getByRole('combobox', { name: 'Material, fila 2' }))
     await usuario.tab()
 
     expect(screen.queryByRole('alert', { name: VALIDACION.resumen })).not.toBeInTheDocument()
@@ -109,7 +115,6 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await llenarCompraValida(usuario)
-    await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
     await guardarYConfirmar(usuario)
 
@@ -135,7 +140,7 @@ describe('AgregarCompra', () => {
   it('el total suma los montos de las filas', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    await usuario.type(screen.getByLabelText('Precio, fila 1'), '3.5')
+    await llenarFila(usuario, 1)
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
     await usuario.type(screen.getByLabelText('Precio, fila 2'), '1.25')
     expect(screen.getByText('$4.75')).toBeInTheDocument()
@@ -211,10 +216,28 @@ describe('AgregarCompra', () => {
     expect(screen.getByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
   })
 
+  it('no deja agregar otra fila mientras la última esté incompleta, y explica por qué', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const agregar = screen.getByRole('button', { name: /agregar otra fila/i })
+    expect(agregar).toBeDisabled()
+    expect(agregar).toHaveAccessibleDescription(VALIDACION.filaIncompleta)
+
+    await usuario.type(screen.getByRole('combobox', { name: 'Material, fila 1' }), 'Tocino La Rioja')
+    await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
+    expect(agregar).toBeDisabled()
+
+    await usuario.type(screen.getByLabelText('Precio, fila 1'), '3.5')
+    expect(agregar).toBeEnabled()
+    await usuario.click(agregar)
+    expect(screen.getByRole('button', { name: /agregar otra fila/i })).toBeDisabled()
+  })
+
   it('agregar fila lleva el foco a su Material; nunca quedan menos de 1', async () => {
     const usuario = userEvent.setup()
     renderizar()
     expect(screen.getByRole('button', { name: 'Eliminar fila 1' })).toBeDisabled()
+    await llenarFila(usuario, 1)
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
     expect(screen.getByRole('combobox', { name: 'Material, fila 2' })).toHaveFocus()
   })
