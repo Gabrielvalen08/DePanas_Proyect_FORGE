@@ -5,7 +5,8 @@
  * opciones: cada compra guardada registra lo suyo (db.js, registrarCompra).
  *
  *   GET    /api/catalogo                    → { proveedores, categorias, productos,
- *                                               materiales: [{ nombre, categoria, producto }], uso }
+ *                                               materiales: [{ nombre, categoria, producto }], uso,
+ *                                               precios: { material: { precio, unidad } } }
  *   PUT    /api/catalogo/materiales/:nombre → asigna { categoria, producto } a un material
  *                                             (lo crea si no existe; usado al registrar compras)
  *   POST   /api/catalogo/:tipo              → agrega { nombre } (material: + categoria y producto;
@@ -49,6 +50,22 @@ function leerUso(db) {
   }
 }
 
+/**
+ * Precio unitario sugerido de cada material: el de su última compra (la de fecha
+ * más reciente y, a igual fecha, la registrada después), con la unidad en que se
+ * compró. Claves en minúsculas. Cambia solo al guardar otra compra más reciente.
+ */
+function leerPrecios(db) {
+  const precios = {}
+  const filas = db.prepare(
+    'SELECT material, cantidad, monto, unidad FROM ingresos WHERE cantidad > 0 AND monto > 0 ORDER BY fecha ASC, id ASC'
+  ).all()
+  for (const f of filas) {
+    precios[f.material.trim().toLowerCase()] = { precio: Math.round((f.monto / f.cantidad) * 10000) / 10000, unidad: f.unidad }
+  }
+  return precios
+}
+
 export function leerCatalogo(db) {
   const nombres = tipo => ordenar(db.prepare('SELECT nombre FROM catalogo WHERE tipo = ?').all(tipo).map(f => f.nombre))
   return {
@@ -59,6 +76,7 @@ export function leerCatalogo(db) {
       .map(m => ({ ...m }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
     uso: leerUso(db),
+    precios: leerPrecios(db),
   }
 }
 

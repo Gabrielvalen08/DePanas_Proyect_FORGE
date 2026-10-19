@@ -230,6 +230,33 @@ export function getAsignacion(material) {
   return { existe: false, nombre: (material || '').trim(), categoria: '', producto: '' }
 }
 
+/**
+ * Precio unitario sugerido de un material: el de su última compra (la de fecha
+ * más reciente), con la unidad en que se compró. { precio, unidad } o null si
+ * nunca se compró. En modo servidor lo calcula el backend (GET /api/catalogo).
+ */
+export function getPrecioSugerido(material) {
+  const k = clave(material)
+  if (!k) return null
+  if (catalogoServidor) {
+    const sugerido = catalogoServidor.precios?.[k]
+    return sugerido ? { ...sugerido } : null
+  }
+  let sugerido = null
+  // Orden estable por fecha: ante una misma fecha gana la compra registrada después
+  const listas = getListas().map((l, i) => ({ l, i })).sort((a, b) => a.l.fecha.localeCompare(b.l.fecha) || a.i - b.i)
+  for (const { l } of listas) {
+    for (const m of l.materiales) {
+      const monto = Number(m.monto !== undefined ? m.monto : m.precio)
+      const cantidad = Number(m.cantidad)
+      if (clave(m.material) === k && cantidad > 0 && monto > 0) {
+        sugerido = { precio: Math.round((monto / cantidad) * 10000) / 10000, unidad: m.unidad || 'unidad' }
+      }
+    }
+  }
+  return sugerido
+}
+
 /** true si al material le falta la categoría o el producto */
 export function necesitaAsignacion(material) {
   if (!(material || '').trim()) return false

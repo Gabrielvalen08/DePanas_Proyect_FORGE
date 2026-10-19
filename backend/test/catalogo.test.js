@@ -212,3 +212,27 @@ test('materiales: un material que no existe o una lista inválida se rechazan si
   assert.equal(material(cat, 'Harina PAN').categoria, 'Materia Prima')
   assert.equal((await pedir(url(base, 'producto', 'Arepas'), 'PUT', { materiales: 'Harina PAN' })).status, 400)
 })
+
+test('precios: cada material sugiere el precio unitario de su última compra y se actualiza con una más reciente', async t => {
+  const base = await levantar(t)
+  const comprar = (fecha, cantidad, monto, unidad = 'bolsa') => pedir(`${base}/compras`, 'POST', {
+    proveedor: 'Selectos', fecha,
+    materiales: [{ material: 'Arroz', cantidad, unidad, monto, categoria: 'Materia Prima', producto: 'Todos' }],
+  })
+
+  assert.deepEqual((await catalogo(base)).precios, {})
+
+  await comprar('2026-10-01', 5, 5)
+  assert.deepEqual((await catalogo(base)).precios.arroz, { precio: 1, unidad: 'bolsa' })
+
+  await comprar('2026-10-08', 5, 6)
+  assert.deepEqual((await catalogo(base)).precios.arroz, { precio: 1.2, unidad: 'bolsa' })
+
+  // Una compra más antigua registrada después no pisa el precio más reciente
+  await comprar('2026-09-01', 2, 1)
+  assert.equal((await catalogo(base)).precios.arroz.precio, 1.2)
+
+  // Se conserva la unidad de esa compra y los decimales largos se redondean
+  await comprar('2026-10-09', 3, 1, 'kg')
+  assert.deepEqual((await catalogo(base)).precios.arroz, { precio: 0.3333, unidad: 'kg' })
+})
