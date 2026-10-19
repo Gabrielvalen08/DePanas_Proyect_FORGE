@@ -68,11 +68,11 @@ export default function PantallaCatalogo() {
                   <NavLink
                     to={`/catalogo/${ruta}`}
                     className={({ isActive }) => [estilos.seccion, isActive && estilos.seccionActiva].filter(Boolean).join(' ')}
+                    title={descripcion}
                   >
                     <span className={estilos.seccionIcono} aria-hidden="true"><Icono size={22} /></span>
                     <span className={estilos.seccionTextos}>
                       <span className={estilos.seccionTitulo}>{titulo}</span>
-                      <span className={estilos.seccionDescripcion}>{descripcion}</span>
                     </span>
                     {catalogo && (
                       <Insignia tono="neutro" className={estilos.seccionCuenta}>{filasDe(catalogo, t).length}</Insignia>
@@ -143,23 +143,25 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
         titulo={titulo}
         icono={<Icono />}
         accion={
-          <Boton variante="primario" icono={<Plus />} onClick={() => setEdicion({ registro: null })}>
-            {PANTALLA_CATALOGO.agregar(tipo)}
-          </Boton>
+          // El buscador va arriba, en el encabezado de la lista, junto a Agregar
+          <div className={estilos.barra}>
+            <Campo
+              id={`buscar-${tipo}`}
+              etiqueta={PANTALLA_CATALOGO.buscar(tipo)}
+              etiquetaOculta
+              prefijo={<Search size={16} />}
+              placeholder={`${PANTALLA_CATALOGO.buscar(tipo)}…`}
+              value={busqueda}
+              autoComplete="off"
+              onChange={e => setBusqueda(e.target.value)}
+              className={estilos.buscador}
+            />
+            <Boton variante="primario" icono={<Plus />} onClick={() => setEdicion({ registro: null })}>
+              {PANTALLA_CATALOGO.agregar(tipo)}
+            </Boton>
+          </div>
         }
       >
-        <div className={estilos.buscador}>
-          <Campo
-            id={`buscar-${tipo}`}
-            etiqueta={PANTALLA_CATALOGO.buscar(tipo)}
-            etiquetaOculta
-            prefijo={<Search size={16} />}
-            placeholder={`${PANTALLA_CATALOGO.buscar(tipo)}…`}
-            value={busqueda}
-            autoComplete="off"
-            onChange={e => setBusqueda(e.target.value)}
-          />
-        </div>
 
         {todas.length === 0 ? (
           <EstadoVacio icono={<Icono />} titulo={PANTALLA_CATALOGO.vacio(tipo)} />

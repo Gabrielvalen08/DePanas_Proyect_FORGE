@@ -18,8 +18,8 @@
   align-items: center;
   gap: var(--space-3);
   height: 100%;
-  min-height: 4.5rem;
-  padding: var(--space-3) var(--space-4);
+  min-height: 3.5rem;
+  padding: var(--space-2) var(--space-4);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radio-tarjeta);
   background: var(--color-surface);
@@ -48,8 +48,8 @@
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: var(--radio-pildora);
   background: var(--color-surface-soft);
   color: var(--color-text);
@@ -75,21 +75,24 @@
   text-transform: uppercase;
 }
 
-.seccionDescripcion {
-  font-size: 0.875rem;
-  line-height: 1.35;
-  color: var(--color-text-muted);
-}
-
 .seccionCuenta {
   flex-shrink: 0;
 }
 
 /* ---------- Lista de una sección ---------- */
-/* Mismo margen lateral que las celdas de la tabla */
+/* Buscador y Agregar en el encabezado de la lista */
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
 .buscador {
-  max-width: 28rem;
-  padding: var(--space-3) var(--space-4);
+  flex: 1 1 14rem;
+  width: 22rem;
+  max-width: 100%;
 }
 
 .tabla {
@@ -250,7 +253,6 @@
     text-overflow: ellipsis;
   }
 
-  .seccionDescripcion,
   .seccionCuenta {
     display: none;
   }
