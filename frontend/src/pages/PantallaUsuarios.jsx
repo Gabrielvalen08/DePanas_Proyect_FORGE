@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import { Loader2, Pencil, Trash2, UserPlus, UsersRound } from 'lucide-react'
 import Header from '../components/Header'
 import EditorUsuario from '../components/EditorUsuario'
-import ConfirmModal from '../components/ConfirmModal'
 import { tituloDeRuta } from '../components/navegacion'
-import { Boton, EstadoVacio, Insignia, Tarjeta } from '../components/common'
+import { Boton, ConfirmDialog, EstadoVacio, Insignia, Tarjeta } from '../components/common'
 import { crearUsuario, editarUsuario, eliminarUsuario, fetchUsuarios } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -139,7 +138,7 @@ export default function PantallaUsuarios() {
         alCerrar={() => setEdicion(null)}
       />
 
-      <ConfirmModal
+      <ConfirmDialog
         isOpen={porEliminar !== null}
         onClose={() => setPorEliminar(null)}
         onConfirm={() => eliminar(porEliminar)}

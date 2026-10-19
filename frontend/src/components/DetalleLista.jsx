@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Pencil, ShoppingCart, Trash2 } from 'lucide-react'
 import BloqueCompra from './BloqueCompra'
-import ConfirmModal from './ConfirmModal'
-import { Boton, CuerpoModal, Modal, PieModal } from './common'
+import { Boton, ConfirmDialog, CuerpoModal, Modal, PieModal } from './common'
 import { actualizarLista, eliminarLista, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { formatearFechaTexto, formatearPrecio } from '../utils/formato'
@@ -133,7 +132,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
         )}
       </Modal>
 
-      <ConfirmModal
+      <ConfirmDialog
         isOpen={confirmando}
         onClose={() => setConfirmando(false)}
         onConfirm={eliminar}

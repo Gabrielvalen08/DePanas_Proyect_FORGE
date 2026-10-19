@@ -1,15 +1,16 @@
 import { useRef } from 'react'
 import { AlertTriangle } from 'lucide-react'
-import { Boton, CuerpoModal, Modal, PieModal } from './common'
-import estilos from './ConfirmModal.module.css'
+import Boton from './Boton'
+import Modal, { CuerpoModal, PieModal } from './Modal'
+import estilos from './ConfirmDialog.module.css'
 
 /**
- * ConfirmModal
+ * ConfirmDialog
  * Confirmación (alertdialog). Al abrir, el foco va a "Cancelar", nunca a la
  * acción destructiva. Props: isOpen, onClose, onConfirm, title, message,
  * confirmLabel, danger
  */
-export default function ConfirmModal({
+export default function ConfirmDialog({
   isOpen,
   onClose,
   onConfirm,
