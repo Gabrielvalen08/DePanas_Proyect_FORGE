@@ -177,7 +177,16 @@ export default function BloqueCompra({
   }
 
   // --- Filas ---
+  /** Sin proveedor no se agregan materiales: se avisa y el foco vuelve al proveedor */
+  function exigirProveedor() {
+    if (proveedor.trim()) return true
+    fijarError('proveedor', VALIDACION.proveedorPrimero)
+    document.getElementById(`${id}-proveedor`)?.focus()
+    return false
+  }
+
   function cambiarFila(filaId, campo, valor) {
+    if (campo === 'material' && valor.trim() && !exigirProveedor()) return
     const filaActual = filas.find(f => f.id === filaId)
     const actualizada = { ...filaActual, [campo]: valor }
     // Tocar la cantidad o el precio vuelve a calcular el monto; el precio escrito deja de ser el sugerido
@@ -442,6 +451,7 @@ export default function BloqueCompra({
                           value={fila.material}
                           onChange={valor => cambiarFila(fila.id, 'material', valor)}
                           onSeleccionar={valor => {
+                            if (!proveedor.trim()) return
                             sugerirPrecio(fila.id, valor)
                             revisarMaterial(valor)
                           }}
