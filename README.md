@@ -146,8 +146,6 @@ Sin el backend encendido, el frontend trabaja en modo local con datos de ejemplo
 
 Los comandos se probaron en Windows 11.
 
-**Publicación:** el frontend se publica en Vercel en modo local (sin backend); ver [docs/PUBLICAR_VERCEL.md](docs/PUBLICAR_VERCEL.md), con las reglas de uso y respaldo para el restaurante.
-
 ## Decisiones de diseño
 
 La identidad visual sale del **Brandbook DE PANAS (mayo 2026)**. Lo esencial:
@@ -183,7 +181,6 @@ Más detalle en [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) y [docs/DECISIONS.md]
 
 **Próximos pasos:**
 
-1. Publicar el backend en un hosting con disco, con autenticación en la API, para compartir datos entre equipos.
-2. Conversión de unidades y reportes de gastos por producto y periodo.
-3. Acceso desde la tablet por la red local.
-4. Prueba en la computadora y la tablet del negocio, y validación con César y Marta.
+1. Conversión de unidades y reportes de gastos por producto y periodo.
+2. Acceso desde la tablet por la red local.
+3. Prueba en la computadora y la tablet del negocio, y validación con César y Marta.
