@@ -14,3 +14,10 @@ backend/tmp_uploads/
 *.xlsx
 *.xls
 *.xlsm
+
+# Pruebas e2e (Playwright): base temporal, reportes, capturas y videos
+frontend/e2e/.tmp/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/playwright/.cache/

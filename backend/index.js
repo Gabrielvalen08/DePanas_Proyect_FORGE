@@ -24,9 +24,10 @@ import { crearApp } from './app.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DB_DIR = join(__dirname, 'db')
-const DB_PATH = join(DB_DIR, 'depanas.db')
+// DEPANAS_DB: otra base (las pruebas e2e usan una temporal para no tocar depanas.db)
+const DB_PATH = process.env.DEPANAS_DB || join(DB_DIR, 'depanas.db')
 
-mkdirSync(DB_DIR, { recursive: true })
+mkdirSync(dirname(DB_PATH), { recursive: true })
 
 const { app, cerrar } = crearApp({ dbPath: DB_PATH, schemaPath: join(DB_DIR, 'schema.sql') })
 

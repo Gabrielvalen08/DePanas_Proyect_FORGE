@@ -125,9 +125,22 @@ La base se crea sola en `backend/db/depanas.db` (ignorada por git) con el catál
 npm install
 npm run dev        # http://localhost:5173 (redirige /api al backend)
 npm run test:run   # tests
+npm run test:e2e   # pruebas end-to-end con Playwright (ver frontend/e2e/README.md)
 npm run lint
 npm run build      # producción en frontend/dist/
 ```
+
+**Pruebas end-to-end** (Playwright, desde `frontend/`): un navegador real recorre la app completa con su propio backend y una base temporal, así que no tocan `backend/db/depanas.db` y se pueden correr con `npm run dev` abierto.
+
+```bash
+npx playwright install chromium   # solo la primera vez (descarga el navegador)
+npm run test:e2e                  # todas, sin ventana
+npm run test:e2e -- --headed      # viendo el navegador
+npm run test:e2e:ui               # modo interactivo
+npx playwright show-report        # reporte con capturas y video de lo que falló
+```
+
+Detalle en [`frontend/e2e/README.md`](frontend/e2e/README.md).
 
 Sin el backend encendido, el frontend trabaja en modo local con datos de ejemplo. Usuarios de prueba: `Cesar_01` / `1234` (administrador, entra a todo) y `Marta_02` / `5678` (todo menos el Gestor de usuarios). Se siembran en la base al crearla (`backend/db/usuarios.js`) y, en modo local, en `depanas_usuarios`.
 
@@ -153,7 +166,7 @@ Más detalle en [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) y [docs/DECISIONS.md]
 
 - Una rama por cambio (por ejemplo `refactor/frontend-marca`, `fix/db-bloqueantes`) y Pull Request hacia `main`.
 - Commits con prefijo y área: `feat(compras): …`, `fix(agregar-compra): …`, `refactor(estilos): …`, `chore: …`, `docs: …`, `test: …`.
-- Antes de abrir un PR: `npm run lint`, `npm run test:run` y `npm run build` en `frontend/`, y `npm test` en `backend/`.
+- Antes de abrir un PR: `npm run lint`, `npm run test:run`, `npm run test:e2e` y `npm run build` en `frontend/`, y `npm test` en `backend/`.
 - Comandos básicos de Git: [PASOS_GIT.md](PASOS_GIT.md).
 
 ## Equipo FORGE
