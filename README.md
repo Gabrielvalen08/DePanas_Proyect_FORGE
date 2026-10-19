@@ -28,12 +28,11 @@ Aplicación web local para que **De Panas**, un negocio de comida venezolana, re
 - **Catálogo** (menú, debajo de Compras): cuatro opciones para administrar proveedores, categorías, materiales y productos. Se pueden agregar, cambiar de nombre y eliminar; cambiar un nombre lo actualiza también en las compras guardadas. En cada material se ven y se cambian su categoría y su producto, y al agregarlo se pueden crear categorías o productos nuevos. En cada categoría y cada producto se ven sus materiales y se eligen con casillas cuáles lleva; el cambio llega también a las compras.
 - **Base de datos SQLite** (backend Node.js + Express). Sin servidor, la app funciona igual guardando en el navegador (modo local); los dos modos nunca se mezclan.
 - **Exportar datos** (pantalla propia): eliges un rango de fechas (o este mes, mes pasado, este año, todo) y el formato, Excel (`.csv`) o respaldo (`.json`), y ves cuántas compras y cuánto dinero entran antes de descargar.
-- **Cargar datos** (pantalla propia): por ahora muestra "Estamos trabajando en ello". La API ya acepta un `.db` (reemplaza la base con respaldo) o un `.json` (agrega sin duplicar).
+- **Cargar datos** (pantalla propia): se elige un respaldo `.json` de Exportar y qué compras traer. Las que ya están se omiten; las que llegan con cambios se comparan lado a lado, con las diferencias marcadas en rojo, y se elige qué materiales, proveedor y fecha quedan.
 - **Interfaz con la marca De Panas**: collage de las ilustraciones del brandbook sobre el fondo crema, la arepa del logo en el menú, mensajes con la voz de marca ("¡Listo, pana!", "Hoy toca arepita…"), adaptable a escritorio y móvil, con contraste WCAG AA.
 
 **Pendiente** (según el documento de requerimientos):
 
-- Pantalla de Cargar datos (la API ya existe).
 - Conversión automática de unidades (HU-02).
 - Reportes de gastos por producto y por periodo (HU-03).
 - Acceso desde la tablet por la red local.
@@ -104,7 +103,7 @@ flowchart LR
 | `DELETE /api/catalogo/:tipo/:nombre` | Quita la opción; las compras conservan su texto |
 | `/api/ingresos` | Acceso fila por fila a la tabla |
 | `GET /api/db/exportar`, `POST /api/db/importar` | Copia completa de `depanas.db` (`VACUUM INTO`) y reemplazo con validación y respaldo |
-| `GET /api/db/exportar-json`, `POST /api/db/importar-json` | Compras en JSON; importar fusiona sin duplicar |
+| `GET /api/db/exportar-json`, `POST /api/db/importar-json` | Compras en JSON; importar omite las repetidas y pide decidir las que cambiaron |
 
 ## Cómo ejecutarlo
 
@@ -169,7 +168,6 @@ Más detalle en [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) y [docs/DECISIONS.md]
 
 **Próximos pasos:**
 
-1. Pantalla de Cargar datos.
-2. Conversión de unidades y reportes de gastos por producto y periodo.
-3. Acceso desde la tablet por la red local.
-4. Prueba en la computadora y la tablet del negocio, y validación con César y Marta.
+1. Conversión de unidades y reportes de gastos por producto y periodo.
+2. Acceso desde la tablet por la red local.
+3. Prueba en la computadora y la tablet del negocio, y validación con César y Marta.
