@@ -12,11 +12,14 @@ import { springSuave } from '../styles/movimiento'
 import estilos from './BloqueCompra.module.css'
 
 export const UNIDADES = ['lb', 'kg', 'g', 'oz', 'galon', 'litro', 'ml', 'unidad', 'caja', 'bolsa']
+// La unidad arranca en blanco: se elige (o la trae el precio sugerido)
+const OPCIONES_UNIDAD = [{ valor: '', texto: '' }, ...UNIDADES]
 
 // Campos obligatorios de cada fila (en el orden en que aparecen)
 const CAMPOS_FILA = [
   { clave: 'material', nombre: 'Artículo' },
   { clave: 'cantidad', nombre: 'Cantidad' },
+  { clave: 'unidad',   nombre: 'Unidad' },
   { clave: 'precio',   nombre: 'Precio unitario' },
 ]
 
@@ -25,7 +28,7 @@ let siguienteIdFila = 1
 const redondear = (valor, decimales) => Math.round(valor * 10 ** decimales) / 10 ** decimales
 
 function filaVacia() {
-  return { id: siguienteIdFila++, material: '', cantidad: '', unidad: 'lb', precio: '' }
+  return { id: siguienteIdFila++, material: '', cantidad: '', unidad: '', precio: '' }
 }
 
 /**
@@ -49,7 +52,7 @@ function filasDesde(materiales) {
       id: siguienteIdFila++,
       material: m.material,
       cantidad: String(m.cantidad),
-      unidad: m.unidad || 'lb',
+      unidad: m.unidad || '',
       precio: monto > 0 && cantidad > 0 ? String(redondear(monto / cantidad, 4)) : '',
       montoOriginal: monto > 0 ? monto : undefined,
     }
@@ -66,6 +69,7 @@ function validarFila(fila) {
   if (!fila.material.trim()) errores.material = VALIDACION.material
   const cantidadValida = Boolean(fila.cantidad) && !isNaN(fila.cantidad) && Number(fila.cantidad) > 0
   if (!cantidadValida) errores.cantidad = VALIDACION.cantidad
+  if (!fila.unidad) errores.unidad = VALIDACION.unidad
   // Con cantidad válida, el monto (cantidad × precio, a centavos) tampoco puede quedar en 0
   if (!fila.precio || isNaN(fila.precio) || Number(fila.precio) <= 0 || (cantidadValida && montoDe(fila) <= 0))
     errores.precio = VALIDACION.precio
@@ -482,9 +486,11 @@ export default function BloqueCompra({
                           id={`${id}-unidad-${fila.id}`}
                           etiqueta={`Unidad, fila ${n}`}
                           etiquetaOculta
-                          opciones={UNIDADES}
+                          opciones={OPCIONES_UNIDAD}
                           value={fila.unidad}
                           onChange={e => cambiarFila(fila.id, 'unidad', e.target.value)}
+                          onBlur={() => salirDeCampoFila(fila.id, 'unidad')}
+                          error={errores[clave(fila.id, 'unidad')]}
                         />
                       </td>
 
@@ -499,7 +505,6 @@ export default function BloqueCompra({
                           min="0.0001"
                           step="any"
                           prefijo="$"
-                          placeholder="0.00"
                           value={fila.precio}
                           onChange={e => cambiarFila(fila.id, 'precio', e.target.value)}
                           onBlur={() => salirDeCampoFila(fila.id, 'precio')}
@@ -515,7 +520,6 @@ export default function BloqueCompra({
                           etiqueta={`Monto, fila ${n}`}
                           etiquetaOculta
                           prefijo="$"
-                          placeholder="0.00"
                           readOnly
                           tabIndex={-1}
                           value={montoDe(fila) > 0 ? montoDe(fila).toFixed(2) : ''}

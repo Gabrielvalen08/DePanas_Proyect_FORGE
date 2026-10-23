@@ -70,6 +70,7 @@ async function llenarFila(usuario, n, { material = 'Tocino La Rioja', cantidad =
   await elegirProveedor(usuario)
   await usuario.type(screen.getByRole('combobox', { name: `Artículo, fila ${n}` }), material)
   await usuario.type(screen.getByLabelText(`Cantidad, fila ${n}`), cantidad)
+  await usuario.selectOptions(screen.getByLabelText(`Unidad, fila ${n}`), 'kg')
   await usuario.type(screen.getByLabelText(`Precio unitario, fila ${n}`), monto)
 }
 
@@ -91,8 +92,11 @@ describe('AgregarCompra', () => {
     ASIGNACIONES_INICIALES.forEach(([clave, valor]) => asignaciones.set(clave, valor))
   })
 
-  it('proveedor y fecha van en el encabezado; la fecha arranca en hoy', () => {
+  it('proveedor y fecha van en el encabezado; la fecha arranca en hoy y lo demás en blanco', () => {
     renderizar()
+    expect(screen.getByLabelText('Unidad, fila 1')).toHaveValue('')
+    expect(screen.getByLabelText('Precio unitario, fila 1')).not.toHaveAttribute('placeholder')
+    expect(screen.getByLabelText('Monto, fila 1')).not.toHaveAttribute('placeholder')
     expect(screen.getByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
     expect(screen.getAllByRole('combobox', { name: 'Proveedor' })).toHaveLength(1)
     expect(screen.getByLabelText('Fecha')).toHaveValue(fechaHoyISO())
@@ -349,6 +353,7 @@ describe('AgregarCompra', () => {
 
     await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
+    await usuario.selectOptions(screen.getByLabelText('Unidad, fila 1'), 'kg')
     expect(agregar).toBeDisabled()
 
     await usuario.type(screen.getByLabelText('Precio unitario, fila 1'), '3.5')
