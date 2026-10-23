@@ -15,6 +15,7 @@ import { Boton, Campo, Selector, Tarjeta, Insignia, Modal, ConfirmDialog, Cuerpo
 | `Insignia`    | `tono` (`neutro` · `marca` · `exito` · `aviso` · `error`)                       |
 | `Modal`       | `abierto`, `alCerrar`, `titulo`, `icono`, `rol` (`dialog` · `alertdialog`), `anchoMax` (`sm` · `md`), `focoInicial` (ref) |
 | `ConfirmDialog` | `isOpen`, `onClose`, `onConfirm`, `title`, `message`, `confirmLabel`, `cancelLabel`, `danger`. Confirmación (`alertdialog`): el foco inicial va a «Cancelar», nunca a la acción. Úsalo antes de cualquier acción que guarde, cancele o elimine |
+| `MenuAcciones` | `etiqueta`, `opciones` (`[{ etiqueta, icono?, a? \| onClick? }]`). Botón ⋮ con menú desplegable (patrón *menu button*): flechas, Inicio/Fin, Escape devuelve el foco. Va en un portal, así no lo recorta una tarjeta; sin opciones disponibles no se muestra |
 | `EstadoVacio` | `icono`, `titulo`, `texto`, `accion`, `cargando`                                |
 | `SelectorArchivo` | `id`, `etiqueta`, `ayuda`, `accept`, `nombre`, `textoVacio`, `textoSoltar`, `disabled`, `onElegir(archivo)`; `ref` al input. En lugar del botón nativo de archivo, que no sigue la marca |
 

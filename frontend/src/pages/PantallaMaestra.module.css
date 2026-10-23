@@ -1,22 +1,22 @@
-/* ---------- Toolbar: Filtrar + panel en línea | Agregar compra ---------- */
-.toolbar {
+/* ---------- Encabezado de la tabla: cuenta, Filtrar, Agregar compra y menú ⋮ ---------- */
+.acciones {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.filtros {
-  flex: 1;
-  display: flex;
-  align-items: flex-start;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2) var(--space-3);
 }
 
-.agregar {
-  flex-shrink: 0;
+.cuenta {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Los filtros se despliegan dentro de la tarjeta, sobre la tabla */
+.panelFiltros:not(:empty) {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .contador {

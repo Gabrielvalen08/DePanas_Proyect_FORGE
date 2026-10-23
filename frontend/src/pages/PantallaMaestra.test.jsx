@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import PantallaMaestra from './PantallaMaestra'
-import { COMPRA } from '../utils/mensajes'
+import { COMPRA, LISTA_COMPRAS } from '../utils/mensajes'
 
 function renderizar() {
   return render(
@@ -19,7 +19,7 @@ function renderizar() {
 const LISTA_SELECTOS = /Ver compra en Súper Selectos del 29\/09\/2026/
 
 describe('PantallaMaestra', () => {
-  it('muestra cada lista con proveedor, cantidad de productos, cost y fecha', async () => {
+  it('muestra cada lista con fecha, proveedor, cantidad de artículos y costos', async () => {
     renderizar()
     const tabla = await screen.findByRole('table', { name: /listas de compra/i })
     expect(within(tabla).getAllByRole('row')).toHaveLength(6) // encabezado + 5 listas
@@ -27,6 +27,33 @@ describe('PantallaMaestra', () => {
     expect(within(fila).getByText('3')).toBeInTheDocument()
     expect(within(fila).getByText('$8.95')).toBeInTheDocument()
     expect(within(fila).getByText('29/09/2026')).toBeInTheDocument()
+  })
+
+  it('la primera columna es la fecha, se dice «Costos» y las compras van de la más reciente a la más vieja', async () => {
+    renderizar()
+    const tabla = await screen.findByRole('table', { name: /listas de compra/i })
+    const encabezados = within(tabla).getAllByRole('columnheader').slice(0, 4).map(th => th.textContent)
+    expect(encabezados).toEqual(['Fecha', 'Proveedor', 'Artículos', 'Costos'])
+
+    const fechas = within(tabla).getAllByRole('row').slice(1).map(fila => within(fila).getAllByRole('cell')[0].textContent)
+    const iso = fechas.map(f => f.split('/').reverse().join('-'))
+    expect(iso).toEqual([...iso].sort().reverse())
+  })
+
+  it('Filtrar y Agregar compra van en el encabezado de la tabla, y el menú ⋮ abre Exportar y Cargar datos', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const tarjeta = (await screen.findByRole('heading', { name: LISTA_COMPRAS.titulo })).closest('section')
+    expect(within(tarjeta).getByRole('button', { name: LISTA_COMPRAS.filtrar })).toBeInTheDocument()
+    expect(within(tarjeta).getByRole('link', { name: LISTA_COMPRAS.agregar })).toHaveAttribute('href', '/')
+
+    const menu = within(tarjeta).getByRole('button', { name: LISTA_COMPRAS.masAcciones })
+    expect(menu).toHaveAttribute('aria-haspopup', 'menu')
+    await usuario.click(menu)
+    const opciones = screen.getAllByRole('menuitem')
+    expect(opciones.map(o => o.textContent)).toEqual([LISTA_COMPRAS.exportar, LISTA_COMPRAS.cargar])
+    expect(opciones[0]).toHaveAttribute('href', '/exportar')
+    expect(opciones[1]).toHaveAttribute('href', '/cargar')
   })
 
   it('al abrir una lista muestra sus productos y el total', async () => {

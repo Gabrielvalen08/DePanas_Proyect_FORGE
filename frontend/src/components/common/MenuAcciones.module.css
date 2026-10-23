@@ -1,0 +1,68 @@
+/* Menú desplegable del botón ⋮: va en un portal con posición fija (top y right los pone el componente) */
+.menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 13rem;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-input);
+  background: var(--color-surface);
+  box-shadow: var(--sombra-modal);
+  list-style: none;
+  transform-origin: top right;
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 2.75rem; /* área táctil de 44px */
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: calc(var(--radio-input) - 4px);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--fuente-titulos);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms ease-out;
+}
+
+.opcion:hover,
+.opcion:focus-visible {
+  background: var(--color-surface-soft);
+}
+
+.opcion:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.opcion:active {
+  transform: scale(0.98);
+}
+
+.icono {
+  display: inline-flex;
+  color: var(--color-text);
+}
+
+.icono svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opcion {
+    transition: none;
+  }
+
+  .opcion:active {
+    transform: none;
+  }
+}

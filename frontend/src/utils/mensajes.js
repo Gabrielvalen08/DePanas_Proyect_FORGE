@@ -133,6 +133,21 @@ export const COMPRA = {
 }
 
 // ---------------------------------------------------------------------------
+// Lista de compras (/compras)
+// ---------------------------------------------------------------------------
+export const LISTA_COMPRAS = {
+  titulo: 'Listas de compra',
+  columnas: { fecha: 'Fecha', proveedor: 'Proveedor', articulos: 'Artículos', costos: 'Costos' },
+  cuenta: n => `${n} ${plural(n, 'compra', 'compras')}`,
+  filtrar: 'Filtrar',
+  filtrarActivos: n => `Filtrar, ${n} ${plural(n, 'filtro activo', 'filtros activos')}`,
+  agregar: 'Agregar compra',
+  masAcciones: 'Más acciones de Lista de compras',
+  exportar: 'Exportar datos',
+  cargar: 'Cargar datos',
+}
+
+// ---------------------------------------------------------------------------
 // Validación del formulario (corta: se lee junto al campo)
 // ---------------------------------------------------------------------------
 export const VALIDACION = {
