@@ -126,24 +126,12 @@
   vertical-align: top;
 }
 
-.colMaterial  { width: 50%; }
-.colCantidad  { min-width: 12rem; }
+.colMaterial  { width: 40%; }
+.colCantidad  { min-width: 6rem; }
+.colUnidad    { min-width: 7rem; }
 .colPrecio    { min-width: 9rem; }
 .colMonto     { min-width: 8rem; }
 .colAcciones  { width: 1%; }
-
-.cantidadGrupo {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.cantidad {
-  flex: 1 1 5rem;
-}
-
-.unidad {
-  flex: 0 0 6.5rem;
-}
 
 .eliminar:hover:not(:disabled) {
   --boton-texto: var(--color-danger);

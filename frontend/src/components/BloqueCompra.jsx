@@ -425,7 +425,12 @@ export default function BloqueCompra({
               <tr>
                 <th scope="col" className={estilos.colMaterial}>Artículo</th>
                 <th scope="col" className={estilos.colCantidad}>Cantidad</th>
-                <th scope="col" className={estilos.colPrecio}>Precio unitario</th>
+                <th scope="col" className={estilos.colUnidad}>Unidad</th>
+                {/* Corto para que el encabezado no se sature; el lector de pantalla oye el nombre completo */}
+                <th scope="col" className={estilos.colPrecio}>
+                  <span aria-hidden="true">Precio u.</span>
+                  <span className="solo-lector">Precio unitario</span>
+                </th>
                 <th scope="col" className={estilos.colMonto}>Monto</th>
                 <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
               </tr>
@@ -466,33 +471,33 @@ export default function BloqueCompra({
                         />
                       </td>
 
-                      {/* Cantidad + Unidad */}
+                      {/* Cantidad */}
                       <td>
-                        <div className={estilos.cantidadGrupo}>
-                          <Campo
-                            id={`${id}-cantidad-${fila.id}`}
-                            etiqueta={`Cantidad, fila ${n}`}
-                            etiquetaOculta
-                            tipo="number"
-                            inputMode="decimal"
-                            min="0"
-                            step="any"
-                            value={fila.cantidad}
-                            onChange={e => cambiarFila(fila.id, 'cantidad', e.target.value)}
-                            onBlur={() => salirDeCampoFila(fila.id, 'cantidad')}
-                            error={errores[clave(fila.id, 'cantidad')]}
-                            className={estilos.cantidad}
-                          />
-                          <Selector
-                            id={`${id}-unidad-${fila.id}`}
-                            etiqueta={`Unidad, fila ${n}`}
-                            etiquetaOculta
-                            opciones={UNIDADES}
-                            value={fila.unidad}
-                            onChange={e => cambiarFila(fila.id, 'unidad', e.target.value)}
-                            className={estilos.unidad}
-                          />
-                        </div>
+                        <Campo
+                          id={`${id}-cantidad-${fila.id}`}
+                          etiqueta={`Cantidad, fila ${n}`}
+                          etiquetaOculta
+                          tipo="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="any"
+                          value={fila.cantidad}
+                          onChange={e => cambiarFila(fila.id, 'cantidad', e.target.value)}
+                          onBlur={() => salirDeCampoFila(fila.id, 'cantidad')}
+                          error={errores[clave(fila.id, 'cantidad')]}
+                        />
+                      </td>
+
+                      {/* Unidad */}
+                      <td>
+                        <Selector
+                          id={`${id}-unidad-${fila.id}`}
+                          etiqueta={`Unidad, fila ${n}`}
+                          etiquetaOculta
+                          opciones={UNIDADES}
+                          value={fila.unidad}
+                          onChange={e => cambiarFila(fila.id, 'unidad', e.target.value)}
+                        />
                       </td>
 
                       {/* Precio unitario (editable; sugerido desde la última compra) */}
