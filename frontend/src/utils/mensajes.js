@@ -199,15 +199,6 @@ export const ESTADOS = {
 }
 
 // ---------------------------------------------------------------------------
-// Datos: exportar, cargar y dónde se guardan
-// ---------------------------------------------------------------------------
-// Se muestra en Exportar y Cargar: ahí importa saber de qué base salen y a cuál van los datos
-export const DATOS = {
-  modoServidor: 'Conectado al servidor: los datos salen de la base de datos de la cocina y se guardan en ella.',
-  modoLocal: 'Sin conexión con el servidor: los datos salen de este navegador y se guardan solo en él.',
-}
-
-// ---------------------------------------------------------------------------
 // Catálogo: editar proveedores, categorías, materiales y productos
 // ---------------------------------------------------------------------------
 // Género de cada tipo: "una categoría nueva" pero "un proveedor nuevo"
@@ -244,7 +235,6 @@ const materialesCambiados = r =>
   (r.materiales ? ` Actualizamos ${r.materiales} ${articulos(r.materiales)}.` : '')
 
 export const PANTALLA_CATALOGO = {
-  intro: 'Elige qué quieres editar. Todo cambio se aplica a las compras que ya guardaste.',
   secciones: SECCIONES,
   elegir: { titulo: 'Elige qué quieres editar', texto: 'Proveedores, categorías, materiales o productos.' },
   cargando: 'Buscando el catálogo…',
@@ -320,7 +310,6 @@ export const PANTALLA_CATALOGO = {
 // Gestor de usuarios (solo el administrador)
 // ---------------------------------------------------------------------------
 export const USUARIOS = {
-  intro: 'Crea las cuentas del equipo, cambia sus contraseñas y elige a qué pantallas entra cada quien.',
   titulo: 'Usuarios',
   agregar: 'Agregar usuario',
   cargando: 'Buscando los usuarios…',
@@ -391,7 +380,6 @@ export const USUARIOS = {
 // Exportar y cargar datos
 // ---------------------------------------------------------------------------
 export const EXPORTAR = {
-  intro: 'Elige el rango de fechas y el formato. Sin fechas, exportamos todas las compras.',
   rangoTitulo: 'Rango de fechas',
   rangos: { mes: 'Este mes', mesAnterior: 'Mes pasado', ano: 'Este año', todo: 'Todo' },
   desde: 'Desde',
@@ -410,7 +398,6 @@ export const EXPORTAR = {
 }
 
 export const CARGAR = {
-  intro: '¿Traes compras de otro equipo, pana? Sube el respaldo .json de Exportar datos y elige cuáles se quedan aquí.',
   titulo: 'Archivo de compras',
   archivo: 'Elegir archivo',
   ningunArchivo: 'Todavía no has elegido un archivo',

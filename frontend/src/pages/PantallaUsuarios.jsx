@@ -62,8 +62,6 @@ export default function PantallaUsuarios() {
       <Header title="Gestor de usuarios" frase={fraseDelDia('/usuarios')} />
 
       <main id="contenido" tabIndex={-1}>
-        <p className={estilos.intro}>{USUARIOS.intro}</p>
-
         <Tarjeta
           titulo={USUARIOS.titulo}
           icono={<UsersRound />}

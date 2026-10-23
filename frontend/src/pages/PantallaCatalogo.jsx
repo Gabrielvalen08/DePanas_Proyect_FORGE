@@ -56,8 +56,6 @@ export default function PantallaCatalogo() {
       <Header title="Catálogo" frase={fraseDelDia('/catalogo')} />
 
       <main id="contenido" tabIndex={-1}>
-        <p className={estilos.intro}>{PANTALLA_CATALOGO.intro}</p>
-
         <nav aria-label="Secciones del catálogo">
           <ul className={estilos.secciones}>
             {TIPOS.map(t => {
