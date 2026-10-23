@@ -1,4 +1,4 @@
-import { useEffect, useId } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
@@ -13,6 +13,8 @@ import estilos from './Modal.module.css'
  * rol="alertdialog": confirmaciones; el clic en el scrim no cierra.
  * focoInicial: ref del elemento que recibe el foco al abrir.
  * anchoMax: sm | md | lg
+ * Se centra dentro del área del módulo abierto (el <main id="contenido"> de la página), no
+ * de toda la pantalla; el velo sí cubre toda la pantalla para que el menú no se pueda tocar.
  */
 export default function Modal({ abierto, ...props }) {
   return createPortal(
@@ -24,6 +26,27 @@ export default function Modal({ abierto, ...props }) {
 function ContenidoModal({ alCerrar, titulo, icono, rol = 'dialog', anchoMax = 'md', focoInicial, children }) {
   const idTitulo = useId()
   const contenedorRef = useFocoAtrapado(true, alCerrar, focoInicial)
+  const capaRef = useRef(null)
+
+  // Antes de pintar: la capa ocupa solo el área del módulo (y se ajusta si cambia el tamaño)
+  useLayoutEffect(() => {
+    function ajustar() {
+      const capa = capaRef.current
+      const modulo = document.getElementById('contenido')
+      if (!capa) return
+      if (!modulo) {
+        capa.style.left = ''
+        capa.style.width = ''
+        return
+      }
+      const caja = modulo.getBoundingClientRect()
+      capa.style.left = `${caja.left}px`
+      capa.style.width = `${caja.width}px`
+    }
+    ajustar()
+    window.addEventListener('resize', ajustar)
+    return () => window.removeEventListener('resize', ajustar)
+  }, [])
 
   useEffect(() => {
     const previo = document.body.style.overflow
@@ -32,7 +55,7 @@ function ContenidoModal({ alCerrar, titulo, icono, rol = 'dialog', anchoMax = 'm
   }, [])
 
   return (
-    <div className={estilos.capa}>
+    <div ref={capaRef} className={estilos.capa}>
       <motion.div
         className={estilos.scrim}
         variants={variantesScrim}

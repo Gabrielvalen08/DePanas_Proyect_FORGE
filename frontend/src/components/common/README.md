@@ -14,7 +14,7 @@ import { Boton, Campo, Selector, Tarjeta, Insignia, Modal, ConfirmDialog, Cuerpo
 | `Selector`    | `id`, `etiqueta`, `etiquetaOculta`, `opciones` (`string[]` o `{ valor, texto }[]`), `error` |
 | `Tarjeta`     | `titulo`, `icono`, `accion`, `sombra`, `franja`, `interactiva` + `a` u `onClick` |
 | `Insignia`    | `tono` (`neutro` · `marca` · `exito` · `aviso` · `error`)                       |
-| `Modal`       | `abierto`, `alCerrar`, `titulo`, `icono`, `rol` (`dialog` · `alertdialog`), `anchoMax` (`sm` · `md`), `focoInicial` (ref) |
+| `Modal`       | `abierto`, `alCerrar`, `titulo`, `icono`, `rol` (`dialog` · `alertdialog`), `anchoMax` (`sm` · `md` · `lg`), `focoInicial` (ref). Se centra en el área del módulo (`<main id="contenido">`), no en toda la pantalla; el velo cubre todo |
 | `ConfirmDialog` | `isOpen`, `onClose`, `onConfirm`, `title`, `message`, `confirmLabel`, `cancelLabel`, `danger`. Confirmación (`alertdialog`): el foco inicial va a «Cancelar», nunca a la acción. Úsalo antes de cualquier acción que guarde, cancele o elimine |
 | `MenuAcciones` | `etiqueta`, `opciones` (`[{ etiqueta, icono?, a? \| onClick? }]`). Botón ⋮ con menú desplegable (patrón *menu button*): flechas, Inicio/Fin, Escape devuelve el foco. Va en un portal, así no lo recorta una tarjeta; sin opciones disponibles no se muestra |
 | `EstadoVacio` | `icono`, `titulo`, `texto`, `accion`, `cargando`                                |
