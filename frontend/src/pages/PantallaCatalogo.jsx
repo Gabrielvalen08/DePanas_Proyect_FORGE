@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, NavLink, useParams } from 'react-router-dom'
-import { Loader2, Package, Pencil, Plus, Search, Tags, Trash2, Truck, UtensilsCrossed } from 'lucide-react'
+import { FileJson, FileSpreadsheet, Loader2, Package, Pencil, Plus, Search, Tags, Trash2, Truck, Upload, UtensilsCrossed } from 'lucide-react'
 import Header from '../components/Header'
 import EditorCatalogo from '../components/EditorCatalogo'
-import { Boton, Campo, ConfirmDialog, EstadoVacio, Insignia, Tarjeta } from '../components/common'
-import { agregarAlCatalogo, editarEnCatalogo, eliminarDelCatalogo, fetchCatalogo } from '../services/api'
+import { Boton, Campo, ConfirmDialog, EstadoVacio, Insignia, MenuAcciones, Tarjeta } from '../components/common'
+import {
+  agregarAlCatalogo, editarEnCatalogo, eliminarDelCatalogo, exportarCatalogo, fetchCatalogo, importarCatalogo, leerCatalogoJSON,
+} from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { textoBusqueda } from '../utils/formato'
 import { PANTALLA_CATALOGO, fraseDelDia } from '../utils/mensajes'
@@ -142,6 +144,40 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
     }
   }
 
+
+  // --- Exportar y Cargar de esta sección (menú ⋮) ---
+  const A = PANTALLA_CATALOGO.archivo
+  const archivoRef = useRef(null)
+  const [porExportar, setPorExportar] = useState(null) // null | 'csv' | 'json'
+  const [porCargar, setPorCargar] = useState(null)     // null | { filas, archivo }
+
+  async function exportar(formato) {
+    try {
+      addToast(A.exportado(tipo, await exportarCatalogo(tipo, formato)))
+    } catch (error) {
+      addToast(A.errorExportar(error.message), 'error')
+    }
+  }
+
+  async function elegirArchivo(e) {
+    const archivo = e.target.files?.[0]
+    e.target.value = '' // así se puede volver a elegir el mismo archivo
+    if (!archivo) return
+    try {
+      setPorCargar({ filas: await leerCatalogoJSON(archivo, tipo), archivo: archivo.name })
+    } catch (error) {
+      addToast(A.errorCargar(error.message), 'error')
+    }
+  }
+
+  async function cargar() {
+    try {
+      addToast(A.cargado(tipo, await importarCatalogo(tipo, porCargar.filas)))
+      alCambio()
+    } catch (error) {
+      addToast(A.errorCargar(error.message), 'error')
+    }
+  }
   return (
     <>
       <Tarjeta
@@ -164,6 +200,24 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
             <Boton variante="primario" icono={<Plus />} onClick={() => setEdicion({ registro: null })}>
               {PANTALLA_CATALOGO.agregar(tipo)}
             </Boton>
+            <MenuAcciones
+              etiqueta={A.masAcciones(tipo)}
+              opciones={[
+                { etiqueta: A.exportarCsv, icono: <FileSpreadsheet />, onClick: () => setPorExportar('csv') },
+                { etiqueta: A.exportarJson, icono: <FileJson />, onClick: () => setPorExportar('json') },
+                { etiqueta: A.cargar, icono: <Upload />, onClick: () => archivoRef.current?.click() },
+              ]}
+            />
+            {/* Lo abre «Cargar respaldo» del menú */}
+            <input
+              ref={archivoRef}
+              type="file"
+              accept=".json,application/json"
+              className="solo-lector"
+              tabIndex={-1}
+              aria-label={A.elegirArchivo(tipo)}
+              onChange={elegirArchivo}
+            />
           </div>
         }
       >
@@ -256,6 +310,23 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
         message={porEliminar ? PANTALLA_CATALOGO.confirmarEliminar.mensaje(tipo, porEliminar.nombre, porEliminar.uso) : ''}
         confirmLabel={PANTALLA_CATALOGO.confirmarEliminar.confirmar}
         danger
+      />
+      <ConfirmDialog
+        isOpen={porExportar !== null}
+        onClose={() => setPorExportar(null)}
+        onConfirm={() => exportar(porExportar)}
+        title={A.confirmarExportar.titulo}
+        message={porExportar ? A.confirmarExportar.mensaje(tipo, todas.length, porExportar) : ''}
+        confirmLabel={A.confirmarExportar.confirmar}
+      />
+
+      <ConfirmDialog
+        isOpen={porCargar !== null}
+        onClose={() => setPorCargar(null)}
+        onConfirm={cargar}
+        title={A.confirmarCargar.titulo(tipo)}
+        message={porCargar ? A.confirmarCargar.mensaje(tipo, porCargar.filas.length, porCargar.archivo) : ''}
+        confirmLabel={A.confirmarCargar.confirmar}
       />
       <span className="solo-lector" aria-live="polite">{`${filas.length} ${filas.length === 1 ? singular : titulo.toLowerCase()}`}</span>
     </>

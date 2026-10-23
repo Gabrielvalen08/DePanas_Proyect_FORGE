@@ -128,6 +128,38 @@ describe('PantallaCatalogo', () => {
     expect(within(fila).getByText('Ana')).toBeInTheDocument()
   })
 
+  it('cada sección tiene su menú ⋮ para exportar y cargar; cargar un respaldo pide confirmar y lo aplica', async () => {
+    const usuario = userEvent.setup()
+    const A = PANTALLA_CATALOGO.archivo
+    renderizar('/catalogo/proveedores')
+    await usuario.click(await screen.findByRole('button', { name: A.masAcciones('proveedor') }))
+    expect(screen.getAllByRole('menuitem').map(o => o.textContent)).toEqual([A.exportarCsv, A.exportarJson, A.cargar])
+    await usuario.keyboard('{Escape}')
+
+    const respaldo = { tipo: 'proveedor', version: 1, filas: [{ nombre: 'La Pulpería', ubicacion: 'Santa Tecla', telefonos: [], contactos: [] }] }
+    const archivo = new File([JSON.stringify(respaldo)], 'proveedores.json', { type: 'application/json' })
+    await usuario.upload(screen.getByLabelText(A.elegirArchivo('proveedor')), archivo)
+
+    const confirmacion = await screen.findByRole('alertdialog', { name: A.confirmarCargar.titulo('proveedor') })
+    expect(within(confirmacion).getByText(A.confirmarCargar.mensaje('proveedor', 1, 'proveedores.json'))).toBeInTheDocument()
+    await usuario.click(within(confirmacion).getByRole('button', { name: A.confirmarCargar.confirmar }))
+
+    expect(await screen.findByText(A.cargado('proveedor', { nuevos: 1, actualizados: 0, omitidos: 0 }))).toBeInTheDocument()
+    const fila = (await screen.findByRole('rowheader', { name: 'La Pulpería' })).closest('tr')
+    expect(within(fila).getByText('Santa Tecla')).toBeInTheDocument()
+  })
+
+  it('un respaldo de otra sección no se carga y avisa por qué', async () => {
+    const usuario = userEvent.setup()
+    const A = PANTALLA_CATALOGO.archivo
+    renderizar('/catalogo/proveedores')
+    await screen.findByRole('button', { name: A.masAcciones('proveedor') })
+    const archivo = new File([JSON.stringify({ tipo: 'categoria', version: 1, filas: [{ nombre: 'X', articulos: [] }] })], 'cat.json', { type: 'application/json' })
+    await usuario.upload(screen.getByLabelText(A.elegirArchivo('proveedor')), archivo)
+    expect(await screen.findByText(/Este archivo trae categorías, no proveedores/)).toBeInTheDocument()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
   it('renombra un proveedor: avisa en cuántas compras se cambió', async () => {
     const usuario = userEvent.setup()
     renderizar('/catalogo/proveedores')

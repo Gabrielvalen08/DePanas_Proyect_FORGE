@@ -278,6 +278,36 @@ export const PANTALLA_CATALOGO = {
   sinAsignar: 'Sin asignar',
   columnaMateriales: 'Artículos',
   columnaProductos: 'Productos',
+  // Exportar y Cargar de cada sección (menú ⋮ de su lista)
+  archivo: {
+    masAcciones: tipo => `Más acciones de ${SECCIONES[tipo].titulo}`,
+    exportarCsv: 'Exportar a Excel (.csv)',
+    exportarJson: 'Exportar respaldo (.json)',
+    cargar: 'Cargar respaldo (.json)',
+    elegirArchivo: tipo => `Respaldo .json de ${SECCIONES[tipo].titulo.toLowerCase()}`,
+    confirmarExportar: {
+      titulo: '¿Descargamos el archivo?',
+      mensaje: (tipo, n, formato) =>
+        `Se descargarán ${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()} en formato ${formato.toUpperCase()}.`,
+      confirmar: 'Sí, descargar',
+    },
+    exportado: (tipo, n) =>
+      `¡Listo! Descargamos ${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()}. Guarda el archivo en un lugar seguro.`,
+    errorExportar: detalle => `No pudimos exportar${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
+    confirmarCargar: {
+      titulo: tipo => `¿Cargamos ${SECCIONES[tipo].titulo.toLowerCase()}?`,
+      mensaje: (tipo, n, archivo) =>
+        `«${archivo}» trae ${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()}. ` +
+        'Lo nuevo se agrega y lo que ya existe se actualiza; no se borra nada.',
+      confirmar: 'Sí, cargar',
+    },
+    cargado: (tipo, r) => {
+      const cuantos = n => `${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()}`
+      return `¡Listo, pana! Agregamos ${cuantos(r.nuevos)} y actualizamos ${cuantos(r.actualizados)}.` +
+        (r.omitidos ? ` ${r.omitidos} ${plural(r.omitidos, 'artículo no existe y se omitió', 'artículos no existen y se omitieron')}.` : '')
+    },
+    errorCargar: detalle => `No pudimos cargar el archivo${detalle ? `: ${detalle}` : ''}`,
+  },
   // Ficha del proveedor (su ventana al agregarlo o editarlo, y columnas de la tabla)
   ficha: {
     ubicacion: 'Ubicación',
