@@ -94,7 +94,7 @@ const ordenar = lista => [...lista].sort((a, b) => a.localeCompare(b, 'es', { se
 /** Tipos del catálogo y su lista en el objeto catálogo */
 export const TIPOS_CATALOGO = ['proveedor', 'categoria', 'material', 'producto']
 const LISTA = { proveedor: 'proveedores', categoria: 'categorias', producto: 'productos' }
-const NOMBRE_TIPO = { proveedor: 'proveedor', categoria: 'categoría', material: 'material', producto: 'producto' }
+const NOMBRE_TIPO = { proveedor: 'proveedor', categoria: 'categoría', material: 'artículo', producto: 'producto' }
 const ARTICULO = { proveedor: 'un', categoria: 'una', material: 'un', producto: 'un' }
 
 /** Quita repetidos sin distinguir mayúsculas y ordena alfabéticamente */
@@ -406,11 +406,11 @@ const conMateriales = tipo => tipo === 'categoria' || tipo === 'producto'
 /** Los materiales del catálogo con esos nombres; lanza si la lista no es válida o alguno no existe */
 function resolverMateriales(cat, materiales) {
   if (!Array.isArray(materiales) || materiales.some(m => typeof m !== 'string')) {
-    throw new Error('La lista de materiales no es válida')
+    throw new Error('La lista de artículos no es válida')
   }
   return materiales.map(m => m.trim()).filter(Boolean).map(m => {
     const mat = cat.materiales.find(x => clave(x.nombre) === clave(m))
-    if (!mat) throw new Error(`No existe un material llamado «${m}»`)
+    if (!mat) throw new Error(`No existe un artículo llamado «${m}»`)
     return mat
   })
 }

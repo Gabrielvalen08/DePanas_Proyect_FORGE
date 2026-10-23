@@ -49,6 +49,8 @@ export default function PantallaCatalogo() {
     return () => { vigente = false }
   }, [version, addToast])
 
+  // Materiales se llama ahora Artículos: la dirección vieja lleva a la nueva
+  if (seccion === 'materiales') return <Navigate to="/catalogo/articulos" replace />
   if (seccion && !tipo) return <Navigate to="/catalogo" replace />
 
   return (

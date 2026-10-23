@@ -24,6 +24,8 @@ export const FRASES_MARCA = [
 ]
 
 const plural = (n, singular, pluralTexto = `${singular}es`) => (n === 1 ? singular : pluralTexto)
+// En toda la interfaz los materiales se llaman «artículos» (en el código y los datos siguen como `material`)
+const articulos = n => plural(n, 'artículo', 'artículos')
 
 // ---------------------------------------------------------------------------
 // Encabezados: una frase por página que cambia cada día (no en cada recarga)
@@ -44,7 +46,7 @@ export const FRASES_ENCABEZADO = {
   ],
   '/catalogo': [
     'Cada cosa en su sitio, como en la cocina de la abuela',
-    'Ordena tus proveedores, materiales y productos',
+    'Ordena tus proveedores, artículos y productos',
     'Un catálogo bien hecho, una sazón bien medida',
   ],
   '/exportar': [
@@ -110,13 +112,13 @@ export const COMPRA = {
   confirmarEliminar: {
     titulo: '¿Eliminamos esta compra?',
     mensaje: (proveedor, n) =>
-      `Se borrará la compra en ${proveedor} con ${n} ${plural(n, 'material')}. Esto no se puede deshacer.`,
+      `Se borrará la compra en ${proveedor} con ${n} ${articulos(n)}. Esto no se puede deshacer.`,
     confirmar: 'Sí, eliminar',
   },
   confirmarGuardar: {
     titulo: '¿Guardamos esta compra?',
     mensaje: (proveedor, n, total) =>
-      `Se guardará la compra en ${proveedor} con ${n} ${plural(n, 'material')} por ${total}.`,
+      `Se guardará la compra en ${proveedor} con ${n} ${articulos(n)} por ${total}.`,
     confirmar: 'Sí, guardar',
   },
   confirmarCancelar: {
@@ -149,7 +151,7 @@ export const VALIDACION = {
 // Categoría y producto de cada material
 // ---------------------------------------------------------------------------
 export const ASIGNACION = {
-  tituloNuevo: 'Material nuevo',
+  tituloNuevo: 'Artículo nuevo',
   tituloExistente: 'Categoría y producto',
   descripcionNuevo: material =>
     `«${material}» es nuevo por aquí. ¿A qué categoría y producto pertenece? Lo recordaremos para las próximas compras.`,
@@ -199,7 +201,7 @@ export const ESTADOS = {
 }
 
 // ---------------------------------------------------------------------------
-// Catálogo: editar proveedores, categorías, materiales y productos
+// Catálogo: editar proveedores, categorías, artículos y productos
 // ---------------------------------------------------------------------------
 // Género de cada tipo: "una categoría nueva" pero "un proveedor nuevo"
 const GENERO = {
@@ -212,7 +214,7 @@ const GENERO = {
 const SECCIONES = {
   proveedor: { titulo: 'Proveedores', singular: 'proveedor', ruta: 'proveedores', descripcion: 'A quién le compramos' },
   categoria: { titulo: 'Categorías', singular: 'categoría', ruta: 'categorias', descripcion: 'Agrupan los artículos: materia prima, limpieza…' },
-  material: { titulo: 'Materiales', singular: 'material', ruta: 'materiales', descripcion: 'Cada insumo con su categoría y su producto' },
+  material: { titulo: 'Artículos', singular: 'artículo', ruta: 'articulos', descripcion: 'Cada insumo con su categoría y su producto' },
   producto: { titulo: 'Productos', singular: 'producto', ruta: 'productos', descripcion: 'Cachitos, arepas… y los artículos que lleva cada uno' },
 }
 
@@ -227,16 +229,13 @@ function estrenos(r) {
 
 const usaCompras = tipo => tipo === 'proveedor' || tipo === 'material'
 
-// En categorías y productos, los materiales se llaman «artículos»
-const articulos = n => plural(n, 'artículo', 'artículos')
-
 /** " Actualizamos 2 artículos." cuando cambian los artículos de una categoría o un producto */
 const materialesCambiados = r =>
   (r.materiales ? ` Actualizamos ${r.materiales} ${articulos(r.materiales)}.` : '')
 
 export const PANTALLA_CATALOGO = {
   secciones: SECCIONES,
-  elegir: { titulo: 'Elige qué quieres editar', texto: 'Proveedores, categorías, materiales o productos.' },
+  elegir: { titulo: 'Elige qué quieres editar', texto: 'Proveedores, categorías, artículos o productos.' },
   cargando: 'Buscando el catálogo…',
   errorCargar: 'No pudimos traer el catálogo. Recarga la página para intentarlo de nuevo.',
   buscar: tipo => `Buscar ${SECCIONES[tipo].singular}`,
@@ -268,7 +267,7 @@ export const PANTALLA_CATALOGO = {
     buscar: 'Buscar artículo',
     elegidos: n => `${n} ${plural(n, 'elegido', 'elegidos')}`,
     ahoraEn: (tipo, nombre) => (nombre ? `Ahora en «${nombre}»` : tipo === 'categoria' ? 'Sin categoría' : 'Sin producto'),
-    ninguno: 'Todavía no hay artículos. Agrégalos en la sección Materiales.',
+    ninguno: 'Todavía no hay artículos. Agrégalos en la sección Artículos.',
     sinResultados: 'Ningún artículo con ese nombre',
   },
   sinResultados: 'Nada por aquí con ese nombre',
@@ -343,7 +342,7 @@ export const USUARIOS = {
   pantallas: {
     '/': 'Registrar lo que llega a la cocina',
     '/compras': 'Ver, editar y eliminar las compras',
-    '/catalogo': 'Proveedores, categorías, materiales y productos',
+    '/catalogo': 'Proveedores, categorías, artículos y productos',
     '/exportar': 'Descargar las compras en CSV o JSON',
     '/cargar': 'Traer datos de otro equipo',
   },
@@ -386,7 +385,7 @@ export const EXPORTAR = {
   hasta: 'Hasta',
   formato: 'Formato',
   formatos: {
-    csv: { titulo: 'Excel (.csv)', descripcion: 'Una fila por material, para abrir en Excel o Google Sheets' },
+    csv: { titulo: 'Excel (.csv)', descripcion: 'Una fila por artículo, para abrir en Excel o Google Sheets' },
     json: { titulo: 'Respaldo (.json)', descripcion: 'Para pasar las compras a otro equipo' },
   },
   calculando: 'Contando las compras del rango…',
@@ -402,12 +401,12 @@ export const CARGAR = {
   archivo: 'Elegir archivo',
   ningunArchivo: 'Todavía no has elegido un archivo',
   soltar: 'También puedes soltarlo aquí',
-  ayuda: 'Usa el respaldo .json que descargaste en Exportar datos. Cada compra llega con todos sus materiales.',
+  ayuda: 'Usa el respaldo .json que descargaste en Exportar datos. Cada compra llega con todos sus artículos.',
   // Errores: claros y sin modismos
   extension: 'Ese archivo no es .json. Elige el respaldo que descargaste en Exportar datos.',
   jsonInvalido: 'No pudimos leer el archivo: no es un JSON válido.',
   sinSeleccion: 'Elige al menos una compra.',
-  minimo: 'Marca al menos un material o no traigas esta compra.',
+  minimo: 'Marca al menos un artículo o no traigas esta compra.',
   error: detalle => `No pudimos cargar los datos: ${detalle}`,
   // Selección
   seleccion: 'Elige las compras',
@@ -419,10 +418,10 @@ export const CARGAR = {
   estado: { nueva: 'Nueva', identica: 'Ya está guardada', conflicto: 'Trae cambios' },
   // Comparación
   comparar: 'Comparar compra',
-  compararAyuda: 'Esta compra ya está guardada, pero el archivo trae cambios. Marca los materiales que se quedan: la compra final lleva exactamente los que marques de cada lado.',
+  compararAyuda: 'Esta compra ya está guardada, pero el archivo trae cambios. Marca los artículos que se quedan: la compra final lleva exactamente los que marques de cada lado.',
   existente: 'Compra guardada', entrante: 'Compra del archivo',
-  material: 'Material', cantidad: 'Cantidad', unidad: 'Unidad', monto: 'Precio', categoria: 'Categoría', producto: 'Producto',
-  conservar: (lado, n) => `Conservar material ${n} de ${lado}`,
+  material: 'Artículo', cantidad: 'Cantidad', unidad: 'Unidad', monto: 'Precio', categoria: 'Categoría', producto: 'Producto',
+  conservar: (lado, n) => `Conservar artículo ${n} de ${lado}`,
   final: 'Compra final',
   leyendaMuestra: 'Así',
   leyenda: 'se marca lo que cambió entre las dos compras.',

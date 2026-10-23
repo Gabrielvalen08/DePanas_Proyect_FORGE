@@ -50,7 +50,7 @@ export default function FiltrosEnLinea({ id, abierto, filtros, alCambiar }) {
           />
           <Campo
             id="filtro-material"
-            etiqueta="Material"
+            etiqueta="Artículo"
             value={filtros.material}
             onChange={e => cambiar('material', e.target.value)}
             className={estilos.campoTexto}

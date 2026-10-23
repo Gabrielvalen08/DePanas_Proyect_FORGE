@@ -47,7 +47,7 @@ it('rechaza estructura inválida y borra la selección del archivo anterior', as
   await usuario.upload(screen.getByLabelText(CARGAR.archivo), archivo([compra]))
   await usuario.click(await screen.findByRole('checkbox'))
   await usuario.upload(screen.getByLabelText(CARGAR.archivo), archivo([{ ...compra, materiales: [] }]))
-  expect(await within(screen.getByRole('main')).findByRole('alert')).toHaveTextContent('necesita materiales')
+  expect(await within(screen.getByRole('main')).findByRole('alert')).toHaveTextContent('necesita artículos')
   expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   expect(importarCompras).not.toHaveBeenCalled()
 })

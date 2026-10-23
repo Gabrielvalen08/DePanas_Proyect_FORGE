@@ -68,7 +68,7 @@ async function elegirProveedor(usuario, nombre = 'Walmart') {
 
 async function llenarFila(usuario, n, { material = 'Tocino La Rioja', cantidad = '2', monto = '3.5' } = {}) {
   await elegirProveedor(usuario)
-  await usuario.type(screen.getByRole('combobox', { name: `Material, fila ${n}` }), material)
+  await usuario.type(screen.getByRole('combobox', { name: `Artículo, fila ${n}` }), material)
   await usuario.type(screen.getByLabelText(`Cantidad, fila ${n}`), cantidad)
   await usuario.type(screen.getByLabelText(`Precio unitario, fila ${n}`), monto)
 }
@@ -76,7 +76,7 @@ async function llenarFila(usuario, n, { material = 'Tocino La Rioja', cantidad =
 async function llenarCompraValida(usuario, bloque = document.body) {
   const en = within(bloque)
   await usuario.type(en.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
-  await usuario.type(en.getByRole('combobox', { name: 'Material, fila 1' }), 'Tocino La Rioja')
+  await usuario.type(en.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
   await usuario.type(en.getByLabelText('Cantidad, fila 1'), '2')
   await usuario.selectOptions(en.getByLabelText('Unidad, fila 1'), 'kg')
   await usuario.type(en.getByLabelText('Precio unitario, fila 1'), '3.5')
@@ -103,12 +103,12 @@ describe('AgregarCompra', () => {
     renderizar()
     await llenarFila(usuario, 1)
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
-    await usuario.click(screen.getByRole('combobox', { name: 'Material, fila 2' }))
+    await usuario.click(screen.getByRole('combobox', { name: 'Artículo, fila 2' }))
     await usuario.tab()
 
     expect(screen.queryByRole('alert', { name: VALIDACION.resumen })).not.toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: 'Material, fila 1' })).not.toHaveAttribute('aria-invalid')
-    expect(screen.getByRole('combobox', { name: 'Material, fila 2' })).not.toHaveAttribute('aria-invalid')
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).not.toHaveAttribute('aria-invalid')
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 2' })).not.toHaveAttribute('aria-invalid')
   })
 
   it('tras intentar guardar, el error queda enlazado al campo y desaparece al corregirlo', async () => {
@@ -236,7 +236,7 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await elegirProveedor(usuario)
-    await usuario.type(screen.getByRole('combobox', { name: 'Material, fila 1' }), 'Tocino La Rioja')
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.tab()
 
     const precio = screen.getByLabelText('Precio unitario, fila 1')
@@ -253,7 +253,7 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
-    await usuario.type(screen.getByRole('combobox', { name: 'Material, fila 1' }), 'Tocino La Rioja')
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.tab()
     await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '5')
 
@@ -275,7 +275,7 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await elegirProveedor(usuario)
-    const material = screen.getByRole('combobox', { name: 'Material, fila 1' })
+    const material = screen.getByRole('combobox', { name: 'Artículo, fila 1' })
     await usuario.type(material, 'Tocino La Rioja')
     await usuario.tab()
     const precio = screen.getByLabelText('Precio unitario, fila 1')
@@ -290,7 +290,7 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await elegirProveedor(usuario)
-    await usuario.type(screen.getByRole('combobox', { name: 'Material, fila 1' }), 'Tocino La Rioja')
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.tab()
     expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue(null)
     expect(screen.getByLabelText('Precio unitario, fila 1')).not.toHaveAccessibleDescription(/Última compra/)
@@ -299,17 +299,17 @@ describe('AgregarCompra', () => {
   it('sin proveedor, escribir un material avisa que primero se elige el proveedor y lo enfoca', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    await usuario.type(screen.getByRole('combobox', { name: 'Material, fila 1' }), 'T') // el foco pasa al proveedor
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'T') // el foco pasa al proveedor
 
     const proveedor = screen.getByRole('combobox', { name: 'Proveedor' })
     expect(proveedor).toHaveFocus()
     expect(proveedor).toHaveAccessibleDescription(VALIDACION.proveedorPrimero)
-    expect(screen.getByRole('combobox', { name: 'Material, fila 1' })).toHaveValue('')
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveValue('')
 
     await usuario.type(proveedor, 'Walmart')
     expect(proveedor).not.toHaveAttribute('aria-invalid')
-    await usuario.type(screen.getByRole('combobox', { name: 'Material, fila 1' }), 'T')
-    expect(screen.getByRole('combobox', { name: 'Material, fila 1' })).toHaveValue('T')
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'T')
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveValue('T')
   })
 
   it('no deja agregar otra fila mientras la última esté incompleta, y explica por qué', async () => {
@@ -320,7 +320,7 @@ describe('AgregarCompra', () => {
     expect(agregar).toBeDisabled()
     expect(agregar).toHaveAccessibleDescription(VALIDACION.filaIncompleta)
 
-    await usuario.type(screen.getByRole('combobox', { name: 'Material, fila 1' }), 'Tocino La Rioja')
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
     expect(agregar).toBeDisabled()
 
@@ -336,14 +336,14 @@ describe('AgregarCompra', () => {
     expect(screen.getByRole('button', { name: 'Eliminar fila 1' })).toBeDisabled()
     await llenarFila(usuario, 1)
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
-    expect(screen.getByRole('combobox', { name: 'Material, fila 2' })).toHaveFocus()
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 2' })).toHaveFocus()
   })
 
   it('guarda la categoría y el producto de cada material y los muestra bajo el campo', async () => {
     const usuario = userEvent.setup()
     renderizar()
     await llenarCompraValida(usuario)
-    expect(screen.getByRole('combobox', { name: 'Material, fila 1' })).toHaveAccessibleDescription('Materia Prima · Cachitos')
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveAccessibleDescription('Materia Prima · Cachitos')
     await guardarYConfirmar(usuario)
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
@@ -357,7 +357,7 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await elegirProveedor(usuario)
-    await usuario.type(screen.getByRole('combobox', { name: 'Material, fila 1' }), 'Harina PAN')
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Harina PAN')
     await usuario.tab()
 
     const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
@@ -382,7 +382,7 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await elegirProveedor(usuario)
-    await usuario.type(screen.getByRole('combobox', { name: 'Material, fila 1' }), 'Mr Músculo Antigrasa')
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Mr Músculo Antigrasa')
     await usuario.tab()
 
     const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloExistente })
@@ -395,7 +395,7 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await elegirProveedor(usuario)
-    await usuario.type(screen.getByRole('combobox', { name: 'Material, fila 1' }), 'Sal')
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Sal')
     await usuario.tab()
     const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
@@ -407,7 +407,7 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await llenarCompraValida(usuario)
-    const material = screen.getByRole('combobox', { name: 'Material, fila 1' })
+    const material = screen.getByRole('combobox', { name: 'Artículo, fila 1' })
     await usuario.clear(material)
     await usuario.type(material, 'Queso')
     await usuario.keyboard('{Escape}')

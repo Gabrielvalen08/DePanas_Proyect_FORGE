@@ -15,7 +15,7 @@ export const UNIDADES = ['lb', 'kg', 'g', 'oz', 'galon', 'litro', 'ml', 'unidad'
 
 // Campos obligatorios de cada fila (en el orden en que aparecen)
 const CAMPOS_FILA = [
-  { clave: 'material', nombre: 'Material' },
+  { clave: 'material', nombre: 'Artículo' },
   { clave: 'cantidad', nombre: 'Cantidad' },
   { clave: 'precio',   nombre: 'Precio unitario' },
 ]
@@ -420,10 +420,10 @@ export default function BloqueCompra({
           )}
 
           <table className={estilos.tabla}>
-            <caption className="solo-lector">Materiales de la compra</caption>
+            <caption className="solo-lector">Artículos de la compra</caption>
             <thead>
               <tr>
-                <th scope="col" className={estilos.colMaterial}>Material</th>
+                <th scope="col" className={estilos.colMaterial}>Artículo</th>
                 <th scope="col" className={estilos.colCantidad}>Cantidad</th>
                 <th scope="col" className={estilos.colPrecio}>Precio unitario</th>
                 <th scope="col" className={estilos.colMonto}>Monto</th>
@@ -446,7 +446,7 @@ export default function BloqueCompra({
                       <td>
                         <AutocompleteInput
                           id={`${id}-material-${fila.id}`}
-                          etiqueta={`Material, fila ${n}`}
+                          etiqueta={`Artículo, fila ${n}`}
                           etiquetaOculta
                           value={fila.material}
                           onChange={valor => cambiarFila(fila.id, 'material', valor)}

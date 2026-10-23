@@ -19,7 +19,7 @@ describe('exportar', () => {
     const csv = comprasACsv(COMPRAS)
     expect(csv.startsWith('﻿')).toBe(true)
     const lineas = csv.slice(1).trim().split('\r\n')
-    expect(lineas[0]).toBe('Fecha,Proveedor,Material,Cantidad,Unidad,Monto,Categoría,Producto')
+    expect(lineas[0]).toBe('Fecha,Proveedor,Artículo,Cantidad,Unidad,Monto,Categoría,Producto')
     expect(lineas).toHaveLength(4)
     expect(lineas[1]).toBe('2026-08-04,Selectos,Tocino La Rioja,1,lb,2.69,Materia Prima,Cachitos')
     expect(lineas[2]).toBe('2026-08-04,Selectos,"Bolsa al Vacio 8*12, ""grande""",1,unidad,17.00,Desechables,Tequeños')

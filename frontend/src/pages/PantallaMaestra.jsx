@@ -61,7 +61,7 @@ export default function PantallaMaestra({ puedeAgregar = true }) {
         <thead>
           <tr>
             <th scope="col">Proveedor</th>
-            <th scope="col" className={estilos.numerico}>Materiales</th>
+            <th scope="col" className={estilos.numerico}>Artículos</th>
             <th scope="col" className={estilos.numerico}>Cost</th>
             <th scope="col">Fecha</th>
             <th scope="col" className={estilos.colAbrir}><span className="solo-lector">Detalle</span></th>
@@ -78,12 +78,12 @@ export default function PantallaMaestra({ puedeAgregar = true }) {
                     type="button"
                     className={estilos.abrir}
                     onClick={() => setListaAbierta(lista)}
-                    aria-label={`Ver compra en ${lista.proveedor} del ${formatearFecha(lista.fecha)}, ${n} material${n !== 1 ? 'es' : ''}`}
+                    aria-label={`Ver compra en ${lista.proveedor} del ${formatearFecha(lista.fecha)}, ${n} artículo${n !== 1 ? 's' : ''}`}
                   >
                     <Insignia tono="neutro">{lista.proveedor}</Insignia>
                   </button>
                 </td>
-                <td data-etiqueta="Materiales" className={estilos.numerico}>{n}</td>
+                <td data-etiqueta="Artículos" className={estilos.numerico}>{n}</td>
                 <td data-etiqueta="Cost" className={`${estilos.numerico} ${estilos.gasto}`}>
                   {formatearPrecio(totalLista(lista))}
                 </td>

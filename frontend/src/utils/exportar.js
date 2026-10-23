@@ -6,7 +6,7 @@ import { fechaHoyISO } from './formato'
  *  - JSON: las compras completas, en el formato que acepta "Cargar datos" / importar-json.
  */
 
-const COLUMNAS = ['Fecha', 'Proveedor', 'Material', 'Cantidad', 'Unidad', 'Monto', 'Categoría', 'Producto']
+const COLUMNAS = ['Fecha', 'Proveedor', 'Artículo', 'Cantidad', 'Unidad', 'Monto', 'Categoría', 'Producto']
 
 /** Celda CSV: entre comillas si trae separadores, comillas o saltos de línea */
 function celda(valor) {

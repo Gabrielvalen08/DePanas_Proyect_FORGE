@@ -87,7 +87,7 @@ describe('PantallaMaestra', () => {
     expect(filtrar).toHaveAttribute('aria-expanded', 'true')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
-    await usuario.type(screen.getByLabelText('Material', { selector: 'input' }), 'arroz')
+    await usuario.type(screen.getByLabelText('Artículo', { selector: 'input' }), 'arroz')
     await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(2))
     expect(screen.getByRole('button', { name: /Filtrar, 1 filtro activo/ })).toBeInTheDocument()
 

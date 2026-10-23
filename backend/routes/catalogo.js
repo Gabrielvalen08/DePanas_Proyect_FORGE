@@ -27,7 +27,7 @@ import { Router } from 'express'
 import { enTransaccion, registrarEnCatalogo } from '../db.js'
 
 export const TIPOS = ['proveedor', 'categoria', 'material', 'producto']
-const NOMBRE_TIPO = { proveedor: 'proveedor', categoria: 'categoría', material: 'material', producto: 'producto' }
+const NOMBRE_TIPO = { proveedor: 'proveedor', categoria: 'categoría', material: 'artículo', producto: 'producto' }
 const ARTICULO = { proveedor: 'un', categoria: 'una', material: 'un', producto: 'un' }
 
 const ordenar = lista => lista.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
@@ -104,7 +104,7 @@ function asignar(db, material, categoria, producto) {
 function leerMateriales(cuerpo) {
   if (cuerpo?.materiales === undefined) return undefined
   if (!Array.isArray(cuerpo.materiales) || cuerpo.materiales.some(m => typeof m !== 'string')) {
-    throw fallo(400, 'La lista de materiales no es válida')
+    throw fallo(400, 'La lista de artículos no es válida')
   }
   const vistos = new Set()
   return cuerpo.materiales.map(texto).filter(m => m && !vistos.has(m.toLowerCase()) && vistos.add(m.toLowerCase()))
@@ -117,7 +117,7 @@ function leerMateriales(cuerpo) {
 function fijarMateriales(db, tipo, nombre, materiales) {
   const registrados = materiales.map(m => {
     const mat = buscar(db, 'material', m)
-    if (!mat) throw fallo(400, `No existe un material llamado «${m}»`)
+    if (!mat) throw fallo(400, `No existe un artículo llamado «${m}»`)
     return mat
   })
   const elegidos = new Set(registrados.map(m => m.nombre.toLowerCase()))
@@ -159,7 +159,7 @@ export function crearRutasCatalogo(getDb) {
     const material = texto(req.params.nombre)
     const categoria = texto(req.body?.categoria)
     const producto = texto(req.body?.producto)
-    if (!material) return res.status(400).json({ error: 'Falta el material' })
+    if (!material) return res.status(400).json({ error: 'Falta el artículo' })
     if (!categoria) return res.status(400).json({ error: 'Elige una categoría' })
     if (!producto) return res.status(400).json({ error: 'Elige un producto' })
 

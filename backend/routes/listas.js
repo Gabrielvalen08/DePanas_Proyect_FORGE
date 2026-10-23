@@ -56,14 +56,14 @@ export function validarCompra(cuerpo) {
 
   if (!proveedor) return { error: 'Falta el proveedor' }
   if (typeof fecha !== 'string' || !FECHA_ISO.test(fecha)) return { error: 'La fecha debe tener el formato AAAA-MM-DD' }
-  if (!Array.isArray(materiales) || materiales.length === 0) return { error: 'La compra necesita al menos un material' }
+  if (!Array.isArray(materiales) || materiales.length === 0) return { error: 'La compra necesita al menos un artículo' }
 
   const normalizados = []
   for (const [i, m] of materiales.entries()) {
     const material = typeof m?.material === 'string' ? m.material.trim() : ''
     const cantidad = Number(m?.cantidad)
     const monto = Number(m?.monto)
-    if (!material) return { error: `Fila ${i + 1}: falta el material` }
+    if (!material) return { error: `Fila ${i + 1}: falta el artículo` }
     if (!Number.isFinite(cantidad) || cantidad <= 0) return { error: `Fila ${i + 1}: la cantidad debe ser mayor a 0` }
     if (!Number.isFinite(monto) || monto <= 0) return { error: `Fila ${i + 1}: el monto debe ser mayor a 0` }
     normalizados.push({

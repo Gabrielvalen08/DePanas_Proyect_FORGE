@@ -29,7 +29,7 @@ describe('PantallaCatalogo', () => {
   it('muestra las cuatro opciones y pide elegir una', async () => {
     renderizar()
     const secciones = screen.getByRole('navigation', { name: 'Secciones del catálogo' })
-    for (const nombre of ['Proveedores', 'Categorías', 'Materiales', 'Productos']) {
+    for (const nombre of ['Proveedores', 'Categorías', 'Artículos', 'Productos']) {
       expect(within(secciones).getByRole('link', { name: new RegExp(nombre) })).toBeInTheDocument()
     }
     expect(screen.getByText(PANTALLA_CATALOGO.elegir.titulo)).toBeInTheDocument()
@@ -125,13 +125,13 @@ describe('PantallaCatalogo', () => {
 
   it('en Materiales se ven y se cambian la categoría y el producto de cada uno', async () => {
     const usuario = userEvent.setup()
-    renderizar('/catalogo/materiales')
+    renderizar('/catalogo/articulos')
     const fila = (await screen.findByRole('rowheader', { name: 'Tocino La Rioja' })).closest('tr')
     expect(within(fila).getByText('Materia Prima')).toBeInTheDocument()
     expect(within(fila).getByText('Cachitos')).toBeInTheDocument()
 
-    await usuario.click(within(fila).getByRole('button', { name: 'Editar material Tocino La Rioja' }))
-    const ventana = screen.getByRole('dialog', { name: 'Editar material' })
+    await usuario.click(within(fila).getByRole('button', { name: 'Editar artículo Tocino La Rioja' }))
+    const ventana = screen.getByRole('dialog', { name: 'Editar artículo' })
     expect(within(ventana).getByRole('button', { name: /Materia Prima/ })).toHaveAttribute('aria-pressed', 'true')
     await usuario.type(within(ventana).getByRole('textbox', { name: 'Buscar o agregar producto' }), 'Pastelitos{Enter}')
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
@@ -185,8 +185,8 @@ describe('PantallaCatalogo', () => {
 
   it('el buscador filtra sin distinguir tildes', async () => {
     const usuario = userEvent.setup()
-    renderizar('/catalogo/materiales')
-    await usuario.type(await screen.findByLabelText('Buscar material'), 'jamon')
+    renderizar('/catalogo/articulos')
+    await usuario.type(await screen.findByLabelText('Buscar artículo'), 'jamon')
     const nombres = screen.getAllByRole('rowheader').map(c => c.textContent)
     expect(nombres).toEqual(['Jamón de Pavo', 'Jamon Picnic', 'Jamon Virginia'])
   })
