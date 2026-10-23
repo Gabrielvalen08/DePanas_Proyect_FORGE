@@ -8,6 +8,7 @@ import {
   eliminarLista,
   fetchListas,
   asignarMaterial,
+  fetchCatalogo,
   getAsignacion,
   getCategorias,
   getMateriales,
@@ -121,7 +122,7 @@ describe('api: modo servidor', () => {
 
     const resultado = await asignarMaterial('Queso', { categoria: 'Lácteos', producto: 'Tequeños' })
     expect(resultado.categoriaNueva).toBe(true)
-    expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ categoria: 'Lácteos', producto: 'Tequeños' })
+    expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ categoria: 'Lácteos', productos: ['Tequeños'] })
     expect(necesitaAsignacion('Queso')).toBe(false)
     expect(getCategorias()).toContain('Lácteos')
     expect(localStorage.getItem('depanas_catalogo')).toBeNull()
@@ -203,7 +204,7 @@ describe('api: categoría y producto de cada material (modo local)', () => {
 
   it('los materiales del Excel ya traen su categoría y producto', () => {
     expect(getAsignacion('tocino la rioja')).toEqual({
-      existe: true, nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos',
+      existe: true, nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'],
     })
     expect(necesitaAsignacion('Tocino La Rioja')).toBe(false)
     expect(necesitaAsignacion('Queso')).toBe(true) // en el Excel no tiene asignación
@@ -215,10 +216,11 @@ describe('api: categoría y producto de cada material (modo local)', () => {
   it('un material nuevo se guarda con su categoría y producto, y crea los que no existían', async () => {
     const resultado = await asignarMaterial('Harina PAN', { categoria: 'materia prima', producto: 'Arepas Rellenas' })
     expect(resultado).toEqual({
-      material: { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas Rellenas' },
+      material: { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas Rellenas', productos: ['Arepas Rellenas'] },
       materialNuevo: true,
       categoriaNueva: false,
       productoNuevo: true,
+      productosNuevos: ['Arepas Rellenas'],
     })
     expect(necesitaAsignacion('harina pan')).toBe(false)
     expect(getMateriales()).toContain('Harina PAN')
@@ -228,6 +230,19 @@ describe('api: categoría y producto de cada material (modo local)', () => {
 
   it('pide categoría y producto', async () => {
     await expect(asignarMaterial('Sal', { categoria: '', producto: 'Todos' })).rejects.toThrow('Elige una categoría')
+    await expect(asignarMaterial('Sal', { categoria: 'Materia Prima', productos: [] })).rejects.toThrow('Elige al menos un producto')
+  })
+
+  it('un artículo puede llevar varios productos: se guardan todos y cada uno cuenta en el catálogo', async () => {
+    const resultado = await asignarMaterial('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas', 'Tequeños Fritos'] })
+    expect(resultado.material.producto).toBe('Arepas, Tequeños Fritos')
+    expect(resultado.productosNuevos).toEqual(['Tequeños Fritos'])
+    expect(getAsignacion('harina pan').productos).toEqual(['Arepas', 'Tequeños Fritos'])
+    expect(getProductos()).toContain('Tequeños Fritos')
+
+    const cat = await fetchCatalogo()
+    expect(cat.uso.producto['tequeños fritos']).toBe(1)
+    expect(cat.materiales.find(m => m.nombre === 'Harina PAN').productos).toEqual(['Arepas', 'Tequeños Fritos'])
   })
 })
 

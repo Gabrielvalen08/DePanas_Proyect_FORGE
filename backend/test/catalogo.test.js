@@ -95,7 +95,7 @@ test('cambiar el nombre, la categoría y el producto de un material se refleja e
   assert.equal(r.cuerpo.categoriaNueva, true)
   const fila = (await pedir(`${base}/compras`)).cuerpo[0].materiales[0]
   assert.deepEqual([fila.material, fila.categoria, fila.producto], ['Tocino ahumado', 'Carnes', 'Tequeños'])
-  assert.deepEqual(material(await catalogo(base), 'Tocino ahumado'), { nombre: 'Tocino ahumado', categoria: 'Carnes', producto: 'Tequeños' })
+  assert.deepEqual(material(await catalogo(base), 'Tocino ahumado'), { nombre: 'Tocino ahumado', categoria: 'Carnes', producto: 'Tequeños', productos: ['Tequeños'] })
 })
 
 test('renombrar una categoría la cambia en sus materiales y en las compras', async t => {
@@ -130,7 +130,7 @@ test('una compra con un proveedor o material nuevo los registra en el catálogo'
   })
   const cat = await catalogo(base)
   assert.ok(cat.proveedores.includes('Walmart'))
-  assert.deepEqual(material(cat, 'Servilletas'), { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos' })
+  assert.deepEqual(material(cat, 'Servilletas'), { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'] })
 })
 
 test('lo que se elimina no reaparece al reabrir la base', t => {
@@ -235,4 +235,50 @@ test('precios: cada material sugiere el precio unitario de su última compra y s
   // Se conserva la unidad de esa compra y los decimales largos se redondean
   await comprar('2026-10-09', 3, 1, 'kg')
   assert.deepEqual((await catalogo(base)).precios.arroz, { precio: 0.3333, unidad: 'kg' })
+})
+
+test('un artículo puede ir en varios productos: se guardan todos, cuentan en cada uno y las compras los llevan todos', async t => {
+  const base = await levantar(t)
+  const creado = await pedir(url(base, 'material'), 'POST', { nombre: 'Harina PAN', categoria: 'Materia Prima', productos: ['Arepas', 'Empanadas Nuevas'] })
+  assert.equal(creado.status, 200)
+  assert.equal(creado.cuerpo.producto, 'Arepas, Empanadas Nuevas')
+  assert.deepEqual(creado.cuerpo.productosNuevos, ['Empanadas Nuevas'])
+
+  let cat = await catalogo(base)
+  assert.deepEqual(material(cat, 'Harina PAN').productos, ['Arepas', 'Empanadas Nuevas'])
+  assert.ok(cat.productos.includes('Empanadas Nuevas'))
+  assert.equal(cat.uso.producto['empanadas nuevas'], 1)
+
+  // La compra guarda todos sus productos
+  await pedir(`${base}/compras`, 'POST', {
+    proveedor: 'Selectos', fecha: '2026-10-01',
+    materiales: [{ material: 'Harina PAN', cantidad: 1, unidad: 'kg', monto: 2, categoria: 'Materia Prima', producto: 'Arepas, Empanadas Nuevas' }],
+  })
+  assert.equal((await pedir(`${base}/compras`)).cuerpo[0].materiales[0].producto, 'Arepas, Empanadas Nuevas')
+
+  // Un producto que suma un artículo no le quita los que ya tenía
+  await pedir(url(base, 'producto'), 'POST', { nombre: 'Pastelitos', materiales: ['Harina PAN'] })
+  cat = await catalogo(base)
+  assert.deepEqual(material(cat, 'Harina PAN').productos, ['Arepas', 'Empanadas Nuevas', 'Pastelitos'])
+
+  // Renombrar un producto lo cambia dentro de la lista, en el catálogo y en la compra
+  const renombrado = await pedir(url(base, 'producto', 'Empanadas Nuevas'), 'PUT', { nombre: 'Empanadas Rellenas' })
+  assert.equal(renombrado.cuerpo.compras, 1)
+  cat = await catalogo(base)
+  assert.deepEqual(material(cat, 'Harina PAN').productos, ['Arepas', 'Empanadas Rellenas', 'Pastelitos'])
+  assert.equal((await pedir(`${base}/compras`)).cuerpo[0].materiales[0].producto, 'Arepas, Empanadas Rellenas, Pastelitos')
+
+  // Eliminar un producto lo quita de la lista; los demás se quedan
+  const eliminado = await pedir(url(base, 'producto', 'Arepas'), 'DELETE')
+  assert.equal(eliminado.cuerpo.materiales, 1)
+  cat = await catalogo(base)
+  assert.deepEqual(material(cat, 'Harina PAN').productos, ['Empanadas Rellenas', 'Pastelitos'])
+})
+
+test('el nombre de un producto no puede llevar comas (son el separador de la lista)', async t => {
+  const base = await levantar(t)
+  const r = await pedir(url(base, 'producto'), 'POST', { nombre: 'Arepas, Tequeños' })
+  assert.equal(r.status, 400)
+  assert.match(r.cuerpo.error, /no puede llevar comas/)
+  assert.equal((await pedir(url(base, 'material'), 'POST', { nombre: 'Sal', categoria: 'Materia Prima', productos: [] })).status, 400)
 })

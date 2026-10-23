@@ -18,13 +18,17 @@
  *
  * :tipo es proveedor | categoria | material | producto
  *
- * Cada material tiene una sola categoría y un solo producto. `materiales` en una
+ * Cada material tiene una sola categoría y uno o varios productos (en `producto`, como
+ * texto «Arepas, Empanadas»; ver shared/productos.js). `materiales` en una
  * categoría o un producto es la lista completa de los que la llevan: los que se
  * agregan la toman (y dejan la que tenían) y los que se quitan quedan sin asignar.
  */
 
 import { Router } from 'express'
 import { enTransaccion, registrarEnCatalogo } from '../db.js'
+import {
+  PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
+} from '../../shared/productos.js'
 
 export const TIPOS = ['proveedor', 'categoria', 'material', 'producto']
 const NOMBRE_TIPO = { proveedor: 'proveedor', categoria: 'categoría', material: 'artículo', producto: 'producto' }
@@ -42,11 +46,16 @@ function leerUso(db) {
   const enMateriales = campo => contar(db.prepare(
     `SELECT ${campo} AS k, COUNT(*) AS n FROM catalogo WHERE tipo = 'material' AND ${campo} != '' GROUP BY ${campo} COLLATE NOCASE`
   ).all())
+  // Un material con varios productos cuenta en cada uno
+  const porProducto = {}
+  for (const { producto } of db.prepare("SELECT producto FROM catalogo WHERE tipo = 'material'").all()) {
+    for (const p of listaProductos(producto)) porProducto[p.toLowerCase()] = (porProducto[p.toLowerCase()] ?? 0) + 1
+  }
   return {
     proveedor: enCompras('proveedor'),
     material: enCompras('material'),
     categoria: enMateriales('categoria'),
-    producto: enMateriales('producto'),
+    producto: porProducto,
   }
 }
 
@@ -73,7 +82,7 @@ export function leerCatalogo(db) {
     categorias: nombres('categoria'),
     productos: nombres('producto'),
     materiales: db.prepare("SELECT nombre, categoria, producto FROM catalogo WHERE tipo = 'material'").all()
-      .map(m => ({ ...m }))
+      .map(m => ({ ...m, productos: listaProductos(m.producto) }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
     uso: leerUso(db),
     precios: leerPrecios(db),
@@ -89,16 +98,37 @@ function fallo(status, mensaje) {
   return Object.assign(new Error(mensaje), { status })
 }
 
-/** Asigna categoría y producto a un material (registrando las que sean nuevas) y lo propaga a sus compras */
-function asignar(db, material, categoria, producto) {
-  const cat = registrarEnCatalogo(db, 'categoria', categoria)
-  const prod = registrarEnCatalogo(db, 'producto', producto)
-  db.prepare("UPDATE catalogo SET categoria = ?, producto = ? WHERE tipo = 'material' AND nombre = ?")
-    .run(cat.nombre, prod.nombre, material)
-  db.prepare('UPDATE ingresos SET categoria = ?, producto = ? WHERE material = ? COLLATE NOCASE')
-    .run(cat.nombre, prod.nombre, material)
-  return { cat, prod }
+/** Los productos del cuerpo (`productos` como lista o `producto` como texto); lanza si falta alguno o alguno lleva coma */
+function leerProductos(cuerpo) {
+  const lista = Array.isArray(cuerpo?.productos) ? cuerpo.productos.filter(p => typeof p === 'string') : cuerpo?.producto
+  if (Array.isArray(lista) && lista.some(p => !nombreProductoValido(p))) throw fallo(400, PRODUCTO_CON_COMA)
+  return listaProductos(lista)
 }
+
+/**
+ * Asigna categoría y productos a un material (registrando los que sean nuevos) y lo
+ * propaga a sus compras. Devuelve { cat, producto (texto), productosNuevos }
+ */
+function asignar(db, material, categoria, productos) {
+  const cat = registrarEnCatalogo(db, 'categoria', categoria)
+  const registrados = listaProductos(productos).map(p => registrarEnCatalogo(db, 'producto', p))
+  const producto = textoProductos(registrados.map(p => p.nombre))
+  db.prepare("UPDATE catalogo SET categoria = ?, producto = ? WHERE tipo = 'material' AND nombre = ?")
+    .run(cat.nombre, producto, material)
+  db.prepare('UPDATE ingresos SET categoria = ?, producto = ? WHERE material = ? COLLATE NOCASE')
+    .run(cat.nombre, producto, material)
+  return { cat, producto, productosNuevos: registrados.filter(p => p.nuevo).map(p => p.nombre) }
+}
+
+/** Lo que se devuelve de un material asignado */
+const respuestaAsignacion = ({ cat, producto, productosNuevos }) => ({
+  categoria: cat.nombre,
+  producto,
+  productos: listaProductos(producto),
+  categoriaNueva: cat.nuevo,
+  productoNuevo: productosNuevos.length > 0,
+  productosNuevos,
+})
 
 /** `materiales` del cuerpo: undefined (no se tocan), o una lista de nombres sin repetidos */
 function leerMateriales(cuerpo) {
@@ -120,6 +150,7 @@ function fijarMateriales(db, tipo, nombre, materiales) {
     if (!mat) throw fallo(400, `No existe un artículo llamado «${m}»`)
     return mat
   })
+  if (tipo === 'producto') return fijarMaterialesDeProducto(db, nombre, registrados)
   const elegidos = new Set(registrados.map(m => m.nombre.toLowerCase()))
   let cambios = 0
   // Los que ya no van quedan sin asignar (las compras conservan su texto, como al eliminar)
@@ -136,6 +167,45 @@ function fijarMateriales(db, tipo, nombre, materiales) {
     cambios++
   }
   return cambios
+}
+
+/**
+ * Producto: un material puede ir en varios. Los elegidos lo suman a su lista (y sus
+ * compras también); los quitados lo pierden en el catálogo (las compras conservan su texto).
+ */
+function fijarMaterialesDeProducto(db, nombre, registrados) {
+  const elegidos = new Set(registrados.map(m => m.nombre.toLowerCase()))
+  const actualizar = db.prepare("UPDATE catalogo SET producto = ? WHERE tipo = 'material' AND nombre = ?")
+  let cambios = 0
+  for (const mat of db.prepare("SELECT nombre, producto FROM catalogo WHERE tipo = 'material'").all()) {
+    if (elegidos.has(mat.nombre.toLowerCase()) || !tieneProducto(mat.producto, nombre)) continue
+    actualizar.run(sinProducto(mat.producto, nombre), mat.nombre)
+    cambios++
+  }
+  for (const mat of registrados) {
+    if (tieneProducto(mat.producto, nombre)) continue
+    const producto = conProducto(mat.producto, nombre)
+    actualizar.run(producto, mat.nombre)
+    db.prepare('UPDATE ingresos SET producto = ? WHERE material = ? COLLATE NOCASE').run(producto, mat.nombre)
+    cambios++
+  }
+  return cambios
+}
+
+/** Renombra un producto dentro de las listas de los materiales y de las filas de compras; devuelve cuántas compras cambiaron */
+function renombrarEnListas(db, anterior, nuevo) {
+  const catalogo = db.prepare("UPDATE catalogo SET producto = ? WHERE tipo = 'material' AND nombre = ?")
+  for (const m of db.prepare("SELECT nombre, producto FROM catalogo WHERE tipo = 'material'").all()) {
+    if (tieneProducto(m.producto, anterior)) catalogo.run(renombrarProducto(m.producto, anterior, nuevo), m.nombre)
+  }
+  const fila = db.prepare('UPDATE ingresos SET producto = ? WHERE id = ?')
+  const compras = new Set()
+  for (const f of db.prepare("SELECT id, compra_id, producto FROM ingresos WHERE producto IS NOT NULL AND producto != ''").all()) {
+    if (!tieneProducto(f.producto, anterior)) continue
+    fila.run(renombrarProducto(f.producto, anterior, nuevo), f.id)
+    compras.add(f.compra_id)
+  }
+  return compras.size
 }
 
 const conMateriales = tipo => tipo === 'categoria' || tipo === 'producto'
@@ -158,20 +228,15 @@ export function crearRutasCatalogo(getDb) {
   router.put('/materiales/:nombre', (req, res) => {
     const material = texto(req.params.nombre)
     const categoria = texto(req.body?.categoria)
-    const producto = texto(req.body?.producto)
     if (!material) return res.status(400).json({ error: 'Falta el artículo' })
     if (!categoria) return res.status(400).json({ error: 'Elige una categoría' })
-    if (!producto) return res.status(400).json({ error: 'Elige un producto' })
 
     responder(res, db => enTransaccion(db, () => {
+      const productos = leerProductos(req.body)
+      if (!productos.length) throw fallo(400, 'Elige al menos un producto')
       const mat = registrarEnCatalogo(db, 'material', material)
-      const { cat, prod } = asignar(db, mat.nombre, categoria, producto)
-      return {
-        material: { nombre: mat.nombre, categoria: cat.nombre, producto: prod.nombre },
-        materialNuevo: mat.nuevo,
-        categoriaNueva: cat.nuevo,
-        productoNuevo: prod.nuevo,
-      }
+      const { categoria: c, producto, productos: lista, ...nuevos } = respuestaAsignacion(asignar(db, mat.nombre, categoria, productos))
+      return { material: { nombre: mat.nombre, categoria: c, producto, productos: lista }, materialNuevo: mat.nuevo, ...nuevos }
     }))
   })
 
@@ -180,22 +245,22 @@ export function crearRutasCatalogo(getDb) {
     if (!TIPOS.includes(tipo)) return res.status(404).json({ error: 'Tipo de catálogo desconocido' })
     const nombre = texto(req.body?.nombre)
     const categoria = texto(req.body?.categoria)
-    const producto = texto(req.body?.producto)
     if (!nombre) return res.status(400).json({ error: `Escribe el nombre del ${NOMBRE_TIPO[tipo]}` })
+    if (tipo === 'producto' && !nombreProductoValido(nombre)) return res.status(400).json({ error: PRODUCTO_CON_COMA })
     if (tipo === 'material' && !categoria) return res.status(400).json({ error: 'Elige una categoría' })
-    if (tipo === 'material' && !producto) return res.status(400).json({ error: 'Elige un producto' })
 
     responder(res, db => enTransaccion(db, () => {
+      const productos = tipo === 'material' ? leerProductos(req.body) : []
+      if (tipo === 'material' && !productos.length) throw fallo(400, 'Elige al menos un producto')
       const materiales = conMateriales(tipo) ? leerMateriales(req.body) : undefined
       const existente = buscar(db, tipo, nombre)
       if (existente) throw fallo(409, `Ya existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${existente.nombre}»`)
       registrarEnCatalogo(db, tipo, nombre)
       if (tipo !== 'material') {
         const cambiados = materiales ? fijarMateriales(db, tipo, nombre, materiales) : 0
-        return { nombre, materiales: cambiados, categoriaNueva: false, productoNuevo: false }
+        return { nombre, materiales: cambiados, categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
       }
-      const { cat, prod } = asignar(db, nombre, categoria, producto)
-      return { nombre, categoria: cat.nombre, producto: prod.nombre, categoriaNueva: cat.nuevo, productoNuevo: prod.nuevo }
+      return { nombre, ...respuestaAsignacion(asignar(db, nombre, categoria, productos)) }
     }))
   })
 
@@ -205,12 +270,13 @@ export function crearRutasCatalogo(getDb) {
     const actual = texto(req.params.nombre)
     const nuevo = texto(req.body?.nombre) || actual
     const categoria = texto(req.body?.categoria)
-    const producto = texto(req.body?.producto)
-    if (tipo === 'material' && (categoria === '') !== (producto === '')) {
-      return res.status(400).json({ error: categoria ? 'Elige un producto' : 'Elige una categoría' })
-    }
+    if (tipo === 'producto' && !nombreProductoValido(nuevo)) return res.status(400).json({ error: PRODUCTO_CON_COMA })
 
     responder(res, db => enTransaccion(db, () => {
+      const productos = tipo === 'material' ? leerProductos(req.body) : []
+      if (tipo === 'material' && (categoria === '') !== (productos.length === 0)) {
+        throw fallo(400, categoria ? 'Elige al menos un producto' : 'Elige una categoría')
+      }
       const materiales = conMateriales(tipo) ? leerMateriales(req.body) : undefined
       const registro = buscar(db, tipo, actual)
       if (!registro) throw fallo(404, `No existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${actual}»`)
@@ -225,22 +291,25 @@ export function crearRutasCatalogo(getDb) {
       if (tipo === 'proveedor' || tipo === 'material') {
         compras = Number(db.prepare(`SELECT COUNT(DISTINCT compra_id) AS n FROM ingresos WHERE ${tipo} = ? COLLATE NOCASE`).get(registro.nombre).n)
         db.prepare(`UPDATE ingresos SET ${tipo} = ? WHERE ${tipo} = ? COLLATE NOCASE`).run(nuevo, registro.nombre)
+      } else if (tipo === 'producto') {
+        // Producto: dentro de la lista de cada material y de cada fila de compra
+        compras = renombrarEnListas(db, registro.nombre, nuevo)
       } else {
-        // Categoría o producto: también en los materiales que la usan
+        // Categoría: también en los materiales que la usan
         db.prepare(`UPDATE catalogo SET ${tipo} = ? WHERE tipo = 'material' AND ${tipo} = ? COLLATE NOCASE`).run(nuevo, registro.nombre)
         compras = Number(db.prepare(`SELECT COUNT(DISTINCT compra_id) AS n FROM ingresos WHERE ${tipo} = ? COLLATE NOCASE`).get(registro.nombre).n)
         db.prepare(`UPDATE ingresos SET ${tipo} = ? WHERE ${tipo} = ? COLLATE NOCASE`).run(nuevo, registro.nombre)
       }
 
-      let categoriaNueva = false
-      let productoNuevo = false
-      if (tipo === 'material' && categoria) {
-        const { cat, prod } = asignar(db, nuevo, categoria, producto)
-        categoriaNueva = cat.nuevo
-        productoNuevo = prod.nuevo
-      }
+      let asignacion = { categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
+      if (tipo === 'material' && categoria) asignacion = respuestaAsignacion(asignar(db, nuevo, categoria, productos))
       const cambiados = materiales ? fijarMateriales(db, tipo, nuevo, materiales) : 0
-      return { anterior: registro.nombre, nombre: nuevo, ...buscar(db, tipo, nuevo), compras, materiales: cambiados, categoriaNueva, productoNuevo }
+      const guardado = buscar(db, tipo, nuevo)
+      const extra = tipo === 'material' ? { productos: listaProductos(guardado.producto) } : {}
+      return {
+        anterior: registro.nombre, nombre: nuevo, ...guardado, ...extra, compras, materiales: cambiados,
+        categoriaNueva: asignacion.categoriaNueva, productoNuevo: asignacion.productoNuevo, productosNuevos: asignacion.productosNuevos,
+      }
     }))
   })
 
@@ -255,9 +324,17 @@ export function crearRutasCatalogo(getDb) {
       db.prepare('DELETE FROM catalogo WHERE tipo = ? AND nombre = ?').run(tipo, registro.nombre)
       // Los materiales que usaban la categoría o el producto la vuelven a pedir al registrar una compra
       let materiales = 0
-      if (tipo === 'categoria' || tipo === 'producto') {
+      if (tipo === 'categoria') {
         materiales = Number(db.prepare(`UPDATE catalogo SET ${tipo} = '' WHERE tipo = 'material' AND ${tipo} = ? COLLATE NOCASE`)
           .run(registro.nombre).changes)
+      } else if (tipo === 'producto') {
+        // Sale de la lista de cada material; el que se quede sin productos lo volverá a pedir
+        const actualizar = db.prepare("UPDATE catalogo SET producto = ? WHERE tipo = 'material' AND nombre = ?")
+        for (const m of db.prepare("SELECT nombre, producto FROM catalogo WHERE tipo = 'material'").all()) {
+          if (!tieneProducto(m.producto, registro.nombre)) continue
+          actualizar.run(sinProducto(m.producto, registro.nombre), m.nombre)
+          materiales++
+        }
       }
       return { nombre: registro.nombre, materiales }
     }))
