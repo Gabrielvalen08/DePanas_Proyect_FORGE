@@ -323,3 +323,38 @@ test('ficha del proveedor: ubicación, varios teléfonos y contactos; se conserv
   await pedir(url(base, 'proveedor', 'Pulpería Don Juan'), 'DELETE')
   assert.equal((await catalogo(base)).fichas['pulpería don juan'], undefined)
 })
+
+test('cargar un respaldo de una sección: crea lo que falta, actualiza lo que existe y no borra nada', async t => {
+  const base = await levantar(t)
+  const importar = (tipo, filas) => pedir(`${base}/catalogo/${tipo}/importar`, 'POST', { filas })
+
+  // Proveedores: uno nuevo con ficha y uno existente que la recibe
+  const prov = await importar('proveedor', [
+    { nombre: 'La Pulpería', ubicacion: 'Santa Tecla', telefonos: ['7123-4567'], contactos: [] },
+    { nombre: 'mmag', ubicacion: '', telefonos: ['2222-3333'], contactos: [{ nombre: 'Ana', telefono: '' }] },
+  ])
+  assert.equal(prov.status, 200)
+  assert.deepEqual(prov.cuerpo, { nuevos: 1, actualizados: 1, omitidos: 0 })
+  let cat = await catalogo(base)
+  assert.ok(cat.proveedores.includes('La Pulpería'))
+  assert.deepEqual(cat.fichas.mmag.telefonos, ['2222-3333'])
+
+  // Artículos: toma la categoría y suma productos (no quita los que tenía)
+  const art = await importar('material', [{ nombre: 'Tocino La Rioja', categoria: 'Carnes', productos: ['Tequeños'] }])
+  assert.deepEqual(art.cuerpo, { nuevos: 0, actualizados: 1, omitidos: 0 })
+  cat = await catalogo(base)
+  assert.equal(material(cat, 'Tocino La Rioja').categoria, 'Carnes')
+  assert.deepEqual(material(cat, 'Tocino La Rioja').productos, ['Cachitos', 'Tequeños'])
+
+  // Productos: suma artículos; los que no existen se omiten
+  const prod = await importar('producto', [{ nombre: 'Pastelitos', articulos: ['Tocino La Rioja', 'No existe'] }])
+  assert.deepEqual(prod.cuerpo, { nuevos: 1, actualizados: 0, omitidos: 1 })
+  cat = await catalogo(base)
+  assert.deepEqual(material(cat, 'Tocino La Rioja').productos, ['Cachitos', 'Tequeños', 'Pastelitos'])
+
+  // Un archivo inválido no cambia nada (todo o nada) y explica qué fila falla
+  const malo = await importar('material', [{ nombre: 'Sal', categoria: 'Materia Prima', productos: ['Todos'] }, { nombre: 'Azúcar', categoria: '' }])
+  assert.equal(malo.status, 400)
+  assert.match(malo.cuerpo.error, /Fila 2: falta la categoría/)
+  assert.equal(material(await catalogo(base), 'Sal'), undefined)
+})

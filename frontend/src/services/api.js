@@ -27,7 +27,8 @@ import {
 } from '../../../shared/productos.js'
 import { fichaVacia, leerFicha, normalizarFicha } from '../../../shared/proveedores.js'
 import { CARGAR } from '../utils/mensajes'
-import { comprasACsv, comprasAJson, nombreArchivo } from '../utils/exportar'
+import { catalogoACsv, catalogoAJson, comprasACsv, comprasAJson, nombreArchivo, nombreArchivoCatalogo } from '../utils/exportar'
+import { MENSAJES_CATALOGO_JSON, filasDelCatalogo, validarCatalogoJSON } from '../../../shared/catalogo-json.js'
 import { RUTAS_ASIGNABLES, RUTA_USUARIOS, migrarPermisos } from '../utils/permisos'
 import { USUARIOS as MENSAJES_USUARIOS } from '../utils/mensajes'
 
@@ -1107,6 +1108,94 @@ export async function exportarCompras({ desde = '', hasta = '', formato = 'csv' 
   const tipo = csv ? 'text/csv;charset=utf-8' : 'application/json'
   descargarBlob(new Blob([contenido], { type: tipo }), nombreArchivo(desde, hasta, csv ? 'csv' : 'json'))
   return compras.length
+}
+
+// ---------------------------------------------------------------------------
+// Exportar y Cargar de cada sección del Catálogo (menú ⋮ de su lista)
+// ---------------------------------------------------------------------------
+
+/** Descarga la sección `tipo` en CSV (Excel) o respaldo .json. Devuelve cuántas filas lleva. */
+export async function exportarCatalogo(tipo, formato = 'csv') {
+  const filas = filasDelCatalogo(tipo, await fetchCatalogo())
+  if (filas.length === 0) throw new Error(MENSAJES_CATALOGO_JSON.vacio(tipo))
+  const csv = formato === 'csv'
+  const contenido = csv ? catalogoACsv(tipo, filas) : catalogoAJson(tipo, filas)
+  descargarBlob(new Blob([contenido], { type: csv ? 'text/csv;charset=utf-8' : 'application/json' }), nombreArchivoCatalogo(tipo, csv ? 'csv' : 'json'))
+  return filas.length
+}
+
+/** Lee un respaldo .json de la sección `tipo` y devuelve sus filas validadas (o lanza un error legible) */
+export async function leerCatalogoJSON(archivo, tipo) {
+  if (!archivo || !/\.json$/i.test(archivo.name)) throw new Error(CARGAR.extension)
+  let datos
+  try { datos = JSON.parse((await archivo.text()).replace(/^\uFEFF/, '')) }
+  catch { throw new Error(CARGAR.jsonInvalido) }
+  return validarCatalogoJSON(datos, tipo)
+}
+
+/**
+ * Carga las filas de un respaldo en la sección `tipo`: crea lo que falta y actualiza lo
+ * que existe, sin borrar nada (las mismas reglas que el backend). Todo o nada.
+ * Devuelve { nuevos, actualizados, omitidos }.
+ */
+export async function importarCatalogo(tipo, filas) {
+  const limpias = validarCatalogoJSON(filas, tipo)
+  if ((await detectarModo()) === 'servidor') {
+    const resultado = await pedirJSON(`/catalogo/${tipo}/importar`, 'POST', { filas: limpias })
+    await refrescarCache()
+    return resultado
+  }
+  await delay(100)
+  const cat = getCatalogoLocal()
+  const listas = getListas()
+  let nuevos = 0
+  let actualizados = 0
+  let omitidos = 0
+  let comprasCambiadas = false
+  // Las compras locales de un artículo toman su categoría o sus productos nuevos
+  const propagar = (material, campos) => {
+    for (const l of listas) {
+      for (const linea of l.materiales) {
+        if (clave(linea.material) === clave(material)) {
+          Object.assign(linea, campos)
+          comprasCambiadas = true
+        }
+      }
+    }
+  }
+  for (const fila of limpias) {
+    const { nombre, nuevo } = registrarEn(cat, tipo, fila.nombre)
+    if (nuevo) nuevos++
+    else actualizados++
+    if (tipo === 'proveedor') {
+      const ficha = { ubicacion: fila.ubicacion, telefonos: fila.telefonos, contactos: fila.contactos }
+      if (!fichaVacia(ficha)) fijarFichaLocal(cat, nombre, ficha)
+    } else if (tipo === 'material') {
+      const destino = cat.materiales.find(m => m.nombre === nombre)
+      const c = registrarEn(cat, 'categoria', fila.categoria)
+      const p = registrarProductos(cat, [...listaProductos(destino.producto), ...fila.productos])
+      Object.assign(destino, { categoria: c.nombre, producto: p.texto })
+      propagar(nombre, { categoria: c.nombre, producto: p.texto })
+    } else {
+      for (const articulo of fila.articulos) {
+        const mat = cat.materiales.find(m => clave(m.nombre) === clave(articulo))
+        if (!mat) {
+          omitidos++
+          continue
+        }
+        if (tipo === 'categoria' && mat.categoria !== nombre) {
+          mat.categoria = nombre
+          propagar(mat.nombre, { categoria: nombre })
+        } else if (tipo === 'producto' && !tieneProducto(mat.producto, nombre)) {
+          mat.producto = conProducto(mat.producto, nombre)
+          propagar(mat.nombre, { producto: mat.producto })
+        }
+      }
+    }
+  }
+  setCatalogoLocal(cat)
+  if (comprasCambiadas) setListas(listas)
+  return { nuevos, actualizados, omitidos }
 }
 
 // ---------------------------------------------------------------------------

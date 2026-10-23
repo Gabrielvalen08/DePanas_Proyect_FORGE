@@ -8,6 +8,7 @@ import {
   eliminarLista,
   fetchListas,
   asignarMaterial,
+  importarCatalogo,
   eliminarDelCatalogo,
   editarEnCatalogo,
   agregarAlCatalogo,
@@ -128,6 +129,16 @@ describe('api: modo servidor', () => {
     expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ categoria: 'Lácteos', productos: ['Tequeños'] })
     expect(necesitaAsignacion('Queso')).toBe(false)
     expect(getCategorias()).toContain('Lácteos')
+    expect(localStorage.getItem('depanas_catalogo')).toBeNull()
+  })
+
+  it('cargar un respaldo de una sección va al backend con las filas ya validadas', async () => {
+    const llamadas = simularServidor({ 'POST /catalogo/proveedor/importar': { cuerpo: { nuevos: 1, actualizados: 0, omitidos: 0 } } })
+    const r = await importarCatalogo('proveedor', [{ nombre: ' La Pulpería ', telefonos: ['7123-4567', ''] }])
+    expect(r).toEqual({ nuevos: 1, actualizados: 0, omitidos: 0 })
+    expect(llamadas.find(l => l.metodo === 'POST').cuerpo).toEqual({
+      filas: [{ nombre: 'La Pulpería', ubicacion: '', telefonos: ['7123-4567'], contactos: [] }],
+    })
     expect(localStorage.getItem('depanas_catalogo')).toBeNull()
   })
 
@@ -271,6 +282,29 @@ describe('api: ficha del proveedor (modo local)', () => {
     await expect(agregarAlCatalogo('proveedor', { nombre: 'X', ficha: { telefonos: ['7123-4567', 'hola'] } }))
       .rejects.toMatchObject({ campo: 'telefono-1' })
     expect((await fetchCatalogo()).proveedores).not.toContain('X')
+  })
+})
+
+describe('api: cargar un respaldo de una sección del Catálogo (modo local)', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('crea lo que falta, actualiza lo que existe, suma productos y omite artículos que no existen', async () => {
+    expect(await importarCatalogo('proveedor', [{ nombre: 'La Pulpería', ubicacion: 'Santa Tecla', telefonos: [], contactos: [] }]))
+      .toEqual({ nuevos: 1, actualizados: 0, omitidos: 0 })
+    expect((await fetchCatalogo()).fichas['la pulpería'].ubicacion).toBe('Santa Tecla')
+
+    expect(await importarCatalogo('material', [{ nombre: 'Tocino La Rioja', categoria: 'Carnes', productos: ['Tequeños'] }]))
+      .toEqual({ nuevos: 0, actualizados: 1, omitidos: 0 })
+    expect(getAsignacion('Tocino La Rioja')).toMatchObject({ categoria: 'Carnes', productos: ['Cachitos', 'Tequeños'] })
+
+    expect(await importarCatalogo('producto', [{ nombre: 'Pastelitos', articulos: ['Tocino La Rioja', 'No existe'] }]))
+      .toEqual({ nuevos: 1, actualizados: 0, omitidos: 1 })
+    expect(getAsignacion('Tocino La Rioja').productos).toEqual(['Cachitos', 'Tequeños', 'Pastelitos'])
+  })
+
+  it('un respaldo de otra sección o con filas inválidas se rechaza sin cambiar nada', async () => {
+    await expect(importarCatalogo('material', [{ nombre: 'Sal', categoria: '' }])).rejects.toThrow('Fila 1: falta la categoría')
+    expect(getAsignacion('Sal').existe).toBe(false)
   })
 })
 

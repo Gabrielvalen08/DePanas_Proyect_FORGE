@@ -15,6 +15,9 @@
  *                                             producto; en una categoría o un producto, sus
  *                                             materiales) y lo actualiza en todas las compras
  *   DELETE /api/catalogo/:tipo/:nombre      → quita la opción; las compras conservan su texto
+ *   POST   /api/catalogo/:tipo/importar     → carga { filas } de un respaldo de la sección (shared/catalogo-json.js):
+ *                                             crea lo que falta y actualiza lo que existe, sin borrar nada.
+ *                                             Todo o nada. → { nuevos, actualizados, omitidos }
  *
  * :tipo es proveedor | categoria | material | producto
  *
@@ -30,6 +33,7 @@ import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../shared/productos.js'
 import { fichaVacia, leerFicha, normalizarFicha } from '../../shared/proveedores.js'
+import { validarCatalogoJSON } from '../../shared/catalogo-json.js'
 
 export const TIPOS = ['proveedor', 'categoria', 'material', 'producto']
 const NOMBRE_TIPO = { proveedor: 'proveedor', categoria: 'categoría', material: 'artículo', producto: 'producto' }
@@ -237,6 +241,47 @@ function renombrarEnListas(db, anterior, nuevo) {
 
 const conMateriales = tipo => tipo === 'categoria' || tipo === 'producto'
 
+/**
+ * Aplica las filas (ya validadas) de un respaldo de la sección. Nunca borra: un proveedor
+ * toma la ficha del archivo si trae datos; un artículo toma su categoría y suma sus
+ * productos; una categoría o un producto suma sus artículos (los que no existen se omiten).
+ */
+function importarFilas(db, tipo, filas) {
+  let nuevos = 0
+  let actualizados = 0
+  let omitidos = 0
+  for (const fila of filas) {
+    const { nombre, nuevo } = registrarEnCatalogo(db, tipo, fila.nombre)
+    if (nuevo) nuevos++
+    else actualizados++
+    if (tipo === 'proveedor') {
+      const ficha = { ubicacion: fila.ubicacion, telefonos: fila.telefonos, contactos: fila.contactos }
+      if (!fichaVacia(ficha)) guardarFicha(db, nombre, ficha)
+    } else if (tipo === 'material') {
+      const actual = buscar(db, 'material', nombre)
+      asignar(db, nombre, fila.categoria, [...listaProductos(actual?.producto), ...fila.productos])
+    } else {
+      for (const articulo of fila.articulos) {
+        const mat = buscar(db, 'material', articulo)
+        if (!mat) {
+          omitidos++
+          continue
+        }
+        if (tipo === 'categoria') {
+          if (mat.categoria === nombre) continue
+          db.prepare("UPDATE catalogo SET categoria = ? WHERE tipo = 'material' AND nombre = ?").run(nombre, mat.nombre)
+          db.prepare('UPDATE ingresos SET categoria = ? WHERE material = ? COLLATE NOCASE').run(nombre, mat.nombre)
+        } else if (!tieneProducto(mat.producto, nombre)) {
+          const producto = conProducto(mat.producto, nombre)
+          db.prepare("UPDATE catalogo SET producto = ? WHERE tipo = 'material' AND nombre = ?").run(producto, mat.nombre)
+          db.prepare('UPDATE ingresos SET producto = ? WHERE material = ? COLLATE NOCASE').run(producto, mat.nombre)
+        }
+      }
+    }
+  }
+  return { nuevos, actualizados, omitidos }
+}
+
 export function crearRutasCatalogo(getDb) {
   const router = Router()
 
@@ -265,6 +310,18 @@ export function crearRutasCatalogo(getDb) {
       const { categoria: c, producto, productos: lista, ...nuevos } = respuestaAsignacion(asignar(db, mat.nombre, categoria, productos))
       return { material: { nombre: mat.nombre, categoria: c, producto, productos: lista }, materialNuevo: mat.nuevo, ...nuevos }
     }))
+  })
+
+  router.post('/:tipo/importar', (req, res) => {
+    const { tipo } = req.params
+    if (!TIPOS.includes(tipo)) return res.status(404).json({ error: 'Tipo de catálogo desconocido' })
+    let filas
+    try {
+      filas = validarCatalogoJSON(req.body?.filas, tipo)
+    } catch (err) {
+      return res.status(400).json({ error: err.message })
+    }
+    responder(res, db => enTransaccion(db, () => importarFilas(db, tipo, filas)))
   })
 
   router.post('/:tipo', (req, res) => {
