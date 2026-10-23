@@ -29,7 +29,7 @@ describe('PantallaCatalogo', () => {
   it('muestra las cuatro opciones y pide elegir una', async () => {
     renderizar()
     const secciones = screen.getByRole('navigation', { name: 'Secciones del catálogo' })
-    for (const nombre of ['Proveedores', 'Categorías', 'Materiales', 'Productos']) {
+    for (const nombre of ['Proveedores', 'Categorías', 'Artículos', 'Productos']) {
       expect(within(secciones).getByRole('link', { name: new RegExp(nombre) })).toBeInTheDocument()
     }
     expect(screen.getByText(PANTALLA_CATALOGO.elegir.titulo)).toBeInTheDocument()
@@ -96,6 +96,70 @@ describe('PantallaCatalogo', () => {
     expect(screen.getByRole('dialog', { name: 'Editar proveedor' })).toBeInTheDocument()
   })
 
+  it('la ficha del proveedor guarda ubicación, varios teléfonos y contactos, y la tabla los muestra', async () => {
+    const usuario = userEvent.setup()
+    renderizar('/catalogo/proveedores')
+    await usuario.click(await screen.findByRole('button', { name: 'Agregar proveedor' }))
+    const ventana = screen.getByRole('dialog', { name: 'Nuevo proveedor' })
+    const T = PANTALLA_CATALOGO.ficha
+
+    await usuario.type(within(ventana).getByLabelText('Nombre'), 'La Pulpería')
+    await usuario.type(within(ventana).getByLabelText(T.ubicacion), 'Santa Tecla')
+    await usuario.type(within(ventana).getByLabelText(T.telefono(1)), '7123-4567')
+    await usuario.click(within(ventana).getByRole('button', { name: T.agregarTelefono }))
+    await usuario.type(within(ventana).getByLabelText(T.telefono(2)), 'hola')
+    await usuario.click(within(ventana).getByRole('button', { name: T.agregarContacto }))
+    await usuario.type(within(ventana).getByLabelText(T.contactoNombre(1)), 'Ana')
+
+    // Un teléfono inválido se marca antes de pedir la confirmación
+    await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(within(ventana).getByLabelText(T.telefono(2))).toHaveAttribute('aria-invalid', 'true')
+
+    await usuario.clear(within(ventana).getByLabelText(T.telefono(2)))
+    await usuario.type(within(ventana).getByLabelText(T.telefono(2)), '2222-3333')
+    await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
+
+    const fila = (await screen.findByRole('rowheader', { name: 'La Pulpería' })).closest('tr')
+    expect(within(fila).getByText('Santa Tecla')).toBeInTheDocument()
+    expect(within(fila).getByText(/7123-4567/)).toBeInTheDocument()
+    expect(within(fila).getByText(T.otros(1))).toBeInTheDocument()
+    expect(within(fila).getByText('Ana')).toBeInTheDocument()
+  })
+
+  it('cada sección tiene su menú ⋮ para exportar y cargar; cargar un respaldo pide confirmar y lo aplica', async () => {
+    const usuario = userEvent.setup()
+    const A = PANTALLA_CATALOGO.archivo
+    renderizar('/catalogo/proveedores')
+    await usuario.click(await screen.findByRole('button', { name: A.masAcciones('proveedor') }))
+    expect(screen.getAllByRole('menuitem').map(o => o.textContent)).toEqual([A.exportarCsv, A.exportarJson, A.cargar])
+    await usuario.keyboard('{Escape}')
+
+    const respaldo = { tipo: 'proveedor', version: 1, filas: [{ nombre: 'La Pulpería', ubicacion: 'Santa Tecla', telefonos: [], contactos: [] }] }
+    const archivo = new File([JSON.stringify(respaldo)], 'proveedores.json', { type: 'application/json' })
+    await usuario.upload(screen.getByLabelText(A.elegirArchivo('proveedor')), archivo)
+
+    const confirmacion = await screen.findByRole('alertdialog', { name: A.confirmarCargar.titulo('proveedor') })
+    expect(within(confirmacion).getByText(A.confirmarCargar.mensaje('proveedor', 1, 'proveedores.json'))).toBeInTheDocument()
+    await usuario.click(within(confirmacion).getByRole('button', { name: A.confirmarCargar.confirmar }))
+
+    expect(await screen.findByText(A.cargado('proveedor', { nuevos: 1, actualizados: 0, omitidos: 0 }))).toBeInTheDocument()
+    const fila = (await screen.findByRole('rowheader', { name: 'La Pulpería' })).closest('tr')
+    expect(within(fila).getByText('Santa Tecla')).toBeInTheDocument()
+  })
+
+  it('un respaldo de otra sección no se carga y avisa por qué', async () => {
+    const usuario = userEvent.setup()
+    const A = PANTALLA_CATALOGO.archivo
+    renderizar('/catalogo/proveedores')
+    await screen.findByRole('button', { name: A.masAcciones('proveedor') })
+    const archivo = new File([JSON.stringify({ tipo: 'categoria', version: 1, filas: [{ nombre: 'X', articulos: [] }] })], 'cat.json', { type: 'application/json' })
+    await usuario.upload(screen.getByLabelText(A.elegirArchivo('proveedor')), archivo)
+    expect(await screen.findByText(/Este archivo trae categorías, no proveedores/)).toBeInTheDocument()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
   it('renombra un proveedor: avisa en cuántas compras se cambió', async () => {
     const usuario = userEvent.setup()
     renderizar('/catalogo/proveedores')
@@ -123,15 +187,15 @@ describe('PantallaCatalogo', () => {
     expect(screen.getByRole('dialog', { name: 'Nuevo proveedor' })).toBeInTheDocument()
   })
 
-  it('en Materiales se ven y se cambian la categoría y el producto de cada uno', async () => {
+  it('en Artículos se ven y se cambian la categoría y los productos de cada uno (un producto nuevo se suma a los que tenía)', async () => {
     const usuario = userEvent.setup()
-    renderizar('/catalogo/materiales')
+    renderizar('/catalogo/articulos')
     const fila = (await screen.findByRole('rowheader', { name: 'Tocino La Rioja' })).closest('tr')
     expect(within(fila).getByText('Materia Prima')).toBeInTheDocument()
     expect(within(fila).getByText('Cachitos')).toBeInTheDocument()
 
-    await usuario.click(within(fila).getByRole('button', { name: 'Editar material Tocino La Rioja' }))
-    const ventana = screen.getByRole('dialog', { name: 'Editar material' })
+    await usuario.click(within(fila).getByRole('button', { name: 'Editar artículo Tocino La Rioja' }))
+    const ventana = screen.getByRole('dialog', { name: 'Editar artículo' })
     expect(within(ventana).getByRole('button', { name: /Materia Prima/ })).toHaveAttribute('aria-pressed', 'true')
     await usuario.type(within(ventana).getByRole('textbox', { name: 'Buscar o agregar producto' }), 'Pastelitos{Enter}')
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
@@ -140,7 +204,7 @@ describe('PantallaCatalogo', () => {
     expect(await screen.findByText(/Guardamos los cambios de «Tocino La Rioja»\. Y estrenamos el producto «Pastelitos»\./)).toBeInTheDocument()
     await waitFor(() => {
       const actualizada = screen.getByRole('rowheader', { name: 'Tocino La Rioja' }).closest('tr')
-      expect(within(actualizada).getByText('Pastelitos')).toBeInTheDocument()
+      expect(within(actualizada).getByText('Cachitos, Pastelitos')).toBeInTheDocument()
     })
   })
 
@@ -185,8 +249,8 @@ describe('PantallaCatalogo', () => {
 
   it('el buscador filtra sin distinguir tildes', async () => {
     const usuario = userEvent.setup()
-    renderizar('/catalogo/materiales')
-    await usuario.type(await screen.findByLabelText('Buscar material'), 'jamon')
+    renderizar('/catalogo/articulos')
+    await usuario.type(await screen.findByLabelText('Buscar artículo'), 'jamon')
     const nombres = screen.getAllByRole('rowheader').map(c => c.textContent)
     expect(nombres).toEqual(['Jamón de Pavo', 'Jamon Picnic', 'Jamon Virginia'])
   })

@@ -8,6 +8,11 @@ import {
   eliminarLista,
   fetchListas,
   asignarMaterial,
+  importarCatalogo,
+  eliminarDelCatalogo,
+  editarEnCatalogo,
+  agregarAlCatalogo,
+  fetchCatalogo,
   getAsignacion,
   getCategorias,
   getMateriales,
@@ -121,9 +126,19 @@ describe('api: modo servidor', () => {
 
     const resultado = await asignarMaterial('Queso', { categoria: 'Lácteos', producto: 'Tequeños' })
     expect(resultado.categoriaNueva).toBe(true)
-    expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ categoria: 'Lácteos', producto: 'Tequeños' })
+    expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ categoria: 'Lácteos', productos: ['Tequeños'] })
     expect(necesitaAsignacion('Queso')).toBe(false)
     expect(getCategorias()).toContain('Lácteos')
+    expect(localStorage.getItem('depanas_catalogo')).toBeNull()
+  })
+
+  it('cargar un respaldo de una sección va al backend con las filas ya validadas', async () => {
+    const llamadas = simularServidor({ 'POST /catalogo/proveedor/importar': { cuerpo: { nuevos: 1, actualizados: 0, omitidos: 0 } } })
+    const r = await importarCatalogo('proveedor', [{ nombre: ' La Pulpería ', telefonos: ['7123-4567', ''] }])
+    expect(r).toEqual({ nuevos: 1, actualizados: 0, omitidos: 0 })
+    expect(llamadas.find(l => l.metodo === 'POST').cuerpo).toEqual({
+      filas: [{ nombre: 'La Pulpería', ubicacion: '', telefonos: ['7123-4567'], contactos: [] }],
+    })
     expect(localStorage.getItem('depanas_catalogo')).toBeNull()
   })
 
@@ -203,7 +218,7 @@ describe('api: categoría y producto de cada material (modo local)', () => {
 
   it('los materiales del Excel ya traen su categoría y producto', () => {
     expect(getAsignacion('tocino la rioja')).toEqual({
-      existe: true, nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos',
+      existe: true, nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'],
     })
     expect(necesitaAsignacion('Tocino La Rioja')).toBe(false)
     expect(necesitaAsignacion('Queso')).toBe(true) // en el Excel no tiene asignación
@@ -215,10 +230,11 @@ describe('api: categoría y producto de cada material (modo local)', () => {
   it('un material nuevo se guarda con su categoría y producto, y crea los que no existían', async () => {
     const resultado = await asignarMaterial('Harina PAN', { categoria: 'materia prima', producto: 'Arepas Rellenas' })
     expect(resultado).toEqual({
-      material: { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas Rellenas' },
+      material: { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas Rellenas', productos: ['Arepas Rellenas'] },
       materialNuevo: true,
       categoriaNueva: false,
       productoNuevo: true,
+      productosNuevos: ['Arepas Rellenas'],
     })
     expect(necesitaAsignacion('harina pan')).toBe(false)
     expect(getMateriales()).toContain('Harina PAN')
@@ -228,6 +244,67 @@ describe('api: categoría y producto de cada material (modo local)', () => {
 
   it('pide categoría y producto', async () => {
     await expect(asignarMaterial('Sal', { categoria: '', producto: 'Todos' })).rejects.toThrow('Elige una categoría')
+    await expect(asignarMaterial('Sal', { categoria: 'Materia Prima', productos: [] })).rejects.toThrow('Elige al menos un producto')
+  })
+
+  it('un artículo puede llevar varios productos: se guardan todos y cada uno cuenta en el catálogo', async () => {
+    const resultado = await asignarMaterial('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas', 'Tequeños Fritos'] })
+    expect(resultado.material.producto).toBe('Arepas, Tequeños Fritos')
+    expect(resultado.productosNuevos).toEqual(['Tequeños Fritos'])
+    expect(getAsignacion('harina pan').productos).toEqual(['Arepas', 'Tequeños Fritos'])
+    expect(getProductos()).toContain('Tequeños Fritos')
+
+    const cat = await fetchCatalogo()
+    expect(cat.uso.producto['tequeños fritos']).toBe(1)
+    expect(cat.materiales.find(m => m.nombre === 'Harina PAN').productos).toEqual(['Arepas', 'Tequeños Fritos'])
+  })
+})
+
+describe('api: ficha del proveedor (modo local)', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('guarda ubicación, teléfonos y contactos; la conserva al renombrar y la quita al eliminar', async () => {
+    const ficha = { ubicacion: 'Santa Tecla', telefonos: ['7123-4567', ''], contactos: [{ nombre: 'Ana', telefono: '' }] }
+    const creado = await agregarAlCatalogo('proveedor', { nombre: 'La Pulpería', ficha })
+    expect(creado.ficha).toEqual({ ubicacion: 'Santa Tecla', telefonos: ['7123-4567'], contactos: [{ nombre: 'Ana', telefono: '' }] })
+
+    await editarEnCatalogo('proveedor', 'La Pulpería', { nombre: 'Pulpería Don Juan' })
+    let cat = await fetchCatalogo()
+    expect(cat.fichas['la pulpería']).toBeUndefined()
+    expect(cat.fichas['pulpería don juan'].telefonos).toEqual(['7123-4567'])
+
+    await eliminarDelCatalogo('proveedor', 'Pulpería Don Juan')
+    cat = await fetchCatalogo()
+    expect(cat.fichas['pulpería don juan']).toBeUndefined()
+  })
+
+  it('un teléfono inválido se rechaza con el campo que hay que corregir', async () => {
+    await expect(agregarAlCatalogo('proveedor', { nombre: 'X', ficha: { telefonos: ['7123-4567', 'hola'] } }))
+      .rejects.toMatchObject({ campo: 'telefono-1' })
+    expect((await fetchCatalogo()).proveedores).not.toContain('X')
+  })
+})
+
+describe('api: cargar un respaldo de una sección del Catálogo (modo local)', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('crea lo que falta, actualiza lo que existe, suma productos y omite artículos que no existen', async () => {
+    expect(await importarCatalogo('proveedor', [{ nombre: 'La Pulpería', ubicacion: 'Santa Tecla', telefonos: [], contactos: [] }]))
+      .toEqual({ nuevos: 1, actualizados: 0, omitidos: 0 })
+    expect((await fetchCatalogo()).fichas['la pulpería'].ubicacion).toBe('Santa Tecla')
+
+    expect(await importarCatalogo('material', [{ nombre: 'Tocino La Rioja', categoria: 'Carnes', productos: ['Tequeños'] }]))
+      .toEqual({ nuevos: 0, actualizados: 1, omitidos: 0 })
+    expect(getAsignacion('Tocino La Rioja')).toMatchObject({ categoria: 'Carnes', productos: ['Cachitos', 'Tequeños'] })
+
+    expect(await importarCatalogo('producto', [{ nombre: 'Pastelitos', articulos: ['Tocino La Rioja', 'No existe'] }]))
+      .toEqual({ nuevos: 1, actualizados: 0, omitidos: 1 })
+    expect(getAsignacion('Tocino La Rioja').productos).toEqual(['Cachitos', 'Tequeños', 'Pastelitos'])
+  })
+
+  it('un respaldo de otra sección o con filas inválidas se rechaza sin cambiar nada', async () => {
+    await expect(importarCatalogo('material', [{ nombre: 'Sal', categoria: '' }])).rejects.toThrow('Fila 1: falta la categoría')
+    expect(getAsignacion('Sal').existe).toBe(false)
   })
 })
 

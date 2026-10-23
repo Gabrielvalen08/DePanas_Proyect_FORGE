@@ -132,8 +132,8 @@ test('el catálogo trae la categoría y el producto de cada material, como en el
   const { base } = await levantar(t)
   const { cuerpo } = await pedir(`${base}/catalogo`)
   const buscar = nombre => cuerpo.materiales.find(m => m.nombre === nombre)
-  assert.deepEqual(buscar('Tocino La Rioja'), { nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos' })
-  assert.deepEqual(buscar('Queso'), { nombre: 'Queso', categoria: '', producto: '' })
+  assert.deepEqual(buscar('Tocino La Rioja'), { nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'] })
+  assert.deepEqual(buscar('Queso'), { nombre: 'Queso', categoria: '', producto: '', productos: [] })
   assert.equal(buscar('Mr Músculo Antigrasa').categoria, 'Limpieza')
   assert.equal(cuerpo.categorias.length, 6)
 })
@@ -146,10 +146,11 @@ test('asignar un material nuevo crea la categoría y el producto nuevos y no dup
   const nuevo = await asignar('Harina PAN', { categoria: 'materia prima', producto: 'Arepas Rellenas' })
   assert.equal(nuevo.status, 200)
   assert.deepEqual(nuevo.cuerpo, {
-    material: { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas Rellenas' },
+    material: { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas Rellenas', productos: ['Arepas Rellenas'] },
     materialNuevo: true,
     categoriaNueva: false,
     productoNuevo: true,
+    productosNuevos: ['Arepas Rellenas'],
   })
 
   const existente = await asignar('queso', { categoria: 'Lácteos', producto: 'Tequeños' })
@@ -184,7 +185,7 @@ test('cada material de una compra guarda su propia categoría', async t => {
   })
   const catalogo = await pedir(`${base}/catalogo`)
   assert.deepEqual(catalogo.cuerpo.materiales.find(m => m.nombre === 'Servilletas'),
-    { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos' })
+    { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'] })
 })
 
 test('exportar descarga una base con todos los datos aunque estén en el WAL', async t => {

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { AlertCircle, Plus, Save, Trash2 } from 'lucide-react'
+import { Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import AsignarMaterial from './AsignarMaterial'
-import { Boton, Campo, ConfirmDialog, Selector } from './common'
+import { Boton, Campo, CampoMoneda, ConfirmDialog, Selector } from './common'
 import { asignarMaterial, getAsignacion, getMateriales, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { ASIGNACION, COMPRA, VALIDACION } from '../utils/mensajes'
@@ -12,11 +12,14 @@ import { springSuave } from '../styles/movimiento'
 import estilos from './BloqueCompra.module.css'
 
 export const UNIDADES = ['lb', 'kg', 'g', 'oz', 'galon', 'litro', 'ml', 'unidad', 'caja', 'bolsa']
+// La unidad arranca en blanco: se elige (o la trae el precio sugerido)
+const OPCIONES_UNIDAD = [{ valor: '', texto: '' }, ...UNIDADES]
 
 // Campos obligatorios de cada fila (en el orden en que aparecen)
 const CAMPOS_FILA = [
-  { clave: 'material', nombre: 'Material' },
+  { clave: 'material', nombre: 'Artículo' },
   { clave: 'cantidad', nombre: 'Cantidad' },
+  { clave: 'unidad',   nombre: 'Unidad' },
   { clave: 'precio',   nombre: 'Precio unitario' },
 ]
 
@@ -25,7 +28,7 @@ let siguienteIdFila = 1
 const redondear = (valor, decimales) => Math.round(valor * 10 ** decimales) / 10 ** decimales
 
 function filaVacia() {
-  return { id: siguienteIdFila++, material: '', cantidad: '', unidad: 'lb', precio: '' }
+  return { id: siguienteIdFila++, material: '', cantidad: '', unidad: '', precio: '' }
 }
 
 /**
@@ -49,7 +52,8 @@ function filasDesde(materiales) {
       id: siguienteIdFila++,
       material: m.material,
       cantidad: String(m.cantidad),
-      unidad: m.unidad || 'lb',
+      unidad: m.unidad || '',
+      // Precio exacto (puede ser de menos de un centavo, p. ej. por gramo) y monto guardado intacto
       precio: monto > 0 && cantidad > 0 ? String(redondear(monto / cantidad, 4)) : '',
       montoOriginal: monto > 0 ? monto : undefined,
     }
@@ -66,8 +70,11 @@ function validarFila(fila) {
   if (!fila.material.trim()) errores.material = VALIDACION.material
   const cantidadValida = Boolean(fila.cantidad) && !isNaN(fila.cantidad) && Number(fila.cantidad) > 0
   if (!cantidadValida) errores.cantidad = VALIDACION.cantidad
+  if (!fila.unidad) errores.unidad = VALIDACION.unidad
   // Con cantidad válida, el monto (cantidad × precio, a centavos) tampoco puede quedar en 0
-  if (!fila.precio || isNaN(fila.precio) || Number(fila.precio) <= 0 || (cantidadValida && montoDe(fila) <= 0))
+  // Una fila de una compra guardada que nadie tocó conserva su monto: su precio no se revisa
+  const precioIntacto = fila.montoOriginal !== undefined
+  if (!precioIntacto && (!fila.precio || isNaN(fila.precio) || Number(fila.precio) <= 0 || (cantidadValida && montoDe(fila) <= 0)))
     errores.precio = VALIDACION.precio
   return errores
 }
@@ -119,6 +126,8 @@ export default function BloqueCompra({
   const [filas, setFilas]         = useState(() => filasDesde(inicial?.materiales || inicial?.productos))
   const [errores, setErrores]     = useState({})
   const [guardando, setGuardando] = useState(false)
+  // Tras un error (datos inválidos o fallo al guardar) Guardar se apaga hasta que se cambie algo
+  const [bloqueado, setBloqueado] = useState(false)
   const [intentoGuardar, setIntentoGuardar] = useState(false)
   const [porAsignar, setPorAsignar] = useState(null) // material en la ventana emergente
   const [porConfirmar, setPorConfirmar] = useState(null) // lista lista para guardar, a la espera del Sí
@@ -129,8 +138,7 @@ export default function BloqueCompra({
   const omitidos       = useRef(new Set()) // "Ahora no": no se vuelve a pedir al salir del campo
   const guardarDespues = useRef(false)     // la ventana se abrió al guardar: se guarda al terminar
 
-  const resumenRef     = useRef(null)
-  const enfocarResumen = useRef(false)
+  const campoPorEnfocar = useRef(null) // tras un intento fallido de guardar, el primer campo con error
   const filaPorEnfocar = useRef(null)
 
   useEffect(() => {
@@ -138,9 +146,9 @@ export default function BloqueCompra({
   }, [enfocarAlMontar, id])
 
   useEffect(() => {
-    if (enfocarResumen.current && resumenRef.current) {
-      resumenRef.current.focus()
-      enfocarResumen.current = false
+    if (campoPorEnfocar.current) {
+      document.getElementById(campoPorEnfocar.current)?.focus()
+      campoPorEnfocar.current = null
     }
   }, [errores])
 
@@ -165,6 +173,7 @@ export default function BloqueCompra({
 
   // --- Encabezado ---
   function cambiarEncabezado(campo, valor) {
+    setBloqueado(false)
     if (campo === 'proveedor') setProveedor(valor)
     else if (campo === 'fecha') setFecha(valor)
     if (errores[campo]) fijarError(campo, validarEncabezado(campo, valor))
@@ -187,6 +196,7 @@ export default function BloqueCompra({
 
   function cambiarFila(filaId, campo, valor) {
     if (campo === 'material' && valor.trim() && !exigirProveedor()) return
+    setBloqueado(false)
     const filaActual = filas.find(f => f.id === filaId)
     const actualizada = { ...filaActual, [campo]: valor }
     // Tocar la cantidad o el precio vuelve a calcular el monto; el precio escrito deja de ser el sugerido
@@ -199,13 +209,15 @@ export default function BloqueCompra({
 
   /** Pone el precio y la unidad de la última compra del material, salvo que el precio ya lo haya escrito la persona */
   function sugerirPrecio(filaId, material) {
-    const sugerido = getPrecioSugerido(material)
+    // El campo es en centavos (tipo cajero): un precio de menos de un centavo no se sugiere
+    const encontrado = getPrecioSugerido(material)
+    const sugerido = encontrado && redondear(encontrado.precio, 2) > 0 ? encontrado : null
     setFilas(prev => prev.map(f => {
       if (f.id !== filaId || (f.precio !== '' && !f.precioSugerido)) return f
       if (!sugerido) return f.precioSugerido ? { ...f, precio: '', precioSugerido: false } : f
       return {
         ...f,
-        precio: String(sugerido.precio),
+        precio: String(redondear(sugerido.precio, 2)),
         unidad: UNIDADES.includes(sugerido.unidad) ? sugerido.unidad : f.unidad,
         precioSugerido: true,
         montoOriginal: undefined,
@@ -239,6 +251,7 @@ export default function BloqueCompra({
       throw error
     }
     setPorAsignar(null)
+    setBloqueado(false)
     if (guardarDespues.current) {
       guardarDespues.current = false
       // Si otro material también falta, se pide; si no, se guarda la compra
@@ -256,11 +269,13 @@ export default function BloqueCompra({
   function agregarFila() {
     const nueva = filaVacia()
     filaPorEnfocar.current = nueva.id
+    setBloqueado(false)
     setFilas(prev => [...prev, nueva])
   }
 
   function quitarFila(filaId) {
     if (filas.length === 1) return
+    setBloqueado(false)
     setFilas(prev => prev.filter(f => f.id !== filaId))
     setErrores(prev => {
       const next = { ...prev }
@@ -286,9 +301,11 @@ export default function BloqueCompra({
       Object.entries(validarFila(f)).forEach(([campo, mensaje]) => { nuevos[clave(f.id, campo)] = mensaje })
     })
 
+    // Sin cuadro de resumen: cada campo se marca en rojo con su mensaje y el foco va al primero
     if (Object.keys(nuevos).length > 0) {
-      enfocarResumen.current = true
+      campoPorEnfocar.current = primerCampoConError(nuevos)
       setErrores(nuevos)
+      setBloqueado(true)
       return
     }
 
@@ -336,7 +353,8 @@ export default function BloqueCompra({
       const guardada = await alGuardar(lista)
       alGuardado?.(guardada ?? lista)
     } catch {
-      // El padre notifica el error
+      // El padre notifica el error; no se reintenta igual: hay que cambiar algo primero
+      setBloqueado(true)
     } finally {
       setGuardando(false)
     }
@@ -356,20 +374,15 @@ export default function BloqueCompra({
 
   const total = filas.reduce((suma, f) => suma + montoDe(f), 0)
 
-  const resumen = [
-    errores.fecha     && { idCampo: `${id}-fecha`,     texto: `Fecha: ${errores.fecha}` },
-    errores.proveedor && { idCampo: `${id}-proveedor`, texto: `Proveedor: ${errores.proveedor}` },
-    ...filas.flatMap((fila, i) =>
-      CAMPOS_FILA.filter(({ clave: campo }) => errores[clave(fila.id, campo)]).map(({ clave: campo, nombre }) => ({
-        idCampo: `${id}-${campo}-${fila.id}`,
-        texto: `Fila ${i + 1} · ${nombre}: ${errores[clave(fila.id, campo)]}`,
-      }))
-    ),
-  ].filter(Boolean)
-
-  function irACampo(e, idCampo) {
-    e.preventDefault()
-    document.getElementById(idCampo)?.focus()
+  /** Id del primer campo con error, en el orden en que aparecen en pantalla */
+  function primerCampoConError(conError) {
+    if (conError.fecha) return `${id}-fecha`
+    if (conError.proveedor) return `${id}-proveedor`
+    for (const fila of filas) {
+      const campo = CAMPOS_FILA.find(({ clave: c }) => conError[clave(fila.id, c)])
+      if (campo) return `${id}-${campo.clave}-${fila.id}`
+    }
+    return null
   }
 
   return (
@@ -403,29 +416,18 @@ export default function BloqueCompra({
             </div>
           </header>
 
-          {resumen.length > 0 && (
-            <div ref={resumenRef} role="alert" tabIndex={-1} className={estilos.resumen} aria-labelledby={`${id}-resumen`}>
-              <h3 id={`${id}-resumen`} className={estilos.resumenTitulo}>
-                <AlertCircle size={18} aria-hidden="true" />
-                {VALIDACION.resumen}
-              </h3>
-              <ul className={estilos.resumenLista}>
-                {resumen.map(item => (
-                  <li key={item.idCampo}>
-                    <a href={`#${item.idCampo}`} onClick={e => irACampo(e, item.idCampo)}>{item.texto}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
           <table className={estilos.tabla}>
-            <caption className="solo-lector">Materiales de la compra</caption>
+            <caption className="solo-lector">Artículos de la compra</caption>
             <thead>
               <tr>
-                <th scope="col" className={estilos.colMaterial}>Material</th>
+                <th scope="col" className={estilos.colMaterial}>Artículo</th>
                 <th scope="col" className={estilos.colCantidad}>Cantidad</th>
-                <th scope="col" className={estilos.colPrecio}>Precio unitario</th>
+                <th scope="col" className={estilos.colUnidad}>Unidad</th>
+                {/* Corto para que el encabezado no se sature; el lector de pantalla oye el nombre completo */}
+                <th scope="col" className={estilos.colPrecio}>
+                  <span aria-hidden="true">Precio u.</span>
+                  <span className="solo-lector">Precio unitario</span>
+                </th>
                 <th scope="col" className={estilos.colMonto}>Monto</th>
                 <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
               </tr>
@@ -446,7 +448,7 @@ export default function BloqueCompra({
                       <td>
                         <AutocompleteInput
                           id={`${id}-material-${fila.id}`}
-                          etiqueta={`Material, fila ${n}`}
+                          etiqueta={`Artículo, fila ${n}`}
                           etiquetaOculta
                           value={fila.material}
                           onChange={valor => cambiarFila(fila.id, 'material', valor)}
@@ -466,49 +468,46 @@ export default function BloqueCompra({
                         />
                       </td>
 
-                      {/* Cantidad + Unidad */}
+                      {/* Cantidad */}
                       <td>
-                        <div className={estilos.cantidadGrupo}>
-                          <Campo
-                            id={`${id}-cantidad-${fila.id}`}
-                            etiqueta={`Cantidad, fila ${n}`}
-                            etiquetaOculta
-                            tipo="number"
-                            inputMode="decimal"
-                            min="0"
-                            step="any"
-                            value={fila.cantidad}
-                            onChange={e => cambiarFila(fila.id, 'cantidad', e.target.value)}
-                            onBlur={() => salirDeCampoFila(fila.id, 'cantidad')}
-                            error={errores[clave(fila.id, 'cantidad')]}
-                            className={estilos.cantidad}
-                          />
-                          <Selector
-                            id={`${id}-unidad-${fila.id}`}
-                            etiqueta={`Unidad, fila ${n}`}
-                            etiquetaOculta
-                            opciones={UNIDADES}
-                            value={fila.unidad}
-                            onChange={e => cambiarFila(fila.id, 'unidad', e.target.value)}
-                            className={estilos.unidad}
-                          />
-                        </div>
+                        <Campo
+                          id={`${id}-cantidad-${fila.id}`}
+                          etiqueta={`Cantidad, fila ${n}`}
+                          etiquetaOculta
+                          tipo="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="any"
+                          value={fila.cantidad}
+                          onChange={e => cambiarFila(fila.id, 'cantidad', e.target.value)}
+                          onBlur={() => salirDeCampoFila(fila.id, 'cantidad')}
+                          error={errores[clave(fila.id, 'cantidad')]}
+                        />
+                      </td>
+
+                      {/* Unidad */}
+                      <td>
+                        <Selector
+                          id={`${id}-unidad-${fila.id}`}
+                          etiqueta={`Unidad, fila ${n}`}
+                          etiquetaOculta
+                          opciones={OPCIONES_UNIDAD}
+                          value={fila.unidad}
+                          onChange={e => cambiarFila(fila.id, 'unidad', e.target.value)}
+                          onBlur={() => salirDeCampoFila(fila.id, 'unidad')}
+                          error={errores[clave(fila.id, 'unidad')]}
+                        />
                       </td>
 
                       {/* Precio unitario (editable; sugerido desde la última compra) */}
                       <td>
-                        <Campo
+                        <CampoMoneda
                           id={`${id}-precio-${fila.id}`}
                           etiqueta={`Precio unitario, fila ${n}`}
                           etiquetaOculta
-                          tipo="number"
-                          inputMode="decimal"
-                          min="0.0001"
-                          step="any"
                           prefijo="$"
-                          placeholder="0.00"
                           value={fila.precio}
-                          onChange={e => cambiarFila(fila.id, 'precio', e.target.value)}
+                          onChange={valor => cambiarFila(fila.id, 'precio', valor)}
                           onBlur={() => salirDeCampoFila(fila.id, 'precio')}
                           ayuda={textoUltimoPrecio(fila.material)}
                           error={errores[clave(fila.id, 'precio')]}
@@ -522,7 +521,6 @@ export default function BloqueCompra({
                           etiqueta={`Monto, fila ${n}`}
                           etiquetaOculta
                           prefijo="$"
-                          placeholder="0.00"
                           readOnly
                           tabIndex={-1}
                           value={montoDe(fila) > 0 ? montoDe(fila).toFixed(2) : ''}
@@ -571,10 +569,19 @@ export default function BloqueCompra({
         </section>
 
         <div className={estilos.acciones}>
+          {bloqueado && <p id={`${id}-ayuda-guardar`} className={estilos.ayudaGuardar}>{COMPRA.cambiaParaReintentar}</p>}
           <Boton variante="fantasma" onClick={pedirCancelar} disabled={!hayDatos && !cancelarVacio}>
             Cancelar
           </Boton>
-          <Boton type="submit" variante="primario" sombra icono={<Save />} cargando={guardando} disabled={!hayDatos}>
+          <Boton
+            type="submit"
+            variante="primario"
+            sombra
+            icono={<Save />}
+            cargando={guardando}
+            disabled={!hayDatos || bloqueado}
+            aria-describedby={bloqueado ? `${id}-ayuda-guardar` : undefined}
+          >
             {guardando ? 'Guardando…' : textoGuardar}
           </Boton>
         </div>

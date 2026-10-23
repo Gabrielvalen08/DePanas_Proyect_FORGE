@@ -74,7 +74,7 @@ describe('catálogo en modo local', () => {
 
   it('un material que no existe se rechaza sin cambiar nada', async () => {
     await expect(editarEnCatalogo('producto', 'Arepas', { nombre: 'Arepitas', materiales: ['Unicornio'] }))
-      .rejects.toThrow('No existe un material llamado «Unicornio»')
+      .rejects.toThrow('No existe un artículo llamado «Unicornio»')
     expect((await fetchCatalogo()).productos).toContain('Arepas')
   })
 

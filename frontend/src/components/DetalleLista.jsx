@@ -70,16 +70,16 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
                   <dd>{formatearFechaTexto(lista.fecha)}</dd>
                 </div>
                 <div>
-                  <dt>Materiales</dt>
+                  <dt>Artículos</dt>
                   <dd>{n}</dd>
                 </div>
               </dl>
 
               <table className={estilos.tabla}>
-                <caption className="solo-lector">Materiales de la compra</caption>
+                <caption className="solo-lector">Artículos de la compra</caption>
                 <thead>
                   <tr>
-                    <th scope="col">Material</th>
+                    <th scope="col">Artículo</th>
                     <th scope="col">Cantidad</th>
                     <th scope="col" className={estilos.numerico}>Monto</th>
                   </tr>

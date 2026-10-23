@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { ArrowLeft, FileJson, ListChecks, Upload } from 'lucide-react'
 import Header from '../components/Header'
-import AvisoModo from '../components/AvisoModo'
 import CompararCompra from '../components/CompararCompra'
 import { contenidoCompra } from '../../../shared/carga-compras.js'
 import { Boton, ConfirmDialog, Insignia, SelectorArchivo, Tarjeta } from '../components/common'
@@ -112,8 +111,6 @@ export default function PantallaCargar() {
       <Header title="Cargar datos" frase={fraseDelDia('/cargar')} />
 
       <main id="contenido" tabIndex={-1}>
-        <p className={estilos.intro}>{CARGAR.intro}</p>
-        <AvisoModo />
 
         <Tarjeta titulo={CARGAR.titulo} icono={<FileJson />}>
           <div className={estilos.cuerpo}>

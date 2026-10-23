@@ -74,7 +74,7 @@ function AppContenido() {
                 <AgregarCompra />
               ))}
             />
-            <Route path="/compras" element={protegida('/compras', <PantallaMaestra puedeAgregar={tienePermiso('/')} />)} />
+            <Route path="/compras" element={protegida('/compras', <PantallaMaestra puedeAgregar={tienePermiso('/')} puedeExportar={tienePermiso('/exportar')} puedeCargar={tienePermiso('/cargar')} />)} />
             <Route path="/catalogo" element={protegida('/catalogo', <PantallaCatalogo />)} />
             <Route path="/catalogo/:seccion" element={protegida('/catalogo', <PantallaCatalogo />)} />
             <Route path="/configuracion" element={<RedirigirACatalogo />} />

@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, NavLink, useParams } from 'react-router-dom'
-import { Loader2, Package, Pencil, Plus, Search, Tags, Trash2, Truck, UtensilsCrossed } from 'lucide-react'
+import { FileJson, FileSpreadsheet, Loader2, Package, Pencil, Plus, Search, Tags, Trash2, Truck, Upload, UtensilsCrossed } from 'lucide-react'
 import Header from '../components/Header'
 import EditorCatalogo from '../components/EditorCatalogo'
-import { Boton, Campo, ConfirmDialog, EstadoVacio, Insignia, Tarjeta } from '../components/common'
-import { agregarAlCatalogo, editarEnCatalogo, eliminarDelCatalogo, fetchCatalogo } from '../services/api'
+import { Boton, Campo, ConfirmDialog, EstadoVacio, Insignia, MenuAcciones, Tarjeta } from '../components/common'
+import {
+  agregarAlCatalogo, editarEnCatalogo, eliminarDelCatalogo, exportarCatalogo, fetchCatalogo, importarCatalogo, leerCatalogoJSON,
+} from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { textoBusqueda } from '../utils/formato'
 import { PANTALLA_CATALOGO, fraseDelDia } from '../utils/mensajes'
 import estilos from './PantallaCatalogo.module.css'
+import { tieneProducto } from '../../../shared/productos.js'
 
 const TIPOS = ['proveedor', 'categoria', 'material', 'producto']
 const ICONOS = { proveedor: Truck, categoria: Tags, material: Package, producto: UtensilsCrossed }
@@ -17,15 +20,18 @@ const TIPO_DE_RUTA = Object.fromEntries(TIPOS.map(t => [PANTALLA_CATALOGO.seccio
 /** Opciones de un tipo como filas { nombre, categoria?, producto? } */
 function filasDe(catalogo, tipo) {
   if (tipo === 'material') return catalogo.materiales
-  const lista = { proveedor: catalogo.proveedores, categoria: catalogo.categorias, producto: catalogo.productos }[tipo]
+  if (tipo === 'proveedor') return catalogo.proveedores.map(nombre => ({ nombre, ficha: catalogo.fichas?.[nombre.toLowerCase()] }))
+  const lista = { categoria: catalogo.categorias, producto: catalogo.productos }[tipo]
   return lista.map(nombre => ({ nombre }))
 }
 
 const usoDe = (catalogo, tipo, nombre) => catalogo.uso?.[tipo]?.[nombre.toLowerCase()] ?? 0
 
-/** Nombres de los materiales que llevan esa categoría o ese producto */
+/** Nombres de los materiales que llevan esa categoría o ese producto (un material puede ir en varios productos) */
 const materialesDe = (catalogo, tipo, nombre) =>
-  catalogo.materiales.filter(m => m[tipo]?.toLowerCase() === nombre.toLowerCase()).map(m => m.nombre)
+  catalogo.materiales
+    .filter(m => (tipo === 'producto' ? tieneProducto(m.producto, nombre) : m[tipo]?.toLowerCase() === nombre.toLowerCase()))
+    .map(m => m.nombre)
 
 /**
  * Catálogo (/catalogo y /catalogo/:seccion).
@@ -49,6 +55,8 @@ export default function PantallaCatalogo() {
     return () => { vigente = false }
   }, [version, addToast])
 
+  // Materiales se llama ahora Artículos: la dirección vieja lleva a la nueva
+  if (seccion === 'materiales') return <Navigate to="/catalogo/articulos" replace />
   if (seccion && !tipo) return <Navigate to="/catalogo" replace />
 
   return (
@@ -56,8 +64,6 @@ export default function PantallaCatalogo() {
       <Header title="Catálogo" frase={fraseDelDia('/catalogo')} />
 
       <main id="contenido" tabIndex={-1}>
-        <p className={estilos.intro}>{PANTALLA_CATALOGO.intro}</p>
-
         <nav aria-label="Secciones del catálogo">
           <ul className={estilos.secciones}>
             {TIPOS.map(t => {
@@ -109,6 +115,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
   const { titulo, singular } = PANTALLA_CATALOGO.secciones[tipo]
   const Icono = ICONOS[tipo]
   const esMaterial = tipo === 'material'
+  const esProveedor = tipo === 'proveedor'
   const conMateriales = tipo === 'categoria' || tipo === 'producto'
 
   const todas = filasDe(catalogo, tipo)
@@ -137,6 +144,40 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
     }
   }
 
+
+  // --- Exportar y Cargar de esta sección (menú ⋮) ---
+  const A = PANTALLA_CATALOGO.archivo
+  const archivoRef = useRef(null)
+  const [porExportar, setPorExportar] = useState(null) // null | 'csv' | 'json'
+  const [porCargar, setPorCargar] = useState(null)     // null | { filas, archivo }
+
+  async function exportar(formato) {
+    try {
+      addToast(A.exportado(tipo, await exportarCatalogo(tipo, formato)))
+    } catch (error) {
+      addToast(A.errorExportar(error.message), 'error')
+    }
+  }
+
+  async function elegirArchivo(e) {
+    const archivo = e.target.files?.[0]
+    e.target.value = '' // así se puede volver a elegir el mismo archivo
+    if (!archivo) return
+    try {
+      setPorCargar({ filas: await leerCatalogoJSON(archivo, tipo), archivo: archivo.name })
+    } catch (error) {
+      addToast(A.errorCargar(error.message), 'error')
+    }
+  }
+
+  async function cargar() {
+    try {
+      addToast(A.cargado(tipo, await importarCatalogo(tipo, porCargar.filas)))
+      alCambio()
+    } catch (error) {
+      addToast(A.errorCargar(error.message), 'error')
+    }
+  }
   return (
     <>
       <Tarjeta
@@ -159,6 +200,24 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
             <Boton variante="primario" icono={<Plus />} onClick={() => setEdicion({ registro: null })}>
               {PANTALLA_CATALOGO.agregar(tipo)}
             </Boton>
+            <MenuAcciones
+              etiqueta={A.masAcciones(tipo)}
+              opciones={[
+                { etiqueta: A.exportarCsv, icono: <FileSpreadsheet />, onClick: () => setPorExportar('csv') },
+                { etiqueta: A.exportarJson, icono: <FileJson />, onClick: () => setPorExportar('json') },
+                { etiqueta: A.cargar, icono: <Upload />, onClick: () => archivoRef.current?.click() },
+              ]}
+            />
+            {/* Lo abre «Cargar respaldo» del menú */}
+            <input
+              ref={archivoRef}
+              type="file"
+              accept=".json,application/json"
+              className="solo-lector"
+              tabIndex={-1}
+              aria-label={A.elegirArchivo(tipo)}
+              onChange={elegirArchivo}
+            />
           </div>
         }
       >
@@ -173,8 +232,11 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
             <thead>
               <tr>
                 <th scope="col">{PANTALLA_CATALOGO.etiquetaNombre(tipo)}</th>
+                {esProveedor && <th scope="col">{PANTALLA_CATALOGO.ficha.ubicacion}</th>}
+                {esProveedor && <th scope="col">{PANTALLA_CATALOGO.ficha.columnaTelefono}</th>}
+                {esProveedor && <th scope="col">{PANTALLA_CATALOGO.ficha.columnaContacto}</th>}
                 {esMaterial && <th scope="col">Categoría</th>}
-                {esMaterial && <th scope="col">Producto</th>}
+                {esMaterial && <th scope="col">{PANTALLA_CATALOGO.columnaProductos}</th>}
                 {conMateriales && <th scope="col">{PANTALLA_CATALOGO.columnaMateriales}</th>}
                 <th scope="col" className={estilos.numerico}>{PANTALLA_CATALOGO.columnaUso(tipo)}</th>
                 <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
@@ -186,13 +248,14 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
                 return (
                   <tr key={f.nombre}>
                     <th scope="row" className={estilos.nombre}>{f.nombre}</th>
+                    {esProveedor && <CeldasFicha ficha={f.ficha} />}
                     {esMaterial && (
                       <td data-etiqueta="Categoría">
                         {f.categoria || <Insignia tono="aviso">{PANTALLA_CATALOGO.sinAsignar}</Insignia>}
                       </td>
                     )}
                     {esMaterial && (
-                      <td data-etiqueta="Producto">
+                      <td data-etiqueta={PANTALLA_CATALOGO.columnaProductos}>
                         {f.producto || <Insignia tono="aviso">{PANTALLA_CATALOGO.sinAsignar}</Insignia>}
                       </td>
                     )}
@@ -248,7 +311,40 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
         confirmLabel={PANTALLA_CATALOGO.confirmarEliminar.confirmar}
         danger
       />
+      <ConfirmDialog
+        isOpen={porExportar !== null}
+        onClose={() => setPorExportar(null)}
+        onConfirm={() => exportar(porExportar)}
+        title={A.confirmarExportar.titulo}
+        message={porExportar ? A.confirmarExportar.mensaje(tipo, todas.length, porExportar) : ''}
+        confirmLabel={A.confirmarExportar.confirmar}
+      />
+
+      <ConfirmDialog
+        isOpen={porCargar !== null}
+        onClose={() => setPorCargar(null)}
+        onConfirm={cargar}
+        title={A.confirmarCargar.titulo(tipo)}
+        message={porCargar ? A.confirmarCargar.mensaje(tipo, porCargar.filas.length, porCargar.archivo) : ''}
+        confirmLabel={A.confirmarCargar.confirmar}
+      />
       <span className="solo-lector" aria-live="polite">{`${filas.length} ${filas.length === 1 ? singular : titulo.toLowerCase()}`}</span>
+    </>
+  )
+}
+
+/** Ubicación, primer teléfono y primer contacto del proveedor (con cuántos más hay) */
+function CeldasFicha({ ficha }) {
+  const T = PANTALLA_CATALOGO.ficha
+  const conMas = (lista, texto) =>
+    lista?.length ? <>{texto(lista[0])}{lista.length > 1 && <span className={estilos.mas}> {T.otros(lista.length - 1)}</span>}</> : T.sinDato
+  return (
+    <>
+      <td data-etiqueta={T.ubicacion} className={estilos.dato}>{ficha?.ubicacion || T.sinDato}</td>
+      <td data-etiqueta={T.columnaTelefono} className={estilos.dato}>{conMas(ficha?.telefonos, t => t)}</td>
+      <td data-etiqueta={T.columnaContacto} className={estilos.dato}>
+        {conMas(ficha?.contactos, c => (c.telefono ? `${c.nombre} · ${c.telefono}` : c.nombre))}
+      </td>
     </>
   )
 }

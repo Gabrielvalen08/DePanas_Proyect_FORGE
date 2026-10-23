@@ -10,11 +10,13 @@ import { Boton, Campo, Selector, Tarjeta, Insignia, Modal, ConfirmDialog, Cuerpo
 | ------------- | ------------------------------------------------------------------------------ |
 | `Boton`       | `variante` (`primario` · `secundario` · `fantasma` · `peligro` · `icono`), `tamano` (`sm` · `md`), `icono`, `cargando`, `sombra`, `ancho`, `a` (ruta → se renderiza como `Link`) |
 | `Campo`       | `id`, `etiqueta`, `etiquetaOculta`, `tipo`, `prefijo`, `error`, `ayuda`, `children` (contenido extra dentro del control) |
+| `CampoMoneda` | Igual que `Campo`; `onChange(valor)` recibe el monto ya convertido (`'1.25'` o `''`). Tipo cajero: el punto está fijo y los dígitos entran por la derecha empezando por los centavos (5 → 0.05, 500 → 5.00) |
 | `Selector`    | `id`, `etiqueta`, `etiquetaOculta`, `opciones` (`string[]` o `{ valor, texto }[]`), `error` |
 | `Tarjeta`     | `titulo`, `icono`, `accion`, `sombra`, `franja`, `interactiva` + `a` u `onClick` |
 | `Insignia`    | `tono` (`neutro` · `marca` · `exito` · `aviso` · `error`)                       |
-| `Modal`       | `abierto`, `alCerrar`, `titulo`, `icono`, `rol` (`dialog` · `alertdialog`), `anchoMax` (`sm` · `md`), `focoInicial` (ref) |
+| `Modal`       | `abierto`, `alCerrar`, `titulo`, `icono`, `rol` (`dialog` · `alertdialog`), `anchoMax` (`sm` · `md` · `lg`), `focoInicial` (ref). Se centra en el área del módulo (`<main id="contenido">`), no en toda la pantalla; el velo cubre todo |
 | `ConfirmDialog` | `isOpen`, `onClose`, `onConfirm`, `title`, `message`, `confirmLabel`, `cancelLabel`, `danger`. Confirmación (`alertdialog`): el foco inicial va a «Cancelar», nunca a la acción. Úsalo antes de cualquier acción que guarde, cancele o elimine |
+| `MenuAcciones` | `etiqueta`, `opciones` (`[{ etiqueta, icono?, a? \| onClick? }]`). Botón ⋮ con menú desplegable (patrón *menu button*): flechas, Inicio/Fin, Escape devuelve el foco. Va en un portal, así no lo recorta una tarjeta; sin opciones disponibles no se muestra |
 | `EstadoVacio` | `icono`, `titulo`, `texto`, `accion`, `cargando`                                |
 | `SelectorArchivo` | `id`, `etiqueta`, `ayuda`, `accept`, `nombre`, `textoVacio`, `textoSoltar`, `disabled`, `onElegir(archivo)`; `ref` al input. En lugar del botón nativo de archivo, que no sigue la marca |
 

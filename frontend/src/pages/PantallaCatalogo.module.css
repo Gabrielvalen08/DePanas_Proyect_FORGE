@@ -1,10 +1,3 @@
-/* Va directo sobre el collage: Verde Ávila, no el atenuado (AA sobre los trazos) */
-.intro {
-  max-width: 65ch;
-  font-size: 1.0625rem;
-  color: var(--color-text);
-}
-
 /* ---------- Las cuatro opciones ---------- */
 .secciones {
   display: grid;
@@ -16,10 +9,10 @@
 .seccion {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   height: 100%;
   min-height: 3.5rem;
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radio-tarjeta);
   background: var(--color-surface);
@@ -70,8 +63,9 @@
 .seccionTitulo {
   padding-top: 0.15em;
   font-family: var(--fuente-titulos);
+  font-size: 0.9375rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
@@ -139,6 +133,19 @@
 
 .colAcciones {
   width: 1%;
+}
+
+/* Datos de la ficha del proveedor: secundarios a su nombre */
+.tabla .dato {
+  font-family: var(--fuente-texto);
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+.mas {
+  font-family: var(--fuente-titulos);
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 /* Nombres de los materiales de una categoría o un producto: secundarios a su nombre */

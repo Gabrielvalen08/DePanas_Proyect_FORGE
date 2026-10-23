@@ -45,7 +45,7 @@ export function analizarCarga(entrada, existentes) {
 function seleccionar(filas, indices) {
   if (!Array.isArray(indices) || new Set(indices).size !== indices.length ||
       indices.some(i => !Number.isInteger(i) || i < 0 || i >= filas.length)) {
-    throw new Error('La selección de materiales no es válida.')
+    throw new Error('La selección de artículos no es válida.')
   }
   return indices.map(i => ({ ...filas[i] }))
 }
@@ -63,7 +63,7 @@ export function resolverCarga(compras, existentes, decisiones = []) {
   }
   const pendientes = analisis.filter(a => a.estado === 'conflicto' && !decisiones.some(d => d.origen === a.origen))
   if (pendientes.length) {
-    const error = new Error('Hay compras modificadas. Compara sus materiales antes de guardar.')
+    const error = new Error('Hay compras modificadas. Compara sus artículos antes de guardar.')
     error.status = 409
     throw error
   }

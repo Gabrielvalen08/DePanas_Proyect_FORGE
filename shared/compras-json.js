@@ -39,11 +39,11 @@ export function validarComprasJSON(entrada) {
     const fecha = new Date(`${c.fecha}T00:00:00Z`)
     if (!Number.isFinite(fecha.getTime()) || fecha.toISOString().slice(0, 10) !== c.fecha) fallo('fecha inválida')
     if (!texto(c.categoria)) fallo('categoría inválida')
-    if (!Array.isArray(c.materiales) || !c.materiales.length) fallo('la compra necesita materiales')
+    if (!Array.isArray(c.materiales) || !c.materiales.length) fallo('la compra necesita artículos')
     for (const [j, m] of c.materiales.entries()) {
       if (!m || !texto(m.material) || !m.material.trim() || !positivo(m.cantidad) || !positivo(m.monto) ||
           !texto(m.unidad) || !m.unidad.trim() || !texto(m.categoria) || !texto(m.producto)) {
-        fallo(`material ${j + 1}: revisa material, cantidad, monto, unidad, categoría y producto`)
+        fallo(`artículo ${j + 1}: revisa artículo, cantidad, monto, unidad, categoría y producto`)
       }
     }
     if (!Number.isFinite(c.materiales.reduce((s, m) => s + m.monto, 0))) fallo('total inválido')

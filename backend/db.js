@@ -5,6 +5,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import { readFileSync } from 'fs'
 import { CATALOGO_INICIAL } from './db/catalogo.js'
+import { listaProductos } from '../shared/productos.js'
 import { USUARIOS_INICIALES } from './db/usuarios.js'
 
 // Columnas mínimas para aceptar un archivo .db importado
@@ -96,7 +97,10 @@ function sembrarCatalogo(db) {
 function completarDesdeCompras(db) {
   for (const tipo of ['proveedor', 'categoria', 'producto']) {
     const filas = db.prepare(`SELECT DISTINCT ${tipo} AS v FROM ingresos WHERE ${tipo} IS NOT NULL AND trim(${tipo}) != ''`).all()
-    for (const { v } of filas) registrarEnCatalogo(db, tipo, v)
+    // Una fila puede llevar varios productos («Arepas, Empanadas»): se registra cada uno
+    for (const { v } of filas) {
+      for (const nombre of tipo === 'producto' ? listaProductos(v) : [v]) registrarEnCatalogo(db, tipo, nombre)
+    }
   }
   const ultimo = campo => db.prepare(
     `SELECT ${campo} AS v FROM ingresos WHERE material = ? COLLATE NOCASE AND ${campo} != '' ORDER BY id DESC LIMIT 1`
@@ -132,7 +136,8 @@ export function registrarCompra(db, compra) {
     const producto = (m.producto || '').trim()
     registrarEnCatalogo(db, 'material', m.material)
     if (categoria) registrarEnCatalogo(db, 'categoria', categoria)
-    if (producto) registrarEnCatalogo(db, 'producto', producto)
+    // Una fila puede llevar varios productos («Arepas, Empanadas»): se registra cada uno
+    for (const nombre of listaProductos(producto)) registrarEnCatalogo(db, 'producto', nombre)
     completarMaterial(db, m.material, categoria, producto)
   }
 }
@@ -158,9 +163,10 @@ export function migrar(db) {
   if (!columnas.includes('origen_id')) db.exec('ALTER TABLE ingresos ADD COLUMN origen_id TEXT')
   if (!columnas.includes('compra_categoria')) db.exec('ALTER TABLE ingresos ADD COLUMN compra_categoria TEXT')
 
-  // Catálogos creados antes de que los materiales guardaran categoría y producto
+  // Catálogos creados antes de que los materiales guardaran categoría y producto,
+  // o de que los proveedores tuvieran su ficha
   const columnasCatalogo = db.prepare('PRAGMA table_info(catalogo)').all().map(c => c.name)
-  for (const columna of ['categoria', 'producto']) {
+  for (const columna of ['categoria', 'producto', 'ficha']) {
     if (!columnasCatalogo.includes(columna)) {
       db.exec(`ALTER TABLE catalogo ADD COLUMN ${columna} TEXT NOT NULL DEFAULT ''`)
     }

@@ -1,4 +1,4 @@
-import { comprasACsv, comprasAJson, nombreArchivo, rangoRapido } from './exportar'
+import { comprasACsv, comprasAJson, nombreArchivo, rangoRapido , catalogoACsv, catalogoAJson } from './exportar'
 
 const COMPRAS = [
   {
@@ -19,7 +19,7 @@ describe('exportar', () => {
     const csv = comprasACsv(COMPRAS)
     expect(csv.startsWith('﻿')).toBe(true)
     const lineas = csv.slice(1).trim().split('\r\n')
-    expect(lineas[0]).toBe('Fecha,Proveedor,Material,Cantidad,Unidad,Monto,Categoría,Producto')
+    expect(lineas[0]).toBe('Fecha,Proveedor,Artículo,Cantidad,Unidad,Monto,Categoría,Producto')
     expect(lineas).toHaveLength(4)
     expect(lineas[1]).toBe('2026-08-04,Selectos,Tocino La Rioja,1,lb,2.69,Materia Prima,Cachitos')
     expect(lineas[2]).toBe('2026-08-04,Selectos,"Bolsa al Vacio 8*12, ""grande""",1,unidad,17.00,Desechables,Tequeños')
@@ -45,5 +45,24 @@ describe('exportar', () => {
     expect(rangoRapido('ano', hoy)).toEqual({ desde: '2026-01-01', hasta: '2026-12-31' })
     expect(rangoRapido('mesAnterior', new Date(2026, 0, 15))).toEqual({ desde: '2025-12-01', hasta: '2025-12-31' })
     expect(rangoRapido('todo', hoy)).toEqual({ desde: '', hasta: '' })
+  })
+})
+
+describe('exportar: secciones del Catálogo', () => {
+  it('CSV de proveedores con su ficha y de artículos con todos sus productos', () => {
+    const proveedores = catalogoACsv('proveedor', [
+      { nombre: 'La Pulpería', ubicacion: 'Santa Tecla, La Libertad', telefonos: ['7123-4567', '2222-3333'], contactos: [{ nombre: 'Ana', telefono: '7000-1111' }, { nombre: 'Luis', telefono: '' }] },
+    ]).split('\r\n')
+    expect(proveedores[0]).toBe('\uFEFFProveedor,Ubicación,Teléfonos,Contactos')
+    expect(proveedores[1]).toBe('La Pulpería,"Santa Tecla, La Libertad","7123-4567; 2222-3333","Ana (7000-1111); Luis"')
+
+    const articulos = catalogoACsv('material', [{ nombre: 'Harina', categoria: 'Materia Prima', productos: ['Arepas', 'Empanadas'] }]).split('\r\n')
+    expect(articulos[0]).toBe('\uFEFFArtículo,Categoría,Productos')
+    expect(articulos[1]).toBe('Harina,Materia Prima,"Arepas, Empanadas"')
+  })
+
+  it('el respaldo .json lleva el tipo de la sección y sus filas', () => {
+    expect(JSON.parse(catalogoAJson('categoria', [{ nombre: 'Bebidas', articulos: ['Agua'] }])))
+      .toEqual({ tipo: 'categoria', version: 1, filas: [{ nombre: 'Bebidas', articulos: ['Agua'] }] })
   })
 })

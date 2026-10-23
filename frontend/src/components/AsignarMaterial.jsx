@@ -8,15 +8,15 @@ import estilos from './AsignarMaterial.module.css'
 
 /**
  * AsignarMaterial
- * Ventana emergente que pide la categoría y el producto de un material,
- * como las columnas del Excel. Solo muestra lo que le falta al material:
- * si ya tiene categoría, solo pide el producto (y al revés).
+ * Ventana emergente que pide la categoría y los productos de un material,
+ * como las columnas del Excel (un artículo puede ir en varios productos).
+ * Solo muestra lo que le falta: si ya tiene categoría, solo pide los productos (y al revés).
  * Las opciones son botones; al escribir se filtran, y si lo escrito no
  * existe se puede agregar como nuevo.
  *
  * Props:
- *  - material: { nombre, existe, categoria, producto } (de getAsignacion) o null para cerrar
- *  - alGuardar({ categoria, producto }): async; si lanza, la ventana sigue abierta
+ *  - material: { nombre, existe, categoria, producto, productos } (de getAsignacion) o null para cerrar
+ *  - alGuardar({ categoria, productos }): async; si lanza, la ventana sigue abierta
  *  - alCancelar()
  */
 export default function AsignarMaterial({ material, alGuardar, alCancelar }) {
@@ -38,22 +38,22 @@ export default function AsignarMaterial({ material, alGuardar, alCancelar }) {
 
 function Formulario({ material, alGuardar, alCancelar, primerBuscadorRef }) {
   const pideCategoria = !material.categoria
-  const pideProducto = !material.producto
+  const pideProducto = !material.productos?.length
   const [categoria, setCategoria] = useState(material.categoria)
-  const [producto, setProducto] = useState(material.producto)
+  const [productos, setProductos] = useState(material.productos ?? [])
   const [errores, setErrores] = useState({})
   const [guardando, setGuardando] = useState(false)
 
   async function guardar() {
     const nuevos = {}
     if (!categoria.trim()) nuevos.categoria = ASIGNACION.faltaCategoria
-    if (!producto.trim()) nuevos.producto = ASIGNACION.faltaProducto
+    if (!productos.length) nuevos.producto = ASIGNACION.faltaProducto
     setErrores(nuevos)
     if (Object.keys(nuevos).length > 0) return
 
     setGuardando(true)
     try {
-      await alGuardar({ categoria: categoria.trim(), producto: producto.trim() })
+      await alGuardar({ categoria: categoria.trim(), productos })
     } catch {
       // El padre muestra el error; la ventana queda abierta para reintentar
     } finally {
@@ -63,7 +63,7 @@ function Formulario({ material, alGuardar, alCancelar, primerBuscadorRef }) {
 
   function elegir(campo, valor) {
     if (campo === 'categoria') setCategoria(valor)
-    else setProducto(valor)
+    else setProductos(valor)
     setErrores(prev => ({ ...prev, [campo]: undefined }))
   }
 
@@ -79,7 +79,7 @@ function Formulario({ material, alGuardar, alCancelar, primerBuscadorRef }) {
           <p className={estilos.asignado}>Categoría: <strong>{material.categoria}</strong></p>
         )}
         {!pideProducto && (
-          <p className={estilos.asignado}>Producto: <strong>{material.producto}</strong></p>
+          <p className={estilos.asignado}>{ASIGNACION.etiquetaProductos}: <strong>{material.producto}</strong></p>
         )}
 
         {pideCategoria && (
@@ -95,10 +95,11 @@ function Formulario({ material, alGuardar, alCancelar, primerBuscadorRef }) {
         )}
         {pideProducto && (
           <SelectorOpciones
-            titulo="Producto"
+            titulo={ASIGNACION.etiquetaProductos}
             nombre="producto"
+            multiple
             opciones={getProductos()}
-            valor={producto}
+            valor={productos}
             onCambiar={v => elegir('producto', v)}
             error={errores.producto}
             buscadorRef={pideCategoria ? undefined : primerBuscadorRef}
@@ -118,21 +119,34 @@ function Formulario({ material, alGuardar, alCancelar, primerBuscadorRef }) {
 /**
  * Botones de selección con un buscador: escribir filtra las opciones y,
  * si lo escrito no existe, ofrece agregarlo como nuevo.
+ * Con `multiple`, `valor` es una lista y cada botón suma o quita su opción
+ * (un artículo puede ir en varios productos); si no, `valor` es un texto.
  */
-export function SelectorOpciones({ titulo, nombre, opciones, valor, onCambiar, error, buscadorRef: refExterna }) {
+export function SelectorOpciones({ titulo, nombre, opciones, valor, onCambiar, error, buscadorRef: refExterna, multiple = false }) {
   const id = useId().replace(/:/g, '')
   const refPropia = useRef(null)
   const buscadorRef = refExterna ?? refPropia
   const [busqueda, setBusqueda] = useState('')
 
+  const elegidas = multiple ? valor : valor ? [valor] : []
+  const estaElegida = o => elegidas.some(e => textoBusqueda(e) === textoBusqueda(o))
   const buscado = textoBusqueda(busqueda.trim())
   const visibles = opciones.filter(o => textoBusqueda(o).includes(buscado))
   const exacta = opciones.find(o => textoBusqueda(o) === buscado)
-  const esNueva = Boolean(valor) && !opciones.some(o => textoBusqueda(o) === textoBusqueda(valor))
-  const puedeAgregar = Boolean(buscado) && !exacta && textoBusqueda(valor) !== buscado
+  // Lo escrito que aún no está en el catálogo (se crea al guardar)
+  const nuevas = elegidas.filter(e => !opciones.some(o => textoBusqueda(o) === textoBusqueda(e)))
+  const puedeAgregar = Boolean(buscado) && !exacta && !elegidas.some(e => textoBusqueda(e) === buscado)
+  // Con nombres de producto la coma separa la lista: no se puede agregar uno con coma
+  const conComa = multiple && busqueda.includes(',')
+
+  function alternar(opcion) {
+    if (!multiple) return onCambiar(opcion)
+    onCambiar(estaElegida(opcion) ? elegidas.filter(e => textoBusqueda(e) !== textoBusqueda(opcion)) : [...elegidas, opcion])
+  }
 
   function agregar() {
-    onCambiar(busqueda.trim())
+    if (conComa) return
+    alternar(busqueda.trim())
     setBusqueda('')
     buscadorRef.current?.focus()
   }
@@ -141,7 +155,7 @@ export function SelectorOpciones({ titulo, nombre, opciones, valor, onCambiar, e
     if (e.key !== 'Enter') return
     e.preventDefault()
     if (exacta) {
-      onCambiar(exacta)
+      if (!multiple || !estaElegida(exacta)) alternar(exacta)
       setBusqueda('')
     } else if (puedeAgregar) {
       agregar()
@@ -164,29 +178,35 @@ export function SelectorOpciones({ titulo, nombre, opciones, valor, onCambiar, e
       />
 
       <div className={estilos.opciones}>
-        {esNueva && (
-          <button type="button" aria-pressed="true" className={[estilos.opcion, estilos.elegida].join(' ')}>
+        {nuevas.map(n => (
+          <button
+            key={`nueva-${n}`}
+            type="button"
+            aria-pressed="true"
+            className={[estilos.opcion, estilos.elegida].join(' ')}
+            onClick={() => multiple && alternar(n)}
+          >
             <Check size={14} aria-hidden="true" />
-            {valor}
+            {n}
             <Insignia tono="marca" className={estilos.nueva}>Nueva</Insignia>
           </button>
-        )}
+        ))}
         {visibles.map(o => {
-          const elegida = textoBusqueda(o) === textoBusqueda(valor)
+          const elegida = estaElegida(o)
           return (
             <button
               key={o}
               type="button"
               aria-pressed={elegida}
               className={[estilos.opcion, elegida && estilos.elegida].filter(Boolean).join(' ')}
-              onClick={() => onCambiar(o)}
+              onClick={() => alternar(o)}
             >
               {elegida && <Check size={14} aria-hidden="true" />}
               {o}
             </button>
           )
         })}
-        {puedeAgregar && (
+        {puedeAgregar && !conComa && (
           <button type="button" className={[estilos.opcion, estilos.agregar].join(' ')} onClick={agregar}>
             <Plus size={14} aria-hidden="true" />
             Agregar «{busqueda.trim()}»
@@ -199,7 +219,7 @@ export function SelectorOpciones({ titulo, nombre, opciones, valor, onCambiar, e
 
       {puedeAgregar && (
         <p className={estilos.aviso} aria-live="polite">
-          {ASIGNACION.noExiste(busqueda.trim(), nombre === 'categoría')}
+          {conComa ? ASIGNACION.productoConComa : ASIGNACION.noExiste(busqueda.trim(), nombre === 'categoría')}
         </p>
       )}
       {error && <p id={`${id}-error`} className={estilos.error} role="alert">{error}</p>}
