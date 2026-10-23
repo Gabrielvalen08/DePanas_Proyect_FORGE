@@ -20,7 +20,10 @@ const ASIGNACIONES_INICIALES = [
 vi.mock('../services/api', () => {
   const asignacion = m => {
     const a = asignaciones.get((m || '').trim().toLowerCase())
-    return a ? { existe: true, ...a } : { existe: false, nombre: (m || '').trim(), categoria: '', producto: '' }
+    // Un artículo puede ir en varios productos: «Arepas, Empanadas»
+    return a
+      ? { existe: true, ...a, productos: a.producto ? a.producto.split(', ') : [] }
+      : { existe: false, nombre: (m || '').trim(), categoria: '', producto: '', productos: [] }
   }
   return {
   guardarLista:         vi.fn(lista => Promise.resolve({ id: 99, ...lista })),
@@ -36,11 +39,12 @@ vi.mock('../services/api', () => {
   getAsignacion:        asignacion,
   getPrecioSugerido:    m => precios.get((m || '').trim().toLowerCase()) ?? null,
   necesitaAsignacion:   m => Boolean((m || '').trim()) && (!asignacion(m).categoria || !asignacion(m).producto),
-  asignarMaterial:      vi.fn(async (nombre, { categoria, producto }) => {
+  asignarMaterial:      vi.fn(async (nombre, { categoria, productos }) => {
     const previo = asignacion(nombre)
-    const material = { nombre: previo.nombre, categoria, producto }
+    const material = { nombre: previo.nombre, categoria, producto: productos.join(', ') }
     asignaciones.set(nombre.trim().toLowerCase(), material)
-    return { material, materialNuevo: !previo.existe, categoriaNueva: categoria === 'Lácteos', productoNuevo: producto === 'Arepas Rellenas' }
+    const productosNuevos = productos.filter(p => p === 'Arepas Rellenas')
+    return { material, materialNuevo: !previo.existe, categoriaNueva: categoria === 'Lácteos', productoNuevo: productosNuevos.length > 0, productosNuevos }
   }),
   }
 })
@@ -405,7 +409,7 @@ describe('AgregarCompra', () => {
     expect(within(ventana).getByRole('button', { name: /Arepas Rellenas/ })).toHaveAttribute('aria-pressed', 'true')
 
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
-    expect(asignarMaterial).toHaveBeenCalledWith('Harina PAN', { categoria: 'Materia Prima', producto: 'Arepas Rellenas' })
+    expect(asignarMaterial).toHaveBeenCalledWith('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas Rellenas'] })
     expect(await screen.findByText('¡Anotado! «Harina PAN» va a Materia Prima · Arepas Rellenas. Ya quedó en el catálogo. Y estrenamos el producto «Arepas Rellenas».')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
@@ -419,8 +423,32 @@ describe('AgregarCompra', () => {
 
     const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloExistente })
     expect(within(ventana).queryByRole('group', { name: 'Categoría' })).not.toBeInTheDocument()
-    expect(within(ventana).getByRole('group', { name: 'Producto' })).toBeInTheDocument()
+    expect(within(ventana).getByRole('group', { name: 'Productos' })).toBeInTheDocument()
     expect(within(ventana).getByText('Limpieza')).toBeInTheDocument()
+  })
+
+  it('un artículo nuevo puede ir en varios productos: se eligen varios y la compra los guarda todos', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Harina PAN')
+    await usuario.tab()
+
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await usuario.click(within(ventana).getByRole('button', { name: 'Materia Prima' }))
+    await usuario.click(within(ventana).getByRole('button', { name: 'Cachitos' }))
+    await usuario.click(within(ventana).getByRole('button', { name: 'Arepas/Empanadas' }))
+    expect(within(ventana).getByRole('button', { name: /Cachitos/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(ventana).getByRole('button', { name: /Arepas\/Empanadas/ })).toHaveAttribute('aria-pressed', 'true')
+    // Un segundo clic lo quita
+    await usuario.click(within(ventana).getByRole('button', { name: /Cachitos/ }))
+    expect(within(ventana).getByRole('button', { name: 'Cachitos' })).toHaveAttribute('aria-pressed', 'false')
+    await usuario.click(within(ventana).getByRole('button', { name: 'Cachitos' }))
+
+    await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    expect(asignarMaterial).toHaveBeenCalledWith('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas/Empanadas', 'Cachitos'] })
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveAccessibleDescription('Materia Prima · Arepas/Empanadas, Cachitos')
   })
 
   it('pide elegir antes de guardar la asignación', async () => {

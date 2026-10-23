@@ -9,6 +9,7 @@ import { useToast } from '../context/ToastContext'
 import { textoBusqueda } from '../utils/formato'
 import { PANTALLA_CATALOGO, fraseDelDia } from '../utils/mensajes'
 import estilos from './PantallaCatalogo.module.css'
+import { tieneProducto } from '../../../shared/productos.js'
 
 const TIPOS = ['proveedor', 'categoria', 'material', 'producto']
 const ICONOS = { proveedor: Truck, categoria: Tags, material: Package, producto: UtensilsCrossed }
@@ -23,9 +24,11 @@ function filasDe(catalogo, tipo) {
 
 const usoDe = (catalogo, tipo, nombre) => catalogo.uso?.[tipo]?.[nombre.toLowerCase()] ?? 0
 
-/** Nombres de los materiales que llevan esa categoría o ese producto */
+/** Nombres de los materiales que llevan esa categoría o ese producto (un material puede ir en varios productos) */
 const materialesDe = (catalogo, tipo, nombre) =>
-  catalogo.materiales.filter(m => m[tipo]?.toLowerCase() === nombre.toLowerCase()).map(m => m.nombre)
+  catalogo.materiales
+    .filter(m => (tipo === 'producto' ? tieneProducto(m.producto, nombre) : m[tipo]?.toLowerCase() === nombre.toLowerCase()))
+    .map(m => m.nombre)
 
 /**
  * Catálogo (/catalogo y /catalogo/:seccion).
@@ -174,7 +177,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
               <tr>
                 <th scope="col">{PANTALLA_CATALOGO.etiquetaNombre(tipo)}</th>
                 {esMaterial && <th scope="col">Categoría</th>}
-                {esMaterial && <th scope="col">Producto</th>}
+                {esMaterial && <th scope="col">{PANTALLA_CATALOGO.columnaProductos}</th>}
                 {conMateriales && <th scope="col">{PANTALLA_CATALOGO.columnaMateriales}</th>}
                 <th scope="col" className={estilos.numerico}>{PANTALLA_CATALOGO.columnaUso(tipo)}</th>
                 <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
@@ -192,7 +195,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
                       </td>
                     )}
                     {esMaterial && (
-                      <td data-etiqueta="Producto">
+                      <td data-etiqueta={PANTALLA_CATALOGO.columnaProductos}>
                         {f.producto || <Insignia tono="aviso">{PANTALLA_CATALOGO.sinAsignar}</Insignia>}
                       </td>
                     )}

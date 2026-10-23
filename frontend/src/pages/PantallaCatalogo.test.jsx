@@ -123,7 +123,7 @@ describe('PantallaCatalogo', () => {
     expect(screen.getByRole('dialog', { name: 'Nuevo proveedor' })).toBeInTheDocument()
   })
 
-  it('en Materiales se ven y se cambian la categoría y el producto de cada uno', async () => {
+  it('en Artículos se ven y se cambian la categoría y los productos de cada uno (un producto nuevo se suma a los que tenía)', async () => {
     const usuario = userEvent.setup()
     renderizar('/catalogo/articulos')
     const fila = (await screen.findByRole('rowheader', { name: 'Tocino La Rioja' })).closest('tr')
@@ -140,7 +140,7 @@ describe('PantallaCatalogo', () => {
     expect(await screen.findByText(/Guardamos los cambios de «Tocino La Rioja»\. Y estrenamos el producto «Pastelitos»\./)).toBeInTheDocument()
     await waitFor(() => {
       const actualizada = screen.getByRole('rowheader', { name: 'Tocino La Rioja' }).closest('tr')
-      expect(within(actualizada).getByText('Pastelitos')).toBeInTheDocument()
+      expect(within(actualizada).getByText('Cachitos, Pastelitos')).toBeInTheDocument()
     })
   })
 

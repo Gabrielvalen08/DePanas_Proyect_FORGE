@@ -4,6 +4,7 @@ import { Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } f
 import { SelectorOpciones } from './AsignarMaterial'
 import { getCategorias, getProductos } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
+import { listaProductos, sinProducto, tieneProducto } from '../../../shared/productos.js'
 import { CONFIRMAR, PANTALLA_CATALOGO } from '../utils/mensajes'
 import estilos from './EditorCatalogo.module.css'
 
@@ -53,16 +54,16 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
   const conMateriales = tipo === 'categoria' || tipo === 'producto'
   const [nombre, setNombre] = useState(registro?.nombre ?? '')
   const [categoria, setCategoria] = useState(registro?.categoria ?? '')
-  const [producto, setProducto] = useState(registro?.producto ?? '')
-  // Los materiales que ya la llevan, sin distinguir mayúsculas
+  const [productos, setProductos] = useState(() => listaProductos(registro?.producto))
+  // Los materiales que ya la llevan, sin distinguir mayúsculas (un producto puede estar en la lista de varios)
   const [elegidos, setElegidos] = useState(() => new Set(
-    registro ? todos.filter(m => textoBusqueda(m[tipo]) === textoBusqueda(registro.nombre)).map(m => m.nombre) : []
+    registro ? todos.filter(m => llevaA(m, tipo, registro.nombre)).map(m => m.nombre) : []
   ))
   const [errores, setErrores] = useState({})
   const [guardando, setGuardando] = useState(false)
   const [confirmando, setConfirmando] = useState(null) // null | 'guardar' | 'descartar'
-  const [inicial] = useState(() => ({ nombre, categoria, producto, elegidos: [...elegidos].sort().join('\n') }))
-  const cambiado = nombre !== inicial.nombre || categoria !== inicial.categoria || producto !== inicial.producto ||
+  const [inicial] = useState(() => ({ nombre, categoria, productos: productos.join('\n'), elegidos: [...elegidos].sort().join('\n') }))
+  const cambiado = nombre !== inicial.nombre || categoria !== inicial.categoria || productos.join('\n') !== inicial.productos ||
     [...elegidos].sort().join('\n') !== inicial.elegidos
 
   // Sin cambios no hay nada que descartar: se cierra sin preguntar
@@ -76,7 +77,7 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
     const nuevos = {}
     if (!nombre.trim()) nuevos.nombre = PANTALLA_CATALOGO.faltaNombre
     if (esMaterial && !categoria.trim()) nuevos.categoria = 'Elige o escribe una categoría'
-    if (esMaterial && !producto.trim()) nuevos.producto = 'Elige o escribe un producto'
+    if (esMaterial && !productos.length) nuevos.producto = PANTALLA_CATALOGO.faltaProductos
     setErrores(nuevos)
     if (Object.keys(nuevos).length > 0) return
     setConfirmando('guardar')
@@ -86,7 +87,7 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
     setGuardando(true)
     try {
       if (esMaterial) {
-        await alGuardar({ nombre: nombre.trim(), categoria: categoria.trim(), producto: producto.trim() })
+        await alGuardar({ nombre: nombre.trim(), categoria: categoria.trim(), productos })
       } else if (conMateriales) {
         // En el orden del catálogo
         await alGuardar({ nombre: nombre.trim(), materiales: todos.map(m => m.nombre).filter(m => elegidos.has(m)) })
@@ -131,12 +132,13 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
                 error={errores.categoria}
               />
               <SelectorOpciones
-                titulo="Producto"
+                titulo={PANTALLA_CATALOGO.columnaProductos}
                 nombre="producto"
+                multiple
                 opciones={getProductos()}
-                valor={producto}
+                valor={productos}
                 onCambiar={v => {
-                  setProducto(v)
+                  setProductos(v)
                   setErrores(prev => ({ ...prev, producto: undefined }))
                 }}
                 error={errores.producto}
@@ -236,7 +238,11 @@ function SelectorMateriales({ tipo, nombreActual, todos, elegidos, onCambiar }) 
           ) : (
             <ul className={estilos.opciones}>
               {visibles.map(m => {
-                const enEste = nombreActual !== '' && textoBusqueda(m[tipo]) === textoBusqueda(nombreActual)
+                const enEste = nombreActual !== '' && llevaA(m, tipo, nombreActual)
+                // En un producto se dice en qué otros está (puede ir en varios); en una categoría, dónde está ahora
+                const detalle = tipo === 'producto'
+                  ? textos.tambienEn(sinProducto(m.producto, nombreActual))
+                  : !enEste && textos.ahoraEn(tipo, m[tipo])
                 return (
                   <li key={m.nombre}>
                     <label className={estilos.opcion}>
@@ -247,7 +253,7 @@ function SelectorMateriales({ tipo, nombreActual, todos, elegidos, onCambiar }) 
                         onChange={() => alternar(m.nombre)}
                       />
                       <span className={estilos.opcionNombre}>{m.nombre}</span>
-                      {!enEste && <span className={estilos.opcionDetalle}>{textos.ahoraEn(tipo, m[tipo])}</span>}
+                      {detalle && <span className={estilos.opcionDetalle}>{detalle}</span>}
                     </label>
                   </li>
                 )
@@ -258,4 +264,9 @@ function SelectorMateriales({ tipo, nombreActual, todos, elegidos, onCambiar }) 
       )}
     </fieldset>
   )
+}
+
+/** ¿El material va en esa categoría o en ese producto? (en un producto, dentro de su lista) */
+function llevaA(material, tipo, nombre) {
+  return tipo === 'producto' ? tieneProducto(material.producto, nombre) : textoBusqueda(material[tipo]) === textoBusqueda(nombre)
 }

@@ -170,24 +170,28 @@ export const ASIGNACION = {
   tituloNuevo: 'Artículo nuevo',
   tituloExistente: 'Categoría y producto',
   descripcionNuevo: material =>
-    `«${material}» es nuevo por aquí. ¿A qué categoría y producto pertenece? Lo recordaremos para las próximas compras.`,
+    `«${material}» es nuevo por aquí. ¿A qué categoría y productos pertenece? Lo recordaremos para las próximas compras.`,
   descripcionExistente: (material, pideCategoria, pideProducto) =>
     pideCategoria && pideProducto
-      ? `Cuéntanos a qué categoría y producto pertenece «${material}».`
+      ? `Cuéntanos a qué categoría y productos pertenece «${material}».`
       : pideCategoria
         ? `Cuéntanos a qué categoría pertenece «${material}».`
-        : `Cuéntanos a qué producto se destina «${material}».`,
+        : `Cuéntanos a qué productos se destina «${material}».`,
   noExiste: (texto, esCategoria) =>
     `«${texto}» todavía no existe. Pulsa Enter o «Agregar» para crear ${esCategoria ? 'una categoría nueva' : 'un producto nuevo'}.`,
   faltaCategoria: 'Elige o escribe una categoría',
-  faltaProducto: 'Elige o escribe un producto',
+  faltaProducto: 'Elige al menos un producto',
+  etiquetaProductos: 'Productos',
+  productoConComa: 'El nombre de un producto no puede llevar comas.',
   sinCoincidencias: 'Nada por aquí con ese nombre',
   ahoraNo: 'Ahora no',
   guardar: 'Guardar',
-  asignado: ({ material, materialNuevo, categoriaNueva, productoNuevo }) => {
+  asignado: ({ material, materialNuevo, categoriaNueva, productoNuevo, productosNuevos }) => {
+    const prods = productosNuevos ?? (productoNuevo ? [material.producto] : [])
     const nuevos = [
       categoriaNueva && `la categoría «${material.categoria}»`,
-      productoNuevo && `el producto «${material.producto}»`,
+      prods.length === 1 && `el producto «${prods[0]}»`,
+      prods.length > 1 && `los productos ${prods.map(p => `«${p}»`).join(', ')}`,
     ].filter(Boolean)
     return (
       `¡Anotado! «${material.nombre}» va a ${material.categoria} · ${material.producto}.` +
@@ -236,9 +240,11 @@ const SECCIONES = {
 
 /** "la categoría «Lácteos» y el producto «Arepas»" cuando se estrenan al guardar */
 function estrenos(r) {
+  const prods = r.productosNuevos ?? (r.productoNuevo ? [r.producto] : [])
   const nuevos = [
     r.categoriaNueva && `la categoría «${r.categoria}»`,
-    r.productoNuevo && `el producto «${r.producto}»`,
+    prods.length === 1 && `el producto «${prods[0]}»`,
+    prods.length > 1 && `los productos ${prods.map(p => `«${p}»`).join(', ')}`,
   ].filter(Boolean)
   return nuevos.length ? ` Y estrenamos ${nuevos.join(' y ')}.` : ''
 }
@@ -271,6 +277,8 @@ export const PANTALLA_CATALOGO = {
   columnaUso: tipo => (usaCompras(tipo) ? 'Compras' : 'Cantidad'),
   sinAsignar: 'Sin asignar',
   columnaMateriales: 'Artículos',
+  columnaProductos: 'Productos',
+  faltaProductos: 'Elige al menos un producto',
   listaMateriales: (nombres, max = 4) =>
     nombres.length <= max ? nombres.join(', ') : `${nombres.slice(0, max).join(', ')} y ${nombres.length - max} más`,
   // Ventana de edición de una categoría o un producto: qué artículos lleva
@@ -279,10 +287,11 @@ export const PANTALLA_CATALOGO = {
     nota: tipo =>
       tipo === 'categoria'
         ? 'Cada artículo va en una sola categoría: si eliges uno que está en otra, se cambia a esta. El que quites queda sin categoría.'
-        : 'Cada artículo va en un solo producto: si eliges uno que está en otro, se cambia a este. El que quites queda sin producto.',
+        : 'Un artículo puede ir en varios productos: el que elijas suma este a los que ya tenía, y el que quites deja de ir en este.',
     buscar: 'Buscar artículo',
     elegidos: n => `${n} ${plural(n, 'elegido', 'elegidos')}`,
     ahoraEn: (tipo, nombre) => (nombre ? `Ahora en «${nombre}»` : tipo === 'categoria' ? 'Sin categoría' : 'Sin producto'),
+    tambienEn: otros => (otros ? `También en «${otros}»` : ''),
     ninguno: 'Todavía no hay artículos. Agrégalos en la sección Artículos.',
     sinResultados: 'Ningún artículo con ese nombre',
   },
