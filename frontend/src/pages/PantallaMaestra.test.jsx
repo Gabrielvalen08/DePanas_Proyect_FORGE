@@ -76,10 +76,10 @@ describe('PantallaMaestra', () => {
     const edicion = screen.getByRole('dialog', { name: 'Editar compra' })
     // Arroz: 5 lb por $4.25 → $0.85 por libra; al subir el precio a $2 el monto pasa a $10.00
     const precio = within(edicion).getByLabelText('Precio unitario, fila 2')
-    expect(precio).toHaveValue(0.85)
+    expect(precio).toHaveValue('0.85')
     expect(within(edicion).getByLabelText('Monto, fila 2')).toHaveValue('4.25')
     await usuario.clear(precio)
-    await usuario.type(precio, '2')
+    await usuario.type(precio, '200')
     expect(within(edicion).getByLabelText('Monto, fila 2')).toHaveValue('10.00')
     await usuario.click(within(edicion).getByRole('button', { name: /guardar cambios/i }))
     await usuario.click(await screen.findByRole('button', { name: COMPRA.confirmarGuardar.confirmar }))

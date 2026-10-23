@@ -10,6 +10,7 @@ import { Boton, Campo, Selector, Tarjeta, Insignia, Modal, ConfirmDialog, Cuerpo
 | ------------- | ------------------------------------------------------------------------------ |
 | `Boton`       | `variante` (`primario` · `secundario` · `fantasma` · `peligro` · `icono`), `tamano` (`sm` · `md`), `icono`, `cargando`, `sombra`, `ancho`, `a` (ruta → se renderiza como `Link`) |
 | `Campo`       | `id`, `etiqueta`, `etiquetaOculta`, `tipo`, `prefijo`, `error`, `ayuda`, `children` (contenido extra dentro del control) |
+| `CampoMoneda` | Igual que `Campo`; `onChange(valor)` recibe el monto ya convertido (`'1.25'` o `''`). Tipo cajero: el punto está fijo y los dígitos entran por la derecha empezando por los centavos (5 → 0.05, 500 → 5.00) |
 | `Selector`    | `id`, `etiqueta`, `etiquetaOculta`, `opciones` (`string[]` o `{ valor, texto }[]`), `error` |
 | `Tarjeta`     | `titulo`, `icono`, `accion`, `sombra`, `franja`, `interactiva` + `a` u `onClick` |
 | `Insignia`    | `tono` (`neutro` · `marca` · `exito` · `aviso` · `error`)                       |

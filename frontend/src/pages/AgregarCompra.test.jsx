@@ -66,7 +66,7 @@ async function elegirProveedor(usuario, nombre = 'Walmart') {
   if (!campo.value) await usuario.type(campo, nombre)
 }
 
-async function llenarFila(usuario, n, { material = 'Tocino La Rioja', cantidad = '2', monto = '3.5' } = {}) {
+async function llenarFila(usuario, n, { material = 'Tocino La Rioja', cantidad = '2', monto = '350' } = {}) {
   await elegirProveedor(usuario)
   await usuario.type(screen.getByRole('combobox', { name: `Artículo, fila ${n}` }), material)
   await usuario.type(screen.getByLabelText(`Cantidad, fila ${n}`), cantidad)
@@ -80,7 +80,7 @@ async function llenarCompraValida(usuario, bloque = document.body) {
   await usuario.type(en.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
   await usuario.type(en.getByLabelText('Cantidad, fila 1'), '2')
   await usuario.selectOptions(en.getByLabelText('Unidad, fila 1'), 'kg')
-  await usuario.type(en.getByLabelText('Precio unitario, fila 1'), '3.5')
+  await usuario.type(en.getByLabelText('Precio unitario, fila 1'), '350')
 }
 
 describe('AgregarCompra', () => {
@@ -157,7 +157,7 @@ describe('AgregarCompra', () => {
     await llenarFila(usuario, 1) // 2 × $3.50 = $7.00
     await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
     await usuario.type(screen.getByLabelText('Cantidad, fila 2'), '4')
-    await usuario.type(screen.getByLabelText('Precio unitario, fila 2'), '1.25') // 4 × $1.25 = $5.00
+    await usuario.type(screen.getByLabelText('Precio unitario, fila 2'), '125') // cajero: 1-2-5 → $1.25; 4 × $1.25 = $5.00
     expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('7.00')
     expect(screen.getByLabelText('Monto, fila 2')).toHaveValue('5.00')
     expect(screen.getByText('$12.00')).toBeInTheDocument()
@@ -271,7 +271,7 @@ describe('AgregarCompra', () => {
     await usuario.tab()
 
     const precio = screen.getByLabelText('Precio unitario, fila 1')
-    expect(precio).toHaveValue(1)
+    expect(precio).toHaveValue('1.00')
     expect(screen.getByLabelText('Unidad, fila 1')).toHaveValue('bolsa')
     expect(precio).toHaveAccessibleDescription(COMPRA.ultimoPrecio('$1.00', 'bolsa'))
 
@@ -290,7 +290,7 @@ describe('AgregarCompra', () => {
 
     const precio = screen.getByLabelText('Precio unitario, fila 1')
     await usuario.clear(precio)
-    await usuario.type(precio, '1.2') // subió 20 centavos
+    await usuario.type(precio, '120') // subió 20 centavos: 1-2-0 → $1.20
     expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('6.00')
     expect(precio).toHaveAccessibleDescription(COMPRA.ultimoPrecio('$1.00', 'bolsa')) // se sigue viendo el anterior
 
@@ -311,10 +311,10 @@ describe('AgregarCompra', () => {
     await usuario.tab()
     const precio = screen.getByLabelText('Precio unitario, fila 1')
     await usuario.clear(precio)
-    await usuario.type(precio, '3')
+    await usuario.type(precio, '300')
     await usuario.click(material)
     await usuario.tab()
-    expect(precio).toHaveValue(3)
+    expect(precio).toHaveValue('3.00')
   })
 
   it('un material sin compras previas deja el precio vacío y sin sugerencia', async () => {
@@ -323,7 +323,7 @@ describe('AgregarCompra', () => {
     await elegirProveedor(usuario)
     await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.tab()
-    expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue(null)
+    expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue('')
     expect(screen.getByLabelText('Precio unitario, fila 1')).not.toHaveAccessibleDescription(/Última compra/)
   })
 
@@ -356,7 +356,7 @@ describe('AgregarCompra', () => {
     await usuario.selectOptions(screen.getByLabelText('Unidad, fila 1'), 'kg')
     expect(agregar).toBeDisabled()
 
-    await usuario.type(screen.getByLabelText('Precio unitario, fila 1'), '3.5')
+    await usuario.type(screen.getByLabelText('Precio unitario, fila 1'), '350')
     expect(agregar).toBeEnabled()
     await usuario.click(agregar)
     expect(screen.getByRole('button', { name: /agregar otra fila/i })).toBeDisabled()

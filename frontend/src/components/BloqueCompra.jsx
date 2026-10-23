@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import AsignarMaterial from './AsignarMaterial'
-import { Boton, Campo, ConfirmDialog, Selector } from './common'
+import { Boton, Campo, CampoMoneda, ConfirmDialog, Selector } from './common'
 import { asignarMaterial, getAsignacion, getMateriales, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { ASIGNACION, COMPRA, VALIDACION } from '../utils/mensajes'
@@ -53,6 +53,7 @@ function filasDesde(materiales) {
       material: m.material,
       cantidad: String(m.cantidad),
       unidad: m.unidad || '',
+      // Precio exacto (puede ser de menos de un centavo, p. ej. por gramo) y monto guardado intacto
       precio: monto > 0 && cantidad > 0 ? String(redondear(monto / cantidad, 4)) : '',
       montoOriginal: monto > 0 ? monto : undefined,
     }
@@ -71,7 +72,9 @@ function validarFila(fila) {
   if (!cantidadValida) errores.cantidad = VALIDACION.cantidad
   if (!fila.unidad) errores.unidad = VALIDACION.unidad
   // Con cantidad válida, el monto (cantidad × precio, a centavos) tampoco puede quedar en 0
-  if (!fila.precio || isNaN(fila.precio) || Number(fila.precio) <= 0 || (cantidadValida && montoDe(fila) <= 0))
+  // Una fila de una compra guardada que nadie tocó conserva su monto: su precio no se revisa
+  const precioIntacto = fila.montoOriginal !== undefined
+  if (!precioIntacto && (!fila.precio || isNaN(fila.precio) || Number(fila.precio) <= 0 || (cantidadValida && montoDe(fila) <= 0)))
     errores.precio = VALIDACION.precio
   return errores
 }
@@ -206,13 +209,15 @@ export default function BloqueCompra({
 
   /** Pone el precio y la unidad de la última compra del material, salvo que el precio ya lo haya escrito la persona */
   function sugerirPrecio(filaId, material) {
-    const sugerido = getPrecioSugerido(material)
+    // El campo es en centavos (tipo cajero): un precio de menos de un centavo no se sugiere
+    const encontrado = getPrecioSugerido(material)
+    const sugerido = encontrado && redondear(encontrado.precio, 2) > 0 ? encontrado : null
     setFilas(prev => prev.map(f => {
       if (f.id !== filaId || (f.precio !== '' && !f.precioSugerido)) return f
       if (!sugerido) return f.precioSugerido ? { ...f, precio: '', precioSugerido: false } : f
       return {
         ...f,
-        precio: String(sugerido.precio),
+        precio: String(redondear(sugerido.precio, 2)),
         unidad: UNIDADES.includes(sugerido.unidad) ? sugerido.unidad : f.unidad,
         precioSugerido: true,
         montoOriginal: undefined,
@@ -496,17 +501,13 @@ export default function BloqueCompra({
 
                       {/* Precio unitario (editable; sugerido desde la última compra) */}
                       <td>
-                        <Campo
+                        <CampoMoneda
                           id={`${id}-precio-${fila.id}`}
                           etiqueta={`Precio unitario, fila ${n}`}
                           etiquetaOculta
-                          tipo="number"
-                          inputMode="decimal"
-                          min="0.0001"
-                          step="any"
                           prefijo="$"
                           value={fila.precio}
-                          onChange={e => cambiarFila(fila.id, 'precio', e.target.value)}
+                          onChange={valor => cambiarFila(fila.id, 'precio', valor)}
                           onBlur={() => salirDeCampoFila(fila.id, 'precio')}
                           ayuda={textoUltimoPrecio(fila.material)}
                           error={errores[clave(fila.id, 'precio')]}
