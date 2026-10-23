@@ -101,6 +101,7 @@ export const ACCESO = {
 // ---------------------------------------------------------------------------
 export const COMPRA = {
   guardada: '¡Listo, pana! Compra guardada.',
+  cambiaParaReintentar: 'Corrige o cambia algún dato para volver a intentar.',
   errorGuardar: detalle =>
     `No pudimos guardar la compra${detalle ? `: ${detalle}` : ''}. Revisa los datos e inténtalo de nuevo.`,
   actualizada: '¡Chévere! La compra quedó actualizada.',

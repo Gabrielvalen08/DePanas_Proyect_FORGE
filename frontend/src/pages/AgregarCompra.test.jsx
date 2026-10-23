@@ -186,6 +186,34 @@ describe('AgregarCompra', () => {
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeEnabled()
   })
 
+  it('tras un error de datos, Guardar se apaga hasta que se cambie algo', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
+    await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+
+    const guardar = screen.getByRole('button', { name: /guardar compra/i })
+    expect(guardar).toBeDisabled()
+    expect(guardar).toHaveAccessibleDescription(COMPRA.cambiaParaReintentar)
+
+    await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
+    expect(screen.getByRole('button', { name: /guardar compra/i })).toBeEnabled()
+  })
+
+  it('si el servidor rechaza la compra, Guardar se apaga hasta que se cambie algo', async () => {
+    vi.mocked(guardarLista).mockRejectedValueOnce(new Error('Fila 1: el monto debe ser mayor a 0'))
+    const usuario = userEvent.setup()
+    renderizar()
+    await llenarCompraValida(usuario)
+    await guardarYConfirmar(usuario)
+
+    expect(await screen.findByText(COMPRA.errorGuardar('Fila 1: el monto debe ser mayor a 0'))).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /guardar compra/i })).toBeDisabled()
+
+    await usuario.selectOptions(screen.getByLabelText('Unidad, fila 1'), 'lb')
+    expect(screen.getByRole('button', { name: /guardar compra/i })).toBeEnabled()
+  })
+
   it('pide confirmar antes de guardar; Cancelar en la confirmación no guarda', async () => {
     const usuario = userEvent.setup()
     renderizar()

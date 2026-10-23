@@ -146,8 +146,16 @@
 /* ---------- Acciones de la compra ---------- */
 .acciones {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
+}
+
+/* Tras un error: por qué Guardar está apagado. Va sobre el collage, así que usa el texto principal */
+.ayudaGuardar {
+  margin-right: auto;
+  font-size: 0.875rem;
+  color: var(--color-text);
 }
 
 /* ---------- Bloque angosto: encabezado apilado y filas como tarjetas ---------- */

@@ -119,6 +119,8 @@ export default function BloqueCompra({
   const [filas, setFilas]         = useState(() => filasDesde(inicial?.materiales || inicial?.productos))
   const [errores, setErrores]     = useState({})
   const [guardando, setGuardando] = useState(false)
+  // Tras un error (datos inválidos o fallo al guardar) Guardar se apaga hasta que se cambie algo
+  const [bloqueado, setBloqueado] = useState(false)
   const [intentoGuardar, setIntentoGuardar] = useState(false)
   const [porAsignar, setPorAsignar] = useState(null) // material en la ventana emergente
   const [porConfirmar, setPorConfirmar] = useState(null) // lista lista para guardar, a la espera del Sí
@@ -164,6 +166,7 @@ export default function BloqueCompra({
 
   // --- Encabezado ---
   function cambiarEncabezado(campo, valor) {
+    setBloqueado(false)
     if (campo === 'proveedor') setProveedor(valor)
     else if (campo === 'fecha') setFecha(valor)
     if (errores[campo]) fijarError(campo, validarEncabezado(campo, valor))
@@ -186,6 +189,7 @@ export default function BloqueCompra({
 
   function cambiarFila(filaId, campo, valor) {
     if (campo === 'material' && valor.trim() && !exigirProveedor()) return
+    setBloqueado(false)
     const filaActual = filas.find(f => f.id === filaId)
     const actualizada = { ...filaActual, [campo]: valor }
     // Tocar la cantidad o el precio vuelve a calcular el monto; el precio escrito deja de ser el sugerido
@@ -238,6 +242,7 @@ export default function BloqueCompra({
       throw error
     }
     setPorAsignar(null)
+    setBloqueado(false)
     if (guardarDespues.current) {
       guardarDespues.current = false
       // Si otro material también falta, se pide; si no, se guarda la compra
@@ -255,11 +260,13 @@ export default function BloqueCompra({
   function agregarFila() {
     const nueva = filaVacia()
     filaPorEnfocar.current = nueva.id
+    setBloqueado(false)
     setFilas(prev => [...prev, nueva])
   }
 
   function quitarFila(filaId) {
     if (filas.length === 1) return
+    setBloqueado(false)
     setFilas(prev => prev.filter(f => f.id !== filaId))
     setErrores(prev => {
       const next = { ...prev }
@@ -289,6 +296,7 @@ export default function BloqueCompra({
     if (Object.keys(nuevos).length > 0) {
       campoPorEnfocar.current = primerCampoConError(nuevos)
       setErrores(nuevos)
+      setBloqueado(true)
       return
     }
 
@@ -336,7 +344,8 @@ export default function BloqueCompra({
       const guardada = await alGuardar(lista)
       alGuardado?.(guardada ?? lista)
     } catch {
-      // El padre notifica el error
+      // El padre notifica el error; no se reintenta igual: hay que cambiar algo primero
+      setBloqueado(true)
     } finally {
       setGuardando(false)
     }
@@ -555,10 +564,19 @@ export default function BloqueCompra({
         </section>
 
         <div className={estilos.acciones}>
+          {bloqueado && <p id={`${id}-ayuda-guardar`} className={estilos.ayudaGuardar}>{COMPRA.cambiaParaReintentar}</p>}
           <Boton variante="fantasma" onClick={pedirCancelar} disabled={!hayDatos && !cancelarVacio}>
             Cancelar
           </Boton>
-          <Boton type="submit" variante="primario" sombra icono={<Save />} cargando={guardando} disabled={!hayDatos}>
+          <Boton
+            type="submit"
+            variante="primario"
+            sombra
+            icono={<Save />}
+            cargando={guardando}
+            disabled={!hayDatos || bloqueado}
+            aria-describedby={bloqueado ? `${id}-ayuda-guardar` : undefined}
+          >
             {guardando ? 'Guardando…' : textoGuardar}
           </Boton>
         </div>
