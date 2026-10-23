@@ -135,6 +135,19 @@
   width: 1%;
 }
 
+/* Datos de la ficha del proveedor: secundarios a su nombre */
+.tabla .dato {
+  font-family: var(--fuente-texto);
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+.mas {
+  font-family: var(--fuente-titulos);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
 /* Nombres de los materiales de una categoría o un producto: secundarios a su nombre */
 .tabla .listaMateriales {
   min-width: 14rem;

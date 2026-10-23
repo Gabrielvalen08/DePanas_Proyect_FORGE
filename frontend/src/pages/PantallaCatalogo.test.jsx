@@ -96,6 +96,38 @@ describe('PantallaCatalogo', () => {
     expect(screen.getByRole('dialog', { name: 'Editar proveedor' })).toBeInTheDocument()
   })
 
+  it('la ficha del proveedor guarda ubicación, varios teléfonos y contactos, y la tabla los muestra', async () => {
+    const usuario = userEvent.setup()
+    renderizar('/catalogo/proveedores')
+    await usuario.click(await screen.findByRole('button', { name: 'Agregar proveedor' }))
+    const ventana = screen.getByRole('dialog', { name: 'Nuevo proveedor' })
+    const T = PANTALLA_CATALOGO.ficha
+
+    await usuario.type(within(ventana).getByLabelText('Nombre'), 'La Pulpería')
+    await usuario.type(within(ventana).getByLabelText(T.ubicacion), 'Santa Tecla')
+    await usuario.type(within(ventana).getByLabelText(T.telefono(1)), '7123-4567')
+    await usuario.click(within(ventana).getByRole('button', { name: T.agregarTelefono }))
+    await usuario.type(within(ventana).getByLabelText(T.telefono(2)), 'hola')
+    await usuario.click(within(ventana).getByRole('button', { name: T.agregarContacto }))
+    await usuario.type(within(ventana).getByLabelText(T.contactoNombre(1)), 'Ana')
+
+    // Un teléfono inválido se marca antes de pedir la confirmación
+    await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(within(ventana).getByLabelText(T.telefono(2))).toHaveAttribute('aria-invalid', 'true')
+
+    await usuario.clear(within(ventana).getByLabelText(T.telefono(2)))
+    await usuario.type(within(ventana).getByLabelText(T.telefono(2)), '2222-3333')
+    await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
+
+    const fila = (await screen.findByRole('rowheader', { name: 'La Pulpería' })).closest('tr')
+    expect(within(fila).getByText('Santa Tecla')).toBeInTheDocument()
+    expect(within(fila).getByText(/7123-4567/)).toBeInTheDocument()
+    expect(within(fila).getByText(T.otros(1))).toBeInTheDocument()
+    expect(within(fila).getByText('Ana')).toBeInTheDocument()
+  })
+
   it('renombra un proveedor: avisa en cuántas compras se cambió', async () => {
     const usuario = userEvent.setup()
     renderizar('/catalogo/proveedores')

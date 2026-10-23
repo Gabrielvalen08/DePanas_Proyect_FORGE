@@ -1,0 +1,65 @@
+/* Datos del proveedor bajo su nombre, en la ventana del Catálogo */
+.ficha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.leyenda {
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text);
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+/* Campos de la fila + botón quitar, alineados arriba (el error va bajo su campo) */
+.fila {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.campo {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.agregar {
+  align-self: flex-start;
+  border-style: dashed;
+}
+
+.vacio {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+/* Teléfono: nombre y teléfono del contacto uno bajo el otro */
+@media (max-width: 479px) {
+  .fila {
+    flex-wrap: wrap;
+  }
+
+  .campo {
+    flex-basis: calc(100% - 3rem);
+  }
+}

@@ -2,9 +2,11 @@ import { useId, useRef, useState } from 'react'
 import { Check, Pencil, Plus, Search } from 'lucide-react'
 import { Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
 import { SelectorOpciones } from './AsignarMaterial'
+import FichaProveedor, { fichaInicial } from './FichaProveedor'
 import { getCategorias, getProductos } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
 import { listaProductos, sinProducto, tieneProducto } from '../../../shared/productos.js'
+import { normalizarFicha } from '../../../shared/proveedores.js'
 import { CONFIRMAR, PANTALLA_CATALOGO } from '../utils/mensajes'
 import estilos from './EditorCatalogo.module.css'
 
@@ -51,8 +53,10 @@ export default function EditorCatalogo({ tipo, edicion, materiales = [], alGuard
 function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
   const registro = edicion.registro
   const esMaterial = tipo === 'material'
+  const esProveedor = tipo === 'proveedor'
   const conMateriales = tipo === 'categoria' || tipo === 'producto'
   const [nombre, setNombre] = useState(registro?.nombre ?? '')
+  const [ficha, setFicha] = useState(() => fichaInicial(registro?.ficha))
   const [categoria, setCategoria] = useState(registro?.categoria ?? '')
   const [productos, setProductos] = useState(() => listaProductos(registro?.producto))
   // Los materiales que ya la llevan, sin distinguir mayúsculas (un producto puede estar en la lista de varios)
@@ -62,9 +66,11 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
   const [errores, setErrores] = useState({})
   const [guardando, setGuardando] = useState(false)
   const [confirmando, setConfirmando] = useState(null) // null | 'guardar' | 'descartar'
-  const [inicial] = useState(() => ({ nombre, categoria, productos: productos.join('\n'), elegidos: [...elegidos].sort().join('\n') }))
+  const [inicial] = useState(() => ({
+    nombre, categoria, productos: productos.join('\n'), elegidos: [...elegidos].sort().join('\n'), ficha: JSON.stringify(ficha),
+  }))
   const cambiado = nombre !== inicial.nombre || categoria !== inicial.categoria || productos.join('\n') !== inicial.productos ||
-    [...elegidos].sort().join('\n') !== inicial.elegidos
+    [...elegidos].sort().join('\n') !== inicial.elegidos || JSON.stringify(ficha) !== inicial.ficha
 
   // Sin cambios no hay nada que descartar: se cierra sin preguntar
   function pedirCancelar() {
@@ -78,6 +84,14 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
     if (!nombre.trim()) nuevos.nombre = PANTALLA_CATALOGO.faltaNombre
     if (esMaterial && !categoria.trim()) nuevos.categoria = 'Elige o escribe una categoría'
     if (esMaterial && !productos.length) nuevos.producto = PANTALLA_CATALOGO.faltaProductos
+    // La ficha se revisa con las mismas reglas que el backend (shared/proveedores.js)
+    if (esProveedor) {
+      try {
+        normalizarFicha(ficha)
+      } catch (err) {
+        nuevos[err.campo] = err.message
+      }
+    }
     setErrores(nuevos)
     if (Object.keys(nuevos).length > 0) return
     setConfirmando('guardar')
@@ -91,11 +105,14 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
       } else if (conMateriales) {
         // En el orden del catálogo
         await alGuardar({ nombre: nombre.trim(), materiales: todos.map(m => m.nombre).filter(m => elegidos.has(m)) })
+      } else if (esProveedor) {
+        await alGuardar({ nombre: nombre.trim(), ficha })
       } else {
         await alGuardar({ nombre: nombre.trim() })
       }
-    } catch {
-      // El padre muestra el error; la ventana queda abierta para corregir
+    } catch (err) {
+      // El padre muestra el error; la ventana queda abierta para corregir el campo que lo causó
+      if (err?.campo) setErrores(prev => ({ ...prev, [err.campo]: err.message }))
     } finally {
       setGuardando(false)
     }
@@ -118,6 +135,16 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
             error={errores.nombre}
             ayuda={registro ? PANTALLA_CATALOGO.ayudaRenombrar(edicion.uso ?? 0) : undefined}
           />
+          {esProveedor && (
+            <FichaProveedor
+              ficha={ficha}
+              onCambiar={nueva => {
+                setFicha(nueva)
+                setErrores(prev => Object.fromEntries(Object.entries(prev).filter(([k]) => k === 'nombre')))
+              }}
+              errores={errores}
+            />
+          )}
           {esMaterial && (
             <div className={estilos.asignacion}>
               <SelectorOpciones

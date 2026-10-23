@@ -18,7 +18,8 @@ const TIPO_DE_RUTA = Object.fromEntries(TIPOS.map(t => [PANTALLA_CATALOGO.seccio
 /** Opciones de un tipo como filas { nombre, categoria?, producto? } */
 function filasDe(catalogo, tipo) {
   if (tipo === 'material') return catalogo.materiales
-  const lista = { proveedor: catalogo.proveedores, categoria: catalogo.categorias, producto: catalogo.productos }[tipo]
+  if (tipo === 'proveedor') return catalogo.proveedores.map(nombre => ({ nombre, ficha: catalogo.fichas?.[nombre.toLowerCase()] }))
+  const lista = { categoria: catalogo.categorias, producto: catalogo.productos }[tipo]
   return lista.map(nombre => ({ nombre }))
 }
 
@@ -112,6 +113,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
   const { titulo, singular } = PANTALLA_CATALOGO.secciones[tipo]
   const Icono = ICONOS[tipo]
   const esMaterial = tipo === 'material'
+  const esProveedor = tipo === 'proveedor'
   const conMateriales = tipo === 'categoria' || tipo === 'producto'
 
   const todas = filasDe(catalogo, tipo)
@@ -176,6 +178,9 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
             <thead>
               <tr>
                 <th scope="col">{PANTALLA_CATALOGO.etiquetaNombre(tipo)}</th>
+                {esProveedor && <th scope="col">{PANTALLA_CATALOGO.ficha.ubicacion}</th>}
+                {esProveedor && <th scope="col">{PANTALLA_CATALOGO.ficha.columnaTelefono}</th>}
+                {esProveedor && <th scope="col">{PANTALLA_CATALOGO.ficha.columnaContacto}</th>}
                 {esMaterial && <th scope="col">Categoría</th>}
                 {esMaterial && <th scope="col">{PANTALLA_CATALOGO.columnaProductos}</th>}
                 {conMateriales && <th scope="col">{PANTALLA_CATALOGO.columnaMateriales}</th>}
@@ -189,6 +194,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
                 return (
                   <tr key={f.nombre}>
                     <th scope="row" className={estilos.nombre}>{f.nombre}</th>
+                    {esProveedor && <CeldasFicha ficha={f.ficha} />}
                     {esMaterial && (
                       <td data-etiqueta="Categoría">
                         {f.categoria || <Insignia tono="aviso">{PANTALLA_CATALOGO.sinAsignar}</Insignia>}
@@ -252,6 +258,22 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
         danger
       />
       <span className="solo-lector" aria-live="polite">{`${filas.length} ${filas.length === 1 ? singular : titulo.toLowerCase()}`}</span>
+    </>
+  )
+}
+
+/** Ubicación, primer teléfono y primer contacto del proveedor (con cuántos más hay) */
+function CeldasFicha({ ficha }) {
+  const T = PANTALLA_CATALOGO.ficha
+  const conMas = (lista, texto) =>
+    lista?.length ? <>{texto(lista[0])}{lista.length > 1 && <span className={estilos.mas}> {T.otros(lista.length - 1)}</span>}</> : T.sinDato
+  return (
+    <>
+      <td data-etiqueta={T.ubicacion} className={estilos.dato}>{ficha?.ubicacion || T.sinDato}</td>
+      <td data-etiqueta={T.columnaTelefono} className={estilos.dato}>{conMas(ficha?.telefonos, t => t)}</td>
+      <td data-etiqueta={T.columnaContacto} className={estilos.dato}>
+        {conMas(ficha?.contactos, c => (c.telefono ? `${c.nombre} · ${c.telefono}` : c.nombre))}
+      </td>
     </>
   )
 }
