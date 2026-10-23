@@ -3,8 +3,7 @@ import { Navigate, NavLink, useParams } from 'react-router-dom'
 import { Loader2, Package, Pencil, Plus, Search, Tags, Trash2, Truck, UtensilsCrossed } from 'lucide-react'
 import Header from '../components/Header'
 import EditorCatalogo from '../components/EditorCatalogo'
-import ConfirmModal from '../components/ConfirmModal'
-import { Boton, Campo, EstadoVacio, Insignia, Tarjeta } from '../components/common'
+import { Boton, Campo, ConfirmDialog, EstadoVacio, Insignia, Tarjeta } from '../components/common'
 import { agregarAlCatalogo, editarEnCatalogo, eliminarDelCatalogo, fetchCatalogo } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { textoBusqueda } from '../utils/formato'
@@ -238,7 +237,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
         alCerrar={() => setEdicion(null)}
       />
 
-      <ConfirmModal
+      <ConfirmDialog
         isOpen={porEliminar !== null}
         onClose={() => setPorEliminar(null)}
         onConfirm={() => eliminar(porEliminar)}

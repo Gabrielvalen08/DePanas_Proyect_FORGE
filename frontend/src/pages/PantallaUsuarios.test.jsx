@@ -58,7 +58,7 @@ describe('PantallaUsuarios', () => {
     renderizar()
     const ventana = await abrirNuevo(usuario)
     await llenar(usuario, ventana)
-    await usuario.click(within(ventana).getByRole('checkbox', { name: /Compras/ }))
+    await usuario.click(within(ventana).getByRole('checkbox', { name: /Lista de compras/ }))
     await usuario.click(within(ventana).getByRole('button', { name: USUARIOS.guardar }))
 
     expect(await screen.findByText(USUARIOS.creado({ nombre: 'Luis', usuario: 'Luis_03' }))).toBeInTheDocument()
@@ -80,7 +80,7 @@ describe('PantallaUsuarios', () => {
     renderizar()
     const ventana = await abrirNuevo(usuario)
     await llenar(usuario, ventana, { user: 'marta_02' })
-    await usuario.click(within(ventana).getByRole('checkbox', { name: /Compras/ }))
+    await usuario.click(within(ventana).getByRole('checkbox', { name: /Lista de compras/ }))
     await usuario.click(within(ventana).getByRole('button', { name: USUARIOS.guardar }))
 
     const campo = within(ventana).getByLabelText(USUARIOS.campos.usuario)
@@ -93,7 +93,7 @@ describe('PantallaUsuarios', () => {
     renderizar()
     const ventana = await abrirNuevo(usuario)
     await llenar(usuario, ventana, { clave: '5678' })
-    await usuario.click(within(ventana).getByRole('checkbox', { name: /Compras/ }))
+    await usuario.click(within(ventana).getByRole('checkbox', { name: /Lista de compras/ }))
     await usuario.click(within(ventana).getByRole('button', { name: USUARIOS.guardar }))
 
     const campo = within(ventana).getByLabelText(USUARIOS.campos.contrasena)

@@ -19,7 +19,7 @@ function renderizar() {
 const LISTA_SELECTOS = /Ver compra en Súper Selectos del 29\/09\/2026/
 
 describe('PantallaMaestra', () => {
-  it('muestra cada lista con proveedor, cantidad de productos, gasto total y fecha', async () => {
+  it('muestra cada lista con proveedor, cantidad de productos, cost y fecha', async () => {
     renderizar()
     const tabla = await screen.findByRole('table', { name: /listas de compra/i })
     expect(within(tabla).getAllByRole('row')).toHaveLength(6) // encabezado + 5 listas
@@ -47,11 +47,15 @@ describe('PantallaMaestra', () => {
     await usuario.click(screen.getByRole('button', { name: 'Editar' }))
 
     const edicion = screen.getByRole('dialog', { name: 'Editar compra' })
-    const precio = within(edicion).getByLabelText('Precio, fila 2')
-    expect(precio).toHaveValue(4.25)
+    // Arroz: 5 lb por $4.25 → $0.85 por libra; al subir el precio a $2 el monto pasa a $10.00
+    const precio = within(edicion).getByLabelText('Precio unitario, fila 2')
+    expect(precio).toHaveValue(0.85)
+    expect(within(edicion).getByLabelText('Monto, fila 2')).toHaveValue('4.25')
     await usuario.clear(precio)
-    await usuario.type(precio, '10')
+    await usuario.type(precio, '2')
+    expect(within(edicion).getByLabelText('Monto, fila 2')).toHaveValue('10.00')
     await usuario.click(within(edicion).getByRole('button', { name: /guardar cambios/i }))
+    await usuario.click(await screen.findByRole('button', { name: COMPRA.confirmarGuardar.confirmar }))
 
     expect(await screen.findByText(COMPRA.actualizada)).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())

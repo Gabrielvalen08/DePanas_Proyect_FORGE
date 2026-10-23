@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Pencil, ShoppingCart, Trash2 } from 'lucide-react'
 import BloqueCompra from './BloqueCompra'
-import ConfirmModal from './ConfirmModal'
-import { Boton, CuerpoModal, Modal, PieModal } from './common'
+import { Boton, ConfirmDialog, CuerpoModal, Modal, PieModal } from './common'
 import { actualizarLista, eliminarLista, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { formatearFechaTexto, formatearPrecio } from '../utils/formato'
@@ -82,7 +81,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
                   <tr>
                     <th scope="col">Material</th>
                     <th scope="col">Cantidad</th>
-                    <th scope="col" className={estilos.numerico}>Precio</th>
+                    <th scope="col" className={estilos.numerico}>Monto</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -96,7 +95,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <th scope="row" colSpan={2}>Gasto total</th>
+                    <th scope="row" colSpan={2}>Cost</th>
                     <td className={`${estilos.numerico} ${estilos.total}`}>{formatearPrecio(totalLista(lista))}</td>
                   </tr>
                 </tfoot>
@@ -133,7 +132,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
         )}
       </Modal>
 
-      <ConfirmModal
+      <ConfirmDialog
         isOpen={confirmando}
         onClose={() => setConfirmando(false)}
         onConfirm={eliminar}

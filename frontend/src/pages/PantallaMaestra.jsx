@@ -62,7 +62,7 @@ export default function PantallaMaestra({ puedeAgregar = true }) {
           <tr>
             <th scope="col">Proveedor</th>
             <th scope="col" className={estilos.numerico}>Materiales</th>
-            <th scope="col" className={estilos.numerico}>Gasto total</th>
+            <th scope="col" className={estilos.numerico}>Cost</th>
             <th scope="col">Fecha</th>
             <th scope="col" className={estilos.colAbrir}><span className="solo-lector">Detalle</span></th>
           </tr>
@@ -84,7 +84,7 @@ export default function PantallaMaestra({ puedeAgregar = true }) {
                   </button>
                 </td>
                 <td data-etiqueta="Materiales" className={estilos.numerico}>{n}</td>
-                <td data-etiqueta="Gasto total" className={`${estilos.numerico} ${estilos.gasto}`}>
+                <td data-etiqueta="Cost" className={`${estilos.numerico} ${estilos.gasto}`}>
                   {formatearPrecio(totalLista(lista))}
                 </td>
                 <td data-etiqueta="Fecha" className={estilos.fecha}>{formatearFecha(lista.fecha)}</td>
@@ -101,7 +101,7 @@ export default function PantallaMaestra({ puedeAgregar = true }) {
 
   return (
     <>
-      <Header title="Compras" frase={fraseDelDia('/compras')} />
+      <Header title="Lista de compras" frase={fraseDelDia('/compras')} />
 
       <main id="contenido" tabIndex={-1}>
         <div className={estilos.toolbar}>

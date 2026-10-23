@@ -98,8 +98,7 @@ export const ACCESO = {
 // Compras
 // ---------------------------------------------------------------------------
 export const COMPRA = {
-  guardada: (proveedor, n) =>
-    `¡Listo, pana! La compra en ${proveedor} quedó guardada (${n} ${plural(n, 'material')}).`,
+  guardada: '¡Listo, pana! Compra guardada.',
   errorGuardar: detalle =>
     `No pudimos guardar la compra${detalle ? `: ${detalle}` : ''}. Revisa los datos e inténtalo de nuevo.`,
   actualizada: '¡Chévere! La compra quedó actualizada.',
@@ -114,6 +113,19 @@ export const COMPRA = {
       `Se borrará la compra en ${proveedor} con ${n} ${plural(n, 'material')}. Esto no se puede deshacer.`,
     confirmar: 'Sí, eliminar',
   },
+  confirmarGuardar: {
+    titulo: '¿Guardamos esta compra?',
+    mensaje: (proveedor, n, total) =>
+      `Se guardará la compra en ${proveedor} con ${n} ${plural(n, 'material')} por ${total}.`,
+    confirmar: 'Sí, guardar',
+  },
+  confirmarCancelar: {
+    titulo: '¿Cancelamos esta compra?',
+    mensaje: 'Se perderá lo que escribiste hasta ahora.',
+    confirmar: 'Sí, cancelar',
+    volver: 'Seguir editando',
+  },
+  ultimoPrecio: (precio, unidad) => `Última compra: ${precio} por ${unidad}`,
   faltaAsignacion: material =>
     `La compra no se guardó: falta decirnos la categoría y el producto de «${material}».`,
 }
@@ -128,6 +140,7 @@ export const VALIDACION = {
   material: 'Escribe qué compraste',
   cantidad: 'La cantidad debe ser mayor a 0',
   precio: 'El precio debe ser mayor a 0',
+  filaIncompleta: 'Completa la fila anterior para agregar otra',
   rangoFechas: 'La fecha final debe ser igual o posterior a la inicial',
 }
 

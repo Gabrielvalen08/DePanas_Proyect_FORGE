@@ -40,8 +40,8 @@ export default function AgregarCompra() {
     }
   }
 
-  function alGuardado(claveBloque, lista) {
-    addToast(COMPRA.guardada(lista.proveedor, lista.materiales.length))
+  function alGuardado(claveBloque) {
+    addToast(COMPRA.guardada)
     retirarBloque(claveBloque)
   }
 
@@ -63,9 +63,10 @@ export default function AgregarCompra() {
               <BloqueCompra
                 titulo={bloques.length > 1 ? `Detalle de compra ${i + 1}` : 'Detalle de compra'}
                 alGuardar={guardar}
-                alGuardado={lista => alGuardado(bloque.clave, lista)}
+                alGuardado={() => alGuardado(bloque.clave)}
                 alCancelar={() => retirarBloque(bloque.clave)}
                 enfocarAlMontar={bloque.enfocar}
+                cancelarVacio={bloques.length > 1}
               />
             </motion.div>
           ))}

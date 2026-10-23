@@ -22,6 +22,7 @@ vi.mock('./services/api', () => ({
   getProductos: () => ['Cachitos', 'Todos'],
   getAsignacion: m => ({ existe: false, nombre: m, categoria: '', producto: '' }),
   necesitaAsignacion: () => false,
+  getPrecioSugerido: () => null,
   asignarMaterial: vi.fn(),
   fetchCatalogo: () => Promise.resolve({ proveedores: [], categorias: [], productos: [], materiales: [], uso: {} }),
   iniciarSesion: async (usuario, contrasena) => {
@@ -121,7 +122,7 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
 
     const menu = screen.getByRole('navigation', { name: 'Menú principal' })
     const enlaces = within(menu).getAllByRole('link').map(e => e.textContent)
-    expect(enlaces).toEqual(['Agregar compra', 'Compras', 'Catálogo', 'Exportar datos', 'Cargar datos'])
+    expect(enlaces).toEqual(['Agregar compra', 'Lista de compras', 'Catálogo', 'Exportar datos', 'Cargar datos'])
     await usuario.click(within(menu).getByRole('link', { name: 'Catálogo' }))
     expect(await screen.findByRole('heading', { name: 'Catálogo', level: 1 })).toBeInTheDocument()
   })
@@ -157,7 +158,7 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
 
     expect(screen.queryByRole('link', { name: 'Catálogo' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Agregar compra' })).not.toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'Compras', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Lista de compras', level: 1 })).toBeInTheDocument()
   })
 })
 
@@ -173,7 +174,7 @@ describe('App - barra inferior en móvil', () => {
 
     const barra = await screen.findByRole('navigation', { name: 'Menú principal móvil' })
     const enBarra = within(barra).getAllByRole('listitem').map(li => li.textContent)
-    expect(enBarra).toEqual(['Agregar', 'Compras', 'Catálogo', 'Más'])
+    expect(enBarra).toEqual(['Agregar', 'Lista', 'Catálogo', 'Más'])
 
     await usuario.click(within(barra).getByRole('button', { name: 'Más' }))
     const hoja = await screen.findByRole('dialog', { name: 'Más opciones' })
@@ -192,7 +193,7 @@ describe('App - barra inferior en móvil', () => {
     renderizarApp('/')
 
     const barra = await screen.findByRole('navigation', { name: 'Menú principal móvil' })
-    expect(within(barra).getAllByRole('listitem').map(li => li.textContent)).toEqual(['Agregar', 'Compras', 'Más'])
+    expect(within(barra).getAllByRole('listitem').map(li => li.textContent)).toEqual(['Agregar', 'Lista', 'Más'])
 
     await usuario.click(within(barra).getByRole('button', { name: 'Más' }))
     const hoja = await screen.findByRole('dialog', { name: 'Más opciones' })

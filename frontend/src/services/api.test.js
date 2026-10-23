@@ -12,6 +12,7 @@ import {
   getCategorias,
   getMateriales,
   getProductos,
+  getPrecioSugerido,
   getProveedores,
   necesitaAsignacion,
   guardarLista,
@@ -88,6 +89,21 @@ describe('api: modo servidor', () => {
     expect(getProveedores()).toContain('MMAG')
     expect(getMateriales()).toEqual(expect.arrayContaining(['Arroz', 'Jamón de Pavo']))
     expect(getProveedores()).not.toContain('La Colonia') // los datos de ejemplo locales no se mezclan
+  })
+
+  it('el precio sugerido de cada material lo calcula el backend (última compra)', async () => {
+    simularServidor({
+      'GET /catalogo': {
+        cuerpo: {
+          proveedores: [], categorias: [], productos: [],
+          materiales: [{ nombre: 'Arroz', categoria: 'Materia Prima', producto: 'Todos' }],
+          precios: { arroz: { precio: 1.2, unidad: 'bolsa' } },
+        },
+      },
+    })
+    await fetchListas()
+    await vi.waitFor(() => expect(getPrecioSugerido(' ARROZ ')).toEqual({ precio: 1.2, unidad: 'bolsa' }))
+    expect(getPrecioSugerido('Sal')).toBeNull()
   })
 
   it('asignar categoría y producto va al backend y el formulario lo ve en el acto', async () => {
@@ -212,6 +228,41 @@ describe('api: categoría y producto de cada material (modo local)', () => {
 
   it('pide categoría y producto', async () => {
     await expect(asignarMaterial('Sal', { categoria: '', producto: 'Todos' })).rejects.toThrow('Elige una categoría')
+  })
+})
+
+describe('api: precio sugerido (modo local)', () => {
+  beforeEach(() => localStorage.clear())
+
+  const comprar = (fecha, cantidad, monto, unidad = 'bolsa') => guardarLista({
+    proveedor: 'Selectos', fecha,
+    materiales: [{ material: 'Quesillo', cantidad, unidad, monto, categoria: 'Materia Prima', producto: 'Todos' }],
+  })
+
+  it('sugiere el precio unitario de la última compra y lo actualiza con una más reciente', async () => {
+    expect(getPrecioSugerido('Quesillo')).toBeNull()
+
+    await comprar('2026-10-01', 5, 5)
+    expect(getPrecioSugerido('quesillo')).toEqual({ precio: 1, unidad: 'bolsa' })
+
+    await comprar('2026-10-08', 5, 6)
+    expect(getPrecioSugerido('quesillo')).toEqual({ precio: 1.2, unidad: 'bolsa' })
+  })
+
+  it('una compra más antigua registrada después no pisa el precio más reciente', async () => {
+    await comprar('2026-10-08', 5, 6)
+    await comprar('2026-09-01', 2, 1)
+    expect(getPrecioSugerido('quesillo').precio).toBe(1.2)
+  })
+
+  it('redondea los decimales largos y conserva la unidad de esa compra', async () => {
+    await comprar('2026-10-09', 3, 1, 'kg')
+    expect(getPrecioSugerido('quesillo')).toEqual({ precio: 0.3333, unidad: 'kg' })
+  })
+
+  it('un material sin compras no tiene precio sugerido', () => {
+    expect(getPrecioSugerido('Sal')).toBeNull()
+    expect(getPrecioSugerido('')).toBeNull()
   })
 })
 
