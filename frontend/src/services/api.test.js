@@ -8,6 +8,9 @@ import {
   eliminarLista,
   fetchListas,
   asignarMaterial,
+  eliminarDelCatalogo,
+  editarEnCatalogo,
+  agregarAlCatalogo,
   fetchCatalogo,
   getAsignacion,
   getCategorias,
@@ -243,6 +246,31 @@ describe('api: categoría y producto de cada material (modo local)', () => {
     const cat = await fetchCatalogo()
     expect(cat.uso.producto['tequeños fritos']).toBe(1)
     expect(cat.materiales.find(m => m.nombre === 'Harina PAN').productos).toEqual(['Arepas', 'Tequeños Fritos'])
+  })
+})
+
+describe('api: ficha del proveedor (modo local)', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('guarda ubicación, teléfonos y contactos; la conserva al renombrar y la quita al eliminar', async () => {
+    const ficha = { ubicacion: 'Santa Tecla', telefonos: ['7123-4567', ''], contactos: [{ nombre: 'Ana', telefono: '' }] }
+    const creado = await agregarAlCatalogo('proveedor', { nombre: 'La Pulpería', ficha })
+    expect(creado.ficha).toEqual({ ubicacion: 'Santa Tecla', telefonos: ['7123-4567'], contactos: [{ nombre: 'Ana', telefono: '' }] })
+
+    await editarEnCatalogo('proveedor', 'La Pulpería', { nombre: 'Pulpería Don Juan' })
+    let cat = await fetchCatalogo()
+    expect(cat.fichas['la pulpería']).toBeUndefined()
+    expect(cat.fichas['pulpería don juan'].telefonos).toEqual(['7123-4567'])
+
+    await eliminarDelCatalogo('proveedor', 'Pulpería Don Juan')
+    cat = await fetchCatalogo()
+    expect(cat.fichas['pulpería don juan']).toBeUndefined()
+  })
+
+  it('un teléfono inválido se rechaza con el campo que hay que corregir', async () => {
+    await expect(agregarAlCatalogo('proveedor', { nombre: 'X', ficha: { telefonos: ['7123-4567', 'hola'] } }))
+      .rejects.toMatchObject({ campo: 'telefono-1' })
+    expect((await fetchCatalogo()).proveedores).not.toContain('X')
   })
 })
 

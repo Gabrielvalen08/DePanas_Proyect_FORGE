@@ -163,9 +163,10 @@ export function migrar(db) {
   if (!columnas.includes('origen_id')) db.exec('ALTER TABLE ingresos ADD COLUMN origen_id TEXT')
   if (!columnas.includes('compra_categoria')) db.exec('ALTER TABLE ingresos ADD COLUMN compra_categoria TEXT')
 
-  // Catálogos creados antes de que los materiales guardaran categoría y producto
+  // Catálogos creados antes de que los materiales guardaran categoría y producto,
+  // o de que los proveedores tuvieran su ficha
   const columnasCatalogo = db.prepare('PRAGMA table_info(catalogo)').all().map(c => c.name)
-  for (const columna of ['categoria', 'producto']) {
+  for (const columna of ['categoria', 'producto', 'ficha']) {
     if (!columnasCatalogo.includes(columna)) {
       db.exec(`ALTER TABLE catalogo ADD COLUMN ${columna} TEXT NOT NULL DEFAULT ''`)
     }

@@ -282,3 +282,44 @@ test('el nombre de un producto no puede llevar comas (son el separador de la lis
   assert.match(r.cuerpo.error, /no puede llevar comas/)
   assert.equal((await pedir(url(base, 'material'), 'POST', { nombre: 'Sal', categoria: 'Materia Prima', productos: [] })).status, 400)
 })
+
+test('ficha del proveedor: ubicación, varios teléfonos y contactos; se conserva al renombrar y se valida', async t => {
+  const base = await levantar(t)
+  const ficha = {
+    ubicacion: ' Col. Escalón,  San Salvador ',
+    telefonos: ['7123-4567', '', '+503 2222 3333'],
+    contactos: [{ nombre: 'Ana', telefono: '7000-1111' }, { nombre: '', telefono: '' }],
+  }
+  const creado = await pedir(url(base, 'proveedor'), 'POST', { nombre: 'La Pulpería', ficha })
+  assert.equal(creado.status, 200)
+  const esperada = {
+    ubicacion: 'Col. Escalón, San Salvador',
+    telefonos: ['7123-4567', '+503 2222 3333'],
+    contactos: [{ nombre: 'Ana', telefono: '7000-1111' }],
+  }
+  assert.deepEqual(creado.cuerpo.ficha, esperada)
+  assert.deepEqual((await catalogo(base)).fichas['la pulpería'], esperada)
+
+  // Renombrar sin mandar ficha la conserva; mandarla la reemplaza
+  await pedir(url(base, 'proveedor', 'La Pulpería'), 'PUT', { nombre: 'Pulpería Don Juan' })
+  let cat = await catalogo(base)
+  assert.equal(cat.fichas['la pulpería'], undefined)
+  assert.deepEqual(cat.fichas['pulpería don juan'], esperada)
+  const editado = await pedir(url(base, 'proveedor', 'Pulpería Don Juan'), 'PUT', { ficha: { ubicacion: 'Santa Tecla', telefonos: [], contactos: [] } })
+  assert.deepEqual(editado.cuerpo.ficha, { ubicacion: 'Santa Tecla', telefonos: [], contactos: [] })
+
+  // Un teléfono inválido no se guarda y dice qué campo corregir
+  const malo = await pedir(url(base, 'proveedor', 'Pulpería Don Juan'), 'PUT', { ficha: { telefonos: ['abc'] } })
+  assert.equal(malo.status, 400)
+  assert.equal(malo.cuerpo.campo, 'telefono-0')
+  const sinNombre = await pedir(url(base, 'proveedor'), 'POST', { nombre: 'Otro', ficha: { contactos: [{ nombre: '', telefono: '7123-4567' }] } })
+  assert.equal(sinNombre.status, 400)
+  assert.equal(sinNombre.cuerpo.campo, 'contacto-0')
+  cat = await catalogo(base)
+  assert.equal(cat.fichas['pulpería don juan'].ubicacion, 'Santa Tecla')
+  assert.ok(!cat.proveedores.includes('Otro'))
+
+  // Eliminar el proveedor quita su ficha
+  await pedir(url(base, 'proveedor', 'Pulpería Don Juan'), 'DELETE')
+  assert.equal((await catalogo(base)).fichas['pulpería don juan'], undefined)
+})

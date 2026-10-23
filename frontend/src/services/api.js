@@ -25,6 +25,7 @@ import { validarComprasJSON } from '../../../shared/compras-json.js'
 import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../../shared/productos.js'
+import { fichaVacia, leerFicha, normalizarFicha } from '../../../shared/proveedores.js'
 import { CARGAR } from '../utils/mensajes'
 import { comprasACsv, comprasAJson, nombreArchivo } from '../utils/exportar'
 import { RUTAS_ASIGNABLES, RUTA_USUARIOS, migrarPermisos } from '../utils/permisos'
@@ -150,6 +151,14 @@ function getCatalogoLocal() {
     // Catálogo guardado ilegible: se vuelve a armar
   }
   return catalogoLocalInicial()
+}
+
+/** Guarda (o quita, con null o vacía) la ficha de un proveedor en el catálogo local */
+function fijarFichaLocal(cat, nombre, ficha) {
+  const fichas = { ...(cat.fichas ?? {}) }
+  if (!ficha || fichaVacia(ficha)) delete fichas[clave(nombre)]
+  else fichas[clave(nombre)] = ficha
+  cat.fichas = fichas
 }
 
 function setCatalogoLocal(cat) {
@@ -383,6 +392,10 @@ export async function fetchCatalogo() {
     materiales: [...cat.materiales]
       .map(m => ({ ...m, productos: listaProductos(m.producto) }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
+    // Ficha de cada proveedor (claves en minúsculas), como el backend
+    fichas: Object.fromEntries(
+      Object.entries(cat.fichas ?? {}).map(([k, f]) => [k, leerFicha(f)]).filter(([, f]) => !fichaVacia(f))
+    ),
     uso: {
       proveedor: contarCompras('proveedor'),
       material: contarCompras('material'),
@@ -496,6 +509,13 @@ export async function agregarAlCatalogo(tipo, datos) {
   const cat = getCatalogoLocal()
   const existente = buscarLocal(cat, tipo, nombre)
   if (existente) throw new Error(yaExiste(tipo, existente))
+  if (tipo === 'proveedor') {
+    const ficha = datos.ficha === undefined ? leerFicha('') : normalizarFicha(datos.ficha)
+    registrarEn(cat, 'proveedor', nombre)
+    fijarFichaLocal(cat, nombre, ficha)
+    setCatalogoLocal(cat)
+    return { nombre, ficha, materiales: 0, categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
+  }
   if (tipo !== 'material') {
     registrarEn(cat, tipo, nombre)
     const materiales = conMateriales(tipo) && datos.materiales !== undefined
@@ -541,12 +561,19 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
   if (choque && clave(choque) !== clave(anterior)) throw new Error(yaExiste(tipo, choque))
   // Se valida antes de tocar nada, para no dejar el cambio a medias
   if (conMateriales(tipo) && datos.materiales !== undefined) resolverMateriales(cat, datos.materiales)
+  const ficha = tipo === 'proveedor' && datos.ficha !== undefined ? normalizarFicha(datos.ficha) : undefined
 
   // Catálogo
   if (tipo === 'material') {
     cat.materiales.find(m => m.nombre === anterior).nombre = nuevo
   } else {
     cat[LISTA[tipo]] = cat[LISTA[tipo]].map(n => (n === anterior ? nuevo : n))
+    if (tipo === 'proveedor') {
+      // La ficha sigue al proveedor renombrado (y se reemplaza si viene una nueva)
+      const previa = cat.fichas?.[clave(anterior)]
+      fijarFichaLocal(cat, anterior, null)
+      fijarFichaLocal(cat, nuevo, ficha ?? previa ?? null)
+    }
     if (tipo === 'categoria') {
       for (const m of cat.materiales) if (clave(m.categoria) === clave(anterior)) m.categoria = nuevo
     } else if (tipo === 'producto') {
@@ -598,7 +625,7 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
   }
   const extra = tipo === 'material'
     ? { categoria: asignado.categoria, producto: asignado.producto, productos: listaProductos(asignado.producto) }
-    : {}
+    : tipo === 'proveedor' ? { ficha: leerFicha(cat.fichas?.[clave(nuevo)]) } : {}
   return {
     anterior, nombre: nuevo, ...extra, compras: compras.size, materiales,
     categoriaNueva, productoNuevo: productosNuevos.length > 0, productosNuevos,
@@ -624,6 +651,9 @@ export async function eliminarDelCatalogo(tipo, nombre) {
   let materiales = 0
   if (tipo === 'material') {
     cat.materiales = cat.materiales.filter(m => m.nombre !== registro)
+  } else if (tipo === 'proveedor') {
+    cat.proveedores = cat.proveedores.filter(n => n !== registro)
+    fijarFichaLocal(cat, registro, null)
   } else {
     cat[LISTA[tipo]] = cat[LISTA[tipo]].filter(n => n !== registro)
     if (tipo === 'producto') {

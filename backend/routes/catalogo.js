@@ -4,7 +4,7 @@
  * categoría/producto de cada material. El catálogo es la única fuente de las
  * opciones: cada compra guardada registra lo suyo (db.js, registrarCompra).
  *
- *   GET    /api/catalogo                    → { proveedores, categorias, productos,
+ *   GET    /api/catalogo                    → { proveedores, categorias, productos, fichas (de cada proveedor),
  *                                               materiales: [{ nombre, categoria, producto }], uso,
  *                                               precios: { material: { precio, unidad } } }
  *   PUT    /api/catalogo/materiales/:nombre → asigna { categoria, producto } a un material
@@ -29,6 +29,7 @@ import { enTransaccion, registrarEnCatalogo } from '../db.js'
 import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../shared/productos.js'
+import { fichaVacia, leerFicha, normalizarFicha } from '../../shared/proveedores.js'
 
 export const TIPOS = ['proveedor', 'categoria', 'material', 'producto']
 const NOMBRE_TIPO = { proveedor: 'proveedor', categoria: 'categoría', material: 'artículo', producto: 'producto' }
@@ -75,6 +76,31 @@ function leerPrecios(db) {
   return precios
 }
 
+/** Ficha de cada proveedor que la tenga (ubicación, teléfonos, contactos). Claves en minúsculas */
+function leerFichas(db) {
+  const fichas = {}
+  for (const { nombre, ficha } of db.prepare("SELECT nombre, ficha FROM catalogo WHERE tipo = 'proveedor' AND ficha != ''").all()) {
+    const leida = leerFicha(ficha)
+    if (!fichaVacia(leida)) fichas[nombre.toLowerCase()] = leida
+  }
+  return fichas
+}
+
+/** La ficha del cuerpo, limpia y validada; undefined si no viene (no se toca) */
+function fichaDelCuerpo(cuerpo) {
+  if (cuerpo?.ficha === undefined) return undefined
+  try {
+    return normalizarFicha(cuerpo.ficha)
+  } catch (err) {
+    throw Object.assign(fallo(400, err.message), { campo: err.campo })
+  }
+}
+
+function guardarFicha(db, nombre, ficha) {
+  db.prepare("UPDATE catalogo SET ficha = ? WHERE tipo = 'proveedor' AND nombre = ?")
+    .run(fichaVacia(ficha) ? '' : JSON.stringify(ficha), nombre)
+}
+
 export function leerCatalogo(db) {
   const nombres = tipo => ordenar(db.prepare('SELECT nombre FROM catalogo WHERE tipo = ?').all(tipo).map(f => f.nombre))
   return {
@@ -86,6 +112,7 @@ export function leerCatalogo(db) {
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
     uso: leerUso(db),
     precios: leerPrecios(db),
+    fichas: leerFichas(db),
   }
 }
 
@@ -218,7 +245,7 @@ export function crearRutasCatalogo(getDb) {
     try {
       res.json(fn(getDb()))
     } catch (err) {
-      res.status(err.status ?? 500).json({ error: err.message })
+      res.status(err.status ?? 500).json(err.campo ? { error: err.message, campo: err.campo } : { error: err.message })
     }
   }
 
@@ -255,7 +282,12 @@ export function crearRutasCatalogo(getDb) {
       const materiales = conMateriales(tipo) ? leerMateriales(req.body) : undefined
       const existente = buscar(db, tipo, nombre)
       if (existente) throw fallo(409, `Ya existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${existente.nombre}»`)
+      const ficha = tipo === 'proveedor' ? fichaDelCuerpo(req.body) : undefined
       registrarEnCatalogo(db, tipo, nombre)
+      if (tipo === 'proveedor') {
+        if (ficha) guardarFicha(db, nombre, ficha)
+        return { nombre, ficha: ficha ?? leerFicha(''), materiales: 0, categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
+      }
       if (tipo !== 'material') {
         const cambiados = materiales ? fijarMateriales(db, tipo, nombre, materiales) : 0
         return { nombre, materiales: cambiados, categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
@@ -278,6 +310,7 @@ export function crearRutasCatalogo(getDb) {
         throw fallo(400, categoria ? 'Elige al menos un producto' : 'Elige una categoría')
       }
       const materiales = conMateriales(tipo) ? leerMateriales(req.body) : undefined
+      const ficha = tipo === 'proveedor' ? fichaDelCuerpo(req.body) : undefined
       const registro = buscar(db, tipo, actual)
       if (!registro) throw fallo(404, `No existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${actual}»`)
       const choque = buscar(db, tipo, nuevo)
@@ -304,8 +337,11 @@ export function crearRutasCatalogo(getDb) {
       let asignacion = { categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
       if (tipo === 'material' && categoria) asignacion = respuestaAsignacion(asignar(db, nuevo, categoria, productos))
       const cambiados = materiales ? fijarMateriales(db, tipo, nuevo, materiales) : 0
+      if (ficha) guardarFicha(db, nuevo, ficha)
       const guardado = buscar(db, tipo, nuevo)
-      const extra = tipo === 'material' ? { productos: listaProductos(guardado.producto) } : {}
+      const extra = tipo === 'material'
+        ? { productos: listaProductos(guardado.producto) }
+        : tipo === 'proveedor' ? { ficha: leerFicha(db.prepare("SELECT ficha FROM catalogo WHERE tipo = 'proveedor' AND nombre = ?").get(nuevo)?.ficha) } : {}
       return {
         anterior: registro.nombre, nombre: nuevo, ...guardado, ...extra, compras, materiales: cambiados,
         categoriaNueva: asignacion.categoriaNueva, productoNuevo: asignacion.productoNuevo, productosNuevos: asignacion.productosNuevos,
