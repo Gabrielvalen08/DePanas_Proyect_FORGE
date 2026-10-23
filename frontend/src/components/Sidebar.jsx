@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { Lock } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { itemsNavegacion, itemsPie } from './navegacion'
 import estilos from './Sidebar.module.css'
 
-export default function Sidebar({ onBloquear }) {
+export default function Sidebar({ onCerrarSesion }) {
   const { tienePermiso } = useAuth()
-  const navegacionFiltrada = itemsNavegacion.filter(item => tienePermiso(item.a))
+  const navegacionFiltrada = itemsNavegacion.filter(item => !item.oculto && tienePermiso(item.a))
   const pieFiltrado = itemsPie.filter(item => tienePermiso(item.a))
 
   return (
@@ -48,15 +48,15 @@ export default function Sidebar({ onBloquear }) {
             <span className={estilos.etiqueta}>{etiqueta}</span>
           </NavLink>
         ))}
-        {onBloquear && (
+        {onCerrarSesion && (
           <button
             type="button"
-            onClick={onBloquear}
+            onClick={onCerrarSesion}
             className={estilos.botonBloquear}
-            title="Bloquear sistema"
+            title="Cerrar sesión"
           >
-            <Lock size={18} aria-hidden="true" />
-            <span className={estilos.etiqueta}>Bloquear</span>
+            <LogOut size={18} aria-hidden="true" />
+            <span className={estilos.etiqueta}>Cerrar sesión</span>
           </button>
         )}
       </div>

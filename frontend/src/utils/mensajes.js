@@ -136,6 +136,7 @@ export const COMPRA = {
 export const VALIDACION = {
   resumen: 'Revisa estos campos antes de guardar',
   proveedor: 'Escribe a quién le compraste',
+  proveedorPrimero: 'Debes seleccionar el proveedor primero',
   fecha: 'Elige el día de la compra',
   material: 'Escribe qué compraste',
   cantidad: 'La cantidad debe ser mayor a 0',
@@ -219,9 +220,9 @@ const GENERO = {
 
 const SECCIONES = {
   proveedor: { titulo: 'Proveedores', singular: 'proveedor', ruta: 'proveedores', descripcion: 'A quién le compramos' },
-  categoria: { titulo: 'Categorías', singular: 'categoría', ruta: 'categorias', descripcion: 'Agrupan los materiales: materia prima, limpieza…' },
+  categoria: { titulo: 'Categorías', singular: 'categoría', ruta: 'categorias', descripcion: 'Agrupan los artículos: materia prima, limpieza…' },
   material: { titulo: 'Materiales', singular: 'material', ruta: 'materiales', descripcion: 'Cada insumo con su categoría y su producto' },
-  producto: { titulo: 'Productos', singular: 'producto', ruta: 'productos', descripcion: 'Cachitos, arepas… y los materiales que lleva cada uno' },
+  producto: { titulo: 'Productos', singular: 'producto', ruta: 'productos', descripcion: 'Cachitos, arepas… y los artículos que lleva cada uno' },
 }
 
 /** "la categoría «Lácteos» y el producto «Arepas»" cuando se estrenan al guardar */
@@ -235,9 +236,12 @@ function estrenos(r) {
 
 const usaCompras = tipo => tipo === 'proveedor' || tipo === 'material'
 
-/** " Actualizamos 2 materiales." cuando cambian los materiales de una categoría o un producto */
+// En categorías y productos, los materiales se llaman «artículos»
+const articulos = n => plural(n, 'artículo', 'artículos')
+
+/** " Actualizamos 2 artículos." cuando cambian los artículos de una categoría o un producto */
 const materialesCambiados = r =>
-  (r.materiales ? ` Actualizamos ${r.materiales} ${plural(r.materiales, 'material')}.` : '')
+  (r.materiales ? ` Actualizamos ${r.materiales} ${articulos(r.materiales)}.` : '')
 
 export const PANTALLA_CATALOGO = {
   intro: 'Elige qué quieres editar. Todo cambio se aplica a las compras que ya guardaste.',
@@ -250,6 +254,8 @@ export const PANTALLA_CATALOGO = {
   tituloNuevo: tipo => `${GENERO[tipo].nuevo} ${SECCIONES[tipo].singular}`,
   tituloEditar: tipo => `Editar ${SECCIONES[tipo].singular}`,
   nombre: 'Nombre',
+  // En Categorías la columna y el campo del nombre se llaman «Categoría»
+  etiquetaNombre: tipo => (tipo === 'categoria' ? 'Categoría' : 'Nombre'),
   ayudaRenombrar: n =>
     n > 0 ? `Si cambias el nombre, también se cambia en ${n} ${plural(n, 'compra', 'compras')}.` : undefined,
   faltaNombre: 'Escribe el nombre',
@@ -259,28 +265,28 @@ export const PANTALLA_CATALOGO = {
   eliminar: (tipo, nombre) => `Eliminar ${SECCIONES[tipo].singular} ${nombre}`,
   columnaUso: tipo => (usaCompras(tipo) ? 'Compras' : 'Cantidad'),
   sinAsignar: 'Sin asignar',
-  columnaMateriales: 'Materiales',
+  columnaMateriales: 'Artículos',
   listaMateriales: (nombres, max = 4) =>
     nombres.length <= max ? nombres.join(', ') : `${nombres.slice(0, max).join(', ')} y ${nombres.length - max} más`,
-  // Ventana de edición de una categoría o un producto: qué materiales lleva
+  // Ventana de edición de una categoría o un producto: qué artículos lleva
   materiales: {
-    titulo: tipo => (tipo === 'categoria' ? 'Materiales de esta categoría' : 'Materiales que lleva este producto'),
+    titulo: tipo => (tipo === 'categoria' ? 'Artículos de esta categoría' : 'Artículos que lleva este producto'),
     nota: tipo =>
       tipo === 'categoria'
-        ? 'Cada material va en una sola categoría: si eliges uno que está en otra, se cambia a esta. El que quites queda sin categoría.'
-        : 'Cada material va en un solo producto: si eliges uno que está en otro, se cambia a este. El que quites queda sin producto.',
-    buscar: 'Buscar material',
+        ? 'Cada artículo va en una sola categoría: si eliges uno que está en otra, se cambia a esta. El que quites queda sin categoría.'
+        : 'Cada artículo va en un solo producto: si eliges uno que está en otro, se cambia a este. El que quites queda sin producto.',
+    buscar: 'Buscar artículo',
     elegidos: n => `${n} ${plural(n, 'elegido', 'elegidos')}`,
     ahoraEn: (tipo, nombre) => (nombre ? `Ahora en «${nombre}»` : tipo === 'categoria' ? 'Sin categoría' : 'Sin producto'),
-    ninguno: 'Todavía no hay materiales. Agrégalos en la sección Materiales.',
-    sinResultados: 'Ningún material con ese nombre',
+    ninguno: 'Todavía no hay artículos. Agrégalos en la sección Materiales.',
+    sinResultados: 'Ningún artículo con ese nombre',
   },
   sinResultados: 'Nada por aquí con ese nombre',
   vacio: tipo => `Todavía no hay ${SECCIONES[tipo].titulo.toLowerCase()}.`,
   uso: (tipo, n) =>
     usaCompras(tipo)
       ? (n === 0 ? 'Sin compras' : `${n} ${plural(n, 'compra', 'compras')}`)
-      : (n === 0 ? 'Sin materiales' : `${n} ${plural(n, 'material')}`),
+      : (n === 0 ? 'Sin artículos' : `${n} ${articulos(n)}`),
   agregado: (tipo, r) =>
     `¡Listo, pana! Agregamos ${GENERO[tipo].un} ${SECCIONES[tipo].singular}: «${r.nombre}».` + estrenos(r) + materialesCambiados(r),
   editado: (tipo, r) =>
@@ -291,7 +297,7 @@ export const PANTALLA_CATALOGO = {
   eliminado: (tipo, r) =>
     `Eliminamos «${r.nombre}».` +
     (r.materiales
-      ? ` ${r.materiales} ${plural(r.materiales, 'material')} ${plural(r.materiales, 'quedó', 'quedaron')} sin ${SECCIONES[tipo].singular}; se pedirá al registrar una compra.`
+      ? ` ${r.materiales} ${articulos(r.materiales)} ${plural(r.materiales, 'quedó', 'quedaron')} sin ${SECCIONES[tipo].singular}; se pedirá al registrar una compra.`
       : ''),
   error: detalle => `No pudimos guardar el cambio${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
   errorEliminar: detalle => `No pudimos eliminarlo${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
@@ -303,7 +309,7 @@ export const PANTALLA_CATALOGO = {
         return base + (n ? ` ${n === 1 ? 'La compra que ya lo usa no cambia' : `Las ${n} compras que ya lo usan no cambian`}.` : '')
       }
       return base + (n
-        ? ` ${n} ${plural(n, 'material')} ${plural(n, 'quedará', 'quedarán')} sin ${SECCIONES[tipo].singular} y se ${plural(n, 'pedirá', 'pedirán')} al registrar una compra.`
+        ? ` ${n} ${articulos(n)} ${plural(n, 'quedará', 'quedarán')} sin ${SECCIONES[tipo].singular} y se ${plural(n, 'pedirá', 'pedirán')} al registrar una compra.`
         : '')
     },
     confirmar: 'Sí, eliminar',
@@ -319,7 +325,7 @@ export const USUARIOS = {
   agregar: 'Agregar usuario',
   cargando: 'Buscando los usuarios…',
   errorCargar: 'No pudimos traer los usuarios. Recarga la página para intentarlo de nuevo.',
-  columnas: { usuario: 'Usuario', nombre: 'Nombre', rol: 'Rol', pantallas: 'Pantallas' },
+  columnas: { usuario: 'Usuario', nombre: 'Nombre', pantallas: 'Pantallas' },
   roles: { admin: 'Administrador', operador: 'Operador' },
   todas: 'Todas',
   cuentaPantallas: (n, total) => `${n} de ${total}`,
@@ -329,7 +335,7 @@ export const USUARIOS = {
   tituloNuevo: 'Nuevo usuario',
   tituloEditar: usuario => `Editar a ${usuario}`,
   campos: {
-    usuario: 'Usuario',
+    usuario: 'Nombre de usuario para ingresar',
     nombre: 'Nombre',
     contrasena: 'Contraseña',
     contrasenaNueva: 'Nueva contraseña',
@@ -457,4 +463,38 @@ export const CARGAR = {
     return `¡Listo, pana! ${unir(hechas)}.${extra}`
   },
   vacio: 'El archivo está bien, pero viene vacío: no trae compras.',
+}
+
+// ---------------------------------------------------------------------------
+// Confirmaciones de los botones de acción (guardar, descartar, cargar, descargar…)
+// Las de Compras y las de eliminar viven en COMPRA y en cada pantalla.
+// ---------------------------------------------------------------------------
+export const CONFIRMAR = {
+  guardarCambios: {
+    titulo: '¿Guardamos los cambios?',
+    mensaje: 'Se aplicarán de inmediato.',
+    confirmar: 'Sí, guardar',
+  },
+  descartar: {
+    titulo: '¿Descartamos los cambios?',
+    mensaje: 'Se perderá lo que escribiste hasta ahora.',
+    confirmar: 'Sí, descartar',
+    volver: 'Seguir editando',
+  },
+  cerrarSesion: {
+    titulo: '¿Cerramos la sesión?',
+    mensaje: 'Para volver a entrar necesitarás tu usuario y tu contraseña.',
+    confirmar: 'Sí, cerrar sesión',
+  },
+  cargar: {
+    titulo: '¿Cargamos estas compras?',
+    mensaje: (n, total) => `Se cargarán ${n} ${plural(n, 'compra', 'compras')} por ${total}.`,
+    confirmar: 'Sí, cargar',
+  },
+  descargar: {
+    titulo: '¿Descargamos el archivo?',
+    mensaje: (n, total, formato) =>
+      `Se descargarán ${n} ${plural(n, 'compra', 'compras')} por ${total} en formato ${formato.toUpperCase()}.`,
+    confirmar: 'Sí, descargar',
+  },
 }

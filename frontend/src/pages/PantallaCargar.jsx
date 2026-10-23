@@ -4,11 +4,11 @@ import Header from '../components/Header'
 import AvisoModo from '../components/AvisoModo'
 import CompararCompra from '../components/CompararCompra'
 import { contenidoCompra } from '../../../shared/carga-compras.js'
-import { Boton, Insignia, SelectorArchivo, Tarjeta } from '../components/common'
+import { Boton, ConfirmDialog, Insignia, SelectorArchivo, Tarjeta } from '../components/common'
 import { leerComprasJSON, analizarCompras, importarCompras, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { formatearFecha, formatearPrecio } from '../utils/formato'
-import { CARGAR, fraseDelDia } from '../utils/mensajes'
+import { CARGAR, CONFIRMAR, fraseDelDia } from '../utils/mensajes'
 import estilos from './PantallaCargar.module.css'
 
 // Cada estado del análisis con su tono de insignia
@@ -23,6 +23,7 @@ export default function PantallaCargar() {
   const lectura = useRef(0)
   const archivoRef = useRef(null)
   const [nombreArchivo, setNombreArchivo] = useState('')
+  const [confirmandoCarga, setConfirmandoCarga] = useState(false)
   const [compras, setCompras] = useState(null)
   const [seleccion, setSeleccion] = useState([])
   const [ocupado, setOcupado] = useState(false)
@@ -186,7 +187,7 @@ export default function PantallaCargar() {
             </div>
             <div className={`${estilos.cuerpo} ${estilos.pie}`}>
               <p className={estilos.resumen} aria-live="polite">{CARGAR.resumen(seleccion.length, formatearPrecio(total))}</p>
-              <Boton variante="primario" sombra icono={<Upload />} cargando={ocupado} disabled={!seleccion.length || ocupado} onClick={cargar}>
+              <Boton variante="primario" sombra icono={<Upload />} cargando={ocupado} disabled={!seleccion.length || ocupado} onClick={() => setConfirmandoCarga(true)}>
                 {CARGAR.importar}
               </Boton>
             </div>
@@ -208,13 +209,22 @@ export default function PantallaCargar() {
               <Boton variante="secundario" icono={<ArrowLeft />} disabled={ocupado} onClick={() => { setRevision(null); setDecisiones([]); setError('') }}>
                 {CARGAR.volver}
               </Boton>
-              <Boton variante="primario" sombra icono={<Upload />} cargando={ocupado} disabled={incompleta || ocupado} onClick={cargar}>
+              <Boton variante="primario" sombra icono={<Upload />} cargando={ocupado} disabled={incompleta || ocupado} onClick={() => setConfirmandoCarga(true)}>
                 {CARGAR.aplicar}
               </Boton>
             </div>
           </>
         )}
       </main>
+
+      <ConfirmDialog
+        isOpen={confirmandoCarga}
+        onClose={() => setConfirmandoCarga(false)}
+        onConfirm={cargar}
+        title={CONFIRMAR.cargar.titulo}
+        message={CONFIRMAR.cargar.mensaje(seleccion.length, formatearPrecio(total))}
+        confirmLabel={CONFIRMAR.cargar.confirmar}
+      />
     </>
   )
 }

@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { Lock, Menu } from 'lucide-react'
+import { LogOut, Menu } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useFocoAtrapado } from '../hooks/useFocoAtrapado'
 import { itemsNavegacion, itemsPie } from './navegacion'
@@ -12,13 +12,13 @@ import estilos from './BarraInferior.module.css'
 /**
  * Navegación móvil (< 768px). La píldora activa se desliza entre ítems.
  * Solo los ítems con `enBarra` van en la barra; el resto, el Gestor de usuarios
- * y Bloquear se abren desde "Más", así nada queda fuera de la pantalla.
+ * y Cerrar sesión se abren desde "Más", así nada queda fuera de la pantalla.
  */
-export default function BarraInferior({ onBloquear }) {
+export default function BarraInferior({ onCerrarSesion }) {
   const { tienePermiso } = useAuth()
   const { pathname } = useLocation()
   const [masAbierto, setMasAbierto] = useState(false)
-  const visibles = [...itemsNavegacion, ...itemsPie].filter(item => tienePermiso(item.a))
+  const visibles = [...itemsNavegacion, ...itemsPie].filter(item => !item.oculto && tienePermiso(item.a))
   const enBarra = visibles.filter(item => item.enBarra)
   const enMas = visibles.filter(item => !item.enBarra)
   const masActivo = enMas.some(({ a }) => pathname === a || pathname.startsWith(`${a}/`))
@@ -38,7 +38,7 @@ export default function BarraInferior({ onBloquear }) {
           </li>
         ))}
 
-        {(enMas.length > 0 || onBloquear) && (
+        {(enMas.length > 0 || onCerrarSesion) && (
           <li className={estilos.celda}>
             <button
               type="button"
@@ -60,7 +60,7 @@ export default function BarraInferior({ onBloquear }) {
               key="hoja"
               items={enMas}
               alCerrar={() => setMasAbierto(false)}
-              onBloquear={onBloquear}
+              onCerrarSesion={onCerrarSesion}
             />
           )}
         </AnimatePresence>,
@@ -83,7 +83,7 @@ function Contenido({ Icono, etiqueta, activo }) {
 }
 
 /** Hoja desde abajo con los ítems que no caben en la barra */
-function HojaMas({ items, alCerrar, onBloquear }) {
+function HojaMas({ items, alCerrar, onCerrarSesion }) {
   const idTitulo = useId()
   const contenedorRef = useFocoAtrapado(true, alCerrar)
 
@@ -133,15 +133,15 @@ function HojaMas({ items, alCerrar, onBloquear }) {
               </NavLink>
             </li>
           ))}
-          {onBloquear && (
+          {onCerrarSesion && (
             <li>
               <button
                 type="button"
                 className={estilos.opcion}
-                onClick={() => { alCerrar(); onBloquear() }}
+                onClick={() => { alCerrar(); onCerrarSesion() }}
               >
-                <Lock size={20} aria-hidden="true" />
-                Bloquear
+                <LogOut size={20} aria-hidden="true" />
+                Cerrar sesión
               </button>
             </li>
           )}

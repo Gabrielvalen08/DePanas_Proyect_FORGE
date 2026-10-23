@@ -82,7 +82,6 @@ export default function PantallaUsuarios() {
                 <tr>
                   <th scope="col">{USUARIOS.columnas.usuario}</th>
                   <th scope="col">{USUARIOS.columnas.nombre}</th>
-                  <th scope="col">{USUARIOS.columnas.rol}</th>
                   <th scope="col">{USUARIOS.columnas.pantallas}</th>
                   <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
                 </tr>
@@ -94,12 +93,10 @@ export default function PantallaUsuarios() {
                     <tr key={u.usuario}>
                       <th scope="row" className={estilos.usuario}>
                         <span>{u.usuario}</span>
+                        <Insignia tono={admin ? 'marca' : 'neutro'}>{USUARIOS.roles[u.rol]}</Insignia>
                         {u.usuario === actual && <Insignia tono="neutro">{USUARIOS.tu}</Insignia>}
                       </th>
                       <td data-etiqueta={USUARIOS.columnas.nombre}>{u.nombre}</td>
-                      <td data-etiqueta={USUARIOS.columnas.rol}>
-                        <Insignia tono={admin ? 'marca' : 'neutro'}>{USUARIOS.roles[u.rol]}</Insignia>
-                      </td>
                       <td data-etiqueta={USUARIOS.columnas.pantallas}>
                         <Pantallas usuario={u} />
                       </td>

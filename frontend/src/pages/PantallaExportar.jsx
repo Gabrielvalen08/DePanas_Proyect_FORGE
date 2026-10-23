@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { Download, FileJson, FileSpreadsheet, Loader2 } from 'lucide-react'
 import Header from '../components/Header'
 import AvisoModo from '../components/AvisoModo'
-import { Boton, Campo, Tarjeta } from '../components/common'
+import { Boton, Campo, ConfirmDialog, Tarjeta } from '../components/common'
 import { exportarCompras, fetchListas, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { formatearPrecio } from '../utils/formato'
 import { rangoRapido } from '../utils/exportar'
-import { EXPORTAR, VALIDACION, fraseDelDia } from '../utils/mensajes'
+import { CONFIRMAR, EXPORTAR, VALIDACION, fraseDelDia } from '../utils/mensajes'
 import estilos from './PantallaExportar.module.css'
 
 const FORMATOS = [
@@ -25,6 +25,7 @@ export default function PantallaExportar() {
   const [desde, setDesde] = useState('')
   const [hasta, setHasta] = useState('')
   const [formato, setFormato] = useState('csv')
+  const [confirmando, setConfirmando] = useState(false)
   const [compras, setCompras] = useState(null) // null = contando
   const [descargando, setDescargando] = useState(false)
 
@@ -144,7 +145,7 @@ export default function PantallaExportar() {
                 icono={<Download />}
                 cargando={descargando}
                 disabled={!listo || n === 0}
-                onClick={descargar}
+                onClick={() => setConfirmando(true)}
               >
                 {EXPORTAR.descargar}
               </Boton>
@@ -152,6 +153,15 @@ export default function PantallaExportar() {
           </div>
         </Tarjeta>
       </main>
+
+      <ConfirmDialog
+        isOpen={confirmando}
+        onClose={() => setConfirmando(false)}
+        onConfirm={descargar}
+        title={CONFIRMAR.descargar.titulo}
+        message={CONFIRMAR.descargar.mensaje(n, formatearPrecio(total), formato)}
+        confirmLabel={CONFIRMAR.descargar.confirmar}
+      />
     </>
   )
 }

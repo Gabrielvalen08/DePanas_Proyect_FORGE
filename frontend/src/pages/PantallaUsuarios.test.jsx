@@ -1,10 +1,10 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import { AuthProvider } from '../context/AuthContext'
 import { iniciarSesion, reiniciarModo } from '../services/api'
-import { USUARIOS } from '../utils/mensajes'
+import { CONFIRMAR, USUARIOS } from '../utils/mensajes'
 import PantallaUsuarios from './PantallaUsuarios'
 
 // Usa api.js real en modo local (sin servidor), sobre localStorage
@@ -60,6 +60,7 @@ describe('PantallaUsuarios', () => {
     await llenar(usuario, ventana)
     await usuario.click(within(ventana).getByRole('checkbox', { name: /Lista de compras/ }))
     await usuario.click(within(ventana).getByRole('button', { name: USUARIOS.guardar }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
 
     expect(await screen.findByText(USUARIOS.creado({ nombre: 'Luis', usuario: 'Luis_03' }))).toBeInTheDocument()
     const fila = (await screen.findByRole('rowheader', { name: /Luis_03/ })).closest('tr')
@@ -95,6 +96,7 @@ describe('PantallaUsuarios', () => {
     await llenar(usuario, ventana, { clave: '5678' })
     await usuario.click(within(ventana).getByRole('checkbox', { name: /Lista de compras/ }))
     await usuario.click(within(ventana).getByRole('button', { name: USUARIOS.guardar }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
 
     const campo = within(ventana).getByLabelText(USUARIOS.campos.contrasena)
     expect(await within(ventana).findByText(USUARIOS.validacion.contrasenaRepetida)).toBeInTheDocument()
@@ -112,6 +114,25 @@ describe('PantallaUsuarios', () => {
     expect(within(ventana).getByText(USUARIOS.validacion.permisos)).toBeInTheDocument()
   })
 
+  it('al cancelar con datos escritos pide descartar; sin datos se cierra solo', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const ventana = await abrirNuevo(usuario)
+    await usuario.click(within(ventana).getByRole('button', { name: USUARIOS.cancelar }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: USUARIOS.tituloNuevo })).not.toBeInTheDocument())
+
+    const otra = await abrirNuevo(usuario)
+    await usuario.type(within(otra).getByLabelText(USUARIOS.campos.nombre), 'Luis')
+    await usuario.click(within(otra).getByRole('button', { name: USUARIOS.cancelar }))
+    const descartar = await screen.findByRole('alertdialog', { name: CONFIRMAR.descartar.titulo })
+    await usuario.click(within(descartar).getByRole('button', { name: CONFIRMAR.descartar.volver }))
+    expect(within(otra).getByLabelText(USUARIOS.campos.nombre)).toHaveValue('Luis')
+
+    await usuario.click(within(otra).getByRole('button', { name: USUARIOS.cancelar }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.descartar.confirmar }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: USUARIOS.tituloNuevo })).not.toBeInTheDocument())
+  })
+
   it('edita la contraseña y las pantallas de Marta', async () => {
     const usuario = userEvent.setup()
     renderizar()
@@ -122,6 +143,7 @@ describe('PantallaUsuarios', () => {
     await usuario.type(within(ventana).getByLabelText(USUARIOS.campos.confirmar), 'cachito7')
     await usuario.click(within(ventana).getByRole('checkbox', { name: /Catálogo/ }))
     await usuario.click(within(ventana).getByRole('button', { name: USUARIOS.guardar }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
 
     expect(await screen.findByText(USUARIOS.editado({ usuario: 'Marta_02' }))).toBeInTheDocument()
     expect(await iniciarSesion('Marta_02', 'cachito7')).toMatchObject({ permisos: ['/', '/compras', '/exportar', '/cargar'] })

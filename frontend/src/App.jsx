@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import { ToastProvider, useToast } from './context/ToastContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -12,8 +12,9 @@ import PantallaCatalogo from './pages/PantallaCatalogo'
 import PantallaExportar from './pages/PantallaExportar'
 import PantallaCargar from './pages/PantallaCargar'
 import PantallaUsuarios from './pages/PantallaUsuarios'
+import { ConfirmDialog } from './components/common'
 import { rutaInicio } from './utils/permisos'
-import { ACCESO } from './utils/mensajes'
+import { ACCESO, CONFIRMAR } from './utils/mensajes'
 import estilos from './App.module.css'
 
 /** /configuracion y sus secciones se llaman ahora /catalogo */
@@ -26,7 +27,9 @@ function AppContenido() {
   const { autenticado, sesion, salir, tienePermiso } = useAuth()
   const { addToast } = useToast()
 
-  function bloquear() {
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false)
+
+  function cerrarSesion() {
     salir()
     addToast(ACCESO.bloqueado)
   }
@@ -61,7 +64,7 @@ function AppContenido() {
     <>
       <a href="#contenido" className="saltar-contenido">Saltar al contenido</a>
       <div className={estilos.layout}>
-        <Sidebar onBloquear={bloquear} />
+        <Sidebar onCerrarSesion={() => setConfirmandoSalida(true)} />
         <div className={estilos.areaPrincipal}>
           <Routes>
             {/* Agregar compra es la página principal */}
@@ -84,8 +87,17 @@ function AppContenido() {
             <Route path="*" element={<Navigate to={inicio} replace />} />
           </Routes>
         </div>
-        <BarraInferior onBloquear={bloquear} />
+        <BarraInferior onCerrarSesion={() => setConfirmandoSalida(true)} />
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmandoSalida}
+        onClose={() => setConfirmandoSalida(false)}
+        onConfirm={cerrarSesion}
+        title={CONFIRMAR.cerrarSesion.titulo}
+        message={CONFIRMAR.cerrarSesion.mensaje}
+        confirmLabel={CONFIRMAR.cerrarSesion.confirmar}
+      />
     </>
   )
 }

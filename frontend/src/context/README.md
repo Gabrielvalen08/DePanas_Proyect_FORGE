@@ -26,5 +26,5 @@ tienePermiso('/catalogo')     // según utils/permisos.js
 
 - `ingresar` es asíncrono: comprueba la contraseña con `iniciarSesion` de `services/api.js` (backend `POST /api/sesion` o, en modo local, `depanas_usuarios`). Las contraseñas solo existen como hash PBKDF2; el navegador nunca las tiene en el código.
 - `App.jsx` muestra `PantallaContrasena` mientras `autenticado` sea `false`. La sesión (`{ usuario, nombre, rol, permisos }`) se guarda en `sessionStorage` (`depanas_sesion`): dura hasta cerrar la pestaña. Si el administrador cambia los permisos de alguien, se aplican en su próximo inicio de sesión.
-- "Bloquear" (sidebar y barra inferior) llama a `salir()` y avisa con un toast.
+- "Cerrar sesión" (sidebar y barra inferior) llama a `salir()` y avisa con un toast.
 - Sigue siendo una barrera de interfaz, **no** seguridad: la API no pide autenticación y la sesión vive en el navegador.

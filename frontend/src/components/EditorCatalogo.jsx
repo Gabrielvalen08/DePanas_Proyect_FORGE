@@ -1,10 +1,10 @@
 import { useId, useRef, useState } from 'react'
 import { Check, Pencil, Plus, Search } from 'lucide-react'
-import { Boton, Campo, CuerpoModal, Insignia, Modal, PieModal } from './common'
+import { Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
 import { SelectorOpciones } from './AsignarMaterial'
 import { getCategorias, getProductos } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
-import { PANTALLA_CATALOGO } from '../utils/mensajes'
+import { CONFIRMAR, PANTALLA_CATALOGO } from '../utils/mensajes'
 import estilos from './EditorCatalogo.module.css'
 
 /**
@@ -60,8 +60,18 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
   ))
   const [errores, setErrores] = useState({})
   const [guardando, setGuardando] = useState(false)
+  const [confirmando, setConfirmando] = useState(null) // null | 'guardar' | 'descartar'
+  const [inicial] = useState(() => ({ nombre, categoria, producto, elegidos: [...elegidos].sort().join('\n') }))
+  const cambiado = nombre !== inicial.nombre || categoria !== inicial.categoria || producto !== inicial.producto ||
+    [...elegidos].sort().join('\n') !== inicial.elegidos
 
-  async function guardar(e) {
+  // Sin cambios no hay nada que descartar: se cierra sin preguntar
+  function pedirCancelar() {
+    if (cambiado) setConfirmando('descartar')
+    else alCerrar()
+  }
+
+  function guardar(e) {
     e.preventDefault()
     const nuevos = {}
     if (!nombre.trim()) nuevos.nombre = PANTALLA_CATALOGO.faltaNombre
@@ -69,7 +79,10 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
     if (esMaterial && !producto.trim()) nuevos.producto = 'Elige o escribe un producto'
     setErrores(nuevos)
     if (Object.keys(nuevos).length > 0) return
+    setConfirmando('guardar')
+  }
 
+  async function guardarConfirmado() {
     setGuardando(true)
     try {
       if (esMaterial) {
@@ -88,64 +101,86 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
   }
 
   return (
-    <form onSubmit={guardar} noValidate>
-      <CuerpoModal>
-        <Campo
-          ref={nombreRef}
-          id="editor-catalogo-nombre"
-          etiqueta={PANTALLA_CATALOGO.nombre}
-          value={nombre}
-          autoComplete="off"
-          onChange={e => {
-            setNombre(e.target.value)
-            if (errores.nombre) setErrores(prev => ({ ...prev, nombre: undefined }))
-          }}
-          error={errores.nombre}
-          ayuda={registro ? PANTALLA_CATALOGO.ayudaRenombrar(edicion.uso ?? 0) : undefined}
-        />
-        {esMaterial && (
-          <div className={estilos.asignacion}>
-            <SelectorOpciones
-              titulo="Categoría"
-              nombre="categoría"
-              opciones={getCategorias()}
-              valor={categoria}
-              onCambiar={v => {
-                setCategoria(v)
-                setErrores(prev => ({ ...prev, categoria: undefined }))
-              }}
-              error={errores.categoria}
-            />
-            <SelectorOpciones
-              titulo="Producto"
-              nombre="producto"
-              opciones={getProductos()}
-              valor={producto}
-              onCambiar={v => {
-                setProducto(v)
-                setErrores(prev => ({ ...prev, producto: undefined }))
-              }}
-              error={errores.producto}
-            />
-          </div>
-        )}
-        {conMateriales && (
-          <SelectorMateriales
-            tipo={tipo}
-            nombreActual={registro?.nombre ?? ''}
-            todos={todos}
-            elegidos={elegidos}
-            onCambiar={setElegidos}
+    <>
+      <form onSubmit={guardar} noValidate>
+        <CuerpoModal>
+          <Campo
+            ref={nombreRef}
+            id="editor-catalogo-nombre"
+            etiqueta={PANTALLA_CATALOGO.etiquetaNombre(tipo)}
+            value={nombre}
+            autoComplete="off"
+            onChange={e => {
+              setNombre(e.target.value)
+              if (errores.nombre) setErrores(prev => ({ ...prev, nombre: undefined }))
+            }}
+            error={errores.nombre}
+            ayuda={registro ? PANTALLA_CATALOGO.ayudaRenombrar(edicion.uso ?? 0) : undefined}
           />
-        )}
-      </CuerpoModal>
-      <PieModal>
-        <Boton variante="fantasma" onClick={alCerrar}>{PANTALLA_CATALOGO.cancelar}</Boton>
-        <Boton type="submit" variante="primario" icono={<Check />} cargando={guardando}>
-          {guardando ? 'Guardando…' : PANTALLA_CATALOGO.guardar}
-        </Boton>
-      </PieModal>
-    </form>
+          {esMaterial && (
+            <div className={estilos.asignacion}>
+              <SelectorOpciones
+                titulo="Categoría"
+                nombre="categoría"
+                opciones={getCategorias()}
+                valor={categoria}
+                onCambiar={v => {
+                  setCategoria(v)
+                  setErrores(prev => ({ ...prev, categoria: undefined }))
+                }}
+                error={errores.categoria}
+              />
+              <SelectorOpciones
+                titulo="Producto"
+                nombre="producto"
+                opciones={getProductos()}
+                valor={producto}
+                onCambiar={v => {
+                  setProducto(v)
+                  setErrores(prev => ({ ...prev, producto: undefined }))
+                }}
+                error={errores.producto}
+              />
+            </div>
+          )}
+          {conMateriales && (
+            <SelectorMateriales
+              tipo={tipo}
+              nombreActual={registro?.nombre ?? ''}
+              todos={todos}
+              elegidos={elegidos}
+              onCambiar={setElegidos}
+            />
+          )}
+        </CuerpoModal>
+        <PieModal>
+          <Boton variante="fantasma" onClick={pedirCancelar}>{PANTALLA_CATALOGO.cancelar}</Boton>
+          <Boton type="submit" variante="primario" icono={<Check />} cargando={guardando}>
+            {guardando ? 'Guardando…' : PANTALLA_CATALOGO.guardar}
+          </Boton>
+        </PieModal>
+      </form>
+
+      {/* Fuera del <form>: los eventos del portal no deben llegar a su onSubmit */}
+      <ConfirmDialog
+        isOpen={confirmando === 'guardar'}
+        onClose={() => setConfirmando(null)}
+        onConfirm={guardarConfirmado}
+        title={CONFIRMAR.guardarCambios.titulo}
+        message={CONFIRMAR.guardarCambios.mensaje}
+        confirmLabel={CONFIRMAR.guardarCambios.confirmar}
+      />
+      <ConfirmDialog
+        isOpen={confirmando === 'descartar'}
+        onClose={() => setConfirmando(null)}
+        onConfirm={alCerrar}
+        title={CONFIRMAR.descartar.titulo}
+        message={CONFIRMAR.descartar.mensaje}
+        confirmLabel={CONFIRMAR.descartar.confirmar}
+        cancelLabel={CONFIRMAR.descartar.volver}
+        danger
+      />
+    </>
   )
 }
 
