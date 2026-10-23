@@ -106,7 +106,6 @@ describe('AgregarCompra', () => {
     await usuario.click(screen.getByRole('combobox', { name: 'Artículo, fila 2' }))
     await usuario.tab()
 
-    expect(screen.queryByRole('alert', { name: VALIDACION.resumen })).not.toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).not.toHaveAttribute('aria-invalid')
     expect(screen.getByRole('combobox', { name: 'Artículo, fila 2' })).not.toHaveAttribute('aria-invalid')
   })
@@ -131,20 +130,20 @@ describe('AgregarCompra', () => {
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
     expect(vi.mocked(guardarLista).mock.calls[0][0].materiales).toHaveLength(1)
-    expect(screen.queryByRole('alert', { name: VALIDACION.resumen })).not.toBeInTheDocument()
   })
 
-  it('guardar con errores muestra el resumen con foco y no guarda', async () => {
+  it('guardar con errores no muestra un cuadro: marca en rojo cada campo con su mensaje, enfoca el primero y no guarda', async () => {
     const usuario = userEvent.setup()
     renderizar()
     await usuario.type(screen.getByLabelText('Precio unitario, fila 1'), '5')
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
 
-    const resumen = await screen.findByRole('alert', { name: VALIDACION.resumen })
-    await waitFor(() => expect(resumen).toHaveFocus())
-    const enlace = within(resumen).getByRole('link', { name: `Proveedor: ${VALIDACION.proveedor}` })
-    await usuario.click(enlace)
-    expect(screen.getByRole('combobox', { name: 'Proveedor' })).toHaveFocus()
+    expect(screen.queryByText(/revisa estos campos/i)).not.toBeInTheDocument()
+    const proveedor = screen.getByRole('combobox', { name: 'Proveedor' })
+    await waitFor(() => expect(proveedor).toHaveFocus())
+    expect(proveedor).toHaveAttribute('aria-invalid', 'true')
+    expect(proveedor).toHaveAccessibleDescription(VALIDACION.proveedor)
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveAccessibleDescription(VALIDACION.material)
     expect(guardarLista).not.toHaveBeenCalled()
   })
 

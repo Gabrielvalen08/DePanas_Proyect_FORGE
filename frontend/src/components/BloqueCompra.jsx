@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { AlertCircle, Plus, Save, Trash2 } from 'lucide-react'
+import { Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import AsignarMaterial from './AsignarMaterial'
 import { Boton, Campo, ConfirmDialog, Selector } from './common'
@@ -129,8 +129,7 @@ export default function BloqueCompra({
   const omitidos       = useRef(new Set()) // "Ahora no": no se vuelve a pedir al salir del campo
   const guardarDespues = useRef(false)     // la ventana se abrió al guardar: se guarda al terminar
 
-  const resumenRef     = useRef(null)
-  const enfocarResumen = useRef(false)
+  const campoPorEnfocar = useRef(null) // tras un intento fallido de guardar, el primer campo con error
   const filaPorEnfocar = useRef(null)
 
   useEffect(() => {
@@ -138,9 +137,9 @@ export default function BloqueCompra({
   }, [enfocarAlMontar, id])
 
   useEffect(() => {
-    if (enfocarResumen.current && resumenRef.current) {
-      resumenRef.current.focus()
-      enfocarResumen.current = false
+    if (campoPorEnfocar.current) {
+      document.getElementById(campoPorEnfocar.current)?.focus()
+      campoPorEnfocar.current = null
     }
   }, [errores])
 
@@ -286,8 +285,9 @@ export default function BloqueCompra({
       Object.entries(validarFila(f)).forEach(([campo, mensaje]) => { nuevos[clave(f.id, campo)] = mensaje })
     })
 
+    // Sin cuadro de resumen: cada campo se marca en rojo con su mensaje y el foco va al primero
     if (Object.keys(nuevos).length > 0) {
-      enfocarResumen.current = true
+      campoPorEnfocar.current = primerCampoConError(nuevos)
       setErrores(nuevos)
       return
     }
@@ -356,20 +356,15 @@ export default function BloqueCompra({
 
   const total = filas.reduce((suma, f) => suma + montoDe(f), 0)
 
-  const resumen = [
-    errores.fecha     && { idCampo: `${id}-fecha`,     texto: `Fecha: ${errores.fecha}` },
-    errores.proveedor && { idCampo: `${id}-proveedor`, texto: `Proveedor: ${errores.proveedor}` },
-    ...filas.flatMap((fila, i) =>
-      CAMPOS_FILA.filter(({ clave: campo }) => errores[clave(fila.id, campo)]).map(({ clave: campo, nombre }) => ({
-        idCampo: `${id}-${campo}-${fila.id}`,
-        texto: `Fila ${i + 1} · ${nombre}: ${errores[clave(fila.id, campo)]}`,
-      }))
-    ),
-  ].filter(Boolean)
-
-  function irACampo(e, idCampo) {
-    e.preventDefault()
-    document.getElementById(idCampo)?.focus()
+  /** Id del primer campo con error, en el orden en que aparecen en pantalla */
+  function primerCampoConError(conError) {
+    if (conError.fecha) return `${id}-fecha`
+    if (conError.proveedor) return `${id}-proveedor`
+    for (const fila of filas) {
+      const campo = CAMPOS_FILA.find(({ clave: c }) => conError[clave(fila.id, c)])
+      if (campo) return `${id}-${campo.clave}-${fila.id}`
+    }
+    return null
   }
 
   return (
@@ -402,22 +397,6 @@ export default function BloqueCompra({
               </div>
             </div>
           </header>
-
-          {resumen.length > 0 && (
-            <div ref={resumenRef} role="alert" tabIndex={-1} className={estilos.resumen} aria-labelledby={`${id}-resumen`}>
-              <h3 id={`${id}-resumen`} className={estilos.resumenTitulo}>
-                <AlertCircle size={18} aria-hidden="true" />
-                {VALIDACION.resumen}
-              </h3>
-              <ul className={estilos.resumenLista}>
-                {resumen.map(item => (
-                  <li key={item.idCampo}>
-                    <a href={`#${item.idCampo}`} onClick={e => irACampo(e, item.idCampo)}>{item.texto}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           <table className={estilos.tabla}>
             <caption className="solo-lector">Artículos de la compra</caption>

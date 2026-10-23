@@ -151,13 +151,12 @@ export const LISTA_COMPRAS = {
 // Validación del formulario (corta: se lee junto al campo)
 // ---------------------------------------------------------------------------
 export const VALIDACION = {
-  resumen: 'Revisa estos campos antes de guardar',
   proveedor: 'Escribe a quién le compraste',
   proveedorPrimero: 'Debes seleccionar el proveedor primero',
   fecha: 'Elige el día de la compra',
   material: 'Escribe qué compraste',
-  cantidad: 'La cantidad debe ser mayor a 0',
-  precio: 'El precio debe ser mayor a 0',
+  cantidad: 'Debe ser mayor a 0',
+  precio: 'Debe ser mayor a 0',
   filaIncompleta: 'Completa la fila anterior para agregar otra',
   rangoFechas: 'La fecha final debe ser igual o posterior a la inicial',
 }
