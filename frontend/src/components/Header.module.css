@@ -101,6 +101,13 @@
 }
 
 /* Texto sobre material translúcido: un peso más y algo de tracking */
+.derecha {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
 .fecha {
   display: flex;
   align-items: center;

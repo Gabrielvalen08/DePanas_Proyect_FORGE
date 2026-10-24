@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, FileJson, ListChecks, Upload } from 'lucide-react'
 import Header from '../components/Header'
 import CompararCompra from '../components/CompararCompra'
@@ -18,6 +19,7 @@ const TONO_ESTADO = { nueva: 'exito', identica: 'neutro', conflicto: 'aviso' }
  * elegir cuáles traer y, si alguna ya existe con cambios, abre la comparación.
  */
 export default function PantallaCargar() {
+  const navigate = useNavigate()
   const { addToast } = useToast()
   const lectura = useRef(0)
   const archivoRef = useRef(null)
@@ -108,7 +110,7 @@ export default function PantallaCargar() {
 
   return (
     <>
-      <Header title="Cargar datos" frase={fraseDelDia('/cargar')} />
+      <Header title="Cargar datos" frase={fraseDelDia('/cargar')} alRegresar={() => navigate(-1)} />
 
       <main id="contenido" tabIndex={-1}>
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Download, FileJson, FileSpreadsheet, Loader2 } from 'lucide-react'
 import Header from '../components/Header'
 import { Boton, Campo, ConfirmDialog, Tarjeta } from '../components/common'
@@ -20,6 +21,7 @@ const FORMATOS = [
  * y cuánto dinero entran en el archivo.
  */
 export default function PantallaExportar() {
+  const navigate = useNavigate()
   const { addToast } = useToast()
   const [desde, setDesde] = useState('')
   const [hasta, setHasta] = useState('')
@@ -68,7 +70,7 @@ export default function PantallaExportar() {
 
   return (
     <>
-      <Header title="Exportar datos" frase={fraseDelDia('/exportar')} />
+      <Header title="Exportar datos" frase={fraseDelDia('/exportar')} alRegresar={() => navigate(-1)} />
 
       <main id="contenido" tabIndex={-1}>
 

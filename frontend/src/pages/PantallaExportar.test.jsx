@@ -27,6 +27,7 @@ describe('PantallaExportar', () => {
   it('sin fechas cuenta todas las compras y marca "Todo"', async () => {
     renderizar()
     expect(await screen.findByText(EXPORTAR.resumen(5, '$57.50'))).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Regresar' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Todo' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('radio', { name: /Excel \(\.csv\)/ })).toBeChecked()
   })
