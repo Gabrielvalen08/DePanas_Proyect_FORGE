@@ -4,7 +4,7 @@
 
 ## Dos modos que nunca se mezclan
 
-`detectarModo()` llama una vez por carga a `GET /api/health`:
+`detectarModo()` llama una vez por carga a `GET /api/health` (la arranca `main.jsx`; en modo servidor resuelve después de traer el catálogo). Antes de saber el modo, `getProveedores()`, `getMateriales()`, etc. devuelven listas vacías: nunca se cuelan los datos de ejemplo del modo local:
 
 - **servidor:** todo va al backend (`/api/compras`, `/api/catalogo`, `/api/db/…`) y sus errores llegan a la UI con el mensaje del servidor. Nada se copia a `localStorage`.
 - **local:** sin backend, todo vive en `localStorage`: `depanas_listas` (compras, con `MOCK_LISTAS` de ejemplo) y `depanas_catalogo` (lo que el usuario agregó al catálogo).

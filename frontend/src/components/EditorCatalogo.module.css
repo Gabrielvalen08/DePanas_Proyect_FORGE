@@ -217,12 +217,12 @@
 }
 
 .itemBotonElegido:hover {
-  border-color: var(--color-danger, #d32f2f);
-  box-shadow: inset 3px 0 0 var(--color-danger, #d32f2f);
+  border-color: var(--color-danger);
+  box-shadow: inset 3px 0 0 var(--color-danger);
 }
 
 .itemBotonElegido:hover .itemIconoQuitar {
-  color: var(--color-danger, #d32f2f);
+  color: var(--color-danger);
 }
 
 .itemInfo {

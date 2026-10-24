@@ -1,5 +1,5 @@
-import { test, expect, entrar, CESAR } from './ayudantes.js'
-import { PANTALLA_CATALOGO as CATALOGO } from '../src/utils/mensajes.js'
+import { test, expect, entrar, confirmar, CESAR } from './ayudantes.js'
+import { CONFIRMAR, PANTALLA_CATALOGO as CATALOGO } from '../src/utils/mensajes.js'
 
 test.describe('Catálogo', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,6 +13,7 @@ test.describe('Catálogo', () => {
     const nuevo = page.getByRole('dialog', { name: CATALOGO.tituloNuevo('proveedor') })
     await nuevo.getByLabel(CATALOGO.nombre, { exact: true }).fill('La Colonia e2e')
     await nuevo.getByRole('button', { name: CATALOGO.guardar }).click()
+    await confirmar(page, CONFIRMAR.guardarCambios.confirmar)
     await expect(page.getByText(CATALOGO.agregado('proveedor', { nombre: 'La Colonia e2e' }))).toBeVisible()
     await expect(page.getByRole('rowheader', { name: 'La Colonia e2e' })).toBeVisible()
 
@@ -21,11 +22,12 @@ test.describe('Catálogo', () => {
     const edicion = page.getByRole('dialog', { name: CATALOGO.tituloEditar('proveedor') })
     await edicion.getByLabel(CATALOGO.nombre, { exact: true }).fill('La Colonia Escalón e2e')
     await edicion.getByRole('button', { name: CATALOGO.guardar }).click()
+    await confirmar(page, CONFIRMAR.guardarCambios.confirmar)
     await expect(page.getByRole('rowheader', { name: 'La Colonia Escalón e2e' })).toBeVisible()
 
     // Eliminar
     await page.getByRole('button', { name: CATALOGO.eliminar('proveedor', 'La Colonia Escalón e2e') }).click()
-    await page.getByRole('alertdialog').getByRole('button', { name: CATALOGO.confirmarEliminar.confirmar }).click()
+    await confirmar(page, CATALOGO.confirmarEliminar.confirmar)
     await expect(page.getByRole('rowheader', { name: 'La Colonia Escalón e2e' })).toHaveCount(0)
   })
 
@@ -37,6 +39,7 @@ test.describe('Catálogo', () => {
 
     await ventana.getByLabel(CATALOGO.nombre, { exact: true }).fill('selectos')
     await ventana.getByRole('button', { name: CATALOGO.guardar }).click()
+    await confirmar(page, CONFIRMAR.guardarCambios.confirmar)
     // Sigue abierta: el aviso dice que ya existe
     await expect(page.getByText(/Ya existe/).first()).toBeVisible()
     await expect(ventana).toBeVisible()

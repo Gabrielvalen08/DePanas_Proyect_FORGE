@@ -1,5 +1,6 @@
 import {
   crearUsuario,
+  detectarModo,
   editarUsuario,
   eliminarUsuario,
   fetchUsuarios,
@@ -125,6 +126,20 @@ describe('api: modo servidor', () => {
     expect(getCategoriasDeProveedor('Pepsi')).toEqual(['Bebidas', 'Materia Prima'])
   })
 
+  it('sin modo detectado las sugerencias no traen datos locales; al detectar el servidor ya tienen su catálogo', async () => {
+    simularServidor({
+      'GET /catalogo': {
+        cuerpo: { proveedores: ['Pepsi'], categorias: ['Bebidas'], productos: ['Todos'], materiales: [{ nombre: 'Agua', categoria: 'Bebidas', producto: 'Todos' }] },
+      },
+    })
+    // Tras recargar la página nada pidió datos todavía: no se cuelan los de ejemplo del modo local
+    expect(getMateriales()).toEqual([])
+    expect(getPrecioSugerido('Arroz')).toBeNull()
+    expect(await detectarModo()).toBe('servidor')
+    expect(getMateriales()).toEqual(['Agua'])
+    expect(getMaterialesPorProveedor('Pepsi')).toEqual(['Agua'])
+  })
+
   it('una categoría manda sus proveedores al backend', async () => {
     const llamadas = simularServidor({
       'POST /catalogo/categoria': { cuerpo: { nombre: 'Lácteos', materiales: 0, proveedores: ['Selectos'] } },
@@ -241,7 +256,8 @@ describe('api: listas de compra (modo local)', () => {
     expect(localStorage.getItem('depanas_compras')).toBeNull()
   })
 
-  it('total y opciones del autocompletado: catálogo del Excel + compras locales, sin repetir', () => {
+  it('total y opciones del autocompletado: catálogo del Excel + compras locales, sin repetir', async () => {
+    await detectarModo()
     expect(totalLista({ productos: [{ precio: 1.2 }, { precio: 4.25 }] })).toBeCloseTo(5.45)
     expect(getProveedores()).toEqual(expect.arrayContaining(['Selectos', 'MMAG', 'Pepsi', 'Desechables Diver.', 'La Colonia']))
     expect(getMateriales()).toEqual(expect.arrayContaining(['Tocino La Rioja', 'Jamón de Pavo', 'Plátano maduro']))
@@ -254,7 +270,8 @@ describe('api: listas de compra (modo local)', () => {
 describe('api: categoría y producto de cada material (modo local)', () => {
   beforeEach(() => localStorage.clear())
 
-  it('los materiales del Excel ya traen su categoría y producto', () => {
+  it('los materiales del Excel ya traen su categoría y producto', async () => {
+    await detectarModo()
     expect(getAsignacion('tocino la rioja')).toEqual({
       existe: true, nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'],
     })

@@ -29,17 +29,18 @@ Funciones puras, sin React. Cada archivo tiene su `*.test.js`.
 | Grupo | Contenido |
 | ----- | --------- |
 | `FRASES_MARCA`, `FRASES_ENCABEZADO`, `fraseDelDia(ruta)` | Frases del brandbook y la frase del encabezado de cada página (cambia una vez al día) |
-| `ACCESO` | Pantalla de acceso y aviso al bloquear |
+| `ACCESO` | Pantalla de acceso y aviso al cerrar sesión |
 | `USUARIOS` | Gestor de usuarios: textos, validaciones (los mismos del backend) y avisos |
 | `COMPRA` | Guardar, actualizar, eliminar (con su confirmación) y sus errores |
-| `VALIDACION` | Mensajes junto a los campos y el resumen de errores |
+| `LISTA_COMPRAS` | Tabla de Lista de compras y su menú ⋮ (Exportar, Cargar) |
+| `VALIDACION` | Mensajes junto a los campos |
 | `ASIGNACION` | Ventana de categoría y producto y su confirmación |
 | `ESTADOS` | Cargando y pantallas vacías |
-| `DATOS` | Dónde se guardan las compras (servidor o este navegador) |
-| `PANTALLA_CATALOGO` | Pantalla del Catálogo: secciones, ventana de edición, confirmaciones (con el género de cada tipo: "Nueva categoría", "Nuevo proveedor") |
+| `PANTALLA_CATALOGO` | Pantalla del Catálogo: secciones, ventana de edición (también los proveedores de cada categoría), confirmaciones (con el género de cada tipo: "Nueva categoría", "Nuevo proveedor") |
 | `EXPORTAR`, `CARGAR` | Pantallas de Exportar y Cargar datos |
+| `CONFIRMAR` | Confirmaciones comunes: guardar cambios, descartar, cerrar sesión, cargar, descargar |
 
-Los mensajes con datos son funciones: `COMPRA.guardada('Selectos', 3)` → `"¡Listo, pana! La compra en Selectos quedó guardada (3 materiales)."`.
+Los mensajes con datos son funciones: `ASIGNACION.categoriasDelProveedor('Selectos')` → `"Primero van las categorías de Selectos. Si eliges otra, también quedará como suya."`.
 
 - El sabor venezolano va en confirmaciones, encabezados y pantallas vacías. Los errores y validaciones van **sin modismos**: qué pasó y qué hacer.
 - Un texto nuevo para el usuario se agrega aquí, no en el componente. Los tests lo importan de aquí.

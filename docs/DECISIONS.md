@@ -160,7 +160,7 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 
 - **Exportar** (`/exportar`) arma el archivo en el navegador con `fetchListas({ fechaDesde, fechaHasta })`, así funciona igual con o sin servidor. CSV con BOM (Excel lee bien las tildes), coma como separador (configuración regional de El Salvador) y una fila por material con las columnas del Excel del negocio. El JSON tiene el formato que acepta `importar-json`.
 - Un rango sin compras no descarga un archivo vacío: el botón se desactiva y lo dice.
-- Exportar y Cargar están en el menú (en móvil, dentro de "Más") y respetan los permisos. Las dos pantallas dicen si los datos salen del servidor o de este navegador (`AvisoModo`, textos en `DATOS`).
+- Exportar y Cargar no salen en el menú (`oculto: true` en `navegacion.js`): se abren desde el ⋮ de Lista de compras, respetan los permisos y tienen un botón Regresar en el encabezado.
 
 ### Cargar datos (`/cargar`)
 
@@ -190,7 +190,7 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 
 ## Mensajes del sistema
 
-- Todo texto que el sistema le dice al usuario vive en `frontend/src/utils/mensajes.js`, agrupado por tema (`ACCESO`, `COMPRA`, `VALIDACION`, `ASIGNACION`, `ESTADOS`, `DATOS`, `EXPORTAR`, `CARGAR`, etc.). Los mensajes con datos son funciones (`COMPRA.guardada(proveedor, n)`).
+- Todo texto que el sistema le dice al usuario vive en `frontend/src/utils/mensajes.js`, agrupado por tema (`ACCESO`, `COMPRA`, `LISTA_COMPRAS`, `VALIDACION`, `ASIGNACION`, `ESTADOS`, `PANTALLA_CATALOGO`, `USUARIOS`, `EXPORTAR`, `CARGAR`, `CONFIRMAR`). Los mensajes con datos son funciones (`COMPRA.confirmarGuardar.mensaje(proveedor, n, total)`).
 - Los tests importan los textos de ahí: cambiar una frase no rompe pruebas.
 - La frase del encabezado cambia una vez al día (`fraseDelDia`, por día del año), no en cada recarga, para que la interfaz no "salte".
 

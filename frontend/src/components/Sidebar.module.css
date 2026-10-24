@@ -49,7 +49,7 @@
   width: 3rem;
   height: 4px;
   border-radius: var(--radio-pildora);
-  background: var(--crema-trigo);
+  background: var(--color-bg);
 }
 
 .lista {
@@ -91,8 +91,8 @@
 
 .activo,
 .activo:hover {
-  background: var(--crema-trigo);
-  color: var(--verde-avila);
+  background: var(--color-bg);
+  color: var(--color-text);
   box-shadow: 0 2px 8px rgb(145 28 13 / 0.2);
 }
 

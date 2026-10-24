@@ -17,6 +17,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup.js',
+    // Con todas las suites en paralelo (jsdom, user-event, PBKDF2 del modo local) una prueba
+    // que sola tarda ~0,6 s puede pasar de los 5 s por defecto: no es un error de la prueba
+    testTimeout: 15_000,
     css: { modules: { classNameStrategy: 'non-scoped' } },
     // Las pruebas de e2e/ son de Playwright (npm run test:e2e), no de Vitest
     exclude: ['**/node_modules/**', 'e2e/**'],

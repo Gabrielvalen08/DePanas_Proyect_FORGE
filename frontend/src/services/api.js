@@ -274,8 +274,16 @@ function registrarCompraLocal(lista) {
 
 /** Catálogo vigente: el del servidor o el local */
 function catalogo() {
-  return catalogoServidor ?? getCatalogoLocal()
+  if (catalogoServidor) return catalogoServidor
+  if (modoActual === 'local') return getCatalogoLocal()
+  // Modo aún sin detectar (o servidor sin caché): nada de datos locales, que son de otro modo
+  detectarModo()
+  return CATALOGO_VACIO
 }
+
+const CATALOGO_VACIO = Object.freeze({
+  proveedores: [], categorias: [], productos: [], materiales: [], fichas: {}, proveedoresPorCategoria: {}, precios: {},
+})
 
 /** Proveedores para el autocompletado */
 export function getProveedores() {
@@ -359,8 +367,8 @@ export function getAsignacion(material) {
 export function getPrecioSugerido(material) {
   const k = clave(material)
   if (!k) return null
-  if (catalogoServidor) {
-    const sugerido = catalogoServidor.precios?.[k]
+  if (modoActual !== 'local') {
+    const sugerido = catalogo().precios?.[k]
     return sugerido ? { ...sugerido } : null
   }
   let sugerido = null
@@ -820,23 +828,29 @@ export async function eliminarDelCatalogo(tipo, nombre) {
 // guarda "a escondidas" en localStorage. Sin servidor, todo es local.
 
 let modoPromesa = null
+let modoActual = null       // 'servidor' | 'local' una vez detectado (lo leen las funciones síncronas)
 let catalogoServidor = null // GET /api/catalogo: opciones de los desplegables y asignaciones
 
-/** Resuelve 'servidor' o 'local' */
+/**
+ * Resuelve 'servidor' o 'local'. En modo servidor espera también el catálogo
+ * (sugerencias del autocompletado), así quien espera el modo ya lo tiene.
+ * main.jsx la llama al arrancar: tras recargar la página, ninguna pantalla
+ * pide datos antes de que se escriba en un autocompletado.
+ */
 export function detectarModo() {
   if (!modoPromesa) {
     modoPromesa = (async () => {
+      let modo = 'local'
       try {
         const res = await fetch(`${BASE_URL}/health`)
         const json = res.ok ? await res.json() : null
-        if (json?.ok) {
-          refrescarCache() // sugerencias del autocompletado
-          return 'servidor'
-        }
-        return 'local'
+        if (json?.ok) modo = 'servidor'
       } catch {
-        return 'local'
+        // Sin servidor: modo local
       }
+      modoActual = modo
+      if (modo === 'servidor') await refrescarCache()
+      return modo
     })()
   }
   return modoPromesa
@@ -845,6 +859,7 @@ export function detectarModo() {
 /** Solo para tests: vuelve a detectar el modo en la próxima llamada */
 export function reiniciarModo() {
   modoPromesa = null
+  modoActual = null
   catalogoServidor = null
 }
 
