@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Download, FileJson, FileSpreadsheet, Loader2 } from 'lucide-react'
 import Header from '../components/Header'
+import { useRegresar } from '../hooks/useRegresar'
 import { Boton, Campo, ConfirmDialog, Tarjeta } from '../components/common'
 import { exportarCompras, fetchListas, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
@@ -21,7 +21,8 @@ const FORMATOS = [
  * y cuánto dinero entran en el archivo.
  */
 export default function PantallaExportar() {
-  const navigate = useNavigate()
+  // Se llega desde el ⋮ de Lista de compras: ahí vuelve si no hay pantalla anterior
+  const regresar = useRegresar('/compras')
   const { addToast } = useToast()
   const [desde, setDesde] = useState('')
   const [hasta, setHasta] = useState('')
@@ -70,7 +71,7 @@ export default function PantallaExportar() {
 
   return (
     <>
-      <Header title="Exportar datos" frase={fraseDelDia('/exportar')} alRegresar={() => navigate(-1)} />
+      <Header title="Exportar datos" frase={fraseDelDia('/exportar')} alRegresar={regresar} />
 
       <main id="contenido" tabIndex={-1}>
 

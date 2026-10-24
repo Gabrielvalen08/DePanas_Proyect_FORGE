@@ -1,30 +1,8 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import EditorCatalogo, { ordenarPorCategoria } from './EditorCatalogo'
+import EditorCatalogo from './EditorCatalogo'
 
-describe('EditorCatalogo — ordenarPorCategoria', () => {
-  it('ordena Materia Prima primero, luego otras categorías y artículos alfabéticamente', () => {
-    const lista = [
-      { nombre: 'Servilletas', categoria: 'Limpieza' },
-      { nombre: 'Harina PAN', categoria: 'Materia Prima' },
-      { nombre: 'Queso Duro', categoria: 'Lácteos' },
-      { nombre: 'Aceite', categoria: 'Materia Prima' },
-      { nombre: 'Bolsas', categoria: 'Empaque' },
-      { nombre: 'Caja sin categoría', categoria: '' },
-    ]
-
-    const resultado = ordenarPorCategoria(lista)
-
-    expect(resultado.map(x => x.nombre)).toEqual([
-      'Aceite', // Materia Prima (A)
-      'Harina PAN', // Materia Prima (H)
-      'Bolsas', // Empaque
-      'Queso Duro', // Lácteos
-      'Servilletas', // Limpieza
-      'Caja sin categoría', // Sin categoría al final
-    ])
-  })
-})
+// El orden por categoría (Materia Prima primero) se prueba en services/api.test.js (ordenarMaterialesPorCategoria)
 
 describe('EditorCatalogo — Producto (panel dual)', () => {
   const materialesEjemplo = [

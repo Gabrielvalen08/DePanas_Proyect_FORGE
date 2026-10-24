@@ -208,6 +208,13 @@ export const ASIGNACION = {
 }
 
 // ---------------------------------------------------------------------------
+// Navegación entre pantallas
+// ---------------------------------------------------------------------------
+export const NAVEGACION = {
+  regresar: 'Regresar',
+}
+
+// ---------------------------------------------------------------------------
 // Pantallas vacías y de carga
 // ---------------------------------------------------------------------------
 export const ESTADOS = {
@@ -382,6 +389,11 @@ export const PANTALLA_CATALOGO = {
     tambienEn: otros => (otros ? `También en «${otros}»` : ''),
     ninguno: 'Todavía no hay artículos. Agrégalos en la sección Artículos.',
     sinResultados: 'Ningún artículo con ese nombre',
+    // Panel doble del producto: un clic pasa el artículo de un lado al otro
+    todosElegidos: 'Ya elegiste todos los artículos.',
+    ningunoElegido: 'Todavía no lleva artículos. Toca uno de la izquierda para sumarlo.',
+    agregar: nombre => `Agregar ${nombre}`,
+    quitar: nombre => `Quitar ${nombre}`,
   },
   sinResultados: 'Nada por aquí con ese nombre',
   vacio: tipo => `Todavía no hay ${SECCIONES[tipo].titulo.toLowerCase()}.`,

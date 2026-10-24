@@ -35,6 +35,7 @@ Funciones puras, sin React. Cada archivo tiene su `*.test.js`.
 | `LISTA_COMPRAS` | Tabla de Lista de compras y su menú ⋮ (Exportar, Cargar) |
 | `VALIDACION` | Mensajes junto a los campos |
 | `ASIGNACION` | Ventana de categoría y producto y su confirmación |
+| `NAVEGACION` | Textos comunes de navegación (Regresar) |
 | `ESTADOS` | Cargando y pantallas vacías |
 | `PANTALLA_CATALOGO` | Pantalla del Catálogo: secciones, ventana de edición (también los proveedores de cada categoría), confirmaciones (con el género de cada tipo: "Nueva categoría", "Nuevo proveedor") |
 | `EXPORTAR`, `CARGAR` | Pantallas de Exportar y Cargar datos |

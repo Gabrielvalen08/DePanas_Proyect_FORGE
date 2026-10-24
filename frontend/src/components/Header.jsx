@@ -2,6 +2,7 @@ import { ArrowLeft, Calendar } from 'lucide-react'
 import { Boton, Insignia } from './common'
 import { useScrollDetectado } from '../hooks/useScrollDetectado'
 import { formatearFechaLarga } from '../utils/formato'
+import { NAVEGACION } from '../utils/mensajes'
 import estilos from './Header.module.css'
 
 /**
@@ -27,7 +28,7 @@ export default function Header({ title, badge, frase, alRegresar }) {
         <div className={estilos.derecha}>
           {alRegresar && (
             <Boton variante="secundario" icono={<ArrowLeft size={16} />} onClick={alRegresar}>
-              Regresar
+              {NAVEGACION.regresar}
             </Boton>
           )}
           <p className={estilos.fecha}>
