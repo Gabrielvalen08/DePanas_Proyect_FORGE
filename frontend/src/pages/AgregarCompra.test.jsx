@@ -34,6 +34,7 @@ vi.mock('../services/api', () => {
   importarJSON:         vi.fn(() => Promise.resolve()),
   getProveedores:       () => ['Súper Selectos', 'Walmart'],
   getMateriales:        () => ['Tocino La Rioja', 'Pechugas de Pollo'],
+  getMaterialesPorProveedor: () => ['Tocino La Rioja', 'Pechugas de Pollo'],
   getCategorias:        () => ['Materia Prima', 'Bebidas', 'Desechables'],
   getProductos:         () => ['Cachitos', 'Arepas/Empanadas', 'Todos'],
   getAsignacion:        asignacion,
@@ -397,7 +398,7 @@ describe('AgregarCompra', () => {
     await usuario.tab()
 
     const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
-    expect(within(ventana).getByText(ASIGNACION.descripcionNuevo('Harina PAN'))).toBeInTheDocument()
+    expect(within(ventana).getByText(ASIGNACION.descripcionNuevo('Harina PAN', 'Walmart'))).toBeInTheDocument()
     expect(within(ventana).getByRole('textbox', { name: 'Buscar o agregar categoría' })).toHaveFocus()
 
     await usuario.click(within(ventana).getByRole('button', { name: 'Materia Prima' }))
@@ -487,5 +488,32 @@ describe('AgregarCompra', () => {
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
     expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({ material: 'Queso', categoria: 'Bebidas', producto: 'Todos' })
+  })
+
+  it('si se descarta la asignación ("Ahora no"), aparece el botón "+" para reabrirla y muestra el proveedor', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    const material = screen.getByRole('combobox', { name: 'Artículo, fila 1' })
+    await usuario.type(material, 'Harina Nueva')
+    await usuario.tab()
+
+    // Se abre la ventana emergente
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    // Muestra el proveedor seleccionado
+    expect(within(ventana).getByText(/Proveedor:/)).toBeInTheDocument()
+    expect(within(ventana).getByText('Walmart')).toBeInTheDocument()
+
+    // Omitimos la asignación ("Ahora no")
+    await usuario.click(within(ventana).getByRole('button', { name: 'Ahora no' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    // Aparece el botón '+' al lado del material
+    const botonReabrir = screen.getByRole('button', { name: /Asignar categoría y producto a Harina Nueva/i })
+    expect(botonReabrir).toBeInTheDocument()
+
+    // Al hacer clic en '+', se vuelve a abrir la ventana emergente
+    await usuario.click(botonReabrir)
+    expect(await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })).toBeInTheDocument()
   })
 })

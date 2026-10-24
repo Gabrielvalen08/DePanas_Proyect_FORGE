@@ -16,6 +16,8 @@ import {
   getAsignacion,
   getCategorias,
   getMateriales,
+  getMaterialesPorProveedor,
+  ordenarMaterialesPorCategoria,
   getProductos,
   getPrecioSugerido,
   getProveedores,
@@ -240,6 +242,33 @@ describe('api: categoría y producto de cada material (modo local)', () => {
     expect(getMateriales()).toContain('Harina PAN')
     expect(getProductos()).toContain('Arepas Rellenas')
     expect(getCategorias().filter(c => c === 'Materia Prima')).toHaveLength(1)
+  })
+
+  it('ordenarMaterialesPorCategoria ordena Materia Prima primero, luego otras categorías y artículos alfabéticamente', () => {
+    const lista = [
+      { nombre: 'Servilletas', categoria: 'Limpieza' },
+      { nombre: 'Harina PAN', categoria: 'Materia Prima' },
+      { nombre: 'Queso', categoria: 'Lácteos' },
+      { nombre: 'Aceite', categoria: 'Materia Prima' },
+      { nombre: 'Caja', categoria: '' },
+    ]
+    const res = ordenarMaterialesPorCategoria(lista)
+    expect(res.map(x => x.nombre)).toEqual([
+      'Aceite',
+      'Harina PAN',
+      'Queso',
+      'Servilletas',
+      'Caja',
+    ])
+  })
+
+  it('getMaterialesPorProveedor filtra por historial del proveedor en modo local', async () => {
+    const matsSelectos = getMaterialesPorProveedor('Selectos')
+    expect(matsSelectos.length).toBeGreaterThan(0)
+    expect(matsSelectos).toContain('Tocino La Rioja')
+
+    const todos = getMaterialesPorProveedor('Proveedor Inexistente')
+    expect(todos).toEqual(expect.arrayContaining(['Agua', 'Tocino La Rioja', 'Pepsi']))
   })
 
   it('pide categoría y producto', async () => {

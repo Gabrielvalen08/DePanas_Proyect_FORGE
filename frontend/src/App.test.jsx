@@ -18,6 +18,7 @@ vi.mock('./services/api', () => ({
   analizarCompras: vi.fn(),
   getProveedores: () => ['Súper Selectos', 'Walmart'],
   getMateriales: () => ['Tocino La Rioja', 'Pechugas de Pollo'],
+  getMaterialesPorProveedor: () => ['Tocino La Rioja', 'Pechugas de Pollo'],
   getCategorias: () => ['Materia Prima', 'Bebidas'],
   getProductos: () => ['Cachitos', 'Todos'],
   getAsignacion: m => ({ existe: false, nombre: m, categoria: '', producto: '' }),

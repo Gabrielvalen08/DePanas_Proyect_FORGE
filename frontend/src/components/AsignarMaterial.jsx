@@ -19,7 +19,7 @@ import estilos from './AsignarMaterial.module.css'
  *  - alGuardar({ categoria, productos }): async; si lanza, la ventana sigue abierta
  *  - alCancelar()
  */
-export default function AsignarMaterial({ material, alGuardar, alCancelar }) {
+export default function AsignarMaterial({ material, proveedor, alGuardar, alCancelar }) {
   const primerBuscadorRef = useRef(null)
   return (
     <Modal
@@ -30,13 +30,13 @@ export default function AsignarMaterial({ material, alGuardar, alCancelar }) {
       focoInicial={primerBuscadorRef}
     >
       {material && (
-        <Formulario material={material} alGuardar={alGuardar} alCancelar={alCancelar} primerBuscadorRef={primerBuscadorRef} />
+        <Formulario material={material} proveedor={proveedor} alGuardar={alGuardar} alCancelar={alCancelar} primerBuscadorRef={primerBuscadorRef} />
       )}
     </Modal>
   )
 }
 
-function Formulario({ material, alGuardar, alCancelar, primerBuscadorRef }) {
+function Formulario({ material, proveedor, alGuardar, alCancelar, primerBuscadorRef }) {
   const pideCategoria = !material.categoria
   const pideProducto = !material.productos?.length
   const [categoria, setCategoria] = useState(material.categoria)
@@ -73,8 +73,11 @@ function Formulario({ material, alGuardar, alCancelar, primerBuscadorRef }) {
         <p className={estilos.descripcion}>
           {material.existe
             ? ASIGNACION.descripcionExistente(material.nombre, pideCategoria, pideProducto)
-            : ASIGNACION.descripcionNuevo(material.nombre)}
+            : ASIGNACION.descripcionNuevo(material.nombre, proveedor)}
         </p>
+        {proveedor && (
+          <p className={estilos.asignado}>Proveedor: <strong>{proveedor}</strong></p>
+        )}
         {!pideCategoria && (
           <p className={estilos.asignado}>Categoría: <strong>{material.categoria}</strong></p>
         )}

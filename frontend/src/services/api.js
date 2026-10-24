@@ -232,6 +232,57 @@ export function getMateriales() {
   return sinDuplicados(catalogo().materiales.map(m => m.nombre))
 }
 
+/**
+ * Ordenación estándar de artículos: «Materia Prima» primero, luego el resto
+ * de categorías alfabéticamente; dentro de cada categoría, también alfabético.
+ * Artículos sin categoría van al final.
+ */
+export function ordenarMaterialesPorCategoria(lista) {
+  return [...lista].sort((a, b) => {
+    const catA = (a.categoria || '').trim()
+    const catB = (b.categoria || '').trim()
+    const esMateriaA = catA.toLowerCase() === 'materia prima'
+    const esMateriaB = catB.toLowerCase() === 'materia prima'
+    if (esMateriaA && !esMateriaB) return -1
+    if (!esMateriaA && esMateriaB) return 1
+    if (!catA && catB) return 1
+    if (catA && !catB) return -1
+    const cmpCat = catA.localeCompare(catB, 'es', { sensitivity: 'base' })
+    if (cmpCat !== 0) return cmpCat
+    return (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' })
+  })
+}
+
+/**
+ * Artículos para el autocompletado de Agregar Compra, ya ordenados por categoría.
+ *
+ * - Modo local: filtra los artículos que ya se compraron a ese proveedor;
+ *   si no tiene historial o no se especificó proveedor, devuelve todos.
+ * - Modo servidor (Decisión 1): devuelve todos los artículos sin filtrar,
+ *   porque el backend no expone el historial por proveedor en /api/catalogo.
+ *   El orden por categoría se aplica en ambos casos.
+ */
+export function getMaterialesPorProveedor(proveedor) {
+  const todos = catalogo().materiales
+  // Modo servidor: todos los artículos, ordenados por categoría
+  if (catalogoServidor) {
+    return sinDuplicados(ordenarMaterialesPorCategoria(todos).map(m => m.nombre))
+  }
+  // Modo local: filtrar por proveedor si hay historial
+  if (!proveedor?.trim()) {
+    return sinDuplicados(ordenarMaterialesPorCategoria(todos).map(m => m.nombre))
+  }
+  const k = clave(proveedor)
+  const listas = getListas().filter(l => clave(l.proveedor) === k)
+  const nombres = new Set(listas.flatMap(l => (l.materiales || []).map(m => clave(m.material))))
+  if (!nombres.size) {
+    return sinDuplicados(ordenarMaterialesPorCategoria(todos).map(m => m.nombre))
+  }
+  return sinDuplicados(ordenarMaterialesPorCategoria(
+    todos.filter(m => nombres.has(clave(m.nombre)))
+  ).map(m => m.nombre))
+}
+
 /** Categorías de los materiales */
 export function getCategorias() {
   return sinDuplicados(catalogo().categorias)

@@ -4,7 +4,7 @@ import { Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import AsignarMaterial from './AsignarMaterial'
 import { Boton, Campo, CampoMoneda, ConfirmDialog, Selector } from './common'
-import { asignarMaterial, getAsignacion, getMateriales, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
+import { asignarMaterial, getAsignacion, getMaterialesPorProveedor, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { ASIGNACION, COMPRA, VALIDACION } from '../utils/mensajes'
 import { fechaHoyISO, formatearPrecio, textoBusqueda } from '../utils/formato'
@@ -135,7 +135,7 @@ export default function BloqueCompra({
   const { addToast } = useToast()
 
   const formRef        = useRef(null)
-  const omitidos       = useRef(new Set()) // "Ahora no": no se vuelve a pedir al salir del campo
+  const [omitidos, setOmitidos] = useState(() => new Set()) // "Ahora no": no se vuelve a pedir al salir del campo
   const guardarDespues = useRef(false)     // la ventana se abrió al guardar: se guarda al terminar
 
   const campoPorEnfocar = useRef(null) // tras un intento fallido de guardar, el primer campo con error
@@ -160,7 +160,10 @@ export default function BloqueCompra({
   }, [filas, id])
 
   const sugerirProveedores = useCallback(texto => filtrar(getProveedores(), texto), [])
-  const sugerirMateriales  = useCallback(texto => filtrar(getMateriales(), texto), [])
+  const sugerirMateriales  = useCallback(
+    texto => filtrar(getMaterialesPorProveedor(proveedor), texto),
+    [proveedor]
+  )
 
   function fijarError(claveError, mensaje) {
     setErrores(prev => {
@@ -234,13 +237,30 @@ export default function BloqueCompra({
   // --- Categoría y producto de cada material ---
   function revisarMaterial(valor) {
     const nombre = (valor || '').trim()
-    if (porAsignar || !necesitaAsignacion(nombre) || omitidos.current.has(nombre.toLowerCase())) return
+    if (porAsignar || !necesitaAsignacion(nombre) || omitidos.has(nombre.toLowerCase())) return
     setPorAsignar(getAsignacion(nombre))
   }
 
   /** Siguiente fila con un material sin categoría o producto */
   function pendienteDeAsignar() {
     return filas.find(f => !estaVacia(f) && necesitaAsignacion(f.material))
+  }
+
+  function necesitaBotonAsignar(fila) {
+    const nombre = fila.material?.trim()
+    if (!nombre) return false
+    return necesitaAsignacion(nombre) && omitidos.has(nombre.toLowerCase())
+  }
+
+  function reabrirAsignacion(fila) {
+    const nombre = fila.material?.trim()
+    if (!nombre) return
+    setOmitidos(prev => {
+      const next = new Set(prev)
+      next.delete(nombre.toLowerCase())
+      return next
+    })
+    setPorAsignar(getAsignacion(nombre))
   }
 
   async function asignar(eleccion) {
@@ -260,7 +280,9 @@ export default function BloqueCompra({
   }
 
   function omitirAsignacion() {
-    if (porAsignar) omitidos.current.add(porAsignar.nombre.toLowerCase())
+    if (porAsignar) {
+      setOmitidos(prev => new Set(prev).add(porAsignar.nombre.toLowerCase()))
+    }
     if (guardarDespues.current && porAsignar) addToast(COMPRA.faltaAsignacion(porAsignar.nombre), 'error')
     guardarDespues.current = false
     setPorAsignar(null)
@@ -446,26 +468,39 @@ export default function BloqueCompra({
                     >
                       {/* Material */}
                       <td>
-                        <AutocompleteInput
-                          id={`${id}-material-${fila.id}`}
-                          etiqueta={`Artículo, fila ${n}`}
-                          etiquetaOculta
-                          value={fila.material}
-                          onChange={valor => cambiarFila(fila.id, 'material', valor)}
-                          onSeleccionar={valor => {
-                            if (!proveedor.trim()) return
-                            sugerirPrecio(fila.id, valor)
-                            revisarMaterial(valor)
-                          }}
-                          onBlur={() => {
-                            salirDeCampoFila(fila.id, 'material')
-                            sugerirPrecio(fila.id, fila.material)
-                            revisarMaterial(fila.material)
-                          }}
-                          ayuda={textoAsignacion(fila.material)}
-                          getSuggestions={sugerirMateriales}
-                          error={errores[clave(fila.id, 'material')]}
-                        />
+                        <div className={estilos.materialConBoton}>
+                          {necesitaBotonAsignar(fila) && (
+                            <button
+                              type="button"
+                              className={estilos.botonAsignarMini}
+                              aria-label={`Asignar categoría y producto a ${fila.material}`}
+                              title={`Asignar categoría y producto a «${fila.material}»`}
+                              onClick={() => reabrirAsignacion(fila)}
+                            >
+                              <Plus size={14} aria-hidden="true" />
+                            </button>
+                          )}
+                          <AutocompleteInput
+                            id={`${id}-material-${fila.id}`}
+                            etiqueta={`Artículo, fila ${n}`}
+                            etiquetaOculta
+                            value={fila.material}
+                            onChange={valor => cambiarFila(fila.id, 'material', valor)}
+                            onSeleccionar={valor => {
+                              if (!proveedor.trim()) return
+                              sugerirPrecio(fila.id, valor)
+                              revisarMaterial(valor)
+                            }}
+                            onBlur={() => {
+                              salirDeCampoFila(fila.id, 'material')
+                              sugerirPrecio(fila.id, fila.material)
+                              revisarMaterial(fila.material)
+                            }}
+                            ayuda={textoAsignacion(fila.material)}
+                            getSuggestions={sugerirMateriales}
+                            error={errores[clave(fila.id, 'material')]}
+                          />
+                        </div>
                       </td>
 
                       {/* Cantidad */}
@@ -588,7 +623,7 @@ export default function BloqueCompra({
       </form>
 
       {/* Fuera del <form>: los eventos del portal no deben llegar a su onSubmit */}
-      <AsignarMaterial material={porAsignar} alGuardar={asignar} alCancelar={omitirAsignacion} />
+      <AsignarMaterial material={porAsignar} proveedor={proveedor} alGuardar={asignar} alCancelar={omitirAsignacion} />
 
       <ConfirmDialog
         isOpen={porConfirmar !== null}

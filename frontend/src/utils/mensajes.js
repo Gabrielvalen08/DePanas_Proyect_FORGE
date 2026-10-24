@@ -169,8 +169,8 @@ export const VALIDACION = {
 export const ASIGNACION = {
   tituloNuevo: 'Artículo nuevo',
   tituloExistente: 'Categoría y producto',
-  descripcionNuevo: material =>
-    `«${material}» es nuevo por aquí. ¿A qué categoría y productos pertenece? Lo recordaremos para las próximas compras.`,
+  descripcionNuevo: (material, proveedor) =>
+    `«${material}» es nuevo por aquí${proveedor ? ` (de ${proveedor})` : ''}. ¿A qué categoría y productos pertenece? Lo recordaremos para las próximas compras.`,
   descripcionExistente: (material, pideCategoria, pideProducto) =>
     pideCategoria && pideProducto
       ? `Cuéntanos a qué categoría y productos pertenece «${material}».`
