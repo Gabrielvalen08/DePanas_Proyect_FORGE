@@ -12,6 +12,7 @@ import {
   guardarLista,
   reiniciarModo,
 } from './api'
+import { ordenarFilas } from '../../../shared/catalogo-json.js'
 
 // Catálogo editable (Catálogo) y exportar por rango
 beforeEach(() => {
@@ -138,6 +139,27 @@ describe('exportar una sección del Catálogo', () => {
     expect(JSON.parse(await descargas[0].text()).filas.map(f => f.nombre)).toEqual(['MMAG'])
 
     expect(await exportarCatalogo('proveedor', 'json')).toBeGreaterThan(1)
+    clic.mockRestore()
+  })
+
+  it('los artículos van por categoría (alfabético; sin categoría al final) y luego por nombre', async () => {
+    expect(ordenarFilas('material', [
+      { nombre: 'Queso', categoria: '' },
+      { nombre: 'Tocino', categoria: 'Materia Prima' },
+      { nombre: 'Pepsi', categoria: 'Bebidas' },
+      { nombre: 'Azúcar', categoria: 'materia prima' },
+      { nombre: 'Agua', categoria: 'Bebidas' },
+      { nombre: 'Bandeja', categoria: 'Desechables' },
+    ]).map(f => f.nombre)).toEqual(['Agua', 'Pepsi', 'Bandeja', 'Azúcar', 'Tocino', 'Queso'])
+
+    const descargas = []
+    vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(blob => { descargas.push(blob); return 'blob:x' }), revokeObjectURL: vi.fn() })
+    const clic = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    await exportarCatalogo('material', 'json')
+    const filas = JSON.parse(await descargas[0].text()).filas
+    expect(filas).toEqual(ordenarFilas('material', filas))
+    expect(filas[0].categoria).toBe('Bebidas')
+    expect(filas.at(-1).categoria).toBe('')
     clic.mockRestore()
   })
 })

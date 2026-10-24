@@ -170,6 +170,19 @@ describe('PantallaCatalogo', () => {
     expect(within(selectos).queryByText('San Salvador')).not.toBeInTheDocument()
   })
 
+  it('en Artículos, la ventana de exportar los lista por categoría y luego por nombre', async () => {
+    const usuario = userEvent.setup()
+    const A = PANTALLA_CATALOGO.archivo
+    renderizar('/catalogo/articulos')
+    await usuario.click(await screen.findByRole('button', { name: A.masAcciones('material') }))
+    await usuario.click(screen.getByRole('menuitem', { name: A.exportarCsv }))
+    const ventana = screen.getByRole('dialog', { name: A.seleccion.titulo('material', 'csv') })
+    const nombres = within(ventana).getAllByRole('checkbox').map(c => c.closest('label').querySelector('span').textContent)
+    // Bebidas va primero (Agua, Gatorade…) y lo que no tiene categoría, al final
+    expect(nombres.slice(0, 2)).toEqual(['Agua', 'Gatorade'])
+    expect(within(ventana).getAllByRole('checkbox').at(-1).closest('label')).toHaveTextContent(A.seleccion.sinCategoria)
+  })
+
   it('exportar deja elegir qué entra: el buscador y «Quitar todos» actúan sobre lo visible y sin nada elegido no se descarga', async () => {
     const usuario = userEvent.setup()
     const A = PANTALLA_CATALOGO.archivo

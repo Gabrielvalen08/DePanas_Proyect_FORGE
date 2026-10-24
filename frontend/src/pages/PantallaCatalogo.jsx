@@ -13,7 +13,7 @@ import { textoBusqueda } from '../utils/formato'
 import { PANTALLA_CATALOGO, fraseDelDia } from '../utils/mensajes'
 import estilos from './PantallaCatalogo.module.css'
 import { tieneProducto } from '../../../shared/productos.js'
-import { filasDelCatalogo } from '../../../shared/catalogo-json.js'
+import { filasDelCatalogo, ordenarFilas } from '../../../shared/catalogo-json.js'
 
 const TIPOS = ['proveedor', 'categoria', 'material', 'producto']
 const ICONOS = { proveedor: Truck, categoria: Tags, material: Package, producto: UtensilsCrossed }
@@ -167,7 +167,8 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
     e.target.value = '' // así se puede volver a elegir el mismo archivo
     if (!archivo) return
     try {
-      setSeleccion({ accion: 'cargar', filas: await leerCatalogoJSON(archivo, tipo), archivo: archivo.name })
+      // En el mismo orden que al exportar (los artículos, por categoría y luego por nombre)
+      setSeleccion({ accion: 'cargar', filas: ordenarFilas(tipo, await leerCatalogoJSON(archivo, tipo)), archivo: archivo.name })
     } catch (error) {
       addToast(A.errorCargar(error.message), 'error')
     }
