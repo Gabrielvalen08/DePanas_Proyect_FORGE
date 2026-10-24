@@ -262,7 +262,10 @@ export const PANTALLA_CATALOGO = {
   errorCargar: 'No pudimos traer el catálogo. Recarga la página para intentarlo de nuevo.',
   buscar: tipo => `Buscar ${SECCIONES[tipo].singular}`,
   agregar: tipo => `Agregar ${SECCIONES[tipo].singular}`,
-  tituloNuevo: tipo => `${GENERO[tipo].nuevo} ${SECCIONES[tipo].singular}`,
+  tituloNuevo: tipo =>
+    tipo === 'producto'
+      ? `Agregar ${SECCIONES[tipo].singular}`
+      : `${GENERO[tipo].nuevo} ${SECCIONES[tipo].singular}`,
   tituloEditar: tipo => `Editar ${SECCIONES[tipo].singular}`,
   nombre: 'Nombre',
   // En Categorías la columna y el campo del nombre se llaman «Categoría»

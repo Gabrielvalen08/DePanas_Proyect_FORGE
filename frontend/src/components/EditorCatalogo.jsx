@@ -1,5 +1,5 @@
-import { useId, useRef, useState } from 'react'
-import { Check, Pencil, Plus, Search } from 'lucide-react'
+import { useId, useMemo, useRef, useState } from 'react'
+import { Check, Pencil, Plus, Search, X } from 'lucide-react'
 import { Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
 import { SelectorOpciones } from './AsignarMaterial'
 import FichaProveedor, { fichaInicial } from './FichaProveedor'
@@ -34,7 +34,7 @@ export default function EditorCatalogo({ tipo, edicion, materiales = [], alGuard
       titulo={nuevo ? PANTALLA_CATALOGO.tituloNuevo(tipo) : PANTALLA_CATALOGO.tituloEditar(tipo)}
       icono={nuevo ? <Plus /> : <Pencil />}
       focoInicial={nombreRef}
-      anchoMax={tipo === 'categoria' || tipo === 'producto' ? 'lg' : 'md'}
+      anchoMax={tipo === 'producto' ? 'xl' : tipo === 'categoria' ? 'lg' : 'md'}
     >
       {edicion && (
         <Formulario
@@ -173,13 +173,21 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
             </div>
           )}
           {conMateriales && (
-            <SelectorMateriales
-              tipo={tipo}
-              nombreActual={registro?.nombre ?? ''}
-              todos={todos}
-              elegidos={elegidos}
-              onCambiar={setElegidos}
-            />
+            tipo === 'producto' ? (
+              <SelectorMaterialesDual
+                todos={todos}
+                elegidos={elegidos}
+                onCambiar={setElegidos}
+              />
+            ) : (
+              <SelectorMateriales
+                tipo={tipo}
+                nombreActual={registro?.nombre ?? ''}
+                todos={todos}
+                elegidos={elegidos}
+                onCambiar={setElegidos}
+              />
+            )
           )}
         </CuerpoModal>
         <PieModal>
@@ -297,3 +305,161 @@ function SelectorMateriales({ tipo, nombreActual, todos, elegidos, onCambiar }) 
 function llevaA(material, tipo, nombre) {
   return tipo === 'producto' ? tieneProducto(material.producto, nombre) : textoBusqueda(material[tipo]) === textoBusqueda(nombre)
 }
+
+/**
+ * Ordena artículos por categoría: primero «Materia Prima», luego el resto en orden alfabético,
+ * y dentro de cada categoría los artículos también en orden alfabético. Artículos sin categoría van al final.
+ */
+export function ordenarPorCategoria(lista) {
+  return [...lista].sort((a, b) => {
+    const catA = (a.categoria || '').trim()
+    const catB = (b.categoria || '').trim()
+    const esMateriaA = catA.toLowerCase() === 'materia prima'
+    const esMateriaB = catB.toLowerCase() === 'materia prima'
+    if (esMateriaA && !esMateriaB) return -1
+    if (!esMateriaA && esMateriaB) return 1
+    if (!catA && catB) return 1
+    if (catA && !catB) return -1
+    const compCat = catA.localeCompare(catB, 'es', { sensitivity: 'base' })
+    if (compCat !== 0) return compCat
+    return (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' })
+  })
+}
+
+/**
+ * Selector en dos columnas para productos:
+ * - Izquierda: "Artículos" disponibles con buscador fijo y orden por categoría (Materia Prima primero).
+ * - Derecha: "Artículos que lleva este producto" con conteo de elegidos y sin nota explicativa.
+ * Al hacer clic en un artículo se transfiere de un panel al otro.
+ */
+function SelectorMaterialesDual({ todos, elegidos, onCambiar }) {
+  const id = useId().replace(/:/g, '')
+  const [busqueda, setBusqueda] = useState('')
+  const textos = PANTALLA_CATALOGO.materiales
+
+  const disponibles = useMemo(() => {
+    return ordenarPorCategoria(todos.filter(m => !elegidos.has(m.nombre)))
+  }, [todos, elegidos])
+
+  const seleccionados = useMemo(() => {
+    return ordenarPorCategoria(todos.filter(m => elegidos.has(m.nombre)))
+  }, [todos, elegidos])
+
+  const buscado = textoBusqueda(busqueda.trim())
+  const disponiblesFiltrados = buscado
+    ? disponibles.filter(m => textoBusqueda(m.nombre).includes(buscado) || textoBusqueda(m.categoria || '').includes(buscado))
+    : disponibles
+
+  function agregar(nombre) {
+    const nuevos = new Set(elegidos)
+    nuevos.add(nombre)
+    onCambiar(nuevos)
+  }
+
+  function quitar(nombre) {
+    const nuevos = new Set(elegidos)
+    nuevos.delete(nombre)
+    onCambiar(nuevos)
+  }
+
+  return (
+    <fieldset className={estilos.materialesDual}>
+      <div className={estilos.panelesDual}>
+        {/* Panel izquierdo: Artículos disponibles */}
+        <div className={estilos.panelDual}>
+          <div className={estilos.panelEncabezado}>
+            <span className={estilos.panelTitulo}>
+              {PANTALLA_CATALOGO.columnaMateriales}
+            </span>
+            <Insignia tono="neutro">{disponibles.length}</Insignia>
+          </div>
+
+          <div className={estilos.buscadorContenedor}>
+            <Campo
+              id={`${id}-buscar-dual`}
+              etiqueta={textos.buscar}
+              etiquetaOculta
+              prefijo={<Search size={16} />}
+              placeholder={`${textos.buscar}…`}
+              value={busqueda}
+              autoComplete="off"
+              onChange={e => setBusqueda(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
+            />
+          </div>
+
+          <div className={estilos.listaPanel}>
+            {todos.length === 0 ? (
+              <p className={estilos.vacio}>{textos.ninguno}</p>
+            ) : disponibles.length === 0 ? (
+              <p className={estilos.vacio}>Todos los artículos están seleccionados</p>
+            ) : disponiblesFiltrados.length === 0 ? (
+              <p className={estilos.vacio}>{textos.sinResultados}</p>
+            ) : (
+              <ul className={estilos.listaItems}>
+                {disponiblesFiltrados.map(m => (
+                  <li key={m.nombre}>
+                    <button
+                      type="button"
+                      className={estilos.itemBoton}
+                      onClick={() => agregar(m.nombre)}
+                      aria-label={`Agregar ${m.nombre}`}
+                      title={`Agregar «${m.nombre}»`}
+                    >
+                      <div className={estilos.itemInfo}>
+                        <span className={estilos.itemNombre}>{m.nombre}</span>
+                        {m.categoria && <span className={estilos.itemCategoria}>{m.categoria}</span>}
+                      </div>
+                      <span className={estilos.itemIconoAccion} aria-hidden="true">
+                        <Plus size={16} />
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Panel derecho: Artículos que lleva este producto */}
+        <div className={estilos.panelDual}>
+          <div className={estilos.panelEncabezado}>
+            <span className={estilos.panelTitulo}>
+              {textos.titulo('producto')}
+            </span>
+            <Insignia tono="primario">{textos.elegidos(elegidos.size)}</Insignia>
+          </div>
+
+          <div className={estilos.listaPanel}>
+            {seleccionados.length === 0 ? (
+              <p className={estilos.vacio}>Ningún artículo seleccionado todavía. Haz clic en un artículo de la izquierda para agregarlo.</p>
+            ) : (
+              <ul className={estilos.listaItems}>
+                {seleccionados.map(m => (
+                  <li key={m.nombre}>
+                    <button
+                      type="button"
+                      className={[estilos.itemBoton, estilos.itemBotonElegido].join(' ')}
+                      onClick={() => quitar(m.nombre)}
+                      aria-label={`Quitar ${m.nombre}`}
+                      title={`Quitar «${m.nombre}»`}
+                    >
+                      <div className={estilos.itemInfo}>
+                        <span className={estilos.itemNombre}>{m.nombre}</span>
+                        {m.categoria && <span className={estilos.itemCategoria}>{m.categoria}</span>}
+                      </div>
+                      <span className={estilos.itemIconoQuitar} aria-hidden="true">
+                        <X size={16} />
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    </fieldset>
+  )
+}
+

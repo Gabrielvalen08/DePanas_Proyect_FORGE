@@ -41,6 +41,7 @@ describe('mensajes (voz de marca)', () => {
   it('catálogo: género y plural correctos en títulos y confirmaciones', () => {
     expect(PANTALLA_CATALOGO.tituloNuevo('categoria')).toBe('Nueva categoría')
     expect(PANTALLA_CATALOGO.tituloNuevo('proveedor')).toBe('Nuevo proveedor')
+    expect(PANTALLA_CATALOGO.tituloNuevo('producto')).toBe('Agregar producto')
     expect(PANTALLA_CATALOGO.confirmarEliminar.titulo('categoria')).toBe('¿Eliminamos esta categoría?')
     expect(PANTALLA_CATALOGO.uso('proveedor', 1)).toBe('1 compra')
     expect(PANTALLA_CATALOGO.uso('producto', 3)).toBe('3 artículos')
