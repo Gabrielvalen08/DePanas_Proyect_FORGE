@@ -2,6 +2,7 @@ import {
   agregarAlCatalogo,
   editarEnCatalogo,
   eliminarDelCatalogo,
+  exportarCatalogo,
   exportarCompras,
   fetchCatalogo,
   fetchListas,
@@ -123,6 +124,21 @@ describe('catálogo en modo servidor', () => {
     expect((await editarEnCatalogo('categoria', 'Bebidas', { nombre: 'Bebidas', materiales: ['Pepsi'] })).materiales).toBe(1)
     expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ nombre: 'Bebidas', materiales: ['Pepsi'] })
     expect(localStorage.getItem('depanas_catalogo')).toBeNull()
+  })
+})
+
+describe('exportar una sección del Catálogo', () => {
+  it('con filas elegidas descarga solo esas; sin ellas, toda la sección', async () => {
+    const descargas = []
+    vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(blob => { descargas.push(blob); return 'blob:x' }), revokeObjectURL: vi.fn() })
+    const clic = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    const elegidas = [{ nombre: 'MMAG', ubicacion: '', telefonos: [], contactos: [] }]
+    expect(await exportarCatalogo('proveedor', 'json', elegidas)).toBe(1)
+    expect(JSON.parse(await descargas[0].text()).filas.map(f => f.nombre)).toEqual(['MMAG'])
+
+    expect(await exportarCatalogo('proveedor', 'json')).toBeGreaterThan(1)
+    clic.mockRestore()
   })
 })
 

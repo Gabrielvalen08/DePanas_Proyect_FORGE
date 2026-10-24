@@ -18,6 +18,7 @@ No agregues caídas silenciosas a `localStorage` cuando el backend falla.
 | `fetchListas(filtros)` | Compras, con filtros `proveedor`, `material`, `fechaDesde`, `fechaHasta` |
 | `guardarLista`, `actualizarLista(id, …)`, `eliminarLista(id)` | Escrituras de una compra completa |
 | `exportarCompras({ desde, hasta, formato })` | Descarga las compras del rango como `csv` o `json`; si no hay compras, lanza un error en vez de bajar un archivo vacío |
+| `exportarCatalogo(tipo, formato, elegidas?)`, `leerCatalogoJSON(archivo, tipo)`, `importarCatalogo(tipo, filas)` | Exportar y cargar una sección del Catálogo. `elegidas` son las filas que se eligieron en `SeleccionCatalogo` (sin ellas, toda la sección); cargar crea lo que falta y actualiza lo que existe |
 | `exportarDB`, `importarDB(archivo)` | `.db` (reemplaza la base, solo con servidor) o `.json` (pasa por `importarCompras`). Sin pantalla |
 | `leerComprasJSON(archivo)`, `analizarCompras(compras)`, `importarCompras(compras, decisiones)` | Cargar datos: valida y recorta, marca cada compra como nueva, duplicada o modificada, y guarda el lote (ver `shared/`) |
 | `fetchCatalogo()` | Catálogo completo recién leído, con `uso` (compras por proveedor/material, materiales por categoría/producto) |

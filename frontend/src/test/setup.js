@@ -16,5 +16,10 @@ window.matchMedia = window.matchMedia || ((query) => ({
   dispatchEvent: () => false,
 }))
 
+// jsdom no implementa URL.createObjectURL/revokeObjectURL. Las descargas revocan su URL con un
+// setTimeout que puede dispararse después de que una prueba restauró el URL original
+URL.createObjectURL ??= () => 'blob:prueba'
+URL.revokeObjectURL ??= () => {}
+
 // api.js persiste en localStorage: cada test arranca con los datos mock
 beforeEach(() => localStorage.clear())

@@ -308,9 +308,34 @@ export const PANTALLA_CATALOGO = {
     confirmarCargar: {
       titulo: tipo => `¿Cargamos ${SECCIONES[tipo].titulo.toLowerCase()}?`,
       mensaje: (tipo, n, archivo) =>
-        `«${archivo}» trae ${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()}. ` +
+        `Se cargarán ${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()} de «${archivo}». ` +
         'Lo nuevo se agrega y lo que ya existe se actualiza; no se borra nada.',
       confirmar: 'Sí, cargar',
+    },
+    // Ventana para elegir qué se exporta o qué se carga (todo empieza elegido)
+    seleccion: {
+      titulo: (tipo, accion, archivo) => {
+        const nombre = SECCIONES[tipo].titulo.toLowerCase()
+        if (accion === 'csv') return `Exportar ${nombre} a Excel`
+        if (accion === 'json') return `Exportar respaldo de ${nombre}`
+        return `Cargar ${nombre} de «${archivo}»`
+      },
+      ayuda: accion => (accion === 'cargar'
+        ? 'Elige qué traer del respaldo. Lo nuevo se agrega y lo que ya existe se actualiza.'
+        : 'Elige qué entra en el archivo.'),
+      buscar: tipo => `Buscar ${SECCIONES[tipo].singular}`,
+      elegirTodos: 'Elegir todos',
+      quitarTodos: 'Quitar todos',
+      cuenta: (n, total) => `${n} de ${total} ${plural(total, 'elegido', 'elegidos')}`,
+      ninguno: 'Elige al menos uno para continuar.',
+      sinResultados: 'Nada por aquí con ese nombre',
+      nuevo: 'Nuevo',
+      yaExiste: 'Ya existe',
+      boton: (accion, n) => (accion === 'cargar' ? `Cargar ${n}` : `Descargar ${n}`),
+      cancelar: 'Cancelar',
+      articulos: n => `${n} ${articulos(n)}`,
+      sinUbicacion: 'Sin ubicación',
+      sinCategoria: 'Sin categoría',
     },
     cargado: (tipo, r) => {
       const cuantos = n => `${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()}`

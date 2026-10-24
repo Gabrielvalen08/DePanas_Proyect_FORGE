@@ -1264,8 +1264,9 @@ export async function exportarCompras({ desde = '', hasta = '', formato = 'csv' 
 // ---------------------------------------------------------------------------
 
 /** Descarga la sección `tipo` en CSV (Excel) o respaldo .json. Devuelve cuántas filas lleva. */
-export async function exportarCatalogo(tipo, formato = 'csv') {
-  const filas = filasDelCatalogo(tipo, await fetchCatalogo())
+export async function exportarCatalogo(tipo, formato = 'csv', elegidas) {
+  // Las elegidas en la ventana de selección (ya en formato de respaldo) o, sin ellas, toda la sección
+  const filas = elegidas ?? filasDelCatalogo(tipo, await fetchCatalogo())
   if (filas.length === 0) throw new Error(MENSAJES_CATALOGO_JSON.vacio(tipo))
   const csv = formato === 'csv'
   const contenido = csv ? catalogoACsv(tipo, filas) : catalogoAJson(tipo, filas)
