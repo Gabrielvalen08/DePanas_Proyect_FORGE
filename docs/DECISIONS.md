@@ -158,7 +158,7 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 
 ## Exportar y Cargar datos
 
-- **Exportar** (`/exportar`) arma el archivo en el navegador con `fetchListas({ fechaDesde, fechaHasta })`, así funciona igual con o sin servidor. CSV con BOM (Excel lee bien las tildes), coma como separador (configuración regional de El Salvador) y una fila por material con las columnas del Excel del negocio. El JSON tiene el formato que acepta `importar-json`.
+- **Exportar** (`/exportar`) arma el archivo en el navegador con `fetchListas({ fechaDesde, fechaHasta })`, así funciona igual con o sin servidor. Excel `.xlsx` real (`write-excel-file`, cargado solo al exportar) con una fila por artículo y las columnas del Excel del negocio; cantidad y monto como números, la fecha como texto ISO (un valor de fecha de Excel podría correrse un día por la zona horaria), encabezado en negrita y fijo. Antes era un CSV con coma: Excel usa el separador de lista de la configuración regional de Windows (en la del cliente, punto y coma) y lo abría todo en una sola columna; un `.xlsx` no depende de eso. El JSON tiene el formato que acepta `importar-json`.
 - Un rango sin compras no descarga un archivo vacío: el botón se desactiva y lo dice.
 - Exportar y Cargar no salen en el menú (`oculto: true` en `navegacion.js`): se abren desde el ⋮ de Lista de compras, respetan los permisos y tienen un botón Regresar en el encabezado.
 

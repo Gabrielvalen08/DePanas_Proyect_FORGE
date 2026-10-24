@@ -1,4 +1,9 @@
 import '@testing-library/jest-dom/vitest'
+import { configure } from '@testing-library/react'
+
+// findBy…/waitFor esperan 1 s por defecto; con todas las suites en paralelo una pantalla
+// puede tardar más en cargar sus datos (ver testTimeout en vite.config.js)
+configure({ asyncUtilTimeout: 5000 })
 import { MotionGlobalConfig } from 'motion/react'
 
 // Las animaciones terminan al instante: los tests no esperan exits de Motion

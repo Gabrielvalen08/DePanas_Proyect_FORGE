@@ -27,7 +27,7 @@ No hace falta tener `npm run dev` ni el backend abiertos: `playwright.config.js`
 | --- | --- |
 | `acceso.spec.js` | Pantalla de acceso, contraseña incorrecta, ver/ocultar contraseña, permisos de César y Marta (el menú: Agregar compra, Lista de compras, Catálogo, Gestor de usuarios), Cerrar sesión con confirmación, sesión al recargar |
 | `navegacion.spec.js` | Cada botón del menú abre su pantalla con su título; Exportar y Cargar fuera del menú (se abren desde el ⋮ de Lista de compras y tienen Regresar); que la app use el servidor; rutas viejas (`/configuracion`, `/catalogo/materiales`) o inexistentes; secciones del Catálogo; "Saltar al contenido" |
-| `compras.spec.js` | Validación, total, filas y bloques; artículos filtrados por las categorías del proveedor; registrar una compra (con confirmación), verla en Lista de compras, exportarla a CSV y eliminarla |
+| `compras.spec.js` | Validación, total, filas y bloques; artículos filtrados por las categorías del proveedor; registrar una compra (con confirmación), verla en Lista de compras, exportarla a Excel (.xlsx, leído con `read-excel-file`) y eliminarla |
 | `catalogo.spec.js` | Agregar, renombrar y eliminar un proveedor; nombre vacío o repetido; exportar a Excel quitando un proveedor y cargar un respaldo eligiendo uno; buscador |
 | `usuarios.spec.js` | Gestor de usuarios: usuario o contraseña repetidos, crear un usuario con solo algunas pantallas, entrar con él, editarlo y eliminarlo |
 | `movil.spec.js` | Proyecto `movil` (Pixel 7): barra inferior, hoja "Más" (Gestor de usuarios y Cerrar sesión), que nada se salga del ancho y que Marta no vea el gestor |

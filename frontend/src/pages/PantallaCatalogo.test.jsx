@@ -134,7 +134,7 @@ describe('PantallaCatalogo', () => {
     const S = A.seleccion
     renderizar('/catalogo/proveedores')
     await usuario.click(await screen.findByRole('button', { name: A.masAcciones('proveedor') }))
-    expect(screen.getAllByRole('menuitem').map(o => o.textContent)).toEqual([A.exportarCsv, A.exportarJson, A.cargar])
+    expect(screen.getAllByRole('menuitem').map(o => o.textContent)).toEqual([A.exportarExcel, A.exportarJson, A.cargar])
     await usuario.keyboard('{Escape}')
 
     const respaldo = {
@@ -175,8 +175,8 @@ describe('PantallaCatalogo', () => {
     const A = PANTALLA_CATALOGO.archivo
     renderizar('/catalogo/articulos')
     await usuario.click(await screen.findByRole('button', { name: A.masAcciones('material') }))
-    await usuario.click(screen.getByRole('menuitem', { name: A.exportarCsv }))
-    const ventana = screen.getByRole('dialog', { name: A.seleccion.titulo('material', 'csv') })
+    await usuario.click(screen.getByRole('menuitem', { name: A.exportarExcel }))
+    const ventana = screen.getByRole('dialog', { name: A.seleccion.titulo('material', 'xlsx') })
     const nombres = within(ventana).getAllByRole('checkbox').map(c => c.closest('label').querySelector('span').textContent)
     // Bebidas va primero (Agua, Gatorade…) y lo que no tiene categoría, al final
     expect(nombres.slice(0, 2)).toEqual(['Agua', 'Gatorade'])

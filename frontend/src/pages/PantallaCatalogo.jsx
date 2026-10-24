@@ -153,7 +153,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
   // --- Exportar y Cargar de esta sección (menú ⋮): primero se elige qué entra ---
   const A = PANTALLA_CATALOGO.archivo
   const archivoRef = useRef(null)
-  const [seleccion, setSeleccion] = useState(null) // null | { accion: 'csv' | 'json' | 'cargar', filas, archivo? }
+  const [seleccion, setSeleccion] = useState(null) // null | { accion: 'xlsx' | 'json' | 'cargar', filas, archivo? }
 
   function elegirQueExportar(formato) {
     // Con el catálogo que la pantalla ya tiene, en el formato del respaldo
@@ -217,7 +217,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
             <MenuAcciones
               etiqueta={A.masAcciones(tipo)}
               opciones={[
-                { etiqueta: A.exportarCsv, icono: <FileSpreadsheet />, onClick: () => elegirQueExportar('csv') },
+                { etiqueta: A.exportarExcel, icono: <FileSpreadsheet />, onClick: () => elegirQueExportar('xlsx') },
                 { etiqueta: A.exportarJson, icono: <FileJson />, onClick: () => elegirQueExportar('json') },
                 { etiqueta: A.cargar, icono: <Upload />, onClick: () => archivoRef.current?.click() },
               ]}

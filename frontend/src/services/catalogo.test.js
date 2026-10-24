@@ -12,6 +12,7 @@ import {
   guardarLista,
   reiniciarModo,
 } from './api'
+import { readSheet } from 'read-excel-file/universal'
 import { ordenarFilas } from '../../../shared/catalogo-json.js'
 
 // Catálogo editable (Catálogo) y exportar por rango
@@ -170,12 +171,12 @@ describe('exportar compras por rango', () => {
     vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(blob => { urls.push(blob); return 'blob:x' }), revokeObjectURL: vi.fn() })
     const clic = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () { urls.push(this.download) })
 
-    const n = await exportarCompras({ desde: '2026-09-29', hasta: '2026-09-29', formato: 'csv' })
+    const n = await exportarCompras({ desde: '2026-09-29', hasta: '2026-09-29', formato: 'xlsx' })
     expect(n).toBe(2)
     const [blob, nombre] = urls
-    expect(nombre).toBe('depanas_compras_2026-09-29_2026-09-29.csv')
-    const texto = await blob.text()
-    expect(texto.split('\r\n').filter(Boolean)).toHaveLength(1 + 5) // encabezado + 5 materiales
+    expect(nombre).toBe('depanas_compras_2026-09-29_2026-09-29.xlsx')
+    const filas = await readSheet(blob)
+    expect(filas).toHaveLength(1 + 5) // encabezado + 5 artículos
     clic.mockRestore()
   })
 

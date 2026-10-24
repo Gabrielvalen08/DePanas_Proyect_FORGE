@@ -1,4 +1,4 @@
-import { readFile } from 'fs/promises'
+import { readSheet } from 'read-excel-file/node'
 import { test, expect, entrar, confirmar, CESAR } from './ayudantes.js'
 import { CONFIRMAR, PANTALLA_CATALOGO as CATALOGO } from '../src/utils/mensajes.js'
 
@@ -52,17 +52,18 @@ test.describe('Catálogo', () => {
 
     // Exportar a Excel sin Pepsi: el archivo no la trae
     await page.getByRole('button', { name: A.masAcciones('proveedor') }).click()
-    await page.getByRole('menuitem', { name: A.exportarCsv }).click()
-    const ventana = page.getByRole('dialog', { name: S.titulo('proveedor', 'csv') })
+    await page.getByRole('menuitem', { name: A.exportarExcel }).click()
+    const ventana = page.getByRole('dialog', { name: S.titulo('proveedor', 'xlsx') })
     await ventana.getByRole('checkbox', { name: /Pepsi/ }).uncheck()
     await ventana.getByRole('button', { name: /^Descargar \d+$/ }).click()
     const [descarga] = await Promise.all([
       page.waitForEvent('download'),
       confirmar(page, A.confirmarExportar.confirmar),
     ])
-    const csv = await readFile(await descarga.path(), 'utf8')
-    expect(csv).toContain('Selectos')
-    expect(csv).not.toContain('Pepsi')
+    expect(descarga.suggestedFilename()).toMatch(/\.xlsx$/)
+    const proveedores = (await readSheet(await descarga.path())).map(fila => fila[0])
+    expect(proveedores).toContain('Selectos')
+    expect(proveedores).not.toContain('Pepsi')
 
     // Cargar un respaldo eligiendo solo uno de sus dos proveedores
     const respaldo = {

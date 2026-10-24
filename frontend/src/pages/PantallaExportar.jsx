@@ -11,7 +11,7 @@ import { CONFIRMAR, EXPORTAR, VALIDACION, fraseDelDia } from '../utils/mensajes'
 import estilos from './PantallaExportar.module.css'
 
 const FORMATOS = [
-  { valor: 'csv', Icono: FileSpreadsheet },
+  { valor: 'xlsx', Icono: FileSpreadsheet },
   { valor: 'json', Icono: FileJson },
 ]
 
@@ -25,7 +25,7 @@ export default function PantallaExportar() {
   const { addToast } = useToast()
   const [desde, setDesde] = useState('')
   const [hasta, setHasta] = useState('')
-  const [formato, setFormato] = useState('csv')
+  const [formato, setFormato] = useState('xlsx')
   const [confirmando, setConfirmando] = useState(false)
   const [compras, setCompras] = useState(null) // null = contando
   const [descargando, setDescargando] = useState(false)

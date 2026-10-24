@@ -14,7 +14,7 @@ import estilos from './SeleccionCatalogo.module.css'
  *
  * Props:
  *  - tipo: proveedor | categoria | material | producto
- *  - accion: null (cerrada) | 'csv' | 'json' | 'cargar'
+ *  - accion: null (cerrada) | 'xlsx' | 'json' | 'cargar'
  *  - filas: filas en formato de respaldo (shared/catalogo-json.js)
  *  - archivo: nombre del archivo (al cargar)
  *  - existentes: Set de nombres en minúsculas del catálogo (al cargar: «Nuevo» o «Ya existe»)
