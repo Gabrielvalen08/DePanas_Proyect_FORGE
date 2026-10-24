@@ -178,6 +178,16 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 | Datos anteriores | Las importaciones hechas antes de `origen_id` no guardaron su identidad original: la primera vez que se vuelva a cargar su respaldo pueden salir como nuevas. No se vinculan por parecido | No hay forma segura de recuperarla |
 | Esquema | `ingresos.origen_id` y `ingresos.compra_categoria` (categoría de la compra, aparte de la de cada material), agregadas por la migración de `db.js` | Las bases existentes abren sin pasos manuales |
 
+## Artículos por proveedor (a través de la categoría)
+
+| Tema | Decisión | Por qué |
+| ---- | -------- | ------- |
+| Relación | Muchos a muchos entre proveedor y categoría, en la tabla `proveedor_categoria` | «Materia Prima» se le compra a varios proveedores y un proveedor surte varias categorías |
+| Claves | Por `id` de `catalogo`, con `ON DELETE CASCADE` y `PRAGMA foreign_keys = ON` | Renombrar conserva el `id` (no hay que tocar la relación) y eliminar la limpia sola; un nombre de proveedor puede llevar comas |
+| Filtro | En Agregar compra salen solo los artículos de las categorías del proveedor; si no surte ninguna (o es nuevo), todos. Igual en servidor y en local | No bloquear el registro; reemplaza el filtro anterior por historial, que en servidor no filtraba |
+| Llenado | Una vez por base con las compras existentes (`user_version` 2) y, después, cada compra guardada o importada y cada artículo asignado en una compra suman la relación que falte. A mano se edita en la categoría | Que funcione desde el primer día sin cargar nada; lo que se quita a mano no reaparece al reabrir |
+| Respaldo | Las filas de categorías llevan `proveedores` (opcional, `version` sigue en 1); cargar suma y omite los que no existen | Los respaldos anteriores siguen cargando |
+
 ## Mensajes del sistema
 
 - Todo texto que el sistema le dice al usuario vive en `frontend/src/utils/mensajes.js`, agrupado por tema (`ACCESO`, `COMPRA`, `VALIDACION`, `ASIGNACION`, `ESTADOS`, `DATOS`, `EXPORTAR`, `CARGAR`, etc.). Los mensajes con datos son funciones (`COMPRA.guardada(proveedor, n)`).

@@ -247,6 +247,34 @@ describe('PantallaCatalogo', () => {
     })
   })
 
+  it('una categoría elige los proveedores que la surten (solo entre los que existen) y la tabla los muestra', async () => {
+    const usuario = userEvent.setup()
+    renderizar('/catalogo/categorias')
+    const tabla = await screen.findByRole('table')
+    expect(within(tabla).getByRole('columnheader', { name: PANTALLA_CATALOGO.columnaProveedores })).toBeInTheDocument()
+
+    const fila = screen.getByRole('rowheader', { name: 'Servicios' }).closest('tr')
+    await usuario.click(within(fila).getByRole('button', { name: 'Editar categoría Servicios' }))
+    const ventana = screen.getByRole('dialog', { name: 'Editar categoría' })
+    const grupo = within(ventana).getByRole('group', { name: PANTALLA_CATALOGO.etiquetaProveedores })
+    expect(within(grupo).getByText(PANTALLA_CATALOGO.ayudaProveedores)).toBeInTheDocument()
+
+    // No se crean proveedores desde aquí
+    await usuario.type(within(grupo).getByRole('textbox', { name: 'Buscar proveedor' }), 'Nadie')
+    expect(within(grupo).queryByRole('button', { name: /Agregar «Nadie»/ })).not.toBeInTheDocument()
+    await usuario.clear(within(grupo).getByRole('textbox', { name: 'Buscar proveedor' }))
+
+    await usuario.click(within(grupo).getByRole('button', { name: 'MMAG' }))
+    expect(within(grupo).getByRole('button', { name: /MMAG/ })).toHaveAttribute('aria-pressed', 'true')
+    await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
+
+    await waitFor(() => {
+      const actualizada = screen.getByRole('rowheader', { name: 'Servicios' }).closest('tr')
+      expect(within(actualizada).getByText(/MMAG/)).toBeInTheDocument()
+    })
+  })
+
   it('el buscador filtra sin distinguir tildes', async () => {
     const usuario = userEvent.setup()
     renderizar('/catalogo/articulos')

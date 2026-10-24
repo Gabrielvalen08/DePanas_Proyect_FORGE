@@ -1,7 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import { Check, Plus, Tags } from 'lucide-react'
 import { Boton, Campo, CuerpoModal, Insignia, Modal, PieModal } from './common'
-import { getCategorias, getProductos } from '../services/api'
+import { getCategorias, getCategoriasDeProveedor, getProductos } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
 import { ASIGNACION } from '../utils/mensajes'
 import estilos from './AsignarMaterial.module.css'
@@ -43,6 +43,12 @@ function Formulario({ material, proveedor, alGuardar, alCancelar, primerBuscador
   const [productos, setProductos] = useState(material.productos ?? [])
   const [errores, setErrores] = useState({})
   const [guardando, setGuardando] = useState(false)
+  // Las categorías que ya surte el proveedor de la compra van primero
+  const [delProveedor] = useState(() => getCategoriasDeProveedor(proveedor))
+  const [categorias] = useState(() => {
+    const suyas = new Set(delProveedor.map(c => textoBusqueda(c)))
+    return [...delProveedor, ...getCategorias().filter(c => !suyas.has(textoBusqueda(c)))]
+  })
 
   async function guardar() {
     const nuevos = {}
@@ -89,11 +95,12 @@ function Formulario({ material, proveedor, alGuardar, alCancelar, primerBuscador
           <SelectorOpciones
             titulo="Categoría"
             nombre="categoría"
-            opciones={getCategorias()}
+            opciones={categorias}
             valor={categoria}
             onCambiar={v => elegir('categoria', v)}
             error={errores.categoria}
             buscadorRef={primerBuscadorRef}
+            ayuda={proveedor && delProveedor.length ? ASIGNACION.categoriasDelProveedor(proveedor) : undefined}
           />
         )}
         {pideProducto && (
@@ -124,8 +131,12 @@ function Formulario({ material, proveedor, alGuardar, alCancelar, primerBuscador
  * si lo escrito no existe, ofrece agregarlo como nuevo.
  * Con `multiple`, `valor` es una lista y cada botón suma o quita su opción
  * (un artículo puede ir en varios productos); si no, `valor` es un texto.
+ * Con `permitirNuevas={false}` solo se elige entre las opciones (p. ej. proveedores,
+ * que se crean con su ficha). `ayuda` es un texto bajo el título.
  */
-export function SelectorOpciones({ titulo, nombre, opciones, valor, onCambiar, error, buscadorRef: refExterna, multiple = false }) {
+export function SelectorOpciones({
+  titulo, nombre, opciones, valor, onCambiar, error, buscadorRef: refExterna, multiple = false, permitirNuevas = true, ayuda,
+}) {
   const id = useId().replace(/:/g, '')
   const refPropia = useRef(null)
   const buscadorRef = refExterna ?? refPropia
@@ -138,7 +149,7 @@ export function SelectorOpciones({ titulo, nombre, opciones, valor, onCambiar, e
   const exacta = opciones.find(o => textoBusqueda(o) === buscado)
   // Lo escrito que aún no está en el catálogo (se crea al guardar)
   const nuevas = elegidas.filter(e => !opciones.some(o => textoBusqueda(o) === textoBusqueda(e)))
-  const puedeAgregar = Boolean(buscado) && !exacta && !elegidas.some(e => textoBusqueda(e) === buscado)
+  const puedeAgregar = permitirNuevas && Boolean(buscado) && !exacta && !elegidas.some(e => textoBusqueda(e) === buscado)
   // Con nombres de producto la coma separa la lista: no se puede agregar uno con coma
   const conComa = multiple && busqueda.includes(',')
 
@@ -166,14 +177,20 @@ export function SelectorOpciones({ titulo, nombre, opciones, valor, onCambiar, e
   }
 
   return (
-    <fieldset className={estilos.grupo} aria-describedby={error ? `${id}-error` : undefined}>
+    <fieldset
+      className={estilos.grupo}
+      aria-describedby={[ayuda && `${id}-ayuda`, error && `${id}-error`].filter(Boolean).join(' ') || undefined}
+    >
       <legend className={estilos.titulo}>{titulo}</legend>
+      {ayuda && <p id={`${id}-ayuda`} className={estilos.ayuda}>{ayuda}</p>}
       <Campo
         ref={buscadorRef}
         id={`${id}-buscar`}
-        etiqueta={`Buscar o agregar ${nombre}`}
+        etiqueta={permitirNuevas ? `Buscar o agregar ${nombre}` : `Buscar ${nombre}`}
         etiquetaOculta
-        placeholder={nombre === 'categoría' ? 'Buscar o escribir categoría nueva…' : 'Buscar o escribir producto nuevo…'}
+        placeholder={!permitirNuevas
+          ? `Buscar ${nombre}…`
+          : nombre === 'categoría' ? 'Buscar o escribir categoría nueva…' : 'Buscar o escribir producto nuevo…'}
         value={busqueda}
         autoComplete="off"
         onChange={e => setBusqueda(e.target.value)}

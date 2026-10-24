@@ -265,7 +265,8 @@ export default function BloqueCompra({
 
   async function asignar(eleccion) {
     try {
-      addToast(ASIGNACION.asignado(await asignarMaterial(porAsignar.nombre, eleccion)))
+      // Con el proveedor de la compra: la categoría elegida queda como suya
+      addToast(ASIGNACION.asignado(await asignarMaterial(porAsignar.nombre, { ...eleccion, proveedor })))
     } catch (error) {
       addToast(ASIGNACION.errorGuardar(error.message), 'error')
       throw error

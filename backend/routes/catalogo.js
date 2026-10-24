@@ -6,14 +6,18 @@
  *
  *   GET    /api/catalogo                    → { proveedores, categorias, productos, fichas (de cada proveedor),
  *                                               materiales: [{ nombre, categoria, producto }], uso,
- *                                               precios: { material: { precio, unidad } } }
+ *                                               precios: { material: { precio, unidad } },
+ *                                               proveedoresPorCategoria: { categoría: [proveedores] } }
  *   PUT    /api/catalogo/materiales/:nombre → asigna { categoria, producto } a un material
- *                                             (lo crea si no existe; usado al registrar compras)
+ *                                             (lo crea si no existe; usado al registrar compras).
+ *                                             Con `proveedor`, la categoría queda ligada a ese proveedor
  *   POST   /api/catalogo/:tipo              → agrega { nombre } (material: + categoria y producto;
- *                                             categoría o producto: + materiales opcional)
+ *                                             categoría o producto: + materiales opcional;
+ *                                             categoría: + proveedores opcional)
  *   PUT    /api/catalogo/:tipo/:nombre      → cambia el nombre (y, en un material, su categoría y
  *                                             producto; en una categoría o un producto, sus
- *                                             materiales) y lo actualiza en todas las compras
+ *                                             materiales; en una categoría, sus proveedores)
+ *                                             y lo actualiza en todas las compras
  *   DELETE /api/catalogo/:tipo/:nombre      → quita la opción; las compras conservan su texto
  *   POST   /api/catalogo/:tipo/importar     → carga { filas } de un respaldo de la sección (shared/catalogo-json.js):
  *                                             crea lo que falta y actualiza lo que existe, sin borrar nada.
@@ -25,10 +29,12 @@
  * texto «Arepas, Empanadas»; ver shared/productos.js). `materiales` en una
  * categoría o un producto es la lista completa de los que la llevan: los que se
  * agregan la toman (y dejan la que tenían) y los que se quitan quedan sin asignar.
+ * `proveedores` en una categoría es la lista completa de los que la surten
+ * (tabla proveedor_categoria): con ella se filtran los artículos en Agregar compra.
  */
 
 import { Router } from 'express'
-import { enTransaccion, registrarEnCatalogo } from '../db.js'
+import { enTransaccion, leerProveedoresPorCategoria, registrarEnCatalogo, vincularProveedorCategoria } from '../db.js'
 import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../shared/productos.js'
@@ -117,6 +123,7 @@ export function leerCatalogo(db) {
     uso: leerUso(db),
     precios: leerPrecios(db),
     fichas: leerFichas(db),
+    proveedoresPorCategoria: leerProveedoresPorCategoria(db),
   }
 }
 
@@ -241,6 +248,32 @@ function renombrarEnListas(db, anterior, nuevo) {
 
 const conMateriales = tipo => tipo === 'categoria' || tipo === 'producto'
 
+/** `proveedores` del cuerpo: undefined (no se tocan), o una lista de nombres sin repetidos */
+function leerProveedores(cuerpo) {
+  if (cuerpo?.proveedores === undefined) return undefined
+  if (!Array.isArray(cuerpo.proveedores) || cuerpo.proveedores.some(p => typeof p !== 'string')) {
+    throw Object.assign(fallo(400, 'La lista de proveedores no es válida'), { campo: 'proveedores' })
+  }
+  const vistos = new Set()
+  return cuerpo.proveedores.map(texto).filter(p => p && !vistos.has(p.toLowerCase()) && vistos.add(p.toLowerCase()))
+}
+
+/** Deja en la categoría exactamente esos proveedores (que deben existir) */
+function fijarProveedores(db, categoria, proveedores) {
+  const registrados = proveedores.map(p => {
+    const prov = buscar(db, 'proveedor', p)
+    if (!prov) throw Object.assign(fallo(400, `No existe un proveedor llamado «${p}»`), { campo: 'proveedores' })
+    return prov.nombre
+  })
+  db.prepare(
+    "DELETE FROM proveedor_categoria WHERE categoria_id = (SELECT id FROM catalogo WHERE tipo = 'categoria' AND nombre = ?)"
+  ).run(categoria)
+  for (const proveedor of registrados) vincularProveedorCategoria(db, proveedor, categoria)
+}
+
+/** Proveedores ya ligados a una categoría */
+const proveedoresDe = (db, categoria) => leerProveedoresPorCategoria(db)[categoria.toLowerCase()] ?? []
+
 /**
  * Aplica las filas (ya validadas) de un respaldo de la sección. Nunca borra: un proveedor
  * toma la ficha del archivo si trae datos; un artículo toma su categoría y suma sus
@@ -261,6 +294,14 @@ function importarFilas(db, tipo, filas) {
       const actual = buscar(db, 'material', nombre)
       asignar(db, nombre, fila.categoria, [...listaProductos(actual?.producto), ...fila.productos])
     } else {
+      if (tipo === 'categoria') {
+        // Suma los proveedores del archivo; los que no existen se omiten
+        for (const proveedor of fila.proveedores ?? []) {
+          const prov = buscar(db, 'proveedor', proveedor)
+          if (prov) vincularProveedorCategoria(db, prov.nombre, nombre)
+          else omitidos++
+        }
+      }
       for (const articulo of fila.articulos) {
         const mat = buscar(db, 'material', articulo)
         if (!mat) {
@@ -303,12 +344,18 @@ export function crearRutasCatalogo(getDb) {
     if (!material) return res.status(400).json({ error: 'Falta el artículo' })
     if (!categoria) return res.status(400).json({ error: 'Elige una categoría' })
 
+    const proveedor = texto(req.body?.proveedor)
+
     responder(res, db => enTransaccion(db, () => {
       const productos = leerProductos(req.body)
       if (!productos.length) throw fallo(400, 'Elige al menos un producto')
       const mat = registrarEnCatalogo(db, 'material', material)
       const { categoria: c, producto, productos: lista, ...nuevos } = respuestaAsignacion(asignar(db, mat.nombre, categoria, productos))
-      return { material: { nombre: mat.nombre, categoria: c, producto, productos: lista }, materialNuevo: mat.nuevo, ...nuevos }
+      // El artículo se le compra a este proveedor: su categoría pasa a ser de él
+      const vinculo = proveedor
+        ? { proveedorVinculado: vincularProveedorCategoria(db, proveedor, c), proveedor: buscar(db, 'proveedor', proveedor).nombre }
+        : {}
+      return { material: { nombre: mat.nombre, categoria: c, producto, productos: lista }, materialNuevo: mat.nuevo, ...nuevos, ...vinculo }
     }))
   })
 
@@ -337,6 +384,7 @@ export function crearRutasCatalogo(getDb) {
       const productos = tipo === 'material' ? leerProductos(req.body) : []
       if (tipo === 'material' && !productos.length) throw fallo(400, 'Elige al menos un producto')
       const materiales = conMateriales(tipo) ? leerMateriales(req.body) : undefined
+      const proveedores = tipo === 'categoria' ? leerProveedores(req.body) : undefined
       const existente = buscar(db, tipo, nombre)
       if (existente) throw fallo(409, `Ya existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${existente.nombre}»`)
       const ficha = tipo === 'proveedor' ? fichaDelCuerpo(req.body) : undefined
@@ -347,7 +395,9 @@ export function crearRutasCatalogo(getDb) {
       }
       if (tipo !== 'material') {
         const cambiados = materiales ? fijarMateriales(db, tipo, nombre, materiales) : 0
-        return { nombre, materiales: cambiados, categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
+        if (proveedores) fijarProveedores(db, nombre, proveedores)
+        const extra = tipo === 'categoria' ? { proveedores: proveedoresDe(db, nombre) } : {}
+        return { nombre, materiales: cambiados, ...extra, categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
       }
       return { nombre, ...respuestaAsignacion(asignar(db, nombre, categoria, productos)) }
     }))
@@ -367,6 +417,7 @@ export function crearRutasCatalogo(getDb) {
         throw fallo(400, categoria ? 'Elige al menos un producto' : 'Elige una categoría')
       }
       const materiales = conMateriales(tipo) ? leerMateriales(req.body) : undefined
+      const proveedores = tipo === 'categoria' ? leerProveedores(req.body) : undefined
       const ficha = tipo === 'proveedor' ? fichaDelCuerpo(req.body) : undefined
       const registro = buscar(db, tipo, actual)
       if (!registro) throw fallo(404, `No existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${actual}»`)
@@ -394,11 +445,13 @@ export function crearRutasCatalogo(getDb) {
       let asignacion = { categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
       if (tipo === 'material' && categoria) asignacion = respuestaAsignacion(asignar(db, nuevo, categoria, productos))
       const cambiados = materiales ? fijarMateriales(db, tipo, nuevo, materiales) : 0
+      if (proveedores) fijarProveedores(db, nuevo, proveedores)
       if (ficha) guardarFicha(db, nuevo, ficha)
       const guardado = buscar(db, tipo, nuevo)
       const extra = tipo === 'material'
         ? { productos: listaProductos(guardado.producto) }
-        : tipo === 'proveedor' ? { ficha: leerFicha(db.prepare("SELECT ficha FROM catalogo WHERE tipo = 'proveedor' AND nombre = ?").get(nuevo)?.ficha) } : {}
+        : tipo === 'proveedor' ? { ficha: leerFicha(db.prepare("SELECT ficha FROM catalogo WHERE tipo = 'proveedor' AND nombre = ?").get(nuevo)?.ficha) }
+          : tipo === 'categoria' ? { proveedores: proveedoresDe(db, nuevo) } : {}
       return {
         anterior: registro.nombre, nombre: nuevo, ...guardado, ...extra, compras, materiales: cambiados,
         categoriaNueva: asignacion.categoriaNueva, productoNuevo: asignacion.productoNuevo, productosNuevos: asignacion.productosNuevos,

@@ -17,6 +17,7 @@ import {
   getCategorias,
   getMateriales,
   getMaterialesPorProveedor,
+  getCategoriasDeProveedor,
   ordenarMaterialesPorCategoria,
   getProductos,
   getPrecioSugerido,
@@ -96,6 +97,41 @@ describe('api: modo servidor', () => {
     expect(getProveedores()).toContain('MMAG')
     expect(getMateriales()).toEqual(expect.arrayContaining(['Arroz', 'Jamón de Pavo']))
     expect(getProveedores()).not.toContain('La Colonia') // los datos de ejemplo locales no se mezclan
+  })
+
+  it('filtra los artículos por las categorías del proveedor y manda el proveedor al asignar un artículo', async () => {
+    const llamadas = simularServidor({
+      'GET /catalogo': {
+        cuerpo: {
+          proveedores: ['Pepsi', 'Selectos'], categorias: ['Bebidas', 'Materia Prima'], productos: ['Todos'],
+          materiales: [{ nombre: 'Arroz', categoria: 'Materia Prima', producto: 'Todos' }, { nombre: 'Agua', categoria: 'Bebidas', producto: 'Todos' }],
+          proveedoresPorCategoria: { bebidas: ['Pepsi'] },
+        },
+      },
+      'PUT /catalogo/materiales/Cafe': {
+        cuerpo: {
+          material: { nombre: 'Cafe', categoria: 'Materia Prima', producto: 'Todos', productos: ['Todos'] },
+          materialNuevo: true, categoriaNueva: false, productoNuevo: false, productosNuevos: [], proveedor: 'Pepsi', proveedorVinculado: true,
+        },
+      },
+    })
+    await fetchCatalogo()
+    expect(getMaterialesPorProveedor('pepsi')).toEqual(['Agua'])
+    expect(getMaterialesPorProveedor('Selectos')).toEqual(['Arroz', 'Agua']) // sin categorías: todos, Materia Prima primero
+
+    await asignarMaterial('Cafe', { categoria: 'Materia Prima', productos: ['Todos'], proveedor: 'Pepsi' })
+    expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ categoria: 'Materia Prima', productos: ['Todos'], proveedor: 'Pepsi' })
+    // Se aplica en el acto, sin esperar la recarga
+    expect(getCategoriasDeProveedor('Pepsi')).toEqual(['Bebidas', 'Materia Prima'])
+  })
+
+  it('una categoría manda sus proveedores al backend', async () => {
+    const llamadas = simularServidor({
+      'POST /catalogo/categoria': { cuerpo: { nombre: 'Lácteos', materiales: 0, proveedores: ['Selectos'] } },
+      'GET /catalogo': { cuerpo: { proveedores: [], categorias: [], productos: [], materiales: [] } },
+    })
+    await agregarAlCatalogo('categoria', { nombre: 'Lácteos', materiales: [], proveedores: ['Selectos'] })
+    expect(llamadas.find(l => l.metodo === 'POST').cuerpo).toEqual({ nombre: 'Lácteos', materiales: [], proveedores: ['Selectos'] })
   })
 
   it('el precio sugerido de cada material lo calcula el backend (última compra)', async () => {
@@ -262,13 +298,51 @@ describe('api: categoría y producto de cada material (modo local)', () => {
     ])
   })
 
-  it('getMaterialesPorProveedor filtra por historial del proveedor en modo local', async () => {
-    const matsSelectos = getMaterialesPorProveedor('Selectos')
-    expect(matsSelectos.length).toBeGreaterThan(0)
-    expect(matsSelectos).toContain('Tocino La Rioja')
+  it('getMaterialesPorProveedor da solo los artículos de las categorías del proveedor; sin categorías, todos', async () => {
+    await agregarAlCatalogo('categoria', { nombre: 'Lácteos', materiales: [], proveedores: [] })
+    await agregarAlCatalogo('proveedor', { nombre: 'La Lechería' })
+    await editarEnCatalogo('categoria', 'Lácteos', { proveedores: ['la lechería'] })
+    await editarEnCatalogo('material', 'Queso', { categoria: 'Lácteos', productos: ['Todos'] })
+    expect(getCategoriasDeProveedor('La Lechería')).toEqual(['Lácteos'])
+    expect(getMaterialesPorProveedor('la lechería')).toEqual(['Queso'])
 
     const todos = getMaterialesPorProveedor('Proveedor Inexistente')
-    expect(todos).toEqual(expect.arrayContaining(['Agua', 'Tocino La Rioja', 'Pepsi']))
+    expect(todos).toEqual(expect.arrayContaining(['Agua', 'Tocino La Rioja', 'Pepsi', 'Queso']))
+    // Ordenados por categoría: Materia Prima primero
+    expect(todos.indexOf('Tocino La Rioja')).toBeLessThan(todos.indexOf('Agua'))
+  })
+
+  it('proveedores de una categoría: se validan, siguen al renombrar y salen al eliminar', async () => {
+    await expect(agregarAlCatalogo('categoria', { nombre: 'Lácteos', proveedores: ['Nadie'] }))
+      .rejects.toMatchObject({ campo: 'proveedores', message: 'No existe un proveedor llamado «Nadie»' })
+    expect(getCategorias()).not.toContain('Lácteos')
+
+    const r = await agregarAlCatalogo('categoria', { nombre: 'Lácteos', proveedores: ['MMAG', 'selectos'] })
+    expect(r.proveedores).toEqual(['MMAG', 'Selectos'])
+    await editarEnCatalogo('categoria', 'Lácteos', { nombre: 'Quesos' })
+    await editarEnCatalogo('proveedor', 'MMAG', { nombre: 'MMAG SV' })
+    expect((await fetchCatalogo()).proveedoresPorCategoria.quesos).toEqual(['MMAG SV', 'Selectos'])
+    await eliminarDelCatalogo('proveedor', 'Selectos')
+    expect((await fetchCatalogo()).proveedoresPorCategoria.quesos).toEqual(['MMAG SV'])
+    await eliminarDelCatalogo('categoria', 'Quesos')
+    expect((await fetchCatalogo()).proveedoresPorCategoria.quesos).toBeUndefined()
+  })
+
+  it('una compra y un artículo asignado con proveedor ligan la categoría a ese proveedor', async () => {
+    await guardarLista({
+      proveedor: 'Distribuidora Sol', fecha: '2026-10-01',
+      materiales: [{ material: 'Servilletas', cantidad: 1, unidad: 'caja', monto: 3, categoria: 'Desechables', producto: 'Todos' }],
+    })
+    expect(getCategoriasDeProveedor('Distribuidora Sol')).toEqual(['Desechables'])
+    const r = await asignarMaterial('Lejía', { categoria: 'Limpieza', productos: ['Todos'], proveedor: 'distribuidora sol' })
+    expect(r).toMatchObject({ proveedor: 'Distribuidora Sol', proveedorVinculado: true })
+    expect(getCategoriasDeProveedor('Distribuidora Sol')).toEqual(['Desechables', 'Limpieza'])
+  })
+
+  it('cargar categorías suma sus proveedores y omite los que no existen', async () => {
+    const r = await importarCatalogo('categoria', [{ nombre: 'Bebidas', articulos: [], proveedores: ['Pepsi', 'Nadie'] }])
+    expect(r.omitidos).toBe(1)
+    expect(getCategoriasDeProveedor('Pepsi')).toContain('Bebidas')
   })
 
   it('pide categoría y producto', async () => {

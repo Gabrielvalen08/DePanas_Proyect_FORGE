@@ -179,6 +179,8 @@ export const ASIGNACION = {
         : `Cuéntanos a qué productos se destina «${material}».`,
   noExiste: (texto, esCategoria) =>
     `«${texto}» todavía no existe. Pulsa Enter o «Agregar» para crear ${esCategoria ? 'una categoría nueva' : 'un producto nuevo'}.`,
+  categoriasDelProveedor: proveedor =>
+    `Primero van las categorías de ${proveedor}. Si eliges otra, también quedará como suya.`,
   faltaCategoria: 'Elige o escribe una categoría',
   faltaProducto: 'Elige al menos un producto',
   etiquetaProductos: 'Productos',
@@ -281,6 +283,12 @@ export const PANTALLA_CATALOGO = {
   sinAsignar: 'Sin asignar',
   columnaMateriales: 'Artículos',
   columnaProductos: 'Productos',
+  // Proveedores que surten una categoría: filtran los artículos en Agregar compra
+  columnaProveedores: 'Proveedores',
+  etiquetaProveedores: 'Proveedores que la surten',
+  ayudaProveedores:
+    'Al elegir uno de estos proveedores en una compra, solo salen los artículos de esta categoría. Si un proveedor no tiene categorías, salen todos.',
+  sinProveedores: 'Ninguno',
   // Exportar y Cargar de cada sección (menú ⋮ de su lista)
   archivo: {
     masAcciones: tipo => `Más acciones de ${SECCIONES[tipo].titulo}`,

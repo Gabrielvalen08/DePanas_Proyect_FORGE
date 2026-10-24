@@ -5,7 +5,7 @@
  * Filas según el tipo:
  *   proveedor  { nombre, ubicacion, telefonos: [], contactos: [{ nombre, telefono }] }
  *   material   { nombre, categoria, productos: [] }        (en la interfaz: artículo)
- *   categoria  { nombre, articulos: [] }
+ *   categoria  { nombre, articulos: [], proveedores: [] }  (proveedores es opcional: respaldos anteriores)
  *   producto   { nombre, articulos: [] }
  * Lo usan igual el backend (POST /api/catalogo/:tipo/importar) y el frontend (services/api.js).
  */
@@ -57,7 +57,9 @@ function normalizarFila(tipo, fila, n) {
   if (tipo === 'producto' && !nombreProductoValido(nombre)) {
     throw fallo(MENSAJES_CATALOGO_JSON.fila(n, MENSAJES_CATALOGO_JSON.productoConComa))
   }
-  return { nombre, articulos: [...new Set(listaTextos(fila.articulos))] }
+  const articulos = [...new Set(listaTextos(fila.articulos))]
+  if (tipo === 'categoria') return { nombre, articulos, proveedores: [...new Set(listaTextos(fila.proveedores))] }
+  return { nombre, articulos }
 }
 
 /**
@@ -105,8 +107,12 @@ export function filasDelCatalogo(tipo, catalogo) {
   if (tipo === 'material') {
     return ordenar(catalogo.materiales.map(m => ({ nombre: m.nombre, categoria: m.categoria || '', productos: listaProductos(m.producto) })))
   }
-  const nombres = tipo === 'categoria' ? catalogo.categorias : catalogo.productos
-  return ordenar(nombres.map(nombre => ({ nombre, articulos: articulosDe(tipo, nombre) })))
+  if (tipo === 'categoria') {
+    return ordenar(catalogo.categorias.map(nombre => ({
+      nombre, proveedores: catalogo.proveedoresPorCategoria?.[nombre.toLowerCase()] ?? [], articulos: articulosDe(tipo, nombre),
+    })))
+  }
+  return ordenar(catalogo.productos.map(nombre => ({ nombre, articulos: articulosDe(tipo, nombre) })))
 }
 
 /** El objeto completo del respaldo */

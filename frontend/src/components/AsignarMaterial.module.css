@@ -16,6 +16,13 @@
   color: var(--color-text);
 }
 
+.ayuda {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
 .grupo {
   display: flex;
   flex-direction: column;

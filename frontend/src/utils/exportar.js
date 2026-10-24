@@ -69,7 +69,7 @@ export function rangoRapido(clave, hoy = new Date()) {
 const COLUMNAS_CATALOGO = {
   proveedor: ['Proveedor', 'Ubicación', 'Teléfonos', 'Contactos'],
   material: ['Artículo', 'Categoría', 'Productos'],
-  categoria: ['Categoría', 'Artículos'],
+  categoria: ['Categoría', 'Proveedores', 'Artículos'],
   producto: ['Producto', 'Artículos'],
 }
 
@@ -81,6 +81,7 @@ export function catalogoACsv(tipo, filas) {
   const cuerpo = filas.map(f => {
     if (tipo === 'proveedor') return [f.nombre, f.ubicacion, f.telefonos.join('; '), textoContactos(f.contactos)]
     if (tipo === 'material') return [f.nombre, f.categoria, f.productos.join(', ')]
+    if (tipo === 'categoria') return [f.nombre, (f.proveedores ?? []).join('; '), f.articulos.join('; ')]
     return [f.nombre, f.articulos.join('; ')]
   })
   return aCsv([COLUMNAS_CATALOGO[tipo], ...cuerpo])

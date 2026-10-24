@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises'
 import { test, expect, entrar, menu, CESAR } from './ayudantes.js'
-import { COMPRA, ESTADOS, EXPORTAR, VALIDACION } from '../src/utils/mensajes.js'
+import { COMPRA, CONFIRMAR, ESTADOS, EXPORTAR, PANTALLA_CATALOGO, VALIDACION } from '../src/utils/mensajes.js'
 
 /** Llena la primera compra de Agregar compra con un material del catálogo (ya tiene categoría y producto) */
 async function llenarCompra(page, { proveedor, material, cantidad, precio }) {
@@ -34,6 +34,29 @@ test.describe('Compras', () => {
     await formulario.getByRole('button', { name: 'Eliminar fila 2' }).click()
     await expect(formulario.getByRole('spinbutton', { name: 'Precio, fila 2' })).toHaveCount(0)
     await expect(formulario.getByText('$2.50')).toBeVisible()
+  })
+
+  test('al elegir un proveedor solo se sugieren los artículos de las categorías que surte', async ({ page }) => {
+    // En Catálogo, Bebidas queda surtida por Pepsi (si ya lo estaba, se deja igual)
+    await page.goto('/catalogo/categorias')
+    const fila = page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: 'Bebidas', exact: true }) })
+    await fila.getByRole('button', { name: 'Editar categoría Bebidas' }).click()
+    const ventana = page.getByRole('dialog', { name: 'Editar categoría' })
+    const pepsi = ventana.getByRole('group', { name: PANTALLA_CATALOGO.etiquetaProveedores }).getByRole('button', { name: 'Pepsi', exact: true })
+    if ((await pepsi.getAttribute('aria-pressed')) !== 'true') await pepsi.click()
+    await ventana.getByRole('button', { name: 'Guardar' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }).click()
+    await expect(fila.getByRole('cell').filter({ hasText: 'Pepsi' }).first()).toBeVisible()
+
+    // En Agregar compra, con Pepsi solo salen los artículos de Bebidas
+    await page.goto('/')
+    const formulario = page.getByRole('form', { name: 'Detalle de compra' }).first()
+    await formulario.getByRole('combobox', { name: 'Proveedor' }).fill('Pepsi')
+    await page.keyboard.press('Escape')
+    await formulario.getByRole('combobox', { name: 'Artículo, fila 1' }).fill('a')
+    const sugerencias = page.getByRole('listbox', { name: 'Artículo, fila 1' })
+    await expect(sugerencias.getByRole('option', { name: 'Agua' })).toBeVisible()
+    await expect(sugerencias.getByRole('option', { name: 'Azucar' })).toHaveCount(0)
   })
 
   test('"Nueva compra" agrega otro bloque para registrar otra compra', async ({ page }) => {

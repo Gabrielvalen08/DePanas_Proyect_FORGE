@@ -37,6 +37,16 @@ CREATE TABLE IF NOT EXISTS catalogo (
     UNIQUE (tipo, nombre COLLATE NOCASE)
 );
 
+-- Qué proveedores surten cada categoría (muchos a muchos). En Agregar compra,
+-- al elegir un proveedor solo se sugieren los artículos de sus categorías.
+-- Por id: renombrar un proveedor o una categoría no rompe la relación, y
+-- eliminar cualquiera de los dos borra sus filas aquí (db.js activa foreign_keys).
+CREATE TABLE IF NOT EXISTS proveedor_categoria (
+    proveedor_id INTEGER NOT NULL REFERENCES catalogo(id) ON DELETE CASCADE,
+    categoria_id INTEGER NOT NULL REFERENCES catalogo(id) ON DELETE CASCADE,
+    PRIMARY KEY (proveedor_id, categoria_id)
+);
+
 -- Usuarios del sistema y las pantallas a las que entra cada uno.
 -- contrasena es un hash PBKDF2 (contrasenas.js), nunca el texto.
 -- permisos: JSON con las rutas del frontend; el administrador tiene ["*"].

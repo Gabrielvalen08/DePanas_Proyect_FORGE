@@ -23,9 +23,11 @@ No agregues caídas silenciosas a `localStorage` cuando el backend falla.
 | `fetchCatalogo()` | Catálogo completo recién leído, con `uso` (compras por proveedor/material, materiales por categoría/producto) |
 | `agregarAlCatalogo(tipo, datos)`, `editarEnCatalogo(tipo, nombre, datos)`, `eliminarDelCatalogo(tipo, nombre)` | Catálogo. `tipo`: `proveedor`, `categoria`, `material`, `producto`. Editar renombra también en las compras; eliminar no toca las compras |
 | `getProveedores()`, `getMateriales()`, `getCategorias()`, `getProductos()` | **Síncronas.** Opciones para los desplegables, desde el catálogo (que ya incluye lo de cada compra guardada), sin repetir y en orden alfabético |
+| `getCategoriasDeProveedor(proveedor)` | **Síncrona.** Categorías que surte el proveedor (las que lo tienen en `proveedoresPorCategoria`) |
+| `getMaterialesPorProveedor(proveedor)` | **Síncrona.** Artículos para Agregar compra: solo los de las categorías del proveedor (si no surte ninguna, todos), con «Materia Prima» primero |
 | `getAsignacion(material)` | **Síncrona.** `{ existe, nombre, categoria, producto }` del material (`''` en lo que falte) |
 | `necesitaAsignacion(material)` | `true` si al material le falta la categoría o el producto |
-| `asignarMaterial(material, { categoria, producto })` | Guarda la asignación y crea lo que no exista. Devuelve `{ material, materialNuevo, categoriaNueva, productoNuevo }` |
+| `asignarMaterial(material, { categoria, producto, proveedor? })` | Guarda la asignación y crea lo que no exista; con `proveedor`, la categoría queda ligada a él. Devuelve `{ material, materialNuevo, categoriaNueva, productoNuevo }` (+ `proveedor`, `proveedorVinculado`) |
 | `totalLista(lista)` | Suma de los montos |
 
 Las funciones síncronas leen, en modo servidor, una caché de `GET /api/catalogo` que se carga al detectar el modo y se refresca tras cada escritura. `asignarMaterial` la actualiza en el acto con la respuesta del servidor.

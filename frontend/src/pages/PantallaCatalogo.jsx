@@ -21,8 +21,10 @@ const TIPO_DE_RUTA = Object.fromEntries(TIPOS.map(t => [PANTALLA_CATALOGO.seccio
 function filasDe(catalogo, tipo) {
   if (tipo === 'material') return catalogo.materiales
   if (tipo === 'proveedor') return catalogo.proveedores.map(nombre => ({ nombre, ficha: catalogo.fichas?.[nombre.toLowerCase()] }))
-  const lista = { categoria: catalogo.categorias, producto: catalogo.productos }[tipo]
-  return lista.map(nombre => ({ nombre }))
+  if (tipo === 'categoria') {
+    return catalogo.categorias.map(nombre => ({ nombre, proveedores: catalogo.proveedoresPorCategoria?.[nombre.toLowerCase()] ?? [] }))
+  }
+  return catalogo.productos.map(nombre => ({ nombre }))
 }
 
 const usoDe = (catalogo, tipo, nombre) => catalogo.uso?.[tipo]?.[nombre.toLowerCase()] ?? 0
@@ -116,6 +118,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
   const Icono = ICONOS[tipo]
   const esMaterial = tipo === 'material'
   const esProveedor = tipo === 'proveedor'
+  const esCategoria = tipo === 'categoria'
   const conMateriales = tipo === 'categoria' || tipo === 'producto'
 
   const todas = filasDe(catalogo, tipo)
@@ -237,6 +240,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
                 {esProveedor && <th scope="col">{PANTALLA_CATALOGO.ficha.columnaContacto}</th>}
                 {esMaterial && <th scope="col">Categoría</th>}
                 {esMaterial && <th scope="col">{PANTALLA_CATALOGO.columnaProductos}</th>}
+                {esCategoria && <th scope="col">{PANTALLA_CATALOGO.columnaProveedores}</th>}
                 {conMateriales && <th scope="col">{PANTALLA_CATALOGO.columnaMateriales}</th>}
                 <th scope="col" className={estilos.numerico}>{PANTALLA_CATALOGO.columnaUso(tipo)}</th>
                 <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
@@ -257,6 +261,11 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
                     {esMaterial && (
                       <td data-etiqueta={PANTALLA_CATALOGO.columnaProductos}>
                         {f.producto || <Insignia tono="aviso">{PANTALLA_CATALOGO.sinAsignar}</Insignia>}
+                      </td>
+                    )}
+                    {esCategoria && (
+                      <td data-etiqueta={PANTALLA_CATALOGO.columnaProveedores} className={estilos.dato}>
+                        {f.proveedores.length ? f.proveedores.join(', ') : PANTALLA_CATALOGO.sinProveedores}
                       </td>
                     )}
                     {conMateriales && (
@@ -298,6 +307,7 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
         tipo={tipo}
         edicion={edicion}
         materiales={catalogo.materiales}
+        proveedores={catalogo.proveedores}
         alGuardar={guardar}
         alCerrar={() => setEdicion(null)}
       />

@@ -35,6 +35,7 @@ vi.mock('../services/api', () => {
   getProveedores:       () => ['Súper Selectos', 'Walmart'],
   getMateriales:        () => ['Tocino La Rioja', 'Pechugas de Pollo'],
   getMaterialesPorProveedor: () => ['Tocino La Rioja', 'Pechugas de Pollo'],
+  getCategoriasDeProveedor: proveedor => (proveedor === 'Walmart' ? ['Limpieza'] : []),
   getCategorias:        () => ['Materia Prima', 'Bebidas', 'Desechables'],
   getProductos:         () => ['Cachitos', 'Arepas/Empanadas', 'Todos'],
   getAsignacion:        asignacion,
@@ -400,6 +401,10 @@ describe('AgregarCompra', () => {
     const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
     expect(within(ventana).getByText(ASIGNACION.descripcionNuevo('Harina PAN', 'Walmart'))).toBeInTheDocument()
     expect(within(ventana).getByRole('textbox', { name: 'Buscar o agregar categoría' })).toHaveFocus()
+    // Las categorías que ya surte el proveedor van primero
+    const categorias = within(within(ventana).getByRole('group', { name: 'Categoría' })).getAllByRole('button')
+    expect(categorias[0]).toHaveTextContent('Limpieza')
+    expect(within(ventana).getByText(ASIGNACION.categoriasDelProveedor('Walmart'))).toBeInTheDocument()
 
     await usuario.click(within(ventana).getByRole('button', { name: 'Materia Prima' }))
     expect(within(ventana).getByRole('button', { name: /Materia Prima/ })).toHaveAttribute('aria-pressed', 'true')
@@ -410,7 +415,7 @@ describe('AgregarCompra', () => {
     expect(within(ventana).getByRole('button', { name: /Arepas Rellenas/ })).toHaveAttribute('aria-pressed', 'true')
 
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
-    expect(asignarMaterial).toHaveBeenCalledWith('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas Rellenas'] })
+    expect(asignarMaterial).toHaveBeenCalledWith('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas Rellenas'], proveedor: 'Walmart' })
     expect(await screen.findByText('¡Anotado! «Harina PAN» va a Materia Prima · Arepas Rellenas. Ya quedó en el catálogo. Y estrenamos el producto «Arepas Rellenas».')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
@@ -447,7 +452,7 @@ describe('AgregarCompra', () => {
     await usuario.click(within(ventana).getByRole('button', { name: 'Cachitos' }))
 
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
-    expect(asignarMaterial).toHaveBeenCalledWith('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas/Empanadas', 'Cachitos'] })
+    expect(asignarMaterial).toHaveBeenCalledWith('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas/Empanadas', 'Cachitos'], proveedor: 'Walmart' })
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveAccessibleDescription('Materia Prima · Arepas/Empanadas, Cachitos')
   })
