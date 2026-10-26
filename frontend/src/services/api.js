@@ -27,7 +27,7 @@ import {
 } from '../../../shared/productos.js'
 import { fichaVacia, leerFicha, normalizarFicha } from '../../../shared/proveedores.js'
 import { CARGAR } from '../utils/mensajes'
-import { catalogoACsv, catalogoAJson, comprasACsv, comprasAJson, nombreArchivo, nombreArchivoCatalogo } from '../utils/exportar'
+import { catalogoAJson, catalogoAXlsx, comprasAJson, comprasAXlsx, nombreArchivo, nombreArchivoCatalogo } from '../utils/exportar'
 import { MENSAJES_CATALOGO_JSON, filasDelCatalogo, validarCatalogoJSON } from '../../../shared/catalogo-json.js'
 import { RUTAS_ASIGNABLES, RUTA_USUARIOS, migrarPermisos } from '../utils/permisos'
 import { USUARIOS as MENSAJES_USUARIOS } from '../utils/mensajes'
@@ -1245,17 +1245,20 @@ export async function importarJSON(archivo) {
   return importarCompras(await leerComprasJSON(archivo))
 }
 
+/** 'json' o, cualquier otro ('xlsx', y el viejo 'csv'), Excel */
+const esExcel = formato => formato !== 'json'
+
 /**
- * Descarga las compras de un rango (vacío = sin límite) como CSV para Excel o
+ * Descarga las compras de un rango (vacío = sin límite) como Excel (.xlsx) o
  * como JSON de respaldo. Funciona igual en los dos modos. Devuelve cuántas compras salieron.
  */
-export async function exportarCompras({ desde = '', hasta = '', formato = 'csv' } = {}) {
+export async function exportarCompras({ desde = '', hasta = '', formato = 'xlsx' } = {}) {
   const compras = await fetchListas({ fechaDesde: desde, fechaHasta: hasta })
   if (compras.length === 0) throw new Error('no hay compras en ese rango')
-  const csv = formato === 'csv'
-  const contenido = csv ? comprasACsv(compras) : comprasAJson(compras)
-  const tipo = csv ? 'text/csv;charset=utf-8' : 'application/json'
-  descargarBlob(new Blob([contenido], { type: tipo }), nombreArchivo(desde, hasta, csv ? 'csv' : 'json'))
+  const blob = esExcel(formato)
+    ? await comprasAXlsx(compras)
+    : new Blob([comprasAJson(compras)], { type: 'application/json' })
+  descargarBlob(blob, nombreArchivo(desde, hasta, esExcel(formato) ? 'xlsx' : 'json'))
   return compras.length
 }
 
@@ -1263,13 +1266,15 @@ export async function exportarCompras({ desde = '', hasta = '', formato = 'csv' 
 // Exportar y Cargar de cada sección del Catálogo (menú ⋮ de su lista)
 // ---------------------------------------------------------------------------
 
-/** Descarga la sección `tipo` en CSV (Excel) o respaldo .json. Devuelve cuántas filas lleva. */
-export async function exportarCatalogo(tipo, formato = 'csv') {
-  const filas = filasDelCatalogo(tipo, await fetchCatalogo())
+/** Descarga la sección `tipo` en Excel (.xlsx) o respaldo .json. Devuelve cuántas filas lleva. */
+export async function exportarCatalogo(tipo, formato = 'xlsx', elegidas) {
+  // Las elegidas en la ventana de selección (ya en formato de respaldo) o, sin ellas, toda la sección
+  const filas = elegidas ?? filasDelCatalogo(tipo, await fetchCatalogo())
   if (filas.length === 0) throw new Error(MENSAJES_CATALOGO_JSON.vacio(tipo))
-  const csv = formato === 'csv'
-  const contenido = csv ? catalogoACsv(tipo, filas) : catalogoAJson(tipo, filas)
-  descargarBlob(new Blob([contenido], { type: csv ? 'text/csv;charset=utf-8' : 'application/json' }), nombreArchivoCatalogo(tipo, csv ? 'csv' : 'json'))
+  const blob = esExcel(formato)
+    ? await catalogoAXlsx(tipo, filas)
+    : new Blob([catalogoAJson(tipo, filas)], { type: 'application/json' })
+  descargarBlob(blob, nombreArchivoCatalogo(tipo, esExcel(formato) ? 'xlsx' : 'json'))
   return filas.length
 }
 

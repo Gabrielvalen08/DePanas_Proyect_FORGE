@@ -12,7 +12,7 @@ import estilos from './Modal.module.css'
  * Se compone con <CuerpoModal> y <PieModal> como hijos.
  * rol="alertdialog": confirmaciones; el clic en el scrim no cierra.
  * focoInicial: ref del elemento que recibe el foco al abrir.
- * anchoMax: sm | md | lg
+ * anchoMax: sm | md | lg | xl
  * Se centra dentro del área del módulo abierto (el <main id="contenido"> de la página), no
  * de toda la pantalla; el velo sí cubre toda la pantalla para que el menú no se pueda tocar.
  */

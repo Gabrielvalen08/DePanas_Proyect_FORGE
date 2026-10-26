@@ -1,3 +1,4 @@
+import { readSheet } from 'read-excel-file/node'
 import { test, expect, entrar, confirmar, CESAR } from './ayudantes.js'
 import { CONFIRMAR, PANTALLA_CATALOGO as CATALOGO } from '../src/utils/mensajes.js'
 
@@ -43,6 +44,50 @@ test.describe('Catálogo', () => {
     // Sigue abierta: el aviso dice que ya existe
     await expect(page.getByText(/Ya existe/).first()).toBeVisible()
     await expect(ventana).toBeVisible()
+  })
+
+  test('exportar y cargar dejan elegir qué entra', async ({ page }) => {
+    const A = CATALOGO.archivo
+    const S = A.seleccion
+
+    // Exportar a Excel sin Pepsi: el archivo no la trae
+    await page.getByRole('button', { name: A.masAcciones('proveedor') }).click()
+    await page.getByRole('menuitem', { name: A.exportarExcel }).click()
+    const ventana = page.getByRole('dialog', { name: S.titulo('proveedor', 'xlsx') })
+    await ventana.getByRole('checkbox', { name: /Pepsi/ }).uncheck()
+    await ventana.getByRole('button', { name: /^Descargar \d+$/ }).click()
+    const [descarga] = await Promise.all([
+      page.waitForEvent('download'),
+      confirmar(page, A.confirmarExportar.confirmar),
+    ])
+    expect(descarga.suggestedFilename()).toMatch(/\.xlsx$/)
+    const proveedores = (await readSheet(await descarga.path())).map(fila => fila[0])
+    expect(proveedores).toContain('Selectos')
+    expect(proveedores).not.toContain('Pepsi')
+
+    // Cargar un respaldo eligiendo solo uno de sus dos proveedores
+    const respaldo = {
+      tipo: 'proveedor', version: 1,
+      filas: [
+        { nombre: 'Elegido e2e', ubicacion: 'Soyapango', telefonos: [], contactos: [] },
+        { nombre: 'Omitido e2e', ubicacion: '', telefonos: [], contactos: [] },
+      ],
+    }
+    await page.getByLabel(A.elegirArchivo('proveedor')).setInputFiles({
+      name: 'proveedores.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(respaldo)),
+    })
+    const carga = page.getByRole('dialog', { name: S.titulo('proveedor', 'cargar', 'proveedores.json') })
+    await expect(carga.getByText(S.nuevo, { exact: true })).toHaveCount(2)
+    await carga.getByRole('checkbox', { name: /Omitido e2e/ }).uncheck()
+    await carga.getByRole('button', { name: S.boton('cargar', 1) }).click()
+    await confirmar(page, A.confirmarCargar.confirmar)
+    await expect(page.getByRole('rowheader', { name: 'Elegido e2e' })).toBeVisible()
+    await expect(page.getByRole('rowheader', { name: 'Omitido e2e' })).toHaveCount(0)
+
+    // Deja la base como estaba
+    await page.getByRole('button', { name: CATALOGO.eliminar('proveedor', 'Elegido e2e') }).click()
+    await confirmar(page, CATALOGO.confirmarEliminar.confirmar)
+    await expect(page.getByRole('rowheader', { name: 'Elegido e2e' })).toHaveCount(0)
   })
 
   test('el buscador filtra la lista', async ({ page }) => {

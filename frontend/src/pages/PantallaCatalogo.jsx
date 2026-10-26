@@ -3,6 +3,7 @@ import { Navigate, NavLink, useParams } from 'react-router-dom'
 import { FileJson, FileSpreadsheet, Loader2, Package, Pencil, Plus, Search, Tags, Trash2, Truck, Upload, UtensilsCrossed } from 'lucide-react'
 import Header from '../components/Header'
 import EditorCatalogo from '../components/EditorCatalogo'
+import SeleccionCatalogo from '../components/SeleccionCatalogo'
 import { Boton, Campo, ConfirmDialog, EstadoVacio, Insignia, MenuAcciones, Tarjeta } from '../components/common'
 import {
   agregarAlCatalogo, editarEnCatalogo, eliminarDelCatalogo, exportarCatalogo, fetchCatalogo, importarCatalogo, leerCatalogoJSON,
@@ -12,6 +13,7 @@ import { textoBusqueda } from '../utils/formato'
 import { PANTALLA_CATALOGO, fraseDelDia } from '../utils/mensajes'
 import estilos from './PantallaCatalogo.module.css'
 import { tieneProducto } from '../../../shared/productos.js'
+import { filasDelCatalogo, ordenarFilas } from '../../../shared/catalogo-json.js'
 
 const TIPOS = ['proveedor', 'categoria', 'material', 'producto']
 const ICONOS = { proveedor: Truck, categoria: Tags, material: Package, producto: UtensilsCrossed }
@@ -148,18 +150,16 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
   }
 
 
-  // --- Exportar y Cargar de esta sección (menú ⋮) ---
+  // --- Exportar y Cargar de esta sección (menú ⋮): primero se elige qué entra ---
   const A = PANTALLA_CATALOGO.archivo
   const archivoRef = useRef(null)
-  const [porExportar, setPorExportar] = useState(null) // null | 'csv' | 'json'
-  const [porCargar, setPorCargar] = useState(null)     // null | { filas, archivo }
+  const [seleccion, setSeleccion] = useState(null) // null | { accion: 'xlsx' | 'json' | 'cargar', filas, archivo? }
 
-  async function exportar(formato) {
-    try {
-      addToast(A.exportado(tipo, await exportarCatalogo(tipo, formato)))
-    } catch (error) {
-      addToast(A.errorExportar(error.message), 'error')
-    }
+  function elegirQueExportar(formato) {
+    // Con el catálogo que la pantalla ya tiene, en el formato del respaldo
+    const filas = filasDelCatalogo(tipo, catalogo)
+    if (filas.length === 0) return addToast(A.errorExportar(PANTALLA_CATALOGO.vacio(tipo)), 'error')
+    setSeleccion({ accion: formato, filas })
   }
 
   async function elegirArchivo(e) {
@@ -167,18 +167,29 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
     e.target.value = '' // así se puede volver a elegir el mismo archivo
     if (!archivo) return
     try {
-      setPorCargar({ filas: await leerCatalogoJSON(archivo, tipo), archivo: archivo.name })
+      // En el mismo orden que al exportar (los artículos, por categoría y luego por nombre)
+      setSeleccion({ accion: 'cargar', filas: ordenarFilas(tipo, await leerCatalogoJSON(archivo, tipo)), archivo: archivo.name })
     } catch (error) {
       addToast(A.errorCargar(error.message), 'error')
     }
   }
 
-  async function cargar() {
+  async function confirmarSeleccion(elegidas) {
+    const { accion } = seleccion
+    setSeleccion(null)
+    if (accion === 'cargar') {
+      try {
+        addToast(A.cargado(tipo, await importarCatalogo(tipo, elegidas)))
+        alCambio()
+      } catch (error) {
+        addToast(A.errorCargar(error.message), 'error')
+      }
+      return
+    }
     try {
-      addToast(A.cargado(tipo, await importarCatalogo(tipo, porCargar.filas)))
-      alCambio()
+      addToast(A.exportado(tipo, await exportarCatalogo(tipo, accion, elegidas)))
     } catch (error) {
-      addToast(A.errorCargar(error.message), 'error')
+      addToast(A.errorExportar(error.message), 'error')
     }
   }
   return (
@@ -206,8 +217,8 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
             <MenuAcciones
               etiqueta={A.masAcciones(tipo)}
               opciones={[
-                { etiqueta: A.exportarCsv, icono: <FileSpreadsheet />, onClick: () => setPorExportar('csv') },
-                { etiqueta: A.exportarJson, icono: <FileJson />, onClick: () => setPorExportar('json') },
+                { etiqueta: A.exportarExcel, icono: <FileSpreadsheet />, onClick: () => elegirQueExportar('xlsx') },
+                { etiqueta: A.exportarJson, icono: <FileJson />, onClick: () => elegirQueExportar('json') },
                 { etiqueta: A.cargar, icono: <Upload />, onClick: () => archivoRef.current?.click() },
               ]}
             />
@@ -321,22 +332,15 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
         confirmLabel={PANTALLA_CATALOGO.confirmarEliminar.confirmar}
         danger
       />
-      <ConfirmDialog
-        isOpen={porExportar !== null}
-        onClose={() => setPorExportar(null)}
-        onConfirm={() => exportar(porExportar)}
-        title={A.confirmarExportar.titulo}
-        message={porExportar ? A.confirmarExportar.mensaje(tipo, todas.length, porExportar) : ''}
-        confirmLabel={A.confirmarExportar.confirmar}
-      />
-
-      <ConfirmDialog
-        isOpen={porCargar !== null}
-        onClose={() => setPorCargar(null)}
-        onConfirm={cargar}
-        title={A.confirmarCargar.titulo(tipo)}
-        message={porCargar ? A.confirmarCargar.mensaje(tipo, porCargar.filas.length, porCargar.archivo) : ''}
-        confirmLabel={A.confirmarCargar.confirmar}
+      {/* Elegir qué se exporta o se carga; confirma con la cantidad elegida */}
+      <SeleccionCatalogo
+        tipo={tipo}
+        accion={seleccion?.accion ?? null}
+        filas={seleccion?.filas}
+        archivo={seleccion?.archivo}
+        existentes={seleccion?.accion === 'cargar' ? new Set(todas.map(f => f.nombre.toLowerCase())) : undefined}
+        alConfirmar={confirmarSeleccion}
+        alCerrar={() => setSeleccion(null)}
       />
       <span className="solo-lector" aria-live="polite">{`${filas.length} ${filas.length === 1 ? singular : titulo.toLowerCase()}`}</span>
     </>

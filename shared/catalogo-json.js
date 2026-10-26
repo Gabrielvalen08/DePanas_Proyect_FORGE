@@ -86,7 +86,26 @@ export function validarCatalogoJSON(datos, tipo) {
   return limpias
 }
 
-const ordenar = filas => [...filas].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+const comparar = (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })
+
+/**
+ * Orden de las filas de una sección al exportar o cargar: por nombre; los artículos,
+ * primero por categoría (alfabético, los que no tienen van al final) y luego por nombre.
+ */
+export function ordenarFilas(tipo, filas) {
+  return [...filas].sort((a, b) => {
+    if (tipo === 'material') {
+      const ca = a.categoria || ''
+      const cb = b.categoria || ''
+      if (!ca !== !cb) return ca ? -1 : 1
+      const porCategoria = comparar(ca, cb)
+      if (porCategoria !== 0) return porCategoria
+    }
+    return comparar(a.nombre, b.nombre)
+  })
+}
+
+const ordenar = filas => [...filas].sort((a, b) => comparar(a.nombre, b.nombre))
 
 /**
  * Filas de una sección a partir del catálogo completo ({ proveedores, categorias, productos,
@@ -105,7 +124,7 @@ export function filasDelCatalogo(tipo, catalogo) {
     }))
   }
   if (tipo === 'material') {
-    return ordenar(catalogo.materiales.map(m => ({ nombre: m.nombre, categoria: m.categoria || '', productos: listaProductos(m.producto) })))
+    return ordenarFilas('material', catalogo.materiales.map(m => ({ nombre: m.nombre, categoria: m.categoria || '', productos: listaProductos(m.producto) })))
   }
   if (tipo === 'categoria') {
     return ordenar(catalogo.categorias.map(nombre => ({

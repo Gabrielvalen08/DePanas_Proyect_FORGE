@@ -1,4 +1,4 @@
-import { readFile } from 'fs/promises'
+import { readSheet } from 'read-excel-file/node'
 import { test, expect, entrar, menu, confirmar, CESAR } from './ayudantes.js'
 import { COMPRA, CONFIRMAR, ESTADOS, EXPORTAR, LISTA_COMPRAS, PANTALLA_CATALOGO, VALIDACION } from '../src/utils/mensajes.js'
 
@@ -89,7 +89,7 @@ test.describe('Compras', () => {
     const fila = page.getByRole('row').filter({ has: page.getByRole('button', { name: /Ver compra en MMAG/ }) })
     await expect(fila).toContainText('$5.50')
 
-    // Exportar a CSV (desde el ⋮ de la lista): el archivo trae la compra
+    // Exportar a Excel (desde el ⋮ de la lista): el archivo trae la compra
     await page.getByRole('button', { name: LISTA_COMPRAS.masAcciones }).click()
     await page.getByRole('menuitem', { name: LISTA_COMPRAS.exportar }).click()
     await page.getByRole('button', { name: EXPORTAR.descargar }).click()
@@ -97,10 +97,11 @@ test.describe('Compras', () => {
       page.waitForEvent('download'),
       confirmar(page, CONFIRMAR.descargar.confirmar),
     ])
-    expect(descarga.suggestedFilename()).toMatch(/\.csv$/)
-    const csv = await readFile(await descarga.path(), 'utf8')
-    expect(csv).toContain('MMAG')
-    expect(csv).toContain('Tocino La Rioja')
+    // Un .xlsx real: cada dato en su columna, el monto como número
+    expect(descarga.suggestedFilename()).toMatch(/\.xlsx$/)
+    const filas = await readSheet(await descarga.path())
+    expect(filas[0]).toEqual(['Fecha', 'Proveedor', 'Artículo', 'Cantidad', 'Unidad', 'Monto', 'Categoría', 'Producto'])
+    expect(filas).toContainEqual(expect.arrayContaining(['MMAG', 'Tocino La Rioja', 5.5]))
 
     // Ver el detalle y eliminar
     await menu(page).getByRole('link', { name: 'Lista de compras' }).click()

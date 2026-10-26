@@ -28,7 +28,7 @@ Aplicación web local para que **De Panas**, un negocio de comida venezolana, re
 - **Artículos por proveedor:** cada categoría guarda los proveedores que la surten. En Agregar compra, al elegir el proveedor solo se sugieren los artículos de sus categorías (si no tiene ninguna, todos), con «Materia Prima» primero. Cada compra guardada y cada artículo nuevo asignado en una compra suman esa relación.
 - **Catálogo** (menú, debajo de Lista de compras): cuatro opciones para administrar proveedores, categorías, materiales y productos. Se pueden agregar, cambiar de nombre y eliminar; cambiar un nombre lo actualiza también en las compras guardadas. En cada material se ven y se cambian su categoría y su producto, y al agregarlo se pueden crear categorías o productos nuevos. En cada categoría y cada producto se ven sus materiales y se eligen con casillas cuáles lleva; el cambio llega también a las compras.
 - **Base de datos SQLite** (backend Node.js + Express). Sin servidor, la app funciona igual guardando en el navegador (modo local); los dos modos nunca se mezclan.
-- **Exportar datos** (pantalla propia): eliges un rango de fechas (o este mes, mes pasado, este año, todo) y el formato, Excel (`.csv`) o respaldo (`.json`), y ves cuántas compras y cuánto dinero entran antes de descargar.
+- **Exportar datos** (pantalla propia): eliges un rango de fechas (o este mes, mes pasado, este año, todo) y el formato, Excel (`.xlsx`, se abre directo en columnas) o respaldo (`.json`), y ves cuántas compras y cuánto dinero entran antes de descargar.
 - **Cargar datos** (pantalla propia): se elige un respaldo `.json` de Exportar y qué compras traer. Las que ya están se omiten; las que llegan con cambios se comparan lado a lado, con las diferencias marcadas en rojo, y se elige qué materiales, proveedor y fecha quedan.
 - **Interfaz con la marca De Panas**: collage de las ilustraciones del brandbook sobre el fondo crema, la arepa del logo en el menú, mensajes con la voz de marca ("¡Listo, pana!", "Hoy toca arepita…"), adaptable a escritorio y móvil, con contraste WCAG AA.
 
@@ -70,7 +70,7 @@ frontend/src/
   components/common/  Piezas base: Boton, Campo, Modal, Tarjeta…
   context/        Toasts y sesión (AuthContext)
   services/api.js Única capa de datos (modo servidor o local)
-  utils/          Formato, exportar.js (CSV/JSON) y mensajes.js (todos los textos del sistema)
+  utils/          Formato, exportar.js (Excel .xlsx/JSON) y mensajes.js (todos los textos del sistema)
   styles/         Tokens de marca, collage de fondo y presets de movimiento
 frontend/public/brand/  Logo, arepa, íconos y el collage de la pág. 10 del brandbook
 backend/

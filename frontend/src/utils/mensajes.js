@@ -26,6 +26,8 @@ export const FRASES_MARCA = [
 const plural = (n, singular, pluralTexto = `${singular}es`) => (n === 1 ? singular : pluralTexto)
 // En toda la interfaz los materiales se llaman «artículos» (en el código y los datos siguen como `material`)
 const articulos = n => plural(n, 'artículo', 'artículos')
+/** Nombre del formato de un archivo para el usuario: Excel o JSON */
+const nombreFormato = formato => (formato === 'json' ? 'JSON' : 'Excel')
 
 // ---------------------------------------------------------------------------
 // Encabezados: una frase por página que cambia cada día (no en cada recarga)
@@ -206,6 +208,13 @@ export const ASIGNACION = {
 }
 
 // ---------------------------------------------------------------------------
+// Navegación entre pantallas
+// ---------------------------------------------------------------------------
+export const NAVEGACION = {
+  regresar: 'Regresar',
+}
+
+// ---------------------------------------------------------------------------
 // Pantallas vacías y de carga
 // ---------------------------------------------------------------------------
 export const ESTADOS = {
@@ -292,14 +301,14 @@ export const PANTALLA_CATALOGO = {
   // Exportar y Cargar de cada sección (menú ⋮ de su lista)
   archivo: {
     masAcciones: tipo => `Más acciones de ${SECCIONES[tipo].titulo}`,
-    exportarCsv: 'Exportar a Excel (.csv)',
+    exportarExcel: 'Exportar a Excel (.xlsx)',
     exportarJson: 'Exportar respaldo (.json)',
     cargar: 'Cargar respaldo (.json)',
     elegirArchivo: tipo => `Respaldo .json de ${SECCIONES[tipo].titulo.toLowerCase()}`,
     confirmarExportar: {
       titulo: '¿Descargamos el archivo?',
       mensaje: (tipo, n, formato) =>
-        `Se descargarán ${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()} en formato ${formato.toUpperCase()}.`,
+        `Se descargarán ${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()} en formato ${nombreFormato(formato)}.`,
       confirmar: 'Sí, descargar',
     },
     exportado: (tipo, n) =>
@@ -308,9 +317,34 @@ export const PANTALLA_CATALOGO = {
     confirmarCargar: {
       titulo: tipo => `¿Cargamos ${SECCIONES[tipo].titulo.toLowerCase()}?`,
       mensaje: (tipo, n, archivo) =>
-        `«${archivo}» trae ${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()}. ` +
+        `Se cargarán ${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()} de «${archivo}». ` +
         'Lo nuevo se agrega y lo que ya existe se actualiza; no se borra nada.',
       confirmar: 'Sí, cargar',
+    },
+    // Ventana para elegir qué se exporta o qué se carga (todo empieza elegido)
+    seleccion: {
+      titulo: (tipo, accion, archivo) => {
+        const nombre = SECCIONES[tipo].titulo.toLowerCase()
+        if (accion === 'xlsx') return `Exportar ${nombre} a Excel`
+        if (accion === 'json') return `Exportar respaldo de ${nombre}`
+        return `Cargar ${nombre} de «${archivo}»`
+      },
+      ayuda: accion => (accion === 'cargar'
+        ? 'Elige qué traer del respaldo. Lo nuevo se agrega y lo que ya existe se actualiza.'
+        : 'Elige qué entra en el archivo.'),
+      buscar: tipo => `Buscar ${SECCIONES[tipo].singular}`,
+      elegirTodos: 'Elegir todos',
+      quitarTodos: 'Quitar todos',
+      cuenta: (n, total) => `${n} de ${total} ${plural(total, 'elegido', 'elegidos')}`,
+      ninguno: 'Elige al menos uno para continuar.',
+      sinResultados: 'Nada por aquí con ese nombre',
+      nuevo: 'Nuevo',
+      yaExiste: 'Ya existe',
+      boton: (accion, n) => (accion === 'cargar' ? `Cargar ${n}` : `Descargar ${n}`),
+      cancelar: 'Cancelar',
+      articulos: n => `${n} ${articulos(n)}`,
+      sinUbicacion: 'Sin ubicación',
+      sinCategoria: 'Sin categoría',
     },
     cargado: (tipo, r) => {
       const cuantos = n => `${n} ${n === 1 ? SECCIONES[tipo].singular : SECCIONES[tipo].titulo.toLowerCase()}`
@@ -355,6 +389,11 @@ export const PANTALLA_CATALOGO = {
     tambienEn: otros => (otros ? `También en «${otros}»` : ''),
     ninguno: 'Todavía no hay artículos. Agrégalos en la sección Artículos.',
     sinResultados: 'Ningún artículo con ese nombre',
+    // Panel doble del producto: un clic pasa el artículo de un lado al otro
+    todosElegidos: 'Ya elegiste todos los artículos.',
+    ningunoElegido: 'Todavía no lleva artículos. Toca uno de la izquierda para sumarlo.',
+    agregar: nombre => `Agregar ${nombre}`,
+    quitar: nombre => `Quitar ${nombre}`,
   },
   sinResultados: 'Nada por aquí con ese nombre',
   vacio: tipo => `Todavía no hay ${SECCIONES[tipo].titulo.toLowerCase()}.`,
@@ -429,7 +468,7 @@ export const USUARIOS = {
     '/': 'Registrar lo que llega a la cocina',
     '/compras': 'Ver, editar y eliminar las compras',
     '/catalogo': 'Proveedores, categorías, artículos y productos',
-    '/exportar': 'Descargar las compras en CSV o JSON',
+    '/exportar': 'Descargar las compras en Excel o JSON',
     '/cargar': 'Traer datos de otro equipo',
   },
   validacion: {
@@ -471,7 +510,7 @@ export const EXPORTAR = {
   hasta: 'Hasta',
   formato: 'Formato',
   formatos: {
-    csv: { titulo: 'Excel (.csv)', descripcion: 'Una fila por artículo, para abrir en Excel o Google Sheets' },
+    xlsx: { titulo: 'Excel (.xlsx)', descripcion: 'Una fila por artículo, se abre directo en columnas en Excel o Google Sheets' },
     json: { titulo: 'Respaldo (.json)', descripcion: 'Para pasar las compras a otro equipo' },
   },
   calculando: 'Contando las compras del rango…',
@@ -566,7 +605,7 @@ export const CONFIRMAR = {
   descargar: {
     titulo: '¿Descargamos el archivo?',
     mensaje: (n, total, formato) =>
-      `Se descargarán ${n} ${plural(n, 'compra', 'compras')} por ${total} en formato ${formato.toUpperCase()}.`,
+      `Se descargarán ${n} ${plural(n, 'compra', 'compras')} por ${total} en formato ${nombreFormato(formato)}.`,
     confirmar: 'Sí, descargar',
   },
 }

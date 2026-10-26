@@ -3,7 +3,7 @@ import { Check, Pencil, Plus, Search, X } from 'lucide-react'
 import { Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
 import { SelectorOpciones } from './AsignarMaterial'
 import FichaProveedor, { fichaInicial } from './FichaProveedor'
-import { getCategorias, getProductos } from '../services/api'
+import { getCategorias, getProductos, ordenarMaterialesPorCategoria as ordenarPorCategoria } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
 import { listaProductos, sinProducto, tieneProducto } from '../../../shared/productos.js'
 import { normalizarFicha } from '../../../shared/proveedores.js'
@@ -331,26 +331,6 @@ function llevaA(material, tipo, nombre) {
 }
 
 /**
- * Ordena artículos por categoría: primero «Materia Prima», luego el resto en orden alfabético,
- * y dentro de cada categoría los artículos también en orden alfabético. Artículos sin categoría van al final.
- */
-export function ordenarPorCategoria(lista) {
-  return [...lista].sort((a, b) => {
-    const catA = (a.categoria || '').trim()
-    const catB = (b.categoria || '').trim()
-    const esMateriaA = catA.toLowerCase() === 'materia prima'
-    const esMateriaB = catB.toLowerCase() === 'materia prima'
-    if (esMateriaA && !esMateriaB) return -1
-    if (!esMateriaA && esMateriaB) return 1
-    if (!catA && catB) return 1
-    if (catA && !catB) return -1
-    const compCat = catA.localeCompare(catB, 'es', { sensitivity: 'base' })
-    if (compCat !== 0) return compCat
-    return (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' })
-  })
-}
-
-/**
  * Selector en dos columnas para productos:
  * - Izquierda: "Artículos" disponibles con buscador fijo y orden por categoría (Materia Prima primero).
  * - Derecha: "Artículos que lleva este producto" con conteo de elegidos y sin nota explicativa.
@@ -387,7 +367,7 @@ function SelectorMaterialesDual({ todos, elegidos, onCambiar }) {
   }
 
   return (
-    <fieldset className={estilos.materialesDual}>
+    <div className={estilos.materialesDual} role="group" aria-label={textos.titulo('producto')}>
       <div className={estilos.panelesDual}>
         {/* Panel izquierdo: Artículos disponibles */}
         <div className={estilos.panelDual}>
@@ -416,7 +396,7 @@ function SelectorMaterialesDual({ todos, elegidos, onCambiar }) {
             {todos.length === 0 ? (
               <p className={estilos.vacio}>{textos.ninguno}</p>
             ) : disponibles.length === 0 ? (
-              <p className={estilos.vacio}>Todos los artículos están seleccionados</p>
+              <p className={estilos.vacio}>{textos.todosElegidos}</p>
             ) : disponiblesFiltrados.length === 0 ? (
               <p className={estilos.vacio}>{textos.sinResultados}</p>
             ) : (
@@ -427,13 +407,13 @@ function SelectorMaterialesDual({ todos, elegidos, onCambiar }) {
                       type="button"
                       className={estilos.itemBoton}
                       onClick={() => agregar(m.nombre)}
-                      aria-label={`Agregar ${m.nombre}`}
-                      title={`Agregar «${m.nombre}»`}
+                      aria-label={textos.agregar(m.nombre)}
+                      title={textos.agregar(m.nombre)}
                     >
-                      <div className={estilos.itemInfo}>
+                      <span className={estilos.itemInfo}>
                         <span className={estilos.itemNombre}>{m.nombre}</span>
                         {m.categoria && <span className={estilos.itemCategoria}>{m.categoria}</span>}
-                      </div>
+                      </span>
                       <span className={estilos.itemIconoAccion} aria-hidden="true">
                         <Plus size={16} />
                       </span>
@@ -451,12 +431,12 @@ function SelectorMaterialesDual({ todos, elegidos, onCambiar }) {
             <span className={estilos.panelTitulo}>
               {textos.titulo('producto')}
             </span>
-            <Insignia tono="primario">{textos.elegidos(elegidos.size)}</Insignia>
+            <Insignia tono="marca">{textos.elegidos(elegidos.size)}</Insignia>
           </div>
 
           <div className={estilos.listaPanel}>
             {seleccionados.length === 0 ? (
-              <p className={estilos.vacio}>Ningún artículo seleccionado todavía. Haz clic en un artículo de la izquierda para agregarlo.</p>
+              <p className={estilos.vacio}>{textos.ningunoElegido}</p>
             ) : (
               <ul className={estilos.listaItems}>
                 {seleccionados.map(m => (
@@ -465,13 +445,13 @@ function SelectorMaterialesDual({ todos, elegidos, onCambiar }) {
                       type="button"
                       className={[estilos.itemBoton, estilos.itemBotonElegido].join(' ')}
                       onClick={() => quitar(m.nombre)}
-                      aria-label={`Quitar ${m.nombre}`}
-                      title={`Quitar «${m.nombre}»`}
+                      aria-label={textos.quitar(m.nombre)}
+                      title={textos.quitar(m.nombre)}
                     >
-                      <div className={estilos.itemInfo}>
+                      <span className={estilos.itemInfo}>
                         <span className={estilos.itemNombre}>{m.nombre}</span>
                         {m.categoria && <span className={estilos.itemCategoria}>{m.categoria}</span>}
-                      </div>
+                      </span>
                       <span className={estilos.itemIconoQuitar} aria-hidden="true">
                         <X size={16} />
                       </span>
@@ -483,7 +463,7 @@ function SelectorMaterialesDual({ todos, elegidos, onCambiar }) {
           </div>
         </div>
       </div>
-    </fieldset>
+    </div>
   )
 }
 

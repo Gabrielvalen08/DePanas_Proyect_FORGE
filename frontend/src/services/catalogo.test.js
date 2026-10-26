@@ -2,6 +2,7 @@ import {
   agregarAlCatalogo,
   editarEnCatalogo,
   eliminarDelCatalogo,
+  exportarCatalogo,
   exportarCompras,
   fetchCatalogo,
   fetchListas,
@@ -11,6 +12,8 @@ import {
   guardarLista,
   reiniciarModo,
 } from './api'
+import { readSheet } from 'read-excel-file/universal'
+import { ordenarFilas } from '../../../shared/catalogo-json.js'
 
 // Catálogo editable (Catálogo) y exportar por rango
 beforeEach(() => {
@@ -126,18 +129,54 @@ describe('catálogo en modo servidor', () => {
   })
 })
 
+describe('exportar una sección del Catálogo', () => {
+  it('con filas elegidas descarga solo esas; sin ellas, toda la sección', async () => {
+    const descargas = []
+    vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(blob => { descargas.push(blob); return 'blob:x' }), revokeObjectURL: vi.fn() })
+    const clic = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    const elegidas = [{ nombre: 'MMAG', ubicacion: '', telefonos: [], contactos: [] }]
+    expect(await exportarCatalogo('proveedor', 'json', elegidas)).toBe(1)
+    expect(JSON.parse(await descargas[0].text()).filas.map(f => f.nombre)).toEqual(['MMAG'])
+
+    expect(await exportarCatalogo('proveedor', 'json')).toBeGreaterThan(1)
+    clic.mockRestore()
+  })
+
+  it('los artículos van por categoría (alfabético; sin categoría al final) y luego por nombre', async () => {
+    expect(ordenarFilas('material', [
+      { nombre: 'Queso', categoria: '' },
+      { nombre: 'Tocino', categoria: 'Materia Prima' },
+      { nombre: 'Pepsi', categoria: 'Bebidas' },
+      { nombre: 'Azúcar', categoria: 'materia prima' },
+      { nombre: 'Agua', categoria: 'Bebidas' },
+      { nombre: 'Bandeja', categoria: 'Desechables' },
+    ]).map(f => f.nombre)).toEqual(['Agua', 'Pepsi', 'Bandeja', 'Azúcar', 'Tocino', 'Queso'])
+
+    const descargas = []
+    vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(blob => { descargas.push(blob); return 'blob:x' }), revokeObjectURL: vi.fn() })
+    const clic = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    await exportarCatalogo('material', 'json')
+    const filas = JSON.parse(await descargas[0].text()).filas
+    expect(filas).toEqual(ordenarFilas('material', filas))
+    expect(filas[0].categoria).toBe('Bebidas')
+    expect(filas.at(-1).categoria).toBe('')
+    clic.mockRestore()
+  })
+})
+
 describe('exportar compras por rango', () => {
   it('descarga solo las compras del rango, con el nombre del rango', async () => {
     const urls = []
     vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(blob => { urls.push(blob); return 'blob:x' }), revokeObjectURL: vi.fn() })
     const clic = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () { urls.push(this.download) })
 
-    const n = await exportarCompras({ desde: '2026-09-29', hasta: '2026-09-29', formato: 'csv' })
+    const n = await exportarCompras({ desde: '2026-09-29', hasta: '2026-09-29', formato: 'xlsx' })
     expect(n).toBe(2)
     const [blob, nombre] = urls
-    expect(nombre).toBe('depanas_compras_2026-09-29_2026-09-29.csv')
-    const texto = await blob.text()
-    expect(texto.split('\r\n').filter(Boolean)).toHaveLength(1 + 5) // encabezado + 5 materiales
+    expect(nombre).toBe('depanas_compras_2026-09-29_2026-09-29.xlsx')
+    const filas = await readSheet(blob)
+    expect(filas).toHaveLength(1 + 5) // encabezado + 5 artículos
     clic.mockRestore()
   })
 

@@ -29,7 +29,7 @@ describe('PantallaExportar', () => {
     expect(await screen.findByText(EXPORTAR.resumen(5, '$57.50'))).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Regresar' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Todo' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('radio', { name: /Excel \(\.csv\)/ })).toBeChecked()
+    expect(screen.getByRole('radio', { name: /Excel \(\.xlsx\)/ })).toBeChecked()
   })
 
   it('el rango cambia el resumen; un rango al revés muestra el error y no deja descargar', async () => {
