@@ -12,7 +12,7 @@ import { crearRutasCompras } from './routes/compras.js'
 import { crearRutasListas } from './routes/listas.js'
 import { crearRutasExport } from './routes/db_export.js'
 import { crearRutasCatalogo } from './routes/catalogo.js'
-import { crearRutaSesion, crearRutasUsuarios } from './routes/usuarios.js'
+import { crearRutaSesion, crearRutasRequisitos, crearRutasUsuarios } from './routes/usuarios.js'
 
 /**
  * @param {Object} opciones
@@ -73,6 +73,7 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
   app.use('/api/catalogo', crearRutasCatalogo(getDb))
   app.use('/api/usuarios', crearRutasUsuarios(getDb))
   app.use('/api/sesion', crearRutaSesion(getDb))
+  app.use('/api/requisitos-contrasena', crearRutasRequisitos(getDb))
 
   // Health-check: el frontend lo usa para decidir si trabaja con el servidor
   app.get('/api/health', (_req, res) => res.json({ ok: true }))

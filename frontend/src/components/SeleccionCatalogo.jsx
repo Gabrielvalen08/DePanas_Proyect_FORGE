@@ -33,7 +33,10 @@ export default function SeleccionCatalogo({ tipo, accion, filas = [], archivo, e
       anchoMax="md"
     >
       {accion && (
+        // key: si se abre otra ventana mientras la anterior aún se cierra (animación), la
+        // lista empieza de cero en vez de conservar lo elegido en la anterior
         <Lista
+          key={`${accion}|${archivo ?? ''}`}
           tipo={tipo}
           accion={accion}
           filas={filas}

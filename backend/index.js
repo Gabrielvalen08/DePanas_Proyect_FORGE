@@ -10,7 +10,8 @@
  *   GET  /api/catalogo                     → opciones de los desplegables y categoría/producto de cada material
  *   PUT  /api/catalogo/materiales/:nombre  → asigna categoría y producto a un material
  *   POST /api/sesion                      → inicia sesión { usuario, contrasena }
- *   GET/POST/PUT/DELETE  /api/usuarios     → Gestor de usuarios (contraseñas con hash)
+ *   GET/POST/PUT/DELETE  /api/usuarios     → Gestor de usuarios (roles, pantallas y funciones; contraseñas con hash)
+ *   GET/PUT  /api/requisitos-contrasena    → lo que pide toda contraseña nueva
  *   GET  /api/db/exportar                  → descarga una copia de depanas.db
  *   POST /api/db/importar                  → reemplaza depanas.db (con respaldo)
  *   GET  /api/db/exportar-json             → descarga las compras como JSON

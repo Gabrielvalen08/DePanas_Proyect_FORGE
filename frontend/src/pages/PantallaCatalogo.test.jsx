@@ -7,13 +7,13 @@ import { PANTALLA_CATALOGO, CONFIRMAR } from '../utils/mensajes'
 import PantallaCatalogo from './PantallaCatalogo'
 
 // Usa api.js real en modo local (sin servidor), sobre localStorage
-function renderizar(ruta = '/catalogo') {
+function renderizar(ruta = '/catalogo', acciones) {
   return render(
     <MemoryRouter initialEntries={[ruta]}>
       <ToastProvider>
         <Routes>
-          <Route path="/catalogo" element={<PantallaCatalogo />} />
-          <Route path="/catalogo/:seccion" element={<PantallaCatalogo />} />
+          <Route path="/catalogo" element={<PantallaCatalogo acciones={acciones} />} />
+          <Route path="/catalogo/:seccion" element={<PantallaCatalogo acciones={acciones} />} />
         </Routes>
       </ToastProvider>
     </MemoryRouter>
@@ -355,5 +355,21 @@ describe('PantallaCatalogo', () => {
     await usuario.type(await screen.findByLabelText('Buscar artículo'), 'jamon')
     const nombres = screen.getAllByRole('rowheader').map(c => c.textContent)
     expect(nombres).toEqual(['Jamón de Pavo', 'Jamon Picnic', 'Jamon Virginia'])
+  })
+
+  it('sin las funciones del usuario, no aparecen Agregar, editar, eliminar ni el menú ⋮', async () => {
+    renderizar('/catalogo/proveedores', { agregar: false, editar: false, eliminar: false, exportar: false, cargar: false })
+    expect(await screen.findByRole('rowheader', { name: 'MMAG' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: PANTALLA_CATALOGO.agregar('proveedor') })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: PANTALLA_CATALOGO.editar('proveedor', 'MMAG') })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: PANTALLA_CATALOGO.eliminar('proveedor', 'MMAG') })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: PANTALLA_CATALOGO.archivo.masAcciones('proveedor') })).not.toBeInTheDocument()
+  })
+
+  it('con solo algunas funciones, aparecen solo esas', async () => {
+    renderizar('/catalogo/proveedores', { agregar: true, editar: true, eliminar: false, exportar: false, cargar: false })
+    expect(await screen.findByRole('button', { name: PANTALLA_CATALOGO.editar('proveedor', 'MMAG') })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: PANTALLA_CATALOGO.agregar('proveedor') })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: PANTALLA_CATALOGO.eliminar('proveedor', 'MMAG') })).not.toBeInTheDocument()
   })
 })

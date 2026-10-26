@@ -30,7 +30,7 @@ Funciones puras, sin React. Cada archivo tiene su `*.test.js`.
 | ----- | --------- |
 | `FRASES_MARCA`, `FRASES_ENCABEZADO`, `fraseDelDia(ruta)` | Frases del brandbook y la frase del encabezado de cada página (cambia una vez al día) |
 | `ACCESO` | Pantalla de acceso y aviso al cerrar sesión |
-| `USUARIOS` | Gestor de usuarios: textos, validaciones (los mismos del backend) y avisos |
+| `USUARIOS` | Gestor de usuarios: textos, roles y su descripción, nombres de las funciones, requisitos de contraseña, validaciones (las mismas del backend) y avisos |
 | `COMPRA` | Guardar, actualizar, eliminar (con su confirmación) y sus errores |
 | `LISTA_COMPRAS` | Tabla de Lista de compras y su menú ⋮ (Exportar, Cargar) |
 | `VALIDACION` | Mensajes junto a los campos |

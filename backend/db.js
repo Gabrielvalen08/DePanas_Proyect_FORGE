@@ -6,7 +6,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { readFileSync } from 'fs'
 import { CATALOGO_INICIAL } from './db/catalogo.js'
 import { listaProductos } from '../shared/productos.js'
-import { USUARIOS_INICIALES } from './db/usuarios.js'
+import { HASH_CESAR_ANTERIOR, USUARIOS_INICIALES } from './db/usuarios.js'
 
 // Columnas mínimas para aceptar un archivo .db importado
 export const COLUMNAS_REQUERIDAS = ['fecha', 'material', 'cantidad', 'monto', 'proveedor']
@@ -101,14 +101,42 @@ export function leerProveedoresPorCategoria(db) {
  * lo que el administrador cambia no se pisa al reabrir la base.
  */
 export function prepararUsuarios(db) {
+  migrarUsuarios(db)
   // Configuración pasó a llamarse Catálogo (/configuracion → /catalogo)
   db.prepare(`UPDATE usuarios SET permisos = REPLACE(permisos, '"/configuracion"', '"/catalogo"') WHERE permisos LIKE '%"/configuracion"%'`).run()
+  // Cesar_01 deja la contraseña inicial (1234) por la nueva; si ya la cambió, no se toca
+  const nuevoCesar = USUARIOS_INICIALES.find(u => u.usuario === 'Cesar_01').contrasena
+  db.prepare("UPDATE usuarios SET contrasena = ? WHERE usuario = 'Cesar_01' AND contrasena = ?").run(nuevoCesar, HASH_CESAR_ANTERIOR)
   if (db.prepare('SELECT COUNT(*) AS n FROM usuarios').get().n > 0) return
-  const insertar = db.prepare('INSERT INTO usuarios (usuario, nombre, contrasena, rol, permisos) VALUES (?, ?, ?, ?, ?)')
+  const insertar = db.prepare('INSERT INTO usuarios (usuario, nombre, contrasena, rol, permisos, funciones) VALUES (?, ?, ?, ?, ?, ?)')
   enTransaccion(db, () => {
     for (const u of USUARIOS_INICIALES) {
-      insertar.run(u.usuario, u.nombre, u.contrasena, u.rol, JSON.stringify(u.permisos))
+      insertar.run(u.usuario, u.nombre, u.contrasena, u.rol, JSON.stringify(u.permisos), u.funciones ? JSON.stringify(u.funciones) : null)
     }
+  })
+}
+
+/**
+ * Bases de antes de los roles y las funciones: la tabla `usuarios` solo aceptaba
+ * 'admin' y 'operador' (un CHECK no se cambia en SQLite) y no tenía `funciones`.
+ * Se rehace copiando los usuarios; sus `funciones` quedan en NULL (las tienen todas).
+ */
+function migrarUsuarios(db) {
+  const { sql } = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuarios'").get()
+  if (sql.includes("'empleado'")) return
+  enTransaccion(db, () => {
+    db.exec('ALTER TABLE usuarios RENAME TO usuarios_anterior')
+    db.exec(`CREATE TABLE usuarios (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      usuario    TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      nombre     TEXT NOT NULL,
+      contrasena TEXT NOT NULL,
+      rol        TEXT NOT NULL DEFAULT 'operador' CHECK (rol IN ('admin', 'operador', 'empleado')),
+      permisos   TEXT NOT NULL DEFAULT '[]',
+      funciones  TEXT
+    )`)
+    db.exec('INSERT INTO usuarios (id, usuario, nombre, contrasena, rol, permisos) SELECT id, usuario, nombre, contrasena, rol, permisos FROM usuarios_anterior')
+    db.exec('DROP TABLE usuarios_anterior')
   })
 }
 

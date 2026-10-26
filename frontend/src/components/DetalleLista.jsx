@@ -12,9 +12,10 @@ import estilos from './DetalleLista.module.css'
  * DetalleLista
  * Modal con los productos de una lista de compra. Permite editarla
  * (BloqueCompra dentro del modal) y eliminarla con confirmación.
- * Props: lista (null = cerrado), alCerrar, alCambio (tras editar o eliminar)
+ * Props: lista (null = cerrado), alCerrar, alCambio (tras editar o eliminar),
+ * puedeEditar y puedeEliminar (funciones del usuario; sin ellas no salen sus botones)
  */
-export default function DetalleLista({ lista, alCerrar, alCambio }) {
+export default function DetalleLista({ lista, alCerrar, alCambio, puedeEditar = true, puedeEliminar = true }) {
   const { addToast } = useToast()
   const [modo, setModo] = useState('ver') // 'ver' | 'editar'
   const [confirmando, setConfirmando] = useState(false)
@@ -101,19 +102,25 @@ export default function DetalleLista({ lista, alCerrar, alCambio }) {
                 </tfoot>
               </table>
             </CuerpoModal>
-            <PieModal>
-              <Boton
-                variante="fantasma"
-                icono={<Trash2 />}
-                onClick={() => setConfirmando(true)}
-                className={estilos.eliminar}
-              >
-                Eliminar
-              </Boton>
-              <Boton variante="primario" icono={<Pencil />} onClick={() => setModo('editar')}>
-                Editar
-              </Boton>
-            </PieModal>
+            {(puedeEditar || puedeEliminar) && (
+              <PieModal>
+                {puedeEliminar && (
+                  <Boton
+                    variante="fantasma"
+                    icono={<Trash2 />}
+                    onClick={() => setConfirmando(true)}
+                    className={estilos.eliminar}
+                  >
+                    Eliminar
+                  </Boton>
+                )}
+                {puedeEditar && (
+                  <Boton variante="primario" icono={<Pencil />} onClick={() => setModo('editar')}>
+                    Editar
+                  </Boton>
+                )}
+              </PieModal>
+            )}
           </>
         )}
 

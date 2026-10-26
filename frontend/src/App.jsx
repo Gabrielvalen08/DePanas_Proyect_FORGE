@@ -24,7 +24,7 @@ function RedirigirACatalogo() {
 }
 
 function AppContenido() {
-  const { autenticado, sesion, salir, tienePermiso } = useAuth()
+  const { autenticado, sesion, salir, tienePermiso, tieneFuncion } = useAuth()
   const { addToast } = useToast()
 
   const [confirmandoSalida, setConfirmandoSalida] = useState(false)
@@ -59,6 +59,10 @@ function AppContenido() {
   // Cada pantalla se abre solo con permiso; si no, se va a la primera que el usuario sí puede ver
   const inicio = rutaInicio(sesion)
   const protegida = (permiso, elemento) => (tienePermiso(permiso) ? elemento : <Navigate to={inicio} replace />)
+  // Dentro de cada pantalla, solo aparecen las acciones que el usuario tiene (funciones)
+  const accionesCatalogo = Object.fromEntries(
+    ['agregar', 'editar', 'eliminar', 'exportar', 'cargar'].map(accion => [accion, tieneFuncion(`catalogo.${accion}`)])
+  )
 
   return (
     <>
@@ -74,9 +78,17 @@ function AppContenido() {
                 <AgregarCompra />
               ))}
             />
-            <Route path="/compras" element={protegida('/compras', <PantallaMaestra puedeAgregar={tienePermiso('/')} puedeExportar={tienePermiso('/exportar')} puedeCargar={tienePermiso('/cargar')} />)} />
-            <Route path="/catalogo" element={protegida('/catalogo', <PantallaCatalogo />)} />
-            <Route path="/catalogo/:seccion" element={protegida('/catalogo', <PantallaCatalogo />)} />
+            <Route path="/compras" element={protegida('/compras', (
+              <PantallaMaestra
+                puedeAgregar={tienePermiso('/')}
+                puedeExportar={tienePermiso('/exportar')}
+                puedeCargar={tienePermiso('/cargar')}
+                puedeEditar={tieneFuncion('compras.editar')}
+                puedeEliminar={tieneFuncion('compras.eliminar')}
+              />
+            ))} />
+            <Route path="/catalogo" element={protegida('/catalogo', <PantallaCatalogo acciones={accionesCatalogo} />)} />
+            <Route path="/catalogo/:seccion" element={protegida('/catalogo', <PantallaCatalogo acciones={accionesCatalogo} />)} />
             <Route path="/configuracion" element={<RedirigirACatalogo />} />
             <Route path="/configuracion/:seccion" element={<RedirigirACatalogo />} />
             <Route path="/exportar" element={protegida('/exportar', <PantallaExportar />)} />

@@ -1,5 +1,7 @@
 import {
   crearUsuario,
+  fetchRequisitosContrasena,
+  guardarRequisitosContrasena,
   detectarModo,
   editarUsuario,
   eliminarUsuario,
@@ -28,6 +30,7 @@ import {
   reiniciarModo,
   totalLista,
 } from './api'
+import { FUNCIONES, RUTAS_ASIGNABLES } from '../../../shared/usuarios.js'
 
 // El modo (servidor/local) se detecta una vez por carga: cada test empieza de cero
 beforeEach(() => reiniciarModo())
@@ -504,6 +507,15 @@ describe('api: usuarios (modo servidor)', () => {
     })
   })
 
+  it('los requisitos de contraseña se leen y se guardan en el backend', async () => {
+    const REQ = { minimo: 10, mayuscula: true, minuscula: true, numero: false, especial: true }
+    const llamadas = simular({ 'GET /requisitos-contrasena': { cuerpo: REQ }, 'PUT /requisitos-contrasena': { cuerpo: REQ } })
+    expect(await fetchRequisitosContrasena()).toEqual(REQ)
+    expect(await guardarRequisitosContrasena(REQ)).toEqual(REQ)
+    expect(llamadas.find(l => l.metodo === 'PUT')).toMatchObject({ ruta: '/requisitos-contrasena', cuerpo: REQ })
+    expect(localStorage.getItem('depanas_requisitos_contrasena')).toBeNull()
+  })
+
   it('una contraseña incorrecta rechaza el inicio de sesión', async () => {
     simular({ 'POST /sesion': { status: 401, cuerpo: { error: 'Usuario o contraseña incorrectos' } } })
     await expect(iniciarSesion('Cesar_01', '0000')).rejects.toThrow('Usuario o contraseña incorrectos')
@@ -511,36 +523,71 @@ describe('api: usuarios (modo servidor)', () => {
 })
 
 describe('api: usuarios (modo local)', () => {
-  const NUEVO = { usuario: 'Luis_03', nombre: 'Luis', contrasena: 'arepa99', permisos: ['/compras', '/'] }
+  const NUEVO = { usuario: 'Luis_03', nombre: 'Luis', contrasena: 'Arepa#99', rol: 'operador', permisos: ['/compras', '/'] }
 
-  it('trae a Cesar_01 (administrador) y a Marta_02 con todo menos el gestor', async () => {
+  it('trae a Cesar_01 (administrador) y a Marta_02 (operadora) con sus funciones', async () => {
     expect(await fetchUsuarios()).toEqual([
-      { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'] },
-      { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/', '/compras', '/catalogo', '/exportar', '/cargar'] },
+      { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'], funciones: ['*'] },
+      { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: RUTAS_ASIGNABLES, funciones: FUNCIONES },
     ])
-    expect(await iniciarSesion('cesar_01', '1234')).toMatchObject({ usuario: 'Cesar_01', rol: 'admin' })
+    expect(await iniciarSesion('cesar_01', 'DePanas#2026')).toMatchObject({ usuario: 'Cesar_01', rol: 'admin' })
+    await expect(iniciarSesion('Cesar_01', '1234')).rejects.toThrow()
     await expect(iniciarSesion('Cesar_01', '5678')).rejects.toThrow()
   })
 
-  it('crea un operador y guarda solo el hash de su contraseña', async () => {
-    expect(await crearUsuario({ ...NUEVO, rol: 'admin' })).toEqual({ usuario: 'Luis_03', nombre: 'Luis', rol: 'operador', permisos: ['/', '/compras'] })
+  it('un navegador con la contraseña anterior de César (1234) pasa a la nueva', async () => {
+    const anterior = 'pbkdf2$100000$5a43060896bd80a84a7d4224a028b545$c19cba8f54fc5c6afa5638a7ac9be25b870d6a132d9a64f6f96f597121b3d54e'
+    localStorage.setItem('depanas_usuarios', JSON.stringify([
+      { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'], contrasena: anterior },
+    ]))
+    await expect(iniciarSesion('Cesar_01', '1234')).rejects.toThrow()
+    expect(await iniciarSesion('Cesar_01', 'DePanas#2026')).toMatchObject({ usuario: 'Cesar_01' })
+  })
+
+  it('crea un usuario con el rol que se pide (nunca administrador) y guarda solo el hash de su contraseña', async () => {
+    await expect(crearUsuario({ ...NUEVO, rol: 'admin' })).rejects.toMatchObject({ campo: 'rol' })
+    expect(await crearUsuario(NUEVO)).toEqual({
+      usuario: 'Luis_03', nombre: 'Luis', rol: 'operador', permisos: ['/', '/compras'], funciones: ['compras.editar', 'compras.eliminar'],
+    })
     const guardado = localStorage.getItem('depanas_usuarios')
-    expect(guardado).not.toContain('arepa99')
+    expect(guardado).not.toContain('Arepa#99')
     expect(guardado).toContain('pbkdf2$')
-    expect(await iniciarSesion('Luis_03', 'arepa99')).toMatchObject({ usuario: 'Luis_03' })
+    expect(await iniciarSesion('Luis_03', 'Arepa#99')).toMatchObject({ usuario: 'Luis_03' })
+  })
+
+  it('el empleado trae sus pantallas y funciones: sin Catálogo y sin eliminar compras', async () => {
+    const empleado = await crearUsuario({ usuario: 'Ana_04', nombre: 'Ana', contrasena: 'Tequeño#1', rol: 'empleado' })
+    expect(empleado).toMatchObject({ rol: 'empleado', permisos: ['/', '/compras'], funciones: ['compras.editar'] })
+    const ajustado = await editarUsuario('Ana_04', { permisos: ['/compras', '/catalogo'], funciones: ['compras.eliminar', 'catalogo.agregar'] })
+    expect(ajustado).toMatchObject({ permisos: ['/compras', '/catalogo'], funciones: ['compras.eliminar', 'catalogo.agregar'] })
+    // Las funciones de una pantalla que ya no tiene se quitan
+    expect((await editarUsuario('Ana_04', { permisos: ['/compras'], funciones: ['compras.eliminar', 'catalogo.agregar'] })).funciones)
+      .toEqual(['compras.eliminar'])
+  })
+
+  it('la contraseña nueva cumple los requisitos, que el administrador puede cambiar', async () => {
+    expect(await fetchRequisitosContrasena()).toEqual({ minimo: 8, mayuscula: true, minuscula: true, numero: true, especial: true })
+    await expect(crearUsuario({ ...NUEVO, contrasena: 'arepa#99' })).rejects.toMatchObject({ campo: 'contrasena', message: /mayúscula/ })
+    await expect(editarUsuario('Marta_02', { contrasena: '5679' })).rejects.toMatchObject({ campo: 'contrasena' })
+
+    await expect(guardarRequisitosContrasena({ minimo: 2 })).rejects.toMatchObject({ campo: 'minimo' })
+    await guardarRequisitosContrasena({ minimo: 6, mayuscula: false, minuscula: true, numero: true, especial: false })
+    expect(await crearUsuario({ ...NUEVO, contrasena: 'arepa9' })).toMatchObject({ usuario: 'Luis_03' })
   })
 
   it('no repite usuario ni contraseña, y no da el gestor', async () => {
     await expect(crearUsuario({ ...NUEVO, usuario: 'MARTA_02' })).rejects.toMatchObject({ campo: 'usuario' })
-    await expect(crearUsuario({ ...NUEVO, contrasena: '1234' })).rejects.toMatchObject({ campo: 'contrasena' })
+    await expect(crearUsuario({ ...NUEVO, contrasena: 'DePanas#2026' })).rejects.toMatchObject({ campo: 'contrasena' })
     await expect(crearUsuario({ ...NUEVO, permisos: ['/usuarios'] })).rejects.toMatchObject({ campo: 'permisos' })
     await expect(crearUsuario({ ...NUEVO, permisos: [] })).rejects.toMatchObject({ campo: 'permisos' })
-    await expect(editarUsuario('Marta_02', { contrasena: '1234' })).rejects.toMatchObject({ campo: 'contrasena' })
+    await expect(crearUsuario({ ...NUEVO, funciones: ['compras.inventar'] })).rejects.toMatchObject({ campo: 'funciones' })
+    await expect(editarUsuario('Marta_02', { contrasena: 'DePanas#2026' })).rejects.toMatchObject({ campo: 'contrasena' })
     expect(await fetchUsuarios()).toHaveLength(2)
   })
 
-  it('el administrador conserva todas las pantallas y no se elimina', async () => {
-    expect((await editarUsuario('Cesar_01', { permisos: ['/'] })).permisos).toEqual(['*'])
+  it('el administrador conserva su rol, todas las pantallas y funciones, y no se elimina', async () => {
+    expect(await editarUsuario('Cesar_01', { permisos: ['/'], funciones: [], rol: 'empleado' }))
+      .toMatchObject({ rol: 'admin', permisos: ['*'], funciones: ['*'] })
     await expect(eliminarUsuario('Cesar_01')).rejects.toThrow('El administrador no se puede eliminar')
     expect(await eliminarUsuario('marta_02')).toEqual({ usuario: 'Marta_02' })
     await expect(iniciarSesion('Marta_02', '5678')).rejects.toThrow()

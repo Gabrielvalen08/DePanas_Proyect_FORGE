@@ -26,9 +26,9 @@ vi.mock('./services/api', () => ({
   necesitaAsignacion: () => false,
   getPrecioSugerido: () => null,
   asignarMaterial: vi.fn(),
-  fetchCatalogo: () => Promise.resolve({ proveedores: [], categorias: [], productos: [], materiales: [], uso: {} }),
+  fetchCatalogo: () => Promise.resolve({ proveedores: ['Selectos'], categorias: [], productos: [], materiales: [], uso: {}, fichas: {} }),
   iniciarSesion: async (usuario, contrasena) => {
-    if (usuario === 'Cesar_01' && contrasena === '1234') return CESAR
+    if (usuario === 'Cesar_01' && contrasena === 'DePanas#2026') return CESAR
     if (usuario === 'Marta_02' && contrasena === '5678') return MARTA
     throw new Error('Usuario o contraseña incorrectos')
   },
@@ -36,6 +36,8 @@ vi.mock('./services/api', () => ({
   crearUsuario: vi.fn(),
   editarUsuario: vi.fn(),
   eliminarUsuario: vi.fn(),
+  fetchRequisitosContrasena: () => Promise.resolve({ minimo: 8, mayuscula: true, minuscula: true, numero: true, especial: true }),
+  guardarRequisitosContrasena: vi.fn(),
 }))
 
 // vi.mock se eleva al inicio del archivo: los datos van en vi.hoisted
@@ -74,14 +76,14 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     expect(screen.queryByRole('navigation', { name: 'Menú principal' })).not.toBeInTheDocument()
   })
 
-  it('desbloquea el sistema completo al ingresar Cesar_01 y 1234', async () => {
+  it('desbloquea el sistema completo al ingresar Cesar_01 con su contraseña', async () => {
     const usuario = userEvent.setup()
     renderizarApp()
 
     const inputUser = screen.getByLabelText(ACCESO.etiquetaUsuario)
     const inputPass = screen.getByLabelText(ACCESO.etiquetaContrasena)
     await usuario.type(inputUser, 'Cesar_01')
-    await usuario.type(inputPass, '1234')
+    await usuario.type(inputPass, 'DePanas#2026')
     await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
 
     // Ahora sí debe verse el contenido principal
@@ -99,7 +101,7 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     const inputUser = screen.getByLabelText(ACCESO.etiquetaUsuario)
     const inputPass = screen.getByLabelText(ACCESO.etiquetaContrasena)
     await usuario.type(inputUser, 'Cesar_01')
-    await usuario.type(inputPass, '1234')
+    await usuario.type(inputPass, 'DePanas#2026')
     await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
 
     await waitFor(() => {
@@ -181,6 +183,32 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     expect(screen.queryByRole('link', { name: 'Catálogo' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Agregar compra' })).not.toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Lista de compras', level: 1 })).toBeInTheDocument()
+  })
+})
+
+describe('App - roles y funciones', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
+  it('un empleado (sin Catálogo) no lo ve en el menú y si lo abre a mano vuelve al inicio', async () => {
+    iniciarComo({ usuario: 'Ana_04', nombre: 'Ana', rol: 'empleado', permisos: ['/', '/compras'], funciones: ['compras.editar'] })
+    renderizarApp('/catalogo/proveedores')
+
+    expect(await screen.findByRole('heading', { name: 'Agregar compra', level: 1 })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Lista de compras' }).length).toBeGreaterThan(0)
+    expect(screen.queryByRole('link', { name: 'Catálogo' })).not.toBeInTheDocument()
+  })
+
+  it('un usuario sin funciones del Catálogo lo ve, pero sin Agregar, editar ni eliminar', async () => {
+    iniciarComo({ usuario: 'Ana_04', nombre: 'Ana', rol: 'empleado', permisos: ['/catalogo'], funciones: [] })
+    renderizarApp('/catalogo/proveedores')
+
+    expect(await screen.findByRole('heading', { name: 'Catálogo', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('rowheader', { name: 'Selectos' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Agregar proveedor/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Eliminar proveedor/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Editar proveedor/ })).not.toBeInTheDocument()
   })
 })
 
