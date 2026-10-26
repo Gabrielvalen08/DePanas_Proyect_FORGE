@@ -1,9 +1,9 @@
-import { useId, useRef, useState } from 'react'
-import { Check, Pencil, Plus, Search } from 'lucide-react'
+import { useId, useMemo, useRef, useState } from 'react'
+import { Check, Pencil, Plus, Search, X } from 'lucide-react'
 import { Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
 import { SelectorOpciones } from './AsignarMaterial'
 import FichaProveedor, { fichaInicial } from './FichaProveedor'
-import { getCategorias, getProductos } from '../services/api'
+import { getCategorias, getProductos, ordenarMaterialesPorCategoria as ordenarPorCategoria } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
 import { listaProductos, sinProducto, tieneProducto } from '../../../shared/productos.js'
 import { normalizarFicha } from '../../../shared/proveedores.js'
@@ -21,10 +21,11 @@ import estilos from './EditorCatalogo.module.css'
  *  - tipo: proveedor | categoria | material | producto
  *  - edicion: null (cerrado) | { registro: null } (agregar) | { registro: { nombre, categoria, producto }, uso }
  *  - materiales: todos los materiales del catálogo [{ nombre, categoria, producto }]
- *  - alGuardar({ nombre, categoria?, producto?, materiales? }): async; si lanza, la ventana sigue abierta
+ *  - proveedores: nombres de los proveedores (una categoría elige los que la surten)
+ *  - alGuardar({ nombre, categoria?, producto?, materiales?, proveedores? }): async; si lanza, la ventana sigue abierta
  *  - alCerrar()
  */
-export default function EditorCatalogo({ tipo, edicion, materiales = [], alGuardar, alCerrar }) {
+export default function EditorCatalogo({ tipo, edicion, materiales = [], proveedores = [], alGuardar, alCerrar }) {
   const nombreRef = useRef(null)
   const nuevo = !edicion?.registro
   return (
@@ -34,13 +35,14 @@ export default function EditorCatalogo({ tipo, edicion, materiales = [], alGuard
       titulo={nuevo ? PANTALLA_CATALOGO.tituloNuevo(tipo) : PANTALLA_CATALOGO.tituloEditar(tipo)}
       icono={nuevo ? <Plus /> : <Pencil />}
       focoInicial={nombreRef}
-      anchoMax={tipo === 'categoria' || tipo === 'producto' ? 'lg' : 'md'}
+      anchoMax={tipo === 'producto' ? 'xl' : tipo === 'categoria' ? 'lg' : 'md'}
     >
       {edicion && (
         <Formulario
           tipo={tipo}
           edicion={edicion}
           todos={materiales}
+          todosProveedores={proveedores}
           alGuardar={alGuardar}
           alCerrar={alCerrar}
           nombreRef={nombreRef}
@@ -50,15 +52,18 @@ export default function EditorCatalogo({ tipo, edicion, materiales = [], alGuard
   )
 }
 
-function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
+function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerrar, nombreRef }) {
   const registro = edicion.registro
   const esMaterial = tipo === 'material'
   const esProveedor = tipo === 'proveedor'
+  const esCategoria = tipo === 'categoria'
   const conMateriales = tipo === 'categoria' || tipo === 'producto'
   const [nombre, setNombre] = useState(registro?.nombre ?? '')
   const [ficha, setFicha] = useState(() => fichaInicial(registro?.ficha))
   const [categoria, setCategoria] = useState(registro?.categoria ?? '')
   const [productos, setProductos] = useState(() => listaProductos(registro?.producto))
+  // Categoría: los proveedores que la surten (filtran los artículos en Agregar compra)
+  const [proveedores, setProveedores] = useState(() => registro?.proveedores ?? [])
   // Los materiales que ya la llevan, sin distinguir mayúsculas (un producto puede estar en la lista de varios)
   const [elegidos, setElegidos] = useState(() => new Set(
     registro ? todos.filter(m => llevaA(m, tipo, registro.nombre)).map(m => m.nombre) : []
@@ -68,9 +73,11 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
   const [confirmando, setConfirmando] = useState(null) // null | 'guardar' | 'descartar'
   const [inicial] = useState(() => ({
     nombre, categoria, productos: productos.join('\n'), elegidos: [...elegidos].sort().join('\n'), ficha: JSON.stringify(ficha),
+    proveedores: [...proveedores].sort().join('\n'),
   }))
   const cambiado = nombre !== inicial.nombre || categoria !== inicial.categoria || productos.join('\n') !== inicial.productos ||
-    [...elegidos].sort().join('\n') !== inicial.elegidos || JSON.stringify(ficha) !== inicial.ficha
+    [...elegidos].sort().join('\n') !== inicial.elegidos || JSON.stringify(ficha) !== inicial.ficha ||
+    [...proveedores].sort().join('\n') !== inicial.proveedores
 
   // Sin cambios no hay nada que descartar: se cierra sin preguntar
   function pedirCancelar() {
@@ -104,7 +111,8 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
         await alGuardar({ nombre: nombre.trim(), categoria: categoria.trim(), productos })
       } else if (conMateriales) {
         // En el orden del catálogo
-        await alGuardar({ nombre: nombre.trim(), materiales: todos.map(m => m.nombre).filter(m => elegidos.has(m)) })
+        const materiales = todos.map(m => m.nombre).filter(m => elegidos.has(m))
+        await alGuardar(esCategoria ? { nombre: nombre.trim(), materiales, proveedores } : { nombre: nombre.trim(), materiales })
       } else if (esProveedor) {
         await alGuardar({ nombre: nombre.trim(), ficha })
       } else {
@@ -172,14 +180,38 @@ function Formulario({ tipo, edicion, todos, alGuardar, alCerrar, nombreRef }) {
               />
             </div>
           )}
-          {conMateriales && (
-            <SelectorMateriales
-              tipo={tipo}
-              nombreActual={registro?.nombre ?? ''}
-              todos={todos}
-              elegidos={elegidos}
-              onCambiar={setElegidos}
+          {esCategoria && (
+            <SelectorOpciones
+              titulo={PANTALLA_CATALOGO.etiquetaProveedores}
+              nombre="proveedor"
+              multiple
+              permitirNuevas={false}
+              opciones={todosProveedores}
+              valor={proveedores}
+              ayuda={PANTALLA_CATALOGO.ayudaProveedores}
+              onCambiar={v => {
+                setProveedores(v)
+                setErrores(prev => ({ ...prev, proveedores: undefined }))
+              }}
+              error={errores.proveedores}
             />
+          )}
+          {conMateriales && (
+            tipo === 'producto' ? (
+              <SelectorMaterialesDual
+                todos={todos}
+                elegidos={elegidos}
+                onCambiar={setElegidos}
+              />
+            ) : (
+              <SelectorMateriales
+                tipo={tipo}
+                nombreActual={registro?.nombre ?? ''}
+                todos={todos}
+                elegidos={elegidos}
+                onCambiar={setElegidos}
+              />
+            )
           )}
         </CuerpoModal>
         <PieModal>
@@ -297,3 +329,141 @@ function SelectorMateriales({ tipo, nombreActual, todos, elegidos, onCambiar }) 
 function llevaA(material, tipo, nombre) {
   return tipo === 'producto' ? tieneProducto(material.producto, nombre) : textoBusqueda(material[tipo]) === textoBusqueda(nombre)
 }
+
+/**
+ * Selector en dos columnas para productos:
+ * - Izquierda: "Artículos" disponibles con buscador fijo y orden por categoría (Materia Prima primero).
+ * - Derecha: "Artículos que lleva este producto" con conteo de elegidos y sin nota explicativa.
+ * Al hacer clic en un artículo se transfiere de un panel al otro.
+ */
+function SelectorMaterialesDual({ todos, elegidos, onCambiar }) {
+  const id = useId().replace(/:/g, '')
+  const [busqueda, setBusqueda] = useState('')
+  const textos = PANTALLA_CATALOGO.materiales
+
+  const disponibles = useMemo(() => {
+    return ordenarPorCategoria(todos.filter(m => !elegidos.has(m.nombre)))
+  }, [todos, elegidos])
+
+  const seleccionados = useMemo(() => {
+    return ordenarPorCategoria(todos.filter(m => elegidos.has(m.nombre)))
+  }, [todos, elegidos])
+
+  const buscado = textoBusqueda(busqueda.trim())
+  const disponiblesFiltrados = buscado
+    ? disponibles.filter(m => textoBusqueda(m.nombre).includes(buscado) || textoBusqueda(m.categoria || '').includes(buscado))
+    : disponibles
+
+  function agregar(nombre) {
+    const nuevos = new Set(elegidos)
+    nuevos.add(nombre)
+    onCambiar(nuevos)
+  }
+
+  function quitar(nombre) {
+    const nuevos = new Set(elegidos)
+    nuevos.delete(nombre)
+    onCambiar(nuevos)
+  }
+
+  return (
+    <div className={estilos.materialesDual} role="group" aria-label={textos.titulo('producto')}>
+      <div className={estilos.panelesDual}>
+        {/* Panel izquierdo: Artículos disponibles */}
+        <div className={estilos.panelDual}>
+          <div className={estilos.panelEncabezado}>
+            <span className={estilos.panelTitulo}>
+              {PANTALLA_CATALOGO.columnaMateriales}
+            </span>
+            <Insignia tono="neutro">{disponibles.length}</Insignia>
+          </div>
+
+          <div className={estilos.buscadorContenedor}>
+            <Campo
+              id={`${id}-buscar-dual`}
+              etiqueta={textos.buscar}
+              etiquetaOculta
+              prefijo={<Search size={16} />}
+              placeholder={`${textos.buscar}…`}
+              value={busqueda}
+              autoComplete="off"
+              onChange={e => setBusqueda(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
+            />
+          </div>
+
+          <div className={estilos.listaPanel}>
+            {todos.length === 0 ? (
+              <p className={estilos.vacio}>{textos.ninguno}</p>
+            ) : disponibles.length === 0 ? (
+              <p className={estilos.vacio}>{textos.todosElegidos}</p>
+            ) : disponiblesFiltrados.length === 0 ? (
+              <p className={estilos.vacio}>{textos.sinResultados}</p>
+            ) : (
+              <ul className={estilos.listaItems}>
+                {disponiblesFiltrados.map(m => (
+                  <li key={m.nombre}>
+                    <button
+                      type="button"
+                      className={estilos.itemBoton}
+                      onClick={() => agregar(m.nombre)}
+                      aria-label={textos.agregar(m.nombre)}
+                      title={textos.agregar(m.nombre)}
+                    >
+                      <span className={estilos.itemInfo}>
+                        <span className={estilos.itemNombre}>{m.nombre}</span>
+                        {m.categoria && <span className={estilos.itemCategoria}>{m.categoria}</span>}
+                      </span>
+                      <span className={estilos.itemIconoAccion} aria-hidden="true">
+                        <Plus size={16} />
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Panel derecho: Artículos que lleva este producto */}
+        <div className={estilos.panelDual}>
+          <div className={estilos.panelEncabezado}>
+            <span className={estilos.panelTitulo}>
+              {textos.titulo('producto')}
+            </span>
+            <Insignia tono="marca">{textos.elegidos(elegidos.size)}</Insignia>
+          </div>
+
+          <div className={estilos.listaPanel}>
+            {seleccionados.length === 0 ? (
+              <p className={estilos.vacio}>{textos.ningunoElegido}</p>
+            ) : (
+              <ul className={estilos.listaItems}>
+                {seleccionados.map(m => (
+                  <li key={m.nombre}>
+                    <button
+                      type="button"
+                      className={[estilos.itemBoton, estilos.itemBotonElegido].join(' ')}
+                      onClick={() => quitar(m.nombre)}
+                      aria-label={textos.quitar(m.nombre)}
+                      title={textos.quitar(m.nombre)}
+                    >
+                      <span className={estilos.itemInfo}>
+                        <span className={estilos.itemNombre}>{m.nombre}</span>
+                        {m.categoria && <span className={estilos.itemCategoria}>{m.categoria}</span>}
+                      </span>
+                      <span className={estilos.itemIconoQuitar} aria-hidden="true">
+                        <X size={16} />
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+

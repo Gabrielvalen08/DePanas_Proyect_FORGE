@@ -1,4 +1,5 @@
-import { comprasACsv, comprasAJson, nombreArchivo, rangoRapido , catalogoACsv, catalogoAJson } from './exportar'
+import { readSheet } from 'read-excel-file/universal'
+import { comprasAXlsx, comprasAJson, nombreArchivo, rangoRapido, catalogoAXlsx, catalogoAJson } from './exportar'
 
 const COMPRAS = [
   {
@@ -15,15 +16,14 @@ const COMPRAS = [
 ]
 
 describe('exportar', () => {
-  it('CSV: BOM, encabezados del Excel, una fila por material ordenada por fecha y comillas escapadas', () => {
-    const csv = comprasACsv(COMPRAS)
-    expect(csv.startsWith('﻿')).toBe(true)
-    const lineas = csv.slice(1).trim().split('\r\n')
-    expect(lineas[0]).toBe('Fecha,Proveedor,Artículo,Cantidad,Unidad,Monto,Categoría,Producto')
-    expect(lineas).toHaveLength(4)
-    expect(lineas[1]).toBe('2026-08-04,Selectos,Tocino La Rioja,1,lb,2.69,Materia Prima,Cachitos')
-    expect(lineas[2]).toBe('2026-08-04,Selectos,"Bolsa al Vacio 8*12, ""grande""",1,unidad,17.00,Desechables,Tequeños')
-    expect(lineas[3]).toMatch(/^2026-08-27,Pepsi,Agua/)
+  it('Excel: encabezados del Excel del negocio, una fila por artículo ordenada por fecha, cada dato en su columna', async () => {
+    const filas = await readSheet(await comprasAXlsx(COMPRAS))
+    expect(filas[0]).toEqual(['Fecha', 'Proveedor', 'Artículo', 'Cantidad', 'Unidad', 'Monto', 'Categoría', 'Producto'])
+    expect(filas).toHaveLength(4)
+    // Cantidad y monto son números (se pueden sumar en Excel); las comas y comillas del texto no parten la celda
+    expect(filas[1]).toEqual(['2026-08-04', 'Selectos', 'Tocino La Rioja', 1, 'lb', 2.69, 'Materia Prima', 'Cachitos'])
+    expect(filas[2]).toEqual(['2026-08-04', 'Selectos', 'Bolsa al Vacio 8*12, "grande"', 1, 'unidad', 17, 'Desechables', 'Tequeños'])
+    expect(filas[3].slice(0, 3)).toEqual(['2026-08-27', 'Pepsi', 'Agua'])
   })
 
   it('JSON: compras completas sin campos internos, listas para importar', () => {
@@ -34,7 +34,7 @@ describe('exportar', () => {
   })
 
   it('nombre del archivo con el rango', () => {
-    expect(nombreArchivo('2026-08-01', '2026-08-31', 'csv')).toBe('depanas_compras_2026-08-01_2026-08-31.csv')
+    expect(nombreArchivo('2026-08-01', '2026-08-31', 'xlsx')).toBe('depanas_compras_2026-08-01_2026-08-31.xlsx')
     expect(nombreArchivo('', '2026-08-31', 'json')).toBe('depanas_compras_inicio_2026-08-31.json')
   })
 
@@ -49,16 +49,17 @@ describe('exportar', () => {
 })
 
 describe('exportar: secciones del Catálogo', () => {
-  it('CSV de proveedores con su ficha y de artículos con todos sus productos', () => {
-    const proveedores = catalogoACsv('proveedor', [
+  it('Excel de proveedores con su ficha y de artículos con todos sus productos', async () => {
+    const proveedores = await readSheet(await catalogoAXlsx('proveedor', [
       { nombre: 'La Pulpería', ubicacion: 'Santa Tecla, La Libertad', telefonos: ['7123-4567', '2222-3333'], contactos: [{ nombre: 'Ana', telefono: '7000-1111' }, { nombre: 'Luis', telefono: '' }] },
-    ]).split('\r\n')
-    expect(proveedores[0]).toBe('\uFEFFProveedor,Ubicación,Teléfonos,Contactos')
-    expect(proveedores[1]).toBe('La Pulpería,"Santa Tecla, La Libertad","7123-4567; 2222-3333","Ana (7000-1111); Luis"')
+    ]))
+    expect(proveedores).toEqual([
+      ['Proveedor', 'Ubicación', 'Teléfonos', 'Contactos'],
+      ['La Pulpería', 'Santa Tecla, La Libertad', '7123-4567; 2222-3333', 'Ana (7000-1111); Luis'],
+    ])
 
-    const articulos = catalogoACsv('material', [{ nombre: 'Harina', categoria: 'Materia Prima', productos: ['Arepas', 'Empanadas'] }]).split('\r\n')
-    expect(articulos[0]).toBe('\uFEFFArtículo,Categoría,Productos')
-    expect(articulos[1]).toBe('Harina,Materia Prima,"Arepas, Empanadas"')
+    const articulos = await readSheet(await catalogoAXlsx('material', [{ nombre: 'Harina', categoria: 'Materia Prima', productos: ['Arepas', 'Empanadas'] }]))
+    expect(articulos).toEqual([['Artículo', 'Categoría', 'Productos'], ['Harina', 'Materia Prima', 'Arepas, Empanadas']])
   })
 
   it('el respaldo .json lleva el tipo de la sección y sus filas', () => {

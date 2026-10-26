@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { ArrowLeft, FileJson, ListChecks, Upload } from 'lucide-react'
 import Header from '../components/Header'
+import { useRegresar } from '../hooks/useRegresar'
 import CompararCompra from '../components/CompararCompra'
 import { contenidoCompra } from '../../../shared/carga-compras.js'
 import { Boton, ConfirmDialog, Insignia, SelectorArchivo, Tarjeta } from '../components/common'
@@ -18,6 +19,8 @@ const TONO_ESTADO = { nueva: 'exito', identica: 'neutro', conflicto: 'aviso' }
  * elegir cuáles traer y, si alguna ya existe con cambios, abre la comparación.
  */
 export default function PantallaCargar() {
+  // Se llega desde el ⋮ de Lista de compras: ahí vuelve si no hay pantalla anterior
+  const regresar = useRegresar('/compras')
   const { addToast } = useToast()
   const lectura = useRef(0)
   const archivoRef = useRef(null)
@@ -108,7 +111,7 @@ export default function PantallaCargar() {
 
   return (
     <>
-      <Header title="Cargar datos" frase={fraseDelDia('/cargar')} />
+      <Header title="Cargar datos" frase={fraseDelDia('/cargar')} alRegresar={regresar} />
 
       <main id="contenido" tabIndex={-1}>
 

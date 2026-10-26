@@ -28,6 +28,7 @@ beforeEach(() => {
 it('muestra proveedor, fecha y total y carga únicamente la compra elegida completa', async () => {
   const usuario = userEvent.setup()
   montar()
+  expect(screen.getByRole('button', { name: 'Regresar' })).toBeInTheDocument()
   const otra = { ...compra, id: 2, proveedor: 'César' }
   await usuario.upload(screen.getByLabelText(CARGAR.archivo), archivo([compra, otra]))
   expect(await screen.findByText('Marta')).toBeInTheDocument()

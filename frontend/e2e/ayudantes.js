@@ -8,7 +8,7 @@
  */
 
 import { test as base, expect } from '@playwright/test'
-import { ACCESO } from '../src/utils/mensajes.js'
+import { ACCESO, CONFIRMAR } from '../src/utils/mensajes.js'
 
 export const CESAR = { usuario: 'Cesar_01', contrasena: '1234', nombre: 'César' }
 export const MARTA = { usuario: 'Marta_02', contrasena: '5678', nombre: 'Marta' }
@@ -51,3 +51,15 @@ export async function entrar(page, { usuario, contrasena }) {
 
 /** Menú lateral (escritorio) */
 export const menu = page => page.getByRole('complementary')
+
+/** Acepta el diálogo de confirmación abierto (toda acción se confirma) */
+export async function confirmar(page, etiqueta) {
+  await page.getByRole('alertdialog').getByRole('button', { name: etiqueta }).click()
+}
+
+/** Cierra la sesión desde el menú lateral y confirma; termina en la pantalla de acceso */
+export async function salir(page) {
+  await menu(page).getByRole('button', { name: 'Cerrar sesión' }).click()
+  await confirmar(page, CONFIRMAR.cerrarSesion.confirmar)
+  await expect(page.getByRole('heading', { name: ACCESO.titulo })).toBeVisible()
+}

@@ -13,7 +13,8 @@ export const COLUMNAS_REQUERIDAS = ['fecha', 'material', 'cantidad', 'monto', 'p
 
 // Versión del catálogo (PRAGMA user_version). La siembra corre una sola vez por
 // base: si corriera en cada arranque, lo que el usuario elimina volvería a aparecer.
-const VERSION_CATALOGO = 1
+// 1: catálogo sembrado y completado con las compras. 2: proveedores de cada categoría.
+const VERSION_CATALOGO = 2
 
 /** Abre la base, aplica el esquema y migra bases del esquema anterior */
 export function abrirDB(dbPath, schemaPath) {
@@ -21,6 +22,8 @@ export function abrirDB(dbPath, schemaPath) {
   db.exec('PRAGMA journal_mode = WAL;')
   // Si otro programa tiene la base ocupada (p. ej. DB Browser), espera en vez de fallar al instante
   db.exec('PRAGMA busy_timeout = 5000;')
+  // Eliminar un proveedor o una categoría borra su relación (proveedor_categoria)
+  db.exec('PRAGMA foreign_keys = ON;')
   db.exec(readFileSync(schemaPath, 'utf8'))
   migrar(db)
   prepararCatalogo(db)
@@ -50,10 +53,46 @@ export function prepararCatalogo(db) {
   const { user_version: version } = db.prepare('PRAGMA user_version').get()
   if (version >= VERSION_CATALOGO) return
   enTransaccion(db, () => {
-    sembrarCatalogo(db)
-    completarDesdeCompras(db)
+    if (version < 1) {
+      sembrarCatalogo(db)
+      completarDesdeCompras(db)
+    }
+    if (version < 2) completarProveedorCategoria(db)
   })
   db.exec(`PRAGMA user_version = ${VERSION_CATALOGO}`)
+}
+
+/** Cada proveedor queda ligado a las categorías de lo que ya se le compró */
+function completarProveedorCategoria(db) {
+  const pares = db.prepare(
+    "SELECT DISTINCT proveedor, COALESCE(NULLIF(trim(categoria), ''), NULLIF(trim(compra_categoria), '')) AS categoria " +
+    "FROM ingresos WHERE trim(proveedor) != ''"
+  ).all()
+  for (const { proveedor, categoria } of pares) {
+    if (categoria) vincularProveedorCategoria(db, proveedor, categoria)
+  }
+}
+
+/** Liga un proveedor con una categoría (registra los que falten en el catálogo). true si la relación es nueva */
+export function vincularProveedorCategoria(db, proveedor, categoria) {
+  const p = registrarEnCatalogo(db, 'proveedor', proveedor)
+  const c = registrarEnCatalogo(db, 'categoria', categoria)
+  return Number(db.prepare(
+    'INSERT OR IGNORE INTO proveedor_categoria (proveedor_id, categoria_id) ' +
+    "SELECT p.id, c.id FROM catalogo p, catalogo c WHERE p.tipo = 'proveedor' AND p.nombre = ? AND c.tipo = 'categoria' AND c.nombre = ?"
+  ).run(p.nombre, c.nombre).changes) > 0
+}
+
+/** Proveedores de cada categoría: { 'materia prima': ['MMAG', 'Selectos'] } (claves en minúsculas, como las fichas) */
+export function leerProveedoresPorCategoria(db) {
+  const mapa = {}
+  const filas = db.prepare(
+    'SELECT c.nombre AS categoria, p.nombre AS proveedor FROM proveedor_categoria r ' +
+    'JOIN catalogo p ON p.id = r.proveedor_id JOIN catalogo c ON c.id = r.categoria_id'
+  ).all()
+  for (const { categoria, proveedor } of filas) (mapa[categoria.toLowerCase()] ??= []).push(proveedor)
+  for (const lista of Object.values(mapa)) lista.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+  return mapa
 }
 
 /**
@@ -139,6 +178,9 @@ export function registrarCompra(db, compra) {
     // Una fila puede llevar varios productos («Arepas, Empanadas»): se registra cada uno
     for (const nombre of listaProductos(producto)) registrarEnCatalogo(db, 'producto', nombre)
     completarMaterial(db, m.material, categoria, producto)
+    // La categoría con que quedó el material (la del catálogo manda) pasa a ser del proveedor
+    const asignada = db.prepare("SELECT categoria FROM catalogo WHERE tipo = 'material' AND nombre = ? COLLATE NOCASE").get(m.material)?.categoria
+    if (asignada || categoria) vincularProveedorCategoria(db, compra.proveedor, asignada || categoria)
   }
 }
 

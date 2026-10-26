@@ -128,18 +128,36 @@ describe('PantallaCatalogo', () => {
     expect(within(fila).getByText('Ana')).toBeInTheDocument()
   })
 
-  it('cada sección tiene su menú ⋮ para exportar y cargar; cargar un respaldo pide confirmar y lo aplica', async () => {
+  it('cada sección tiene su menú ⋮; cargar un respaldo deja elegir qué traer (todo elegido), marca lo nuevo y confirma', async () => {
     const usuario = userEvent.setup()
     const A = PANTALLA_CATALOGO.archivo
+    const S = A.seleccion
     renderizar('/catalogo/proveedores')
     await usuario.click(await screen.findByRole('button', { name: A.masAcciones('proveedor') }))
-    expect(screen.getAllByRole('menuitem').map(o => o.textContent)).toEqual([A.exportarCsv, A.exportarJson, A.cargar])
+    expect(screen.getAllByRole('menuitem').map(o => o.textContent)).toEqual([A.exportarExcel, A.exportarJson, A.cargar])
     await usuario.keyboard('{Escape}')
 
-    const respaldo = { tipo: 'proveedor', version: 1, filas: [{ nombre: 'La Pulpería', ubicacion: 'Santa Tecla', telefonos: [], contactos: [] }] }
+    const respaldo = {
+      tipo: 'proveedor', version: 1,
+      filas: [
+        { nombre: 'La Pulpería', ubicacion: 'Santa Tecla', telefonos: [], contactos: [] },
+        { nombre: 'Selectos', ubicacion: 'San Salvador', telefonos: [], contactos: [] },
+      ],
+    }
     const archivo = new File([JSON.stringify(respaldo)], 'proveedores.json', { type: 'application/json' })
     await usuario.upload(screen.getByLabelText(A.elegirArchivo('proveedor')), archivo)
 
+    const ventana = await screen.findByRole('dialog', { name: S.titulo('proveedor', 'cargar', 'proveedores.json') })
+    expect(within(ventana).getByRole('checkbox', { name: /La Pulpería/ })).toBeChecked()
+    expect(within(ventana).getByRole('checkbox', { name: /Selectos/ })).toBeChecked()
+    expect(within(ventana).getByText(S.cuenta(2, 2))).toBeInTheDocument()
+    // Insignias: lo que no está en el catálogo es nuevo; el detalle del proveedor es su ubicación
+    expect(within(ventana).getByRole('checkbox', { name: /La Pulpería/ }).closest('label')).toHaveTextContent(`${S.nuevo}Santa Tecla`)
+    expect(within(ventana).getByRole('checkbox', { name: /Selectos/ }).closest('label')).toHaveTextContent(S.yaExiste)
+
+    // Solo se trae La Pulpería
+    await usuario.click(within(ventana).getByRole('checkbox', { name: /Selectos/ }))
+    await usuario.click(within(ventana).getByRole('button', { name: S.boton('cargar', 1) }))
     const confirmacion = await screen.findByRole('alertdialog', { name: A.confirmarCargar.titulo('proveedor') })
     expect(within(confirmacion).getByText(A.confirmarCargar.mensaje('proveedor', 1, 'proveedores.json'))).toBeInTheDocument()
     await usuario.click(within(confirmacion).getByRole('button', { name: A.confirmarCargar.confirmar }))
@@ -147,6 +165,62 @@ describe('PantallaCatalogo', () => {
     expect(await screen.findByText(A.cargado('proveedor', { nuevos: 1, actualizados: 0, omitidos: 0 }))).toBeInTheDocument()
     const fila = (await screen.findByRole('rowheader', { name: 'La Pulpería' })).closest('tr')
     expect(within(fila).getByText('Santa Tecla')).toBeInTheDocument()
+    // Selectos no se tocó: sigue sin ubicación
+    const selectos = screen.getByRole('rowheader', { name: 'Selectos' }).closest('tr')
+    expect(within(selectos).queryByText('San Salvador')).not.toBeInTheDocument()
+  })
+
+  it('en Artículos, la ventana de exportar los lista por categoría y luego por nombre', async () => {
+    const usuario = userEvent.setup()
+    const A = PANTALLA_CATALOGO.archivo
+    renderizar('/catalogo/articulos')
+    await usuario.click(await screen.findByRole('button', { name: A.masAcciones('material') }))
+    await usuario.click(screen.getByRole('menuitem', { name: A.exportarExcel }))
+    const ventana = screen.getByRole('dialog', { name: A.seleccion.titulo('material', 'xlsx') })
+    const nombres = within(ventana).getAllByRole('checkbox').map(c => c.closest('label').querySelector('span').textContent)
+    // Bebidas va primero (Agua, Gatorade…) y lo que no tiene categoría, al final
+    expect(nombres.slice(0, 2)).toEqual(['Agua', 'Gatorade'])
+    expect(within(ventana).getAllByRole('checkbox').at(-1).closest('label')).toHaveTextContent(A.seleccion.sinCategoria)
+  })
+
+  it('exportar deja elegir qué entra: el buscador y «Quitar todos» actúan sobre lo visible y sin nada elegido no se descarga', async () => {
+    const usuario = userEvent.setup()
+    const A = PANTALLA_CATALOGO.archivo
+    const S = A.seleccion
+    const descargas = []
+    vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(blob => { descargas.push(blob); return 'blob:x' }), revokeObjectURL: vi.fn() })
+    const clic = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    renderizar('/catalogo/proveedores')
+    await usuario.click(await screen.findByRole('button', { name: A.masAcciones('proveedor') }))
+    await usuario.click(screen.getByRole('menuitem', { name: A.exportarJson }))
+    const ventana = screen.getByRole('dialog', { name: S.titulo('proveedor', 'json') })
+    const total = within(ventana).getAllByRole('checkbox').length
+    expect(within(ventana).getAllByRole('checkbox').every(c => c.checked)).toBe(true)
+
+    // «Quitar todos» con el buscador quita solo lo que se ve
+    await usuario.type(within(ventana).getByLabelText(S.buscar('proveedor')), 'mmag')
+    await usuario.click(within(ventana).getByRole('button', { name: S.quitarTodos }))
+    expect(within(ventana).getByText(S.cuenta(total - 1, total))).toBeInTheDocument()
+
+    // Sin nada elegido, el botón se apaga y lo explica
+    await usuario.clear(within(ventana).getByLabelText(S.buscar('proveedor')))
+    await usuario.click(within(ventana).getByRole('button', { name: S.quitarTodos }))
+    expect(within(ventana).getByText(S.ninguno)).toBeInTheDocument()
+    expect(within(ventana).getByRole('button', { name: S.boton('json', 0) })).toBeDisabled()
+
+    // Elegir todos menos MMAG y descargar
+    await usuario.click(within(ventana).getByRole('button', { name: S.elegirTodos }))
+    await usuario.click(within(ventana).getByRole('checkbox', { name: /MMAG/ }))
+    await usuario.click(within(ventana).getByRole('button', { name: S.boton('json', total - 1) }))
+    await usuario.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: A.confirmarExportar.confirmar }))
+
+    expect(await screen.findByText(A.exportado('proveedor', total - 1))).toBeInTheDocument()
+    const nombres = JSON.parse(await descargas[0].text()).filas.map(f => f.nombre)
+    expect(nombres).toHaveLength(total - 1)
+    expect(nombres).not.toContain('MMAG')
+    clic.mockRestore()
+    vi.unstubAllGlobals()
   })
 
   it('un respaldo de otra sección no se carga y avisa por qué', async () => {
@@ -244,6 +318,34 @@ describe('PantallaCatalogo', () => {
     await waitFor(() => {
       const actualizada = screen.getByRole('rowheader', { name: 'Bebidas' }).closest('tr')
       expect(within(actualizada).getByText('Agua, Arroz, Gatorade, Pepsi')).toBeInTheDocument()
+    })
+  })
+
+  it('una categoría elige los proveedores que la surten (solo entre los que existen) y la tabla los muestra', async () => {
+    const usuario = userEvent.setup()
+    renderizar('/catalogo/categorias')
+    const tabla = await screen.findByRole('table')
+    expect(within(tabla).getByRole('columnheader', { name: PANTALLA_CATALOGO.columnaProveedores })).toBeInTheDocument()
+
+    const fila = screen.getByRole('rowheader', { name: 'Servicios' }).closest('tr')
+    await usuario.click(within(fila).getByRole('button', { name: 'Editar categoría Servicios' }))
+    const ventana = screen.getByRole('dialog', { name: 'Editar categoría' })
+    const grupo = within(ventana).getByRole('group', { name: PANTALLA_CATALOGO.etiquetaProveedores })
+    expect(within(grupo).getByText(PANTALLA_CATALOGO.ayudaProveedores)).toBeInTheDocument()
+
+    // No se crean proveedores desde aquí
+    await usuario.type(within(grupo).getByRole('textbox', { name: 'Buscar proveedor' }), 'Nadie')
+    expect(within(grupo).queryByRole('button', { name: /Agregar «Nadie»/ })).not.toBeInTheDocument()
+    await usuario.clear(within(grupo).getByRole('textbox', { name: 'Buscar proveedor' }))
+
+    await usuario.click(within(grupo).getByRole('button', { name: 'MMAG' }))
+    expect(within(grupo).getByRole('button', { name: /MMAG/ })).toHaveAttribute('aria-pressed', 'true')
+    await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
+
+    await waitFor(() => {
+      const actualizada = screen.getByRole('rowheader', { name: 'Servicios' }).closest('tr')
+      expect(within(actualizada).getByText(/MMAG/)).toBeInTheDocument()
     })
   })
 

@@ -4,7 +4,7 @@
 
 ## Dos modos que nunca se mezclan
 
-`detectarModo()` llama una vez por carga a `GET /api/health`:
+`detectarModo()` llama una vez por carga a `GET /api/health` (la arranca `main.jsx`; en modo servidor resuelve después de traer el catálogo). Antes de saber el modo, `getProveedores()`, `getMateriales()`, etc. devuelven listas vacías: nunca se cuelan los datos de ejemplo del modo local:
 
 - **servidor:** todo va al backend (`/api/compras`, `/api/catalogo`, `/api/db/…`) y sus errores llegan a la UI con el mensaje del servidor. Nada se copia a `localStorage`.
 - **local:** sin backend, todo vive en `localStorage`: `depanas_listas` (compras, con `MOCK_LISTAS` de ejemplo) y `depanas_catalogo` (lo que el usuario agregó al catálogo).
@@ -17,15 +17,18 @@ No agregues caídas silenciosas a `localStorage` cuando el backend falla.
 | ------- | -------- |
 | `fetchListas(filtros)` | Compras, con filtros `proveedor`, `material`, `fechaDesde`, `fechaHasta` |
 | `guardarLista`, `actualizarLista(id, …)`, `eliminarLista(id)` | Escrituras de una compra completa |
-| `exportarCompras({ desde, hasta, formato })` | Descarga las compras del rango como `csv` o `json`; si no hay compras, lanza un error en vez de bajar un archivo vacío |
+| `exportarCompras({ desde, hasta, formato })` | Descarga las compras del rango como Excel (`xlsx`) o `json`; si no hay compras, lanza un error en vez de bajar un archivo vacío |
+| `exportarCatalogo(tipo, formato, elegidas?)`, `leerCatalogoJSON(archivo, tipo)`, `importarCatalogo(tipo, filas)` | Exportar y cargar una sección del Catálogo. `elegidas` son las filas que se eligieron en `SeleccionCatalogo` (sin ellas, toda la sección); cargar crea lo que falta y actualiza lo que existe |
 | `exportarDB`, `importarDB(archivo)` | `.db` (reemplaza la base, solo con servidor) o `.json` (pasa por `importarCompras`). Sin pantalla |
 | `leerComprasJSON(archivo)`, `analizarCompras(compras)`, `importarCompras(compras, decisiones)` | Cargar datos: valida y recorta, marca cada compra como nueva, duplicada o modificada, y guarda el lote (ver `shared/`) |
 | `fetchCatalogo()` | Catálogo completo recién leído, con `uso` (compras por proveedor/material, materiales por categoría/producto) |
 | `agregarAlCatalogo(tipo, datos)`, `editarEnCatalogo(tipo, nombre, datos)`, `eliminarDelCatalogo(tipo, nombre)` | Catálogo. `tipo`: `proveedor`, `categoria`, `material`, `producto`. Editar renombra también en las compras; eliminar no toca las compras |
 | `getProveedores()`, `getMateriales()`, `getCategorias()`, `getProductos()` | **Síncronas.** Opciones para los desplegables, desde el catálogo (que ya incluye lo de cada compra guardada), sin repetir y en orden alfabético |
+| `getCategoriasDeProveedor(proveedor)` | **Síncrona.** Categorías que surte el proveedor (las que lo tienen en `proveedoresPorCategoria`) |
+| `getMaterialesPorProveedor(proveedor)` | **Síncrona.** Artículos para Agregar compra: solo los de las categorías del proveedor (si no surte ninguna, todos), con «Materia Prima» primero |
 | `getAsignacion(material)` | **Síncrona.** `{ existe, nombre, categoria, producto }` del material (`''` en lo que falte) |
 | `necesitaAsignacion(material)` | `true` si al material le falta la categoría o el producto |
-| `asignarMaterial(material, { categoria, producto })` | Guarda la asignación y crea lo que no exista. Devuelve `{ material, materialNuevo, categoriaNueva, productoNuevo }` |
+| `asignarMaterial(material, { categoria, producto, proveedor? })` | Guarda la asignación y crea lo que no exista; con `proveedor`, la categoría queda ligada a él. Devuelve `{ material, materialNuevo, categoriaNueva, productoNuevo }` (+ `proveedor`, `proveedorVinculado`) |
 | `totalLista(lista)` | Suma de los montos |
 
 Las funciones síncronas leen, en modo servidor, una caché de `GET /api/catalogo` que se carga al detectar el modo y se refresca tras cada escritura. `asignarMaterial` la actualiza en el acto con la respuesta del servidor.

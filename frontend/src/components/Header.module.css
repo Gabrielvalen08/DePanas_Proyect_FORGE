@@ -101,6 +101,13 @@
 }
 
 /* Texto sobre material translúcido: un peso más y algo de tracking */
+.derecha {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
 .fecha {
   display: flex;
   align-items: center;
@@ -149,7 +156,7 @@
 
 @media (prefers-reduced-transparency: reduce) {
   .header {
-    background: var(--crema-trigo);
+    background: var(--color-bg);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -157,7 +164,7 @@
 
 @media (prefers-contrast: more) {
   .header {
-    background: var(--crema-trigo);
+    background: var(--color-bg);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     border-bottom: 1px solid var(--color-border-input);

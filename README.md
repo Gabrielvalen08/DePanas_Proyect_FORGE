@@ -14,7 +14,7 @@ Aplicación web local para que **De Panas**, un negocio de comida venezolana, re
 
 **Implementado:**
 
-- **Pantalla de acceso** con usuario y contraseña. La sesión dura hasta cerrar la pestaña y el menú tiene un botón **Bloquear**.
+- **Pantalla de acceso** con usuario y contraseña. La sesión dura hasta cerrar la pestaña y el menú tiene **Cerrar sesión** (con confirmación).
 - **Gestor de usuarios** (solo el administrador): crear usuarios con su contraseña, editar nombre, contraseña y pantallas, y eliminarlos. No se repiten usuarios ni contraseñas, y las contraseñas se guardan con hash. Cada usuario ve solo las pantallas que se le asignan.
 - **Registro de compras** (página principal). Proveedor y fecha se escriben una vez; cada fila lleva material, cantidad, unidad y precio. El total se calcula en vivo.
 - **Varias compras a la vez.** "Nueva compra" agrega otro bloque, y cada uno tiene su propio Guardar.
@@ -25,9 +25,10 @@ Aplicación web local para que **De Panas**, un negocio de comida venezolana, re
 - **Listas de compra**: tabla con proveedor, cantidad de materiales, gasto total y fecha.
 - **Detalle de cada compra** para ver, editar o eliminar (con confirmación).
 - **Filtros en línea** por proveedor, material y rango de fechas.
-- **Catálogo** (menú, debajo de Compras): cuatro opciones para administrar proveedores, categorías, materiales y productos. Se pueden agregar, cambiar de nombre y eliminar; cambiar un nombre lo actualiza también en las compras guardadas. En cada material se ven y se cambian su categoría y su producto, y al agregarlo se pueden crear categorías o productos nuevos. En cada categoría y cada producto se ven sus materiales y se eligen con casillas cuáles lleva; el cambio llega también a las compras.
+- **Artículos por proveedor:** cada categoría guarda los proveedores que la surten. En Agregar compra, al elegir el proveedor solo se sugieren los artículos de sus categorías (si no tiene ninguna, todos), con «Materia Prima» primero. Cada compra guardada y cada artículo nuevo asignado en una compra suman esa relación.
+- **Catálogo** (menú, debajo de Lista de compras): cuatro opciones para administrar proveedores, categorías, materiales y productos. Se pueden agregar, cambiar de nombre y eliminar; cambiar un nombre lo actualiza también en las compras guardadas. En cada material se ven y se cambian su categoría y su producto, y al agregarlo se pueden crear categorías o productos nuevos. En cada categoría y cada producto se ven sus materiales y se eligen con casillas cuáles lleva; el cambio llega también a las compras.
 - **Base de datos SQLite** (backend Node.js + Express). Sin servidor, la app funciona igual guardando en el navegador (modo local); los dos modos nunca se mezclan.
-- **Exportar datos** (pantalla propia): eliges un rango de fechas (o este mes, mes pasado, este año, todo) y el formato, Excel (`.csv`) o respaldo (`.json`), y ves cuántas compras y cuánto dinero entran antes de descargar.
+- **Exportar datos** (pantalla propia): eliges un rango de fechas (o este mes, mes pasado, este año, todo) y el formato, Excel (`.xlsx`, se abre directo en columnas) o respaldo (`.json`), y ves cuántas compras y cuánto dinero entran antes de descargar.
 - **Cargar datos** (pantalla propia): se elige un respaldo `.json` de Exportar y qué compras traer. Las que ya están se omiten; las que llegan con cambios se comparan lado a lado, con las diferencias marcadas en rojo, y se elige qué materiales, proveedor y fecha quedan.
 - **Interfaz con la marca De Panas**: collage de las ilustraciones del brandbook sobre el fondo crema, la arepa del logo en el menú, mensajes con la voz de marca ("¡Listo, pana!", "Hoy toca arepita…"), adaptable a escritorio y móvil, con contraste WCAG AA.
 
@@ -69,7 +70,7 @@ frontend/src/
   components/common/  Piezas base: Boton, Campo, Modal, Tarjeta…
   context/        Toasts y sesión (AuthContext)
   services/api.js Única capa de datos (modo servidor o local)
-  utils/          Formato, exportar.js (CSV/JSON) y mensajes.js (todos los textos del sistema)
+  utils/          Formato, exportar.js (Excel .xlsx/JSON) y mensajes.js (todos los textos del sistema)
   styles/         Tokens de marca, collage de fondo y presets de movimiento
 frontend/public/brand/  Logo, arepa, íconos y el collage de la pág. 10 del brandbook
 backend/

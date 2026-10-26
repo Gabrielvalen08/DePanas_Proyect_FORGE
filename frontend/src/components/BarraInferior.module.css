@@ -77,7 +77,7 @@
   position: absolute;
   inset: 0;
   border-radius: var(--radio-pildora);
-  background: var(--crema-trigo);
+  background: var(--color-bg);
 }
 
 .icono {
@@ -86,7 +86,7 @@
 
 /* El ícono va sobre la píldora crema; la etiqueta, debajo, sobre el naranja */
 .activo .icono {
-  color: var(--verde-avila);
+  color: var(--color-text);
 }
 
 .activo .etiqueta {

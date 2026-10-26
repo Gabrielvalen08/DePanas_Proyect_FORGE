@@ -358,3 +358,73 @@ test('cargar un respaldo de una sección: crea lo que falta, actualiza lo que ex
   assert.match(malo.cuerpo.error, /Fila 2: falta la categoría/)
   assert.equal(material(await catalogo(base), 'Sal'), undefined)
 })
+
+test('proveedores de una categoría: se fijan al agregar o editar, se validan y siguen al renombrar o eliminar', async t => {
+  const base = await levantar(t)
+  const nueva = await pedir(url(base, 'categoria'), 'POST', { nombre: 'Lácteos', proveedores: ['selectos', 'MMAG', 'Selectos'] })
+  assert.equal(nueva.status, 200)
+  assert.deepEqual(nueva.cuerpo.proveedores, ['MMAG', 'Selectos'])
+  assert.deepEqual((await catalogo(base)).proveedoresPorCategoria['lácteos'], ['MMAG', 'Selectos'])
+
+  // Editar deja exactamente la lista enviada; sin `proveedores` no se tocan
+  assert.deepEqual((await pedir(url(base, 'categoria', 'Lácteos'), 'PUT', { proveedores: ['Pepsi'] })).cuerpo.proveedores, ['Pepsi'])
+  assert.deepEqual((await pedir(url(base, 'categoria', 'Lácteos'), 'PUT', { nombre: 'Lácteos y quesos' })).cuerpo.proveedores, ['Pepsi'])
+
+  const inexistente = await pedir(url(base, 'categoria', 'Lácteos y quesos'), 'PUT', { proveedores: ['Nadie'] })
+  assert.equal(inexistente.status, 400)
+  assert.equal(inexistente.cuerpo.campo, 'proveedores')
+  assert.match(inexistente.cuerpo.error, /No existe un proveedor llamado «Nadie»/)
+
+  // Renombrar el proveedor conserva la relación; eliminarlo la quita
+  await pedir(url(base, 'proveedor', 'Pepsi'), 'PUT', { nombre: 'PepsiCo' })
+  assert.deepEqual((await catalogo(base)).proveedoresPorCategoria['lácteos y quesos'], ['PepsiCo'])
+  await pedir(url(base, 'proveedor', 'PepsiCo'), 'DELETE')
+  assert.equal((await catalogo(base)).proveedoresPorCategoria['lácteos y quesos'], undefined)
+})
+
+test('una compra o un artículo asignado en la compra ligan la categoría con su proveedor', async t => {
+  const base = await levantar(t)
+  await pedir(`${base}/compras`, 'POST', {
+    proveedor: 'Walmart', fecha: '2026-10-02',
+    materiales: [{ material: 'Servilletas', cantidad: 1, unidad: 'caja', monto: 3, categoria: 'Desechables', producto: 'Todos' }],
+  })
+  assert.deepEqual((await catalogo(base)).proveedoresPorCategoria.desechables, ['Walmart'])
+
+  const asignado = await pedir(`${base}/catalogo/materiales/${encodeURIComponent('Harina PAN')}`, 'PUT', {
+    categoria: 'Limpieza', productos: ['Todos'], proveedor: 'walmart',
+  })
+  assert.equal(asignado.cuerpo.proveedorVinculado, true)
+  assert.equal(asignado.cuerpo.proveedor, 'Walmart')
+  assert.deepEqual((await catalogo(base)).proveedoresPorCategoria.limpieza, ['Walmart'])
+})
+
+test('una base del catálogo anterior liga una sola vez cada proveedor con las categorías de sus compras', t => {
+  const ruta = join(carpetaTemporal(t), 'depanas.db')
+  let db = abrirDB(ruta, SCHEMA)
+  db.prepare("INSERT INTO ingresos (compra_id, fecha, material, cantidad, monto, proveedor, categoria) VALUES ('c1', '2026-08-01', 'Leche', 1, 2, 'La Colonia', 'Lácteos')").run()
+  db.exec('DELETE FROM proveedor_categoria')
+  db.exec('PRAGMA user_version = 1')
+  db.close()
+
+  db = abrirDB(ruta, SCHEMA)
+  const pares = () => db.prepare(
+    'SELECT p.nombre AS proveedor, c.nombre AS categoria FROM proveedor_categoria r JOIN catalogo p ON p.id = r.proveedor_id JOIN catalogo c ON c.id = r.categoria_id'
+  ).all().map(f => ({ ...f }))
+  assert.deepEqual(pares(), [{ proveedor: 'La Colonia', categoria: 'Lácteos' }])
+  // Lo que se quita no vuelve al reabrir
+  db.exec('DELETE FROM proveedor_categoria')
+  db.close()
+  db = abrirDB(ruta, SCHEMA)
+  assert.deepEqual(pares(), [])
+  db.close()
+})
+
+test('cargar categorías suma sus proveedores; los que no existen se omiten', async t => {
+  const base = await levantar(t)
+  const res = await pedir(`${base}/catalogo/categoria/importar`, 'POST', {
+    filas: { tipo: 'categoria', version: 1, filas: [{ nombre: 'Bebidas', articulos: [], proveedores: ['Pepsi', 'Nadie'] }] },
+  })
+  assert.equal(res.status, 200)
+  assert.equal(res.cuerpo.omitidos, 1)
+  assert.ok((await catalogo(base)).proveedoresPorCategoria.bebidas.includes('Pepsi'))
+})

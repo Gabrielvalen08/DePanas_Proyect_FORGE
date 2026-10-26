@@ -27,7 +27,7 @@ import {
 } from '../../../shared/productos.js'
 import { fichaVacia, leerFicha, normalizarFicha } from '../../../shared/proveedores.js'
 import { CARGAR } from '../utils/mensajes'
-import { catalogoACsv, catalogoAJson, comprasACsv, comprasAJson, nombreArchivo, nombreArchivoCatalogo } from '../utils/exportar'
+import { catalogoAJson, catalogoAXlsx, comprasAJson, comprasAXlsx, nombreArchivo, nombreArchivoCatalogo } from '../utils/exportar'
 import { MENSAJES_CATALOGO_JSON, filasDelCatalogo, validarCatalogoJSON } from '../../../shared/catalogo-json.js'
 import { RUTAS_ASIGNABLES, RUTA_USUARIOS, migrarPermisos } from '../utils/permisos'
 import { USUARIOS as MENSAJES_USUARIOS } from '../utils/mensajes'
@@ -125,6 +125,7 @@ function catalogoLocalInicial() {
     categorias: [...CATALOGO.categorias],
     productos: [...CATALOGO.productos],
     materiales: CATALOGO.materiales.map(m => ({ ...m })),
+    proveedoresPorCategoria: {},
   }
   // Formato anterior de depanas_catalogo: solo lo agregado por el usuario
   try {
@@ -147,7 +148,15 @@ function getCatalogoLocal() {
   try {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(CLAVE_CATALOGO) : null
     const datos = raw ? JSON.parse(raw) : null
-    if (datos?.version === 2) return datos
+    if (datos?.version === 2) {
+      // Catálogos guardados antes de los proveedores de cada categoría: se ligan una vez con las compras
+      if (!datos.proveedoresPorCategoria) {
+        datos.proveedoresPorCategoria = {}
+        for (const lista of getListas()) registrarCompraEn(datos, lista)
+        setCatalogoLocal(datos)
+      }
+      return datos
+    }
   } catch {
     // Catálogo guardado ilegible: se vuelve a armar
   }
@@ -208,7 +217,53 @@ function registrarCompraEn(cat, lista) {
     // Solo completa lo vacío: lo asignado en el catálogo manda
     if (m.categoria && !destino.categoria) destino.categoria = registrarEn(cat, 'categoria', m.categoria).nombre
     if (m.producto && !destino.producto) destino.producto = registrarProductos(cat, m.producto).texto
+    // La categoría con que quedó el artículo pasa a ser del proveedor
+    const categoria = destino.categoria || m.categoria || lista.categoria
+    if (lista.proveedor?.trim() && categoria?.trim()) vincularLocal(cat, lista.proveedor, categoria)
   }
+}
+
+/** Liga un proveedor con una categoría (registra los que falten). true si la relación es nueva */
+function vincularLocal(cat, proveedor, categoria) {
+  const p = registrarEn(cat, 'proveedor', proveedor).nombre
+  const c = registrarEn(cat, 'categoria', categoria).nombre
+  const mapa = (cat.proveedoresPorCategoria ??= {})
+  const lista = mapa[clave(c)] ?? []
+  if (lista.some(n => clave(n) === clave(p))) return false
+  mapa[clave(c)] = ordenar([...lista, p])
+  return true
+}
+
+/** Deja en la categoría exactamente esos proveedores (que deben existir), como el backend */
+function fijarProveedoresLocal(cat, categoria, proveedores) {
+  const registrados = resolverProveedores(cat, proveedores)
+  const mapa = (cat.proveedoresPorCategoria ??= {})
+  if (registrados.length) mapa[clave(categoria)] = ordenar(registrados)
+  else delete mapa[clave(categoria)]
+}
+
+/** Nombres registrados de los proveedores pedidos (sin repetir); lanza con `campo` si alguno no existe */
+function resolverProveedores(cat, proveedores) {
+  if (!Array.isArray(proveedores) || proveedores.some(p => typeof p !== 'string')) {
+    throw Object.assign(new Error('La lista de proveedores no es válida'), { campo: 'proveedores' })
+  }
+  const registrados = []
+  for (const p of proveedores) {
+    if (!p.trim()) continue
+    const existente = cat.proveedores.find(n => clave(n) === clave(p))
+    if (!existente) throw Object.assign(new Error(noExiste('proveedor', p.trim())), { campo: 'proveedores' })
+    if (!registrados.includes(existente)) registrados.push(existente)
+  }
+  return registrados
+}
+
+/** Categorías que surte un proveedor, según un mapa proveedoresPorCategoria */
+function categoriasDe(cat, proveedor) {
+  const k = clave(proveedor)
+  if (!k) return []
+  return Object.entries(cat.proveedoresPorCategoria ?? {})
+    .filter(([, proveedores]) => proveedores.some(p => clave(p) === k))
+    .map(([categoria]) => cat.categorias.find(c => clave(c) === categoria) ?? categoria)
 }
 
 function registrarCompraLocal(lista) {
@@ -219,8 +274,16 @@ function registrarCompraLocal(lista) {
 
 /** Catálogo vigente: el del servidor o el local */
 function catalogo() {
-  return catalogoServidor ?? getCatalogoLocal()
+  if (catalogoServidor) return catalogoServidor
+  if (modoActual === 'local') return getCatalogoLocal()
+  // Modo aún sin detectar (o servidor sin caché): nada de datos locales, que son de otro modo
+  detectarModo()
+  return CATALOGO_VACIO
 }
+
+const CATALOGO_VACIO = Object.freeze({
+  proveedores: [], categorias: [], productos: [], materiales: [], fichas: {}, proveedoresPorCategoria: {}, precios: {},
+})
 
 /** Proveedores para el autocompletado */
 export function getProveedores() {
@@ -230,6 +293,47 @@ export function getProveedores() {
 /** Materiales para el autocompletado */
 export function getMateriales() {
   return sinDuplicados(catalogo().materiales.map(m => m.nombre))
+}
+
+/**
+ * Ordenación estándar de artículos: «Materia Prima» primero, luego el resto
+ * de categorías alfabéticamente; dentro de cada categoría, también alfabético.
+ * Artículos sin categoría van al final.
+ */
+export function ordenarMaterialesPorCategoria(lista) {
+  return [...lista].sort((a, b) => {
+    const catA = (a.categoria || '').trim()
+    const catB = (b.categoria || '').trim()
+    const esMateriaA = catA.toLowerCase() === 'materia prima'
+    const esMateriaB = catB.toLowerCase() === 'materia prima'
+    if (esMateriaA && !esMateriaB) return -1
+    if (!esMateriaA && esMateriaB) return 1
+    if (!catA && catB) return 1
+    if (catA && !catB) return -1
+    const cmpCat = catA.localeCompare(catB, 'es', { sensitivity: 'base' })
+    if (cmpCat !== 0) return cmpCat
+    return (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' })
+  })
+}
+
+/** Categorías que surte un proveedor (las que tienen a ese proveedor en el Catálogo), en orden alfabético */
+export function getCategoriasDeProveedor(proveedor) {
+  return sinDuplicados(categoriasDe(catalogo(), proveedor))
+}
+
+/**
+ * Artículos para el autocompletado de Agregar Compra, ordenados por categoría
+ * («Materia Prima» primero). Solo los de las categorías que surte el proveedor;
+ * si no surte ninguna (o es nuevo, o no se eligió), todos. Igual en los dos modos.
+ */
+export function getMaterialesPorProveedor(proveedor) {
+  const todos = catalogo().materiales
+  const categorias = new Set(getCategoriasDeProveedor(proveedor).map(clave))
+  const lista = categorias.size ? todos.filter(m => categorias.has(clave(m.categoria))) : todos
+  // Orden estable: sinDuplicados reordenaría alfabéticamente
+  const vistos = new Set()
+  return ordenarMaterialesPorCategoria(lista).map(m => m.nombre)
+    .filter(n => n?.trim() && !vistos.has(clave(n)) && vistos.add(clave(n)))
 }
 
 /** Categorías de los materiales */
@@ -263,8 +367,8 @@ export function getAsignacion(material) {
 export function getPrecioSugerido(material) {
   const k = clave(material)
   if (!k) return null
-  if (catalogoServidor) {
-    const sugerido = catalogoServidor.precios?.[k]
+  if (modoActual !== 'local') {
+    const sugerido = catalogo().precios?.[k]
     return sugerido ? { ...sugerido } : null
   }
   let sugerido = null
@@ -293,24 +397,31 @@ export function necesitaAsignacion(material) {
  * Asigna categoría y productos a un material; lo agrega al catálogo si es nuevo,
  * igual que la categoría o los productos escritos que aún no existían.
  * eleccion: { categoria, productos: [] } (o `producto` como texto «Arepas, Empanadas»).
+ * Con `proveedor` (el de la compra), la categoría queda ligada a ese proveedor.
  * Devuelve { material: { nombre, categoria, producto, productos }, materialNuevo, categoriaNueva,
- *   productoNuevo, productosNuevos }
+ *   productoNuevo, productosNuevos } (+ proveedor y proveedorVinculado si vino `proveedor`)
  */
-export async function asignarMaterial(material, { categoria, productos, producto }) {
+export async function asignarMaterial(material, { categoria, productos, producto, proveedor }) {
   const elegidos = listaProductos(productos ?? producto)
+  const deProveedor = (proveedor || '').trim()
   if ((await detectarModo()) === 'servidor') {
     const resultado = await pedirJSON(
-      `/catalogo/materiales/${encodeURIComponent(material.trim())}`, 'PUT', { categoria, productos: elegidos }
+      `/catalogo/materiales/${encodeURIComponent(material.trim())}`, 'PUT',
+      { categoria, productos: elegidos, ...(deProveedor ? { proveedor: deProveedor } : {}) }
     )
     // Se aplica en el acto para que el formulario lo vea sin esperar la recarga
     if (catalogoServidor) {
       const { material: m, categoriaNueva, productosNuevos = [] } = resultado
-      catalogoServidor = {
+      const siguiente = {
         ...catalogoServidor,
+        proveedores: [...catalogoServidor.proveedores],
         categorias: categoriaNueva ? [...catalogoServidor.categorias, m.categoria] : catalogoServidor.categorias,
         productos: [...catalogoServidor.productos, ...productosNuevos],
         materiales: [...catalogoServidor.materiales.filter(x => clave(x.nombre) !== clave(m.nombre)), m],
+        proveedoresPorCategoria: { ...(catalogoServidor.proveedoresPorCategoria ?? {}) },
       }
+      if (deProveedor) vincularLocal(siguiente, resultado.proveedor || deProveedor, m.categoria)
+      catalogoServidor = siguiente
     }
     refrescarCache()
     return resultado
@@ -325,6 +436,9 @@ export async function asignarMaterial(material, { categoria, productos, producto
   const c = registrarEn(catalogoLocal, 'categoria', cat)
   const p = registrarProductos(catalogoLocal, elegidos)
   Object.assign(catalogoLocal.materiales.find(x => x.nombre === mat.nombre), { categoria: c.nombre, producto: p.texto })
+  const vinculo = deProveedor
+    ? { proveedorVinculado: vincularLocal(catalogoLocal, deProveedor, c.nombre), proveedor: registrarEn(catalogoLocal, 'proveedor', deProveedor).nombre }
+    : {}
   setCatalogoLocal(catalogoLocal)
   propagarAsignacionLocal(mat.nombre, c.nombre, p.texto)
 
@@ -334,6 +448,7 @@ export async function asignarMaterial(material, { categoria, productos, producto
     categoriaNueva: c.nuevo,
     productoNuevo: p.nuevos.length > 0,
     productosNuevos: p.nuevos,
+    ...vinculo,
   }
 }
 
@@ -396,6 +511,10 @@ export async function fetchCatalogo() {
     // Ficha de cada proveedor (claves en minúsculas), como el backend
     fichas: Object.fromEntries(
       Object.entries(cat.fichas ?? {}).map(([k, f]) => [k, leerFicha(f)]).filter(([, f]) => !fichaVacia(f))
+    ),
+    // Proveedores de cada categoría (claves en minúsculas), como el backend
+    proveedoresPorCategoria: Object.fromEntries(
+      Object.entries(cat.proveedoresPorCategoria ?? {}).filter(([, l]) => l.length).map(([k, l]) => [k, [...l]])
     ),
     uso: {
       proveedor: contarCompras('proveedor'),
@@ -518,12 +637,16 @@ export async function agregarAlCatalogo(tipo, datos) {
     return { nombre, ficha, materiales: 0, categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
   }
   if (tipo !== 'material') {
+    // Se valida antes de tocar nada
+    if (tipo === 'categoria' && datos.proveedores !== undefined) resolverProveedores(cat, datos.proveedores)
     registrarEn(cat, tipo, nombre)
     const materiales = conMateriales(tipo) && datos.materiales !== undefined
       ? fijarMaterialesLocal(cat, tipo, nombre, datos.materiales)
       : 0
+    if (tipo === 'categoria' && datos.proveedores !== undefined) fijarProveedoresLocal(cat, nombre, datos.proveedores)
     setCatalogoLocal(cat)
-    return { nombre, materiales, categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
+    const extra = tipo === 'categoria' ? { proveedores: [...(cat.proveedoresPorCategoria?.[clave(nombre)] ?? [])] } : {}
+    return { nombre, materiales, ...extra, categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
   }
   const productos = listaProductos(datos.productos ?? datos.producto)
   if (!datos.categoria?.trim()) throw new Error('Elige una categoría')
@@ -562,6 +685,7 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
   if (choque && clave(choque) !== clave(anterior)) throw new Error(yaExiste(tipo, choque))
   // Se valida antes de tocar nada, para no dejar el cambio a medias
   if (conMateriales(tipo) && datos.materiales !== undefined) resolverMateriales(cat, datos.materiales)
+  if (tipo === 'categoria' && datos.proveedores !== undefined) resolverProveedores(cat, datos.proveedores)
   const ficha = tipo === 'proveedor' && datos.ficha !== undefined ? normalizarFicha(datos.ficha) : undefined
 
   // Catálogo
@@ -574,9 +698,19 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
       const previa = cat.fichas?.[clave(anterior)]
       fijarFichaLocal(cat, anterior, null)
       fijarFichaLocal(cat, nuevo, ficha ?? previa ?? null)
+      // Y en las categorías que surte
+      for (const lista of Object.values(cat.proveedoresPorCategoria ?? {})) {
+        lista.forEach((n, i) => { if (n === anterior) lista[i] = nuevo })
+      }
     }
     if (tipo === 'categoria') {
       for (const m of cat.materiales) if (clave(m.categoria) === clave(anterior)) m.categoria = nuevo
+      // Sus proveedores siguen a la categoría renombrada
+      const mapa = (cat.proveedoresPorCategoria ??= {})
+      const proveedores = mapa[clave(anterior)]
+      delete mapa[clave(anterior)]
+      if (proveedores) mapa[clave(nuevo)] = proveedores
+      if (datos.proveedores !== undefined) fijarProveedoresLocal(cat, nuevo, datos.proveedores)
     } else if (tipo === 'producto') {
       // Dentro de la lista de productos de cada material
       for (const m of cat.materiales) if (tieneProducto(m.producto, anterior)) m.producto = renombrarProducto(m.producto, anterior, nuevo)
@@ -626,7 +760,8 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
   }
   const extra = tipo === 'material'
     ? { categoria: asignado.categoria, producto: asignado.producto, productos: listaProductos(asignado.producto) }
-    : tipo === 'proveedor' ? { ficha: leerFicha(cat.fichas?.[clave(nuevo)]) } : {}
+    : tipo === 'proveedor' ? { ficha: leerFicha(cat.fichas?.[clave(nuevo)]) }
+      : tipo === 'categoria' ? { proveedores: [...(cat.proveedoresPorCategoria?.[clave(nuevo)] ?? [])] } : {}
   return {
     anterior, nombre: nuevo, ...extra, compras: compras.size, materiales,
     categoriaNueva, productoNuevo: productosNuevos.length > 0, productosNuevos,
@@ -655,8 +790,15 @@ export async function eliminarDelCatalogo(tipo, nombre) {
   } else if (tipo === 'proveedor') {
     cat.proveedores = cat.proveedores.filter(n => n !== registro)
     fijarFichaLocal(cat, registro, null)
+    // Deja de surtir sus categorías
+    const mapa = cat.proveedoresPorCategoria ?? {}
+    for (const [k, lista] of Object.entries(mapa)) {
+      mapa[k] = lista.filter(n => n !== registro)
+      if (!mapa[k].length) delete mapa[k]
+    }
   } else {
     cat[LISTA[tipo]] = cat[LISTA[tipo]].filter(n => n !== registro)
+    if (tipo === 'categoria') delete cat.proveedoresPorCategoria?.[clave(registro)]
     if (tipo === 'producto') {
       // Sale de la lista de cada material; el que se quede sin productos lo volverá a pedir
       for (const m of cat.materiales) {
@@ -686,23 +828,29 @@ export async function eliminarDelCatalogo(tipo, nombre) {
 // guarda "a escondidas" en localStorage. Sin servidor, todo es local.
 
 let modoPromesa = null
+let modoActual = null       // 'servidor' | 'local' una vez detectado (lo leen las funciones síncronas)
 let catalogoServidor = null // GET /api/catalogo: opciones de los desplegables y asignaciones
 
-/** Resuelve 'servidor' o 'local' */
+/**
+ * Resuelve 'servidor' o 'local'. En modo servidor espera también el catálogo
+ * (sugerencias del autocompletado), así quien espera el modo ya lo tiene.
+ * main.jsx la llama al arrancar: tras recargar la página, ninguna pantalla
+ * pide datos antes de que se escriba en un autocompletado.
+ */
 export function detectarModo() {
   if (!modoPromesa) {
     modoPromesa = (async () => {
+      let modo = 'local'
       try {
         const res = await fetch(`${BASE_URL}/health`)
         const json = res.ok ? await res.json() : null
-        if (json?.ok) {
-          refrescarCache() // sugerencias del autocompletado
-          return 'servidor'
-        }
-        return 'local'
+        if (json?.ok) modo = 'servidor'
       } catch {
-        return 'local'
+        // Sin servidor: modo local
       }
+      modoActual = modo
+      if (modo === 'servidor') await refrescarCache()
+      return modo
     })()
   }
   return modoPromesa
@@ -711,6 +859,7 @@ export function detectarModo() {
 /** Solo para tests: vuelve a detectar el modo en la próxima llamada */
 export function reiniciarModo() {
   modoPromesa = null
+  modoActual = null
   catalogoServidor = null
 }
 
@@ -1096,17 +1245,20 @@ export async function importarJSON(archivo) {
   return importarCompras(await leerComprasJSON(archivo))
 }
 
+/** 'json' o, cualquier otro ('xlsx', y el viejo 'csv'), Excel */
+const esExcel = formato => formato !== 'json'
+
 /**
- * Descarga las compras de un rango (vacío = sin límite) como CSV para Excel o
+ * Descarga las compras de un rango (vacío = sin límite) como Excel (.xlsx) o
  * como JSON de respaldo. Funciona igual en los dos modos. Devuelve cuántas compras salieron.
  */
-export async function exportarCompras({ desde = '', hasta = '', formato = 'csv' } = {}) {
+export async function exportarCompras({ desde = '', hasta = '', formato = 'xlsx' } = {}) {
   const compras = await fetchListas({ fechaDesde: desde, fechaHasta: hasta })
   if (compras.length === 0) throw new Error('no hay compras en ese rango')
-  const csv = formato === 'csv'
-  const contenido = csv ? comprasACsv(compras) : comprasAJson(compras)
-  const tipo = csv ? 'text/csv;charset=utf-8' : 'application/json'
-  descargarBlob(new Blob([contenido], { type: tipo }), nombreArchivo(desde, hasta, csv ? 'csv' : 'json'))
+  const blob = esExcel(formato)
+    ? await comprasAXlsx(compras)
+    : new Blob([comprasAJson(compras)], { type: 'application/json' })
+  descargarBlob(blob, nombreArchivo(desde, hasta, esExcel(formato) ? 'xlsx' : 'json'))
   return compras.length
 }
 
@@ -1114,13 +1266,15 @@ export async function exportarCompras({ desde = '', hasta = '', formato = 'csv' 
 // Exportar y Cargar de cada sección del Catálogo (menú ⋮ de su lista)
 // ---------------------------------------------------------------------------
 
-/** Descarga la sección `tipo` en CSV (Excel) o respaldo .json. Devuelve cuántas filas lleva. */
-export async function exportarCatalogo(tipo, formato = 'csv') {
-  const filas = filasDelCatalogo(tipo, await fetchCatalogo())
+/** Descarga la sección `tipo` en Excel (.xlsx) o respaldo .json. Devuelve cuántas filas lleva. */
+export async function exportarCatalogo(tipo, formato = 'xlsx', elegidas) {
+  // Las elegidas en la ventana de selección (ya en formato de respaldo) o, sin ellas, toda la sección
+  const filas = elegidas ?? filasDelCatalogo(tipo, await fetchCatalogo())
   if (filas.length === 0) throw new Error(MENSAJES_CATALOGO_JSON.vacio(tipo))
-  const csv = formato === 'csv'
-  const contenido = csv ? catalogoACsv(tipo, filas) : catalogoAJson(tipo, filas)
-  descargarBlob(new Blob([contenido], { type: csv ? 'text/csv;charset=utf-8' : 'application/json' }), nombreArchivoCatalogo(tipo, csv ? 'csv' : 'json'))
+  const blob = esExcel(formato)
+    ? await catalogoAXlsx(tipo, filas)
+    : new Blob([catalogoAJson(tipo, filas)], { type: 'application/json' })
+  descargarBlob(blob, nombreArchivoCatalogo(tipo, esExcel(formato) ? 'xlsx' : 'json'))
   return filas.length
 }
 
@@ -1177,6 +1331,14 @@ export async function importarCatalogo(tipo, filas) {
       Object.assign(destino, { categoria: c.nombre, producto: p.texto })
       propagar(nombre, { categoria: c.nombre, producto: p.texto })
     } else {
+      if (tipo === 'categoria') {
+        // Suma los proveedores del archivo; los que no existen se omiten
+        for (const proveedor of fila.proveedores ?? []) {
+          const prov = cat.proveedores.find(n => clave(n) === clave(proveedor))
+          if (prov) vincularLocal(cat, prov, nombre)
+          else omitidos++
+        }
+      }
       for (const articulo of fila.articulos) {
         const mat = cat.materiales.find(m => clave(m.nombre) === clave(articulo))
         if (!mat) {

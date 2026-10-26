@@ -1,5 +1,5 @@
-import { test, expect, entrar, menu, CESAR } from './ayudantes.js'
-import { USUARIOS } from '../src/utils/mensajes.js'
+import { test, expect, entrar, menu, confirmar, salir, CESAR } from './ayudantes.js'
+import { CONFIRMAR, USUARIOS } from '../src/utils/mensajes.js'
 
 const NUEVO = { usuario: 'Luis_e2e', nombre: 'Luis', contrasena: 'tequeno9' }
 
@@ -35,16 +35,20 @@ test.describe('Gestor de usuarios', () => {
   test('no deja repetir el usuario ni la contraseña de otro', async ({ page }) => {
     const ventana = await abrirNuevo(page)
     await llenar(ventana, { ...NUEVO, usuario: 'marta_02' })
-    await ventana.getByRole('checkbox', { name: /Compras/ }).check()
+    await ventana.getByRole('checkbox', { name: /Lista de compras/ }).check()
     await ventana.getByRole('button', { name: USUARIOS.guardar }).click()
+    // El usuario repetido se detecta antes de pedir confirmación
     await expect(ventana.getByText(USUARIOS.validacion.usuarioRepetido('Marta_02'))).toBeVisible()
 
     await llenar(ventana, { ...NUEVO, contrasena: '5678' })
     await ventana.getByRole('button', { name: USUARIOS.guardar }).click()
+    await confirmar(page, CONFIRMAR.guardarCambios.confirmar)
     await expect(ventana.getByText(USUARIOS.validacion.contrasenaRepetida)).toBeVisible()
     await expect(ventana.getByLabel(USUARIOS.campos.contrasena, { exact: true })).toBeFocused()
 
+    // Con datos escritos, cancelar pide descartar
     await ventana.getByRole('button', { name: USUARIOS.cancelar }).click()
+    await confirmar(page, CONFIRMAR.descartar.confirmar)
     await expect(ventana).toBeHidden()
   })
 
@@ -55,17 +59,18 @@ test.describe('Gestor de usuarios', () => {
   })
 
   test('crea un usuario que solo ve sus pantallas, lo edita y lo elimina', async ({ page }) => {
-    // Crear con acceso solo a Compras
+    // Crear con acceso solo a Lista de compras
     const ventana = await abrirNuevo(page)
     await llenar(ventana, NUEVO)
-    await ventana.getByRole('checkbox', { name: /Compras/ }).check()
+    await ventana.getByRole('checkbox', { name: /Lista de compras/ }).check()
     await ventana.getByRole('button', { name: USUARIOS.guardar }).click()
+    await confirmar(page, CONFIRMAR.guardarCambios.confirmar)
     await expect(page.getByText(USUARIOS.creado(NUEVO))).toBeVisible()
 
-    // Entra y solo ve Compras; lo demás lo devuelve a Compras
-    await menu(page).getByRole('button', { name: 'Bloquear' }).click()
+    // Entra y solo ve Lista de compras; lo demás lo devuelve ahí
+    await salir(page)
     await entrar(page, NUEVO)
-    await expect(page.getByRole('heading', { name: 'Compras', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Lista de compras', level: 1 })).toBeVisible()
     await expect(menu(page).getByRole('link')).toHaveCount(1)
     for (const ruta of ['/', '/catalogo', '/usuarios']) {
       await page.goto(ruta)
@@ -73,7 +78,7 @@ test.describe('Gestor de usuarios', () => {
     }
 
     // César le cambia la contraseña y le da el Catálogo
-    await menu(page).getByRole('button', { name: 'Bloquear' }).click()
+    await salir(page)
     await entrar(page, CESAR)
     await menu(page).getByRole('link', { name: 'Gestor de usuarios' }).click()
     await page.getByRole('button', { name: USUARIOS.editar(NUEVO.usuario) }).click()
@@ -83,19 +88,20 @@ test.describe('Gestor de usuarios', () => {
     await edicion.getByLabel(USUARIOS.campos.confirmar, { exact: true }).fill('cachito7')
     await edicion.getByRole('checkbox', { name: /Catálogo/ }).check()
     await edicion.getByRole('button', { name: USUARIOS.guardar }).click()
+    await confirmar(page, CONFIRMAR.guardarCambios.confirmar)
     await expect(page.getByText(USUARIOS.editado(NUEVO))).toBeVisible()
 
-    // Con la nueva contraseña ve Compras y Catálogo
-    await menu(page).getByRole('button', { name: 'Bloquear' }).click()
+    // Con la nueva contraseña ve Lista de compras y Catálogo
+    await salir(page)
     await entrar(page, { ...NUEVO, contrasena: 'cachito7' })
     await expect(menu(page).getByRole('link', { name: 'Catálogo' })).toBeVisible()
 
     // César lo elimina y ya no puede entrar
-    await menu(page).getByRole('button', { name: 'Bloquear' }).click()
+    await salir(page)
     await entrar(page, CESAR)
     await menu(page).getByRole('link', { name: 'Gestor de usuarios' }).click()
     await page.getByRole('button', { name: USUARIOS.eliminar(NUEVO.usuario) }).click()
-    await page.getByRole('alertdialog').getByRole('button', { name: USUARIOS.confirmarEliminar.confirmar }).click()
+    await confirmar(page, USUARIOS.confirmarEliminar.confirmar)
     await expect(page.getByText(USUARIOS.eliminado(NUEVO.usuario))).toBeVisible()
     await expect(page.getByRole('rowheader', { name: new RegExp(NUEVO.usuario) })).toHaveCount(0)
   })

@@ -1,4 +1,4 @@
-import { test, expect, entrar, menu, CESAR, MARTA } from './ayudantes.js'
+import { test, expect, entrar, menu, salir, CESAR, MARTA } from './ayudantes.js'
 import { ACCESO } from '../src/utils/mensajes.js'
 
 test.describe('Acceso', () => {
@@ -45,14 +45,14 @@ test.describe('Acceso', () => {
   test('César entra y ve todas las pantallas, también el Gestor de usuarios', async ({ page }) => {
     await entrar(page, CESAR)
     await expect(page.getByRole('heading', { name: 'Agregar compra', level: 1 })).toBeVisible()
-    for (const pantalla of ['Agregar compra', 'Compras', 'Catálogo', 'Exportar datos', 'Cargar datos', 'Gestor de usuarios']) {
+    for (const pantalla of ['Agregar compra', 'Lista de compras', 'Catálogo', 'Gestor de usuarios']) {
       await expect(menu(page).getByRole('link', { name: pantalla })).toBeVisible()
     }
   })
 
   test('Marta entra sin el Gestor de usuarios, y si lo abre a mano vuelve al inicio', async ({ page }) => {
     await entrar(page, MARTA)
-    await expect(menu(page).getByRole('link', { name: 'Compras' })).toBeVisible()
+    await expect(menu(page).getByRole('link', { name: 'Lista de compras' })).toBeVisible()
     await expect(menu(page).getByRole('link', { name: 'Gestor de usuarios' })).toHaveCount(0)
 
     await page.goto('/usuarios')
@@ -60,10 +60,9 @@ test.describe('Acceso', () => {
     await expect(page.getByRole('heading', { name: 'Agregar compra', level: 1 })).toBeVisible()
   })
 
-  test('Bloquear cierra la sesión y vuelve a pedir la contraseña', async ({ page }) => {
+  test('Cerrar sesión (con confirmación) vuelve a pedir la contraseña', async ({ page }) => {
     await entrar(page, CESAR)
-    await menu(page).getByRole('button', { name: 'Bloquear' }).click()
-    await expect(page.getByRole('heading', { name: ACCESO.titulo })).toBeVisible()
+    await salir(page)
     await expect(page.getByText(ACCESO.bloqueado)).toBeVisible()
 
     // Recargar no vuelve a abrir la sesión

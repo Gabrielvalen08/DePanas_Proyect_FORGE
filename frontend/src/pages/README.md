@@ -8,7 +8,7 @@ Una página por ruta (definidas en `App.jsx`). Cada página renderiza `<Header>`
 | `/compras` | `PantallaMaestra` | Tabla de compras (fecha, proveedor, artículos, costos), de la más reciente a la más vieja. Toda la fila abre `DetalleLista`. Filtrar, Agregar compra y el menú ⋮ (`MenuAcciones`: Exportar y Cargar datos) van en el encabezado de la tabla; los filtros (`FiltrosEnLinea`) se despliegan sobre ella y filtran en vivo |
 
 | `/catalogo`, `/catalogo/:seccion` | `PantallaCatalogo` | Cuatro opciones (proveedores, categorías, materiales, productos); cada una abre su lista para agregar, renombrar o eliminar, con buscador y cuánto se usa cada opción. Las categorías y los productos muestran sus materiales y los eligen en su ventana. Edita con `EditorCatalogo` y elimina con `ConfirmDialog` |
-| `/exportar` | `PantallaExportar` | Rango de fechas (o rápido: este mes, mes pasado, este año, todo), formato CSV o JSON y resumen en vivo de compras y total antes de descargar |
+| `/exportar` | `PantallaExportar` | Rango de fechas (o rápido: este mes, mes pasado, este año, todo), formato Excel (.xlsx) o JSON y resumen en vivo de compras y total antes de descargar |
 | `/cargar` | `PantallaCargar` | Elige compras de un JSON de Exportar: las nuevas se cargan, las duplicadas se omiten y las modificadas se comparan (`CompararCompra`) antes de guardar |
 | `/usuarios` | `PantallaUsuarios` | Gestor de usuarios (solo el administrador). Tabla con usuario, nombre, rol y pantallas; crea y edita con `EditorUsuario` (usuario, nombre, contraseña con confirmación y las pantallas a las que entra) y elimina con `ConfirmDialog`. Un usuario o una contraseña repetidos se marcan en su campo para cambiarlos |
 
