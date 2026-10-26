@@ -5,7 +5,7 @@ import { reiniciarModo } from '../services/api'
 
 // Usa api.js real en modo local (sin servidor): los usuarios iniciales, con contraseñas en hash
 function ComponentePrueba() {
-  const { autenticado, usuario, esAdmin, tienePermiso, ingresar, salir } = useAuth()
+  const { autenticado, usuario, esAdmin, tienePermiso, tieneFuncion, ingresar, salir } = useAuth()
   return (
     <div>
       <span data-testid="estado">{autenticado ? 'autenticado' : 'bloqueado'}</span>
@@ -14,11 +14,13 @@ function ComponentePrueba() {
       <span data-testid="permiso-config">{tienePermiso('/catalogo') ? 'si' : 'no'}</span>
       <span data-testid="permiso-compras">{tienePermiso('/compras') ? 'si' : 'no'}</span>
       <span data-testid="permiso-usuarios">{tienePermiso('/usuarios') ? 'si' : 'no'}</span>
-      <button onClick={() => ingresar('Cesar_01', '1234')}>Ingresar Cesar</button>
+      <span data-testid="eliminar-compras">{tieneFuncion('compras.eliminar') ? 'si' : 'no'}</span>
+      <button onClick={() => ingresar('Cesar_01', 'DePanas#2026')}>Ingresar Cesar</button>
       <button onClick={() => ingresar('Marta_02', '5678')}>Ingresar Marta</button>
       <button onClick={() => ingresar('Cesar_01', '0000')}>Ingresar Cesar Incorrecto</button>
+      <button onClick={() => ingresar('Cesar_01', '1234')}>Ingresar Cesar contraseña anterior</button>
       <button onClick={() => ingresar('Usuario_Invalido', '1234')}>Ingresar Invalido</button>
-      <button onClick={() => ingresar('1234')}>Solo contraseña</button>
+      <button onClick={() => ingresar('DePanas#2026')}>Solo contraseña</button>
       <button onClick={() => salir()}>Salir</button>
     </div>
   )
@@ -45,10 +47,10 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('permiso-config')).toHaveTextContent('no')
   })
 
-  it('rechaza contraseñas incorrectas, usuarios no registrados y la contraseña sin usuario', async () => {
+  it('rechaza contraseñas incorrectas (también la anterior de César, 1234), usuarios no registrados y la contraseña sin usuario', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    for (const boton of ['Ingresar Cesar Incorrecto', 'Ingresar Invalido', 'Solo contraseña']) {
+    for (const boton of ['Ingresar Cesar Incorrecto', 'Ingresar Cesar contraseña anterior', 'Ingresar Invalido', 'Solo contraseña']) {
       await usuario.click(screen.getByText(boton))
     }
     // Da tiempo a que terminen las verificaciones de contraseña
@@ -67,8 +69,9 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('permiso-config')).toHaveTextContent('si')
     expect(screen.getByTestId('permiso-usuarios')).toHaveTextContent('si')
     expect(JSON.parse(sessionStorage.getItem('depanas_sesion'))).toEqual({
-      usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'],
+      usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'], funciones: ['*'],
     })
+    expect(screen.getByTestId('eliminar-compras')).toHaveTextContent('si')
   })
 
   it('Marta_02 entra a compras y el catálogo, pero no al Gestor de usuarios', async () => {
@@ -81,6 +84,17 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('permiso-compras')).toHaveTextContent('si')
     expect(screen.getByTestId('permiso-config')).toHaveTextContent('si')
     expect(screen.getByTestId('permiso-usuarios')).toHaveTextContent('no')
+    expect(screen.getByTestId('eliminar-compras')).toHaveTextContent('si')
+  })
+
+  it('una sesión con funciones limitadas no puede usar las que no tiene', () => {
+    sessionStorage.setItem('depanas_sesion', JSON.stringify({
+      usuario: 'Ana_04', nombre: 'Ana', rol: 'empleado', permisos: ['/', '/compras'], funciones: ['compras.editar'],
+    }))
+    renderizar()
+    expect(screen.getByTestId('permiso-compras')).toHaveTextContent('si')
+    expect(screen.getByTestId('permiso-config')).toHaveTextContent('no')
+    expect(screen.getByTestId('eliminar-compras')).toHaveTextContent('no')
   })
 
   it('recupera la sesión guardada al recargar', () => {
@@ -89,6 +103,8 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('estado')).toHaveTextContent('autenticado')
     expect(screen.getByTestId('permiso-compras')).toHaveTextContent('si')
     expect(screen.getByTestId('permiso-config')).toHaveTextContent('no')
+    // Una sesión de antes de las funciones las tiene todas en sus pantallas
+    expect(screen.getByTestId('eliminar-compras')).toHaveTextContent('si')
   })
 
   it('permite cerrar sesión / bloquear de nuevo', async () => {

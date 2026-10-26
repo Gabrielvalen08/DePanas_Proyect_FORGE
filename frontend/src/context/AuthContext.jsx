@@ -1,9 +1,10 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react'
 import { iniciarSesion } from '../services/api'
-import { esAdmin, migrarPermisos, puedeAcceder } from '../utils/permisos'
+import { esAdmin, migrarPermisos, puedeAcceder, puedeHacer } from '../utils/permisos'
 import { ACCESO } from '../utils/mensajes'
 
-// { usuario, nombre, rol, permisos } de quien entró; dura hasta cerrar la pestaña
+// { usuario, nombre, rol, permisos, funciones } de quien entró; dura hasta cerrar la pestaña.
+// Una sesión de antes de las funciones (sin la lista) las tiene todas en sus pantallas.
 const CLAVE_SESION = 'depanas_sesion'
 
 /** Sesión guardada en sessionStorage, o null */
@@ -28,6 +29,7 @@ export function AuthProvider({ children }) {
   const [sesion, setSesion] = useState(leerSesion)
 
   const tienePermiso = useCallback(ruta => puedeAcceder(ruta, sesion), [sesion])
+  const tieneFuncion = useCallback(funcion => puedeHacer(funcion, sesion), [sesion])
 
   /** Devuelve { ok: true, usuario } o { ok: false, error } */
   const ingresar = useCallback(async (usuarioEntrada, claveEntrada) => {
@@ -42,7 +44,7 @@ export function AuthProvider({ children }) {
     } catch {
       return { ok: false, error: ACCESO.incorrecta }
     }
-    const nueva = { usuario: datos.usuario, nombre: datos.nombre, rol: datos.rol, permisos: datos.permisos }
+    const nueva = { usuario: datos.usuario, nombre: datos.nombre, rol: datos.rol, permisos: datos.permisos, funciones: datos.funciones }
     try {
       window.sessionStorage.setItem(CLAVE_SESION, JSON.stringify(nueva))
     } catch {
@@ -68,10 +70,11 @@ export function AuthProvider({ children }) {
       sesion,
       esAdmin: esAdmin(sesion),
       tienePermiso,
+      tieneFuncion,
       ingresar,
       salir,
     }),
-    [sesion, tienePermiso, ingresar, salir]
+    [sesion, tienePermiso, tieneFuncion, ingresar, salir]
   )
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>

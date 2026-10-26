@@ -1,4 +1,4 @@
-import { RUTAS_ASIGNABLES, migrarPermisos, puedeAcceder, rutaInicio } from './permisos'
+import { FUNCIONES, RUTAS_ASIGNABLES, migrarPermisos, permisosDeRol, puedeAcceder, puedeHacer, rutaInicio } from './permisos'
 
 const ADMIN = { usuario: 'Cesar_01', rol: 'admin', permisos: ['*'] }
 const MARTA = { usuario: 'Marta_02', rol: 'operador', permisos: [...RUTAS_ASIGNABLES] }
@@ -39,5 +39,34 @@ describe('migrarPermisos', () => {
     expect(migrarPermisos(['/compras', '/configuracion'])).toEqual(['/compras', '/catalogo'])
     expect(migrarPermisos(['/configuracion', '/catalogo'])).toEqual(['/catalogo'])
     expect(migrarPermisos(['*'])).toEqual(['*'])
+  })
+})
+
+describe('puedeHacer y los roles', () => {
+  const EMPLEADO = { usuario: 'Ana_04', rol: 'empleado', ...permisosDeRol('empleado') }
+
+  it('el administrador puede hacer todo', () => {
+    for (const funcion of FUNCIONES) expect(puedeHacer(funcion, ADMIN)).toBe(true)
+  })
+
+  it('el empleado trae Agregar compra y Lista de compras: edita compras pero no las elimina ni entra al Catálogo', () => {
+    expect(EMPLEADO.permisos).toEqual(['/', '/compras'])
+    expect(puedeHacer('compras.editar', EMPLEADO)).toBe(true)
+    expect(puedeHacer('compras.eliminar', EMPLEADO)).toBe(false)
+    expect(puedeAcceder('/catalogo', EMPLEADO)).toBe(false)
+    expect(puedeHacer('catalogo.agregar', EMPLEADO)).toBe(false)
+  })
+
+  it('una función sin su pantalla no sirve', () => {
+    expect(puedeHacer('catalogo.agregar', { rol: 'operador', permisos: ['/compras'], funciones: ['catalogo.agregar'] })).toBe(false)
+  })
+
+  it('una sesión sin lista de funciones (de antes) las tiene todas en sus pantallas', () => {
+    expect(puedeHacer('compras.eliminar', MARTA)).toBe(true)
+    expect(puedeHacer('catalogo.eliminar', { rol: 'operador', permisos: ['/compras'] })).toBe(false)
+  })
+
+  it('sin sesión no hace nada', () => {
+    expect(puedeHacer('compras.editar', null)).toBe(false)
   })
 })

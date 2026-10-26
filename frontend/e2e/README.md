@@ -19,7 +19,7 @@ No hace falta tener `npm run dev` ni el backend abiertos: `playwright.config.js`
 
 ## Base de datos
 
-`servidor-pruebas.js` arranca el backend de siempre con `DEPANAS_DB` apuntando a `e2e/.tmp/e2e.db`, que se borra al empezar cada corrida. Cada corrida parte de los datos iniciales (catálogo del Excel, `Cesar_01` / `1234` y `Marta_02` / `5678`) y **nunca toca `backend/db/depanas.db`**. Como todas las pruebas comparten esa base, corren una a la vez y cada una deja los datos como los encontró (lo que crea, lo elimina).
+`servidor-pruebas.js` arranca el backend de siempre con `DEPANAS_DB` apuntando a `e2e/.tmp/e2e.db`, que se borra al empezar cada corrida. Cada corrida parte de los datos iniciales (catálogo del Excel, `Cesar_01` / `DePanas#2026` y `Marta_02` / `5678`) y **nunca toca `backend/db/depanas.db`**. Como todas las pruebas comparten esa base, corren una a la vez y cada una deja los datos como los encontró (lo que crea, lo elimina).
 
 ## Archivos
 
@@ -29,7 +29,7 @@ No hace falta tener `npm run dev` ni el backend abiertos: `playwright.config.js`
 | `navegacion.spec.js` | Cada botón del menú abre su pantalla con su título; Exportar y Cargar fuera del menú (se abren desde el ⋮ de Lista de compras y tienen Regresar); que la app use el servidor; rutas viejas (`/configuracion`, `/catalogo/materiales`) o inexistentes; secciones del Catálogo; "Saltar al contenido" |
 | `compras.spec.js` | Validación, total, filas y bloques; artículos filtrados por las categorías del proveedor; registrar una compra (con confirmación), verla en Lista de compras, exportarla a Excel (.xlsx, leído con `read-excel-file`) y eliminarla |
 | `catalogo.spec.js` | Agregar, renombrar y eliminar un proveedor; nombre vacío o repetido; exportar a Excel quitando un proveedor y cargar un respaldo eligiendo uno; buscador |
-| `usuarios.spec.js` | Gestor de usuarios: usuario o contraseña repetidos, crear un usuario con solo algunas pantallas, entrar con él, editarlo y eliminarlo |
+| `usuarios.spec.js` | Gestor de usuarios: requisitos de contraseña en vivo, usuario o contraseña repetidos; un empleado que registra compras pero no ve el Catálogo ni puede eliminarlas; darle el Catálogo solo para consultar; cambiar los requisitos |
 | `movil.spec.js` | Proyecto `movil` (Pixel 7): barra inferior, hoja "Más" (Gestor de usuarios y Cerrar sesión), que nada se salga del ancho y que Marta no vea el gestor |
 | `ayudantes.js` | `entrar(page, usuario)`, `menu(page)`, `confirmar(page, etiqueta)` (toda acción pasa por un `ConfirmDialog`), `salir(page)` y el vigilante de errores |
 

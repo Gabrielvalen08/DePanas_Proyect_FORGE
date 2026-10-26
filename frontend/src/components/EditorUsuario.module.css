@@ -1,3 +1,11 @@
+/* Datos y contraseña a la izquierda; rol, pantallas y funciones a la derecha */
+.columnas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
 .campos {
   display: flex;
   flex-direction: column;
@@ -11,9 +19,55 @@
   gap: var(--space-3);
 }
 
-/* ---------- Pantallas ---------- */
-.permisos {
-  margin-top: var(--space-6);
+/* ---------- Requisitos de la contraseña ---------- */
+.requisitos {
+  padding: var(--space-3);
+  border-radius: var(--radio-input);
+  background: var(--color-surface-soft);
+}
+
+.requisitosTitulo {
+  margin-bottom: var(--space-1);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.requisitosLista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.requisitosLista li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.requisitosLista svg {
+  flex-shrink: 0;
+}
+
+/* Cumplido en Verde Ávila; pendiente en Vinotinto (no solo color: también ✓ o ✗) */
+.cumple {
+  color: var(--color-text);
+}
+
+.falta {
+  color: var(--color-danger);
+}
+
+/* ---------- Rol, pantallas y funciones ---------- */
+.permisosColumna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.grupo {
   padding: 0;
   border: none;
 }
@@ -25,6 +79,12 @@
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--color-text);
+}
+
+.roles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
 }
 
 .opciones {
@@ -60,7 +120,8 @@
   background: var(--color-surface-soft);
 }
 
-.opcion:has(.casilla:focus-visible) {
+.opcion:has(.casilla:focus-visible),
+.funcion:has(.casilla:focus-visible) {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
@@ -88,6 +149,31 @@
   font-size: 0.875rem;
   line-height: 1.35;
   color: var(--color-text-muted);
+}
+
+/* Funciones de una pantalla: debajo de ella, con sangría y una línea que las une */
+.funciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-2) 0 0 var(--space-4);
+  padding: var(--space-1) 0 var(--space-1) var(--space-4);
+  border: none;
+  border-left: 2px solid var(--color-border);
+}
+
+.funcion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--alto-control);
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.funcion .casilla {
+  grid-row: auto;
 }
 
 .nota {
@@ -120,8 +206,16 @@
   color: var(--color-danger);
 }
 
+/* Una columna cuando no caben las dos */
+@media (max-width: 900px) {
+  .columnas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 560px) {
-  .par {
+  .par,
+  .roles {
     grid-template-columns: 1fr;
   }
 }

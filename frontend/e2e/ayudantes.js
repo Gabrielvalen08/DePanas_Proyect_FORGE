@@ -10,7 +10,7 @@
 import { test as base, expect } from '@playwright/test'
 import { ACCESO, CONFIRMAR } from '../src/utils/mensajes.js'
 
-export const CESAR = { usuario: 'Cesar_01', contrasena: '1234', nombre: 'César' }
+export const CESAR = { usuario: 'Cesar_01', contrasena: 'DePanas#2026', nombre: 'César' }
 export const MARTA = { usuario: 'Marta_02', contrasena: '5678', nombre: 'Marta' }
 
 export const test = base.extend({

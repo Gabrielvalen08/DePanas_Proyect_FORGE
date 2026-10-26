@@ -5,11 +5,11 @@ import { ToastProvider } from '../context/ToastContext'
 import PantallaMaestra from './PantallaMaestra'
 import { COMPRA, LISTA_COMPRAS } from '../utils/mensajes'
 
-function renderizar() {
+function renderizar(props = {}) {
   return render(
     <MemoryRouter>
       <ToastProvider>
-        <PantallaMaestra />
+        <PantallaMaestra {...props} />
       </ToastProvider>
     </MemoryRouter>
   )
@@ -120,5 +120,23 @@ describe('PantallaMaestra', () => {
 
     await usuario.click(screen.getByRole('button', { name: 'Limpiar' }))
     await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(6))
+  })
+
+  it('sin las funciones de editar o eliminar compras, el detalle no muestra esos botones', async () => {
+    const usuario = userEvent.setup()
+    renderizar({ puedeEliminar: false })
+    await usuario.click(await screen.findByRole('button', { name: LISTA_SELECTOS }))
+    const detalle = await screen.findByRole('dialog')
+    expect(within(detalle).queryByRole('button', { name: 'Eliminar' })).not.toBeInTheDocument()
+    expect(within(detalle).getByRole('button', { name: 'Editar' })).toBeInTheDocument()
+  })
+
+  it('sin ninguna de las dos, el detalle solo se puede ver', async () => {
+    const usuario = userEvent.setup()
+    renderizar({ puedeEditar: false, puedeEliminar: false })
+    await usuario.click(await screen.findByRole('button', { name: LISTA_SELECTOS }))
+    const detalle = await screen.findByRole('dialog')
+    expect(within(detalle).queryByRole('button', { name: 'Eliminar' })).not.toBeInTheDocument()
+    expect(within(detalle).queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument()
   })
 })

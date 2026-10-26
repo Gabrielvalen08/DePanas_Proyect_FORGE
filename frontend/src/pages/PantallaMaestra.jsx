@@ -13,9 +13,12 @@ import estilos from './PantallaMaestra.module.css'
 /**
  * Lista de compras (/compras). Filtrar, Agregar compra y el menú ⋮ (Exportar y Cargar
  * datos) van en el encabezado de la tabla. Las compras van por fecha, la más reciente arriba.
- * Props: puedeAgregar, puedeExportar, puedeCargar (según los permisos del usuario)
+ * Props: puedeAgregar, puedeExportar, puedeCargar, puedeEditar, puedeEliminar (según los permisos
+ * y las funciones del usuario)
  */
-export default function PantallaMaestra({ puedeAgregar = true, puedeExportar = true, puedeCargar = true }) {
+export default function PantallaMaestra({
+  puedeAgregar = true, puedeExportar = true, puedeCargar = true, puedeEditar = true, puedeEliminar = true,
+}) {
   const { addToast } = useToast()
 
   const [listas, setListas] = useState(null) // null = primera carga
@@ -156,6 +159,8 @@ export default function PantallaMaestra({ puedeAgregar = true, puedeExportar = t
         lista={listaAbierta}
         alCerrar={() => setListaAbierta(null)}
         alCambio={() => setVersion(v => v + 1)}
+        puedeEditar={puedeEditar}
+        puedeEliminar={puedeEliminar}
       />
     </>
   )

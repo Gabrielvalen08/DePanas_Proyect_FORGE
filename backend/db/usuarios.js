@@ -1,18 +1,25 @@
 /**
- * usuarios.js — Usuarios iniciales y pantallas que se pueden asignar.
+ * usuarios.js — Usuarios iniciales.
  * db.js los siembra en la tabla `usuarios` cuando la tabla está vacía.
- * El frontend tiene una copia en src/services/api.js (USUARIOS_INICIALES) y en
- * src/utils/permisos.js (RUTAS_ASIGNABLES), para el modo local.
+ * Las pantallas, funciones, roles y requisitos de contraseña viven en
+ * shared/usuarios.js (los usan igual el backend y el frontend).
+ * El frontend tiene una copia de estos usuarios en src/services/api.js
+ * (USUARIOS_INICIALES), para el modo local.
  *
  * Las contraseñas nunca se guardan en texto plano: van como hash PBKDF2
- * (ver contrasenas.js). Las de aquí son 1234 (Cesar_01) y 5678 (Marta_02).
+ * (ver contrasenas.js). Las de aquí son DePanas#2026 (Cesar_01) y 5678 (Marta_02).
  */
 
-/** Pantallas que el administrador puede dar a los demás usuarios (rutas del frontend) */
-export const RUTAS_ASIGNABLES = ['/', '/compras', '/catalogo', '/exportar', '/cargar']
+import { permisosDeRol } from '../../shared/usuarios.js'
 
-/** El Gestor de usuarios: solo el administrador entra, nunca se asigna */
-export const RUTA_USUARIOS = '/usuarios'
+export { RUTAS_ASIGNABLES, RUTA_USUARIOS } from '../../shared/usuarios.js'
+
+/**
+ * Hash de la contraseña anterior de Cesar_01 (1234). db.js lo cambia por la nueva
+ * en las bases que aún lo tienen; si el administrador ya la cambió, no se toca.
+ */
+export const HASH_CESAR_ANTERIOR =
+  'pbkdf2$100000$5a43060896bd80a84a7d4224a028b545$c19cba8f54fc5c6afa5638a7ac9be25b870d6a132d9a64f6f96f597121b3d54e'
 
 /** El administrador tiene '*': todas las pantallas, también las que se creen después */
 export const USUARIOS_INICIALES = [
@@ -21,13 +28,14 @@ export const USUARIOS_INICIALES = [
     nombre: 'César',
     rol: 'admin',
     permisos: ['*'],
-    contrasena: 'pbkdf2$100000$5a43060896bd80a84a7d4224a028b545$c19cba8f54fc5c6afa5638a7ac9be25b870d6a132d9a64f6f96f597121b3d54e',
+    funciones: null,
+    contrasena: 'pbkdf2$100000$318e543084955bfa70320484de53a2e7$d6e7f7d39165aedc706475dfe3356116926420fe75f9158acdc9cc674b890b9c',
   },
   {
     usuario: 'Marta_02',
     nombre: 'Marta',
     rol: 'operador',
-    permisos: [...RUTAS_ASIGNABLES],
+    ...permisosDeRol('operador'),
     contrasena: 'pbkdf2$100000$d0f24824a99bff7180d523f67b5b6ff5$e1f9aaceda70ab381493fc4662cc7c561c76aef0415446fcb0b3d7c90fdda447',
   },
 ]

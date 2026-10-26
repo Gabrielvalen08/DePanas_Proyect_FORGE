@@ -50,14 +50,25 @@ CREATE TABLE IF NOT EXISTS proveedor_categoria (
 -- Usuarios del sistema y las pantallas a las que entra cada uno.
 -- contrasena es un hash PBKDF2 (contrasenas.js), nunca el texto.
 -- permisos: JSON con las rutas del frontend; el administrador tiene ["*"].
--- Se siembra con db/usuarios.js cuando está vacía.
+-- funciones: JSON con las acciones permitidas dentro de esas pantallas
+-- (shared/usuarios.js); NULL = usuario de antes de las funciones, las tiene todas.
+-- Se siembra con db/usuarios.js cuando está vacía. Las bases con el CHECK
+-- anterior (sin 'empleado') se rehacen en db.js (migrarUsuarios).
 CREATE TABLE IF NOT EXISTS usuarios (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     usuario    TEXT NOT NULL UNIQUE COLLATE NOCASE,
     nombre     TEXT NOT NULL,
     contrasena TEXT NOT NULL,
-    rol        TEXT NOT NULL DEFAULT 'operador' CHECK (rol IN ('admin', 'operador')),
-    permisos   TEXT NOT NULL DEFAULT '[]'
+    rol        TEXT NOT NULL DEFAULT 'operador' CHECK (rol IN ('admin', 'operador', 'empleado')),
+    permisos   TEXT NOT NULL DEFAULT '[]',
+    funciones  TEXT
+);
+
+-- Ajustes del sistema que cambia el administrador, como JSON por clave
+-- (p. ej. 'requisitosContrasena'). Lo que falta toma el valor inicial.
+CREATE TABLE IF NOT EXISTS ajustes (
+    clave TEXT PRIMARY KEY,
+    valor TEXT NOT NULL
 );
 
 -- Índices para búsquedas y filtros rápidos

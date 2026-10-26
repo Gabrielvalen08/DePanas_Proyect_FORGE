@@ -43,8 +43,13 @@ const materialesDe = (catalogo, tipo, nombre) =>
  * abre su lista para agregar, cambiar el nombre o eliminar. Las categorías y los
  * productos también eligen sus materiales. Los cambios se aplican también a las
  * compras guardadas.
+ *
+ * Props: acciones { agregar, editar, eliminar, exportar, cargar } según las funciones del
+ * usuario (por defecto, todas); sin una, su botón no aparece.
  */
-export default function PantallaCatalogo() {
+const TODAS_LAS_ACCIONES = { agregar: true, editar: true, eliminar: true, exportar: true, cargar: true }
+
+export default function PantallaCatalogo({ acciones = TODAS_LAS_ACCIONES }) {
   const { seccion } = useParams()
   const tipo = TIPO_DE_RUTA[seccion] ?? null
   const { addToast } = useToast()
@@ -104,14 +109,14 @@ export default function PantallaCatalogo() {
           </Tarjeta>
         ) : (
           // key: al cambiar de sección se reinicia la búsqueda
-          <ListaCatalogo key={tipo} tipo={tipo} catalogo={catalogo} alCambio={() => setVersion(v => v + 1)} />
+          <ListaCatalogo key={tipo} tipo={tipo} catalogo={catalogo} acciones={acciones} alCambio={() => setVersion(v => v + 1)} />
         )}
       </main>
     </>
   )
 }
 
-function ListaCatalogo({ tipo, catalogo, alCambio }) {
+function ListaCatalogo({ tipo, catalogo, acciones, alCambio }) {
   const { addToast } = useToast()
   const [busqueda, setBusqueda] = useState('')
   const [edicion, setEdicion] = useState(null) // null | { registro: null } | { registro, uso }
@@ -211,17 +216,21 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
               onChange={e => setBusqueda(e.target.value)}
               className={estilos.buscador}
             />
-            <Boton variante="primario" icono={<Plus />} onClick={() => setEdicion({ registro: null })}>
-              {PANTALLA_CATALOGO.agregar(tipo)}
-            </Boton>
-            <MenuAcciones
-              etiqueta={A.masAcciones(tipo)}
-              opciones={[
-                { etiqueta: A.exportarExcel, icono: <FileSpreadsheet />, onClick: () => elegirQueExportar('xlsx') },
-                { etiqueta: A.exportarJson, icono: <FileJson />, onClick: () => elegirQueExportar('json') },
-                { etiqueta: A.cargar, icono: <Upload />, onClick: () => archivoRef.current?.click() },
-              ]}
-            />
+            {acciones.agregar && (
+              <Boton variante="primario" icono={<Plus />} onClick={() => setEdicion({ registro: null })}>
+                {PANTALLA_CATALOGO.agregar(tipo)}
+              </Boton>
+            )}
+            {(acciones.exportar || acciones.cargar) && (
+              <MenuAcciones
+                etiqueta={A.masAcciones(tipo)}
+                opciones={[
+                  { etiqueta: A.exportarExcel, icono: <FileSpreadsheet />, onClick: acciones.exportar ? () => elegirQueExportar('xlsx') : undefined },
+                  { etiqueta: A.exportarJson, icono: <FileJson />, onClick: acciones.exportar ? () => elegirQueExportar('json') : undefined },
+                  { etiqueta: A.cargar, icono: <Upload />, onClick: acciones.cargar ? () => archivoRef.current?.click() : undefined },
+                ]}
+              />
+            )}
             {/* Lo abre «Cargar respaldo» del menú */}
             <input
               ref={archivoRef}
@@ -254,7 +263,9 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
                 {esCategoria && <th scope="col">{PANTALLA_CATALOGO.columnaProveedores}</th>}
                 {conMateriales && <th scope="col">{PANTALLA_CATALOGO.columnaMateriales}</th>}
                 <th scope="col" className={estilos.numerico}>{PANTALLA_CATALOGO.columnaUso(tipo)}</th>
-                <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
+                {(acciones.editar || acciones.eliminar) && (
+                  <th scope="col" className={estilos.colAcciones}><span className="solo-lector">Acciones</span></th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -289,23 +300,29 @@ function ListaCatalogo({ tipo, catalogo, alCambio }) {
                     <td className={estilos.numerico} data-etiqueta={PANTALLA_CATALOGO.columnaUso(tipo)}>
                       {PANTALLA_CATALOGO.uso(tipo, uso)}
                     </td>
-                    <td className={estilos.colAcciones}>
-                      <div className={estilos.acciones}>
-                        <Boton
-                          variante="icono"
-                          icono={<Pencil />}
-                          aria-label={PANTALLA_CATALOGO.editar(tipo, f.nombre)}
-                          onClick={() => setEdicion({ registro: f, uso: esMaterial || tipo === 'proveedor' ? uso : 0 })}
-                        />
-                        <Boton
-                          variante="icono"
-                          icono={<Trash2 />}
-                          aria-label={PANTALLA_CATALOGO.eliminar(tipo, f.nombre)}
-                          onClick={() => setPorEliminar({ ...f, uso })}
-                          className={estilos.eliminar}
-                        />
-                      </div>
-                    </td>
+                    {(acciones.editar || acciones.eliminar) && (
+                      <td className={estilos.colAcciones}>
+                        <div className={estilos.acciones}>
+                          {acciones.editar && (
+                            <Boton
+                              variante="icono"
+                              icono={<Pencil />}
+                              aria-label={PANTALLA_CATALOGO.editar(tipo, f.nombre)}
+                              onClick={() => setEdicion({ registro: f, uso: esMaterial || tipo === 'proveedor' ? uso : 0 })}
+                            />
+                          )}
+                          {acciones.eliminar && (
+                            <Boton
+                              variante="icono"
+                              icono={<Trash2 />}
+                              aria-label={PANTALLA_CATALOGO.eliminar(tipo, f.nombre)}
+                              onClick={() => setPorEliminar({ ...f, uso })}
+                              className={estilos.eliminar}
+                            />
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 )
               })}

@@ -20,7 +20,8 @@ test.describe('Acceso', () => {
 
   test('rechaza una contraseña incorrecta y un usuario que no existe', async ({ page }) => {
     await page.goto('/')
-    for (const [usuario, contrasena] of [[CESAR.usuario, '0000'], ['Nadie_99', '1234']]) {
+    // 1234 era la contraseña anterior de César: ya no sirve
+    for (const [usuario, contrasena] of [[CESAR.usuario, '0000'], [CESAR.usuario, '1234'], ['Nadie_99', '1234']]) {
       await page.getByLabel(ACCESO.etiquetaUsuario).fill(usuario)
       await page.getByLabel(ACCESO.etiquetaContrasena, { exact: true }).fill(contrasena)
       await page.getByRole('button', { name: ACCESO.boton }).click()

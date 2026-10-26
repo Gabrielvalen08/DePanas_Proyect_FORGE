@@ -29,7 +29,11 @@ import { fichaVacia, leerFicha, normalizarFicha } from '../../../shared/proveedo
 import { CARGAR } from '../utils/mensajes'
 import { catalogoAJson, catalogoAXlsx, comprasAJson, comprasAXlsx, nombreArchivo, nombreArchivoCatalogo } from '../utils/exportar'
 import { MENSAJES_CATALOGO_JSON, filasDelCatalogo, validarCatalogoJSON } from '../../../shared/catalogo-json.js'
-import { RUTAS_ASIGNABLES, RUTA_USUARIOS, migrarPermisos } from '../utils/permisos'
+import { migrarPermisos } from '../utils/permisos'
+import {
+  FUNCIONES, ROLES_ASIGNABLES, ROL_ADMIN, RUTAS_ASIGNABLES, RUTA_USUARIOS, faltaEnContrasena, funcionesEfectivas,
+  normalizarRequisitos, pantallaDeFuncion, permisosDeRol, validarRequisitos,
+} from '../../../shared/usuarios.js'
 import { USUARIOS as MENSAJES_USUARIOS } from '../utils/mensajes'
 
 const BASE_URL = '/api'
@@ -38,6 +42,7 @@ const CLAVE_LISTAS          = 'depanas_listas'
 const CLAVE_COMPRAS_ANTIGUA = 'depanas_compras'
 const CLAVE_CATALOGO        = 'depanas_catalogo'
 const CLAVE_USUARIOS        = 'depanas_usuarios'
+const CLAVE_REQUISITOS      = 'depanas_requisitos_contrasena'
 
 // ---------------------------------------------------------------------------
 // Catálogo de los desplegables (de "Datos De Panas.xlsx", igual que
@@ -1361,22 +1366,28 @@ export async function importarCatalogo(tipo, filas) {
 }
 
 // ---------------------------------------------------------------------------
-// Usuarios: inicio de sesión y Gestor de usuarios
+// Usuarios: inicio de sesión, Gestor de usuarios y requisitos de contraseña
 // ---------------------------------------------------------------------------
-// Un usuario es { usuario, nombre, rol: 'admin' | 'operador', permisos: [rutas] }.
-// La contraseña nunca sale de aquí: se guarda como hash PBKDF2, con el mismo
-// formato que el backend (backend/contrasenas.js). Reglas (iguales en los dos
-// modos): el usuario y la contraseña no se repiten, hay un solo administrador
-// (permisos ['*'], no se elimina) y nadie más recibe el Gestor de usuarios.
+// Un usuario es { usuario, nombre, rol: 'admin' | 'operador' | 'empleado', permisos: [rutas],
+// funciones: [ids] } (shared/usuarios.js). Lo que devuelven estas funciones trae las
+// funciones efectivas. La contraseña nunca sale de aquí: se guarda como hash PBKDF2,
+// con el mismo formato que el backend (backend/contrasenas.js). Reglas (iguales en los
+// dos modos): el usuario y la contraseña no se repiten, toda contraseña nueva cumple los
+// requisitos, hay un solo administrador (permisos ['*'], no se elimina) y nadie más
+// recibe el Gestor de usuarios.
 
-/** Iguales a backend/db/usuarios.js: Cesar_01 / 1234 (admin) y Marta_02 / 5678 */
+/** Hash de la contraseña anterior de Cesar_01 (1234): se cambia por la nueva al leer los usuarios */
+const HASH_CESAR_ANTERIOR =
+  'pbkdf2$100000$5a43060896bd80a84a7d4224a028b545$c19cba8f54fc5c6afa5638a7ac9be25b870d6a132d9a64f6f96f597121b3d54e'
+
+/** Iguales a backend/db/usuarios.js: Cesar_01 / DePanas#2026 (admin) y Marta_02 / 5678 (operadora) */
 const USUARIOS_INICIALES = [
   {
-    usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'],
-    contrasena: 'pbkdf2$100000$5a43060896bd80a84a7d4224a028b545$c19cba8f54fc5c6afa5638a7ac9be25b870d6a132d9a64f6f96f597121b3d54e',
+    usuario: 'Cesar_01', nombre: 'César', rol: ROL_ADMIN, permisos: ['*'], funciones: null,
+    contrasena: 'pbkdf2$100000$318e543084955bfa70320484de53a2e7$d6e7f7d39165aedc706475dfe3356116926420fe75f9158acdc9cc674b890b9c',
   },
   {
-    usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: [...RUTAS_ASIGNABLES],
+    usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', ...permisosDeRol('operador'),
     contrasena: 'pbkdf2$100000$d0f24824a99bff7180d523f67b5b6ff5$e1f9aaceda70ab381493fc4662cc7c561c76aef0415446fcb0b3d7c90fdda447',
   },
 ]
@@ -1407,17 +1418,25 @@ async function verificar(contrasena, guardado) {
 
 /** Error con el campo del formulario que lo causó, como los del backend */
 const falloCampo = (mensaje, campo) => Object.assign(new Error(mensaje), campo ? { campo } : {})
-const publico = ({ usuario, nombre, rol, permisos }) => ({ usuario, nombre, rol, permisos: [...permisos] })
+const publico = ({ usuario, nombre, rol, permisos, funciones }) =>
+  ({ usuario, nombre, rol, permisos: [...permisos], funciones: funcionesEfectivas({ rol, permisos, funciones }) })
 const recortado = v => (typeof v === 'string' ? v.trim() : '')
 
 function getUsuariosLocal() {
   try {
     const datos = JSON.parse(localStorage.getItem(CLAVE_USUARIOS) || 'null')
-    if (Array.isArray(datos) && datos.length > 0) return datos.map(u => ({ ...u, permisos: migrarPermisos(u.permisos) }))
+    if (Array.isArray(datos) && datos.length > 0) {
+      return datos.map(u => ({
+        ...u,
+        permisos: migrarPermisos(u.permisos),
+        // Cesar_01 deja la contraseña inicial (1234) por la nueva; si ya la cambió, no se toca
+        contrasena: u.usuario === 'Cesar_01' && u.contrasena === HASH_CESAR_ANTERIOR ? USUARIOS_INICIALES[0].contrasena : u.contrasena,
+      }))
+    }
   } catch {
     // Usuarios guardados ilegibles: se vuelve a los iniciales
   }
-  return USUARIOS_INICIALES.map(u => ({ ...u, permisos: [...u.permisos] }))
+  return USUARIOS_INICIALES.map(u => ({ ...u, permisos: [...u.permisos], funciones: u.funciones && [...u.funciones] }))
 }
 
 function setUsuariosLocal(usuarios) {
@@ -1426,19 +1445,34 @@ function setUsuariosLocal(usuarios) {
 
 const buscarUsuarioLocal = (usuarios, usuario) => usuarios.find(u => clave(u.usuario) === clave(usuario))
 
+function getRequisitosLocal() {
+  try {
+    return normalizarRequisitos(JSON.parse(localStorage.getItem(CLAVE_REQUISITOS) || 'null'))
+  } catch {
+    return normalizarRequisitos(null)
+  }
+}
+
 function validarNombre(nombre) {
   if (!nombre) throw falloCampo(V.nombre, 'nombre')
   if (nombre.length > 60) throw falloCampo(V.nombreLargo, 'nombre')
 }
 
 async function validarContrasena(usuarios, contrasena, excepto = '') {
-  if (contrasena.length < 4) throw falloCampo(V.contrasena, 'contrasena')
+  const falta = faltaEnContrasena(contrasena, getRequisitosLocal())
+  if (falta) throw falloCampo(falta, 'contrasena')
   // Los hashes llevan sal: la única forma de saber si se repite es probarla contra cada uno
   for (const u of usuarios) {
     if (clave(u.usuario) !== clave(excepto) && await verificar(contrasena, u.contrasena)) {
       throw falloCampo(V.contrasenaRepetida, 'contrasena')
     }
   }
+}
+
+function validarRol(rol) {
+  if (rol === ROL_ADMIN) throw falloCampo(V.unAdmin, 'rol')
+  if (!ROLES_ASIGNABLES.includes(rol)) throw falloCampo(V.rol, 'rol')
+  return rol
 }
 
 /** Pantallas sin repetir, todas asignables, al menos una y en el orden del menú */
@@ -1452,7 +1486,15 @@ function validarPermisos(permisos) {
   return RUTAS_ASIGNABLES.filter(r => unicos.includes(r))
 }
 
-/** Devuelve el usuario ({ usuario, nombre, rol, permisos }) si la contraseña es correcta; si no, lanza */
+/** Funciones conocidas, sin repetir; las de pantallas que el usuario no tiene se quitan */
+function validarFunciones(funciones, permisos) {
+  if (!Array.isArray(funciones)) throw falloCampo(V.funciones, 'funciones')
+  const desconocida = funciones.find(f => !FUNCIONES.includes(f))
+  if (desconocida !== undefined) throw falloCampo(V.funcionDesconocida(desconocida), 'funciones')
+  return FUNCIONES.filter(f => funciones.includes(f) && permisos.includes(pantallaDeFuncion(f)))
+}
+
+/** Devuelve el usuario (público, con sus funciones) si la contraseña es correcta; si no, lanza */
 export async function iniciarSesion(usuario, contrasena) {
   if ((await detectarModo()) === 'servidor') {
     return pedirJSON('/sesion', 'POST', { usuario, contrasena })
@@ -1468,10 +1510,13 @@ export async function fetchUsuarios() {
   if ((await detectarModo()) === 'servidor') return (await pedir('/usuarios')).json()
   return getUsuariosLocal()
     .map(publico)
-    .sort((a, b) => (b.rol === 'admin') - (a.rol === 'admin') || a.usuario.localeCompare(b.usuario, 'es', { sensitivity: 'base' }))
+    .sort((a, b) => (b.rol === ROL_ADMIN) - (a.rol === ROL_ADMIN) || a.usuario.localeCompare(b.usuario, 'es', { sensitivity: 'base' }))
 }
 
-/** Crea un operador. datos: { usuario, nombre, contrasena, permisos } */
+/**
+ * Crea un usuario. datos: { usuario, nombre, contrasena, rol, permisos?, funciones? };
+ * lo que no se manda sale del rol (PERMISOS_POR_ROL)
+ */
 export async function crearUsuario(datos) {
   if ((await detectarModo()) === 'servidor') return pedirJSON('/usuarios', 'POST', datos)
   const usuarios = getUsuariosLocal()
@@ -1483,15 +1528,18 @@ export async function crearUsuario(datos) {
   if (existente) throw falloCampo(V.usuarioRepetido(existente.usuario), 'usuario')
   validarNombre(nombre)
   await validarContrasena(usuarios, contrasena)
-  const permisos = validarPermisos(datos.permisos)
-  const nuevo = { usuario, nombre, rol: 'operador', permisos, contrasena: await hashear(contrasena) }
+  const rol = validarRol(datos.rol ?? 'operador')
+  const base = permisosDeRol(rol)
+  const permisos = validarPermisos(datos.permisos ?? base.permisos)
+  const funciones = validarFunciones(datos.funciones ?? base.funciones, permisos)
+  const nuevo = { usuario, nombre, rol, permisos, funciones, contrasena: await hashear(contrasena) }
   setUsuariosLocal([...usuarios, nuevo])
   return publico(nuevo)
 }
 
 /**
- * Cambia { nombre?, contrasena?, permisos? }. La contraseña vacía no se toca y
- * los permisos del administrador no se editan (siempre entra a todo).
+ * Cambia { nombre?, contrasena?, rol?, permisos?, funciones? }. La contraseña vacía no se
+ * toca y el administrador conserva su rol, sus pantallas y sus funciones (siempre todo).
  */
 export async function editarUsuario(usuario, datos) {
   if ((await detectarModo()) === 'servidor') {
@@ -1510,7 +1558,12 @@ export async function editarUsuario(usuario, datos) {
     await validarContrasena(usuarios, contrasena, registro.usuario)
     cambios.contrasena = await hashear(contrasena)
   }
-  if (datos.permisos !== undefined && registro.rol !== 'admin') cambios.permisos = validarPermisos(datos.permisos)
+  if (registro.rol !== ROL_ADMIN) {
+    if (datos.rol !== undefined) cambios.rol = validarRol(datos.rol)
+    const permisos = datos.permisos !== undefined ? validarPermisos(datos.permisos) : registro.permisos
+    if (datos.permisos !== undefined) cambios.permisos = permisos
+    if (datos.funciones !== undefined) cambios.funciones = validarFunciones(datos.funciones, permisos)
+  }
   Object.assign(registro, cambios)
   setUsuariosLocal(usuarios)
   return publico(registro)
@@ -1524,9 +1577,23 @@ export async function eliminarUsuario(usuario) {
   const usuarios = getUsuariosLocal()
   const registro = buscarUsuarioLocal(usuarios, usuario)
   if (!registro) throw falloCampo(V.noExiste(usuario))
-  if (registro.rol === 'admin') throw falloCampo(V.adminNoSeElimina)
+  if (registro.rol === ROL_ADMIN) throw falloCampo(V.adminNoSeElimina)
   setUsuariosLocal(usuarios.filter(u => u !== registro))
   return { usuario: registro.usuario }
+}
+
+/** Lo que pide toda contraseña nueva: { minimo, mayuscula, minuscula, numero, especial } */
+export async function fetchRequisitosContrasena() {
+  if ((await detectarModo()) === 'servidor') return (await pedir('/requisitos-contrasena')).json()
+  return getRequisitosLocal()
+}
+
+/** Cambia los requisitos (solo el administrador). Un mínimo inválido lanza con campo 'minimo' */
+export async function guardarRequisitosContrasena(requisitos) {
+  if ((await detectarModo()) === 'servidor') return pedirJSON('/requisitos-contrasena', 'PUT', requisitos)
+  const limpios = validarRequisitos(requisitos)
+  localStorage.setItem(CLAVE_REQUISITOS, JSON.stringify(limpios))
+  return limpios
 }
 
 function descargarBlob(blob, nombre) {
