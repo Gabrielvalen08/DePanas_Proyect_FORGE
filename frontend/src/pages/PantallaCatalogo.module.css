@@ -174,7 +174,7 @@
 }
 
 /* En el teléfono cada opción es una tarjeta: nombre arriba, datos con su etiqueta, acciones al final */
-@media (max-width: 767px) {
+@media (max-width: 1099px) {
   .tabla thead {
     position: absolute;
     width: 1px;
@@ -223,7 +223,7 @@
 }
 
 /* Teléfono: las cuatro opciones en 2 columnas compactas, para que la lista quede a la vista */
-@media (max-width: 767px) {
+@media (max-width: 1099px) {
   .secciones {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-2);
@@ -275,7 +275,7 @@
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1099px) {
   .tabla .listaMateriales {
     min-width: 0;
     text-align: right;

@@ -69,4 +69,44 @@ test.describe('Navegación', () => {
     await page.keyboard.press('Enter')
     await expect(page.locator('#contenido')).toBeFocused()
   })
+
+  test('la vista de teléfono empieza antes de que se corte algún botón (menos de 1100 px)', async ({ page }) => {
+    const barraMovil = page.getByRole('navigation', { name: 'Menú principal móvil' })
+    await page.setViewportSize({ width: 1100, height: 800 })
+    await expect(menu(page)).toBeVisible()
+    await expect(barraMovil).toBeHidden()
+    await page.setViewportSize({ width: 1099, height: 800 })
+    await expect(menu(page)).toBeHidden()
+    await expect(barraMovil).toBeVisible()
+  })
+
+  test('a ningún ancho queda un botón cortado o fuera de la vista', async ({ page }) => {
+    // Lo más ancho: Lista de compras, Categorías del Catálogo (la tabla más ancha) y el Gestor de usuarios
+    for (const ruta of ['/compras', '/catalogo/categorias', '/usuarios']) {
+      await page.goto(ruta)
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+      for (const ancho of [1280, 1100, 1099, 1024, 900, 768, 600, 375, 320]) {
+        await page.setViewportSize({ width: ancho, height: 800 })
+        const cortados = await page.evaluate(() => {
+          const vw = document.documentElement.clientWidth
+          const fuera = []
+          for (const el of document.querySelectorAll('main button, main a[href], main input:not([type=hidden])')) {
+            if (el.closest('[aria-hidden=true], .solo-lector')) continue
+            const r = el.getBoundingClientRect()
+            if (!r.width || !r.height) continue
+            let cortado = r.right > vw + 1 || r.left < -1
+            for (let p = el.parentElement; p && !cortado; p = p.parentElement) {
+              if (/(hidden|clip)/.test(getComputedStyle(p).overflowX)) {
+                const c = p.getBoundingClientRect()
+                cortado = r.right > c.right + 1 || r.left < c.left - 1
+              }
+            }
+            if (cortado) fuera.push((el.getAttribute('aria-label') || el.textContent).trim().slice(0, 40))
+          }
+          return fuera
+        })
+        expect(cortados, `${ruta} a ${ancho} px`).toEqual([])
+      }
+    }
+  })
 })

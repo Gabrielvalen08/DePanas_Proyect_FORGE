@@ -74,7 +74,7 @@
 }
 
 /* En el teléfono cada usuario es una tarjeta: usuario arriba, datos con su etiqueta, acciones al lado */
-@media (max-width: 767px) {
+@media (max-width: 1099px) {
   .tabla thead {
     position: absolute;
     width: 1px;
@@ -107,6 +107,10 @@
 
   .tabla tbody th {
     justify-content: flex-start;
+    /* En pantallas muy angostas el usuario y sus insignias bajan de línea antes que empujar los botones */
+    flex-wrap: wrap;
+    min-width: 0;
+    white-space: normal;
   }
 
   .tabla td[data-etiqueta] {

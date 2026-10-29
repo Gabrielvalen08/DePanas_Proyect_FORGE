@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react'
 
-/** true mientras la media query se cumpla, p. ej. '(max-width: 767px)' */
+/** true mientras la media query se cumpla, p. ej. '(max-width: 1099px)' */
 export function useConsultaMedia(consulta) {
   const suscribir = useCallback(
     (avisar) => {

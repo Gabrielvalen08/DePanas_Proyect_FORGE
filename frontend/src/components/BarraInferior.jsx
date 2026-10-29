@@ -10,7 +10,7 @@ import { fundido, springSuave, variantesHoja, variantesScrim } from '../styles/m
 import estilos from './BarraInferior.module.css'
 
 /**
- * Navegación móvil (< 768px). La píldora activa se desliza entre ítems.
+ * Navegación móvil (< 1100px, ver styles/base.css). La píldora activa se desliza entre ítems.
  * Solo los ítems con `enBarra` van en la barra; el resto, el Gestor de usuarios
  * y Cerrar sesión se abren desde "Más", así nada queda fuera de la pantalla.
  */
