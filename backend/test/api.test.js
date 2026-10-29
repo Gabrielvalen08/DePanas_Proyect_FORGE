@@ -9,6 +9,7 @@ import { tmpdir } from 'os'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { DatabaseSync } from 'node:sqlite'
+import { cabeceras, entrar } from './ayudantes.js'
 import { crearApp } from '../app.js'
 
 const SCHEMA = join(dirname(fileURLToPath(import.meta.url)), '..', 'db', 'schema.sql')
@@ -22,6 +23,7 @@ async function levantar(t, dbPath) {
     const s = app.listen(0, () => resolve(s))
   })
   const base = `http://localhost:${servidor.address().port}/api`
+  await entrar(base)
   t.after(async () => {
     servidor.closeAllConnections() // fetch deja conexiones keep-alive abiertas
     await new Promise(resolve => servidor.close(resolve))
@@ -34,7 +36,7 @@ async function levantar(t, dbPath) {
 async function pedir(url, opciones = {}) {
   const res = await fetch(url, {
     ...opciones,
-    headers: opciones.body && !(opciones.body instanceof FormData) ? { 'Content-Type': 'application/json' } : undefined,
+    headers: cabeceras(url, opciones.body && !(opciones.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
   })
   const texto = await res.text()
   return { status: res.status, cuerpo: texto ? JSON.parse(texto) : null }
@@ -193,7 +195,7 @@ test('exportar descarga una base con todos los datos aunque estén en el WAL', a
   await crear(base, WALMART_1)
   await crear(base, WALMART_2)
 
-  const res = await fetch(`${base}/db/exportar`)
+  const res = await fetch(`${base}/db/exportar`, { headers: cabeceras(base) })
   assert.equal(res.status, 200)
   const destino = join(carpeta, 'exportada.db')
   const { writeFileSync } = await import('fs')
@@ -219,7 +221,7 @@ test('importar rechaza un archivo que no es una base De Panas sin tocar los dato
 test('exportar en un equipo e importar en otro traslada las compras y deja respaldo', async t => {
   const origen = await levantar(t)
   await crear(origen.base, WALMART_1)
-  const exportada = Buffer.from(await (await fetch(`${origen.base}/db/exportar`)).arrayBuffer())
+  const exportada = Buffer.from(await (await fetch(`${origen.base}/db/exportar`, { headers: cabeceras(origen.base) })).arrayBuffer())
 
   const destino = await levantar(t)
   await crear(destino.base, WALMART_2)

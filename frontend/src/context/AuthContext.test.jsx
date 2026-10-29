@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuthProvider, useAuth } from './AuthContext'
-import { reiniciarModo } from '../services/api'
+import { EVENTO_SESION_VENCIDA, reiniciarModo } from '../services/api'
 
 // Usa api.js real en modo local (sin servidor): los usuarios iniciales, con contraseñas en hash
 function ComponentePrueba() {
@@ -116,6 +116,15 @@ describe('AuthContext', () => {
     await usuario.click(screen.getByText('Salir'))
     expect(screen.getByTestId('estado')).toHaveTextContent('bloqueado')
     expect(screen.getByTestId('usuario')).toHaveTextContent('ninguno')
+    expect(sessionStorage.getItem('depanas_sesion')).toBeNull()
+  })
+
+  it('si el servidor dice que la sesión venció, se cierra y vuelve a pedir entrar', async () => {
+    sessionStorage.setItem('depanas_sesion', JSON.stringify({ usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/compras'], token: 'viejo' }))
+    renderizar()
+    expect(screen.getByTestId('estado')).toHaveTextContent('autenticado')
+    act(() => { window.dispatchEvent(new Event(EVENTO_SESION_VENCIDA)) })
+    expect(screen.getByTestId('estado')).toHaveTextContent('bloqueado')
     expect(sessionStorage.getItem('depanas_sesion')).toBeNull()
   })
 })

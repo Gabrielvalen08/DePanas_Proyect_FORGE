@@ -14,7 +14,8 @@ Aplicación web local para que **De Panas**, un negocio de comida venezolana, re
 
 **Implementado:**
 
-- **Pantalla de acceso** con usuario y contraseña. La sesión dura hasta cerrar la pestaña y el menú tiene **Cerrar sesión** (con confirmación).
+- **Pantalla de acceso** con usuario y contraseña. La sesión dura hasta cerrar la pestaña (o 8 horas sin uso) y el menú tiene **Cerrar sesión** (con confirmación). Con el servidor la seguridad es real: la API exige la sesión y revisa los permisos en cada pedido, 5 contraseñas malas seguidas bloquean a ese usuario 5 minutos y las contraseñas se guardan con PBKDF2 de 600 000 iteraciones. El servidor solo escucha en la propia computadora.
+- **App de escritorio para Windows** (`desktop/`, Electron): un instalador `.exe` con el sistema completo, sin internet; los datos quedan en `%APPDATA%\De Panas SV\depanas.db`. Guía del cliente en [docs/INSTALACION_CLIENTE.md](docs/INSTALACION_CLIENTE.md).
 - **Gestor de usuarios** (solo el administrador): crear usuarios con su contraseña y un **rol** (Operador o Empleado) que ya trae sus pantallas y funciones; editar nombre, contraseña, rol, **pantallas** y **funciones** de cada pantalla (por ejemplo, ver la Lista de compras pero no eliminar compras); y eliminarlos. El administrador también define los **requisitos de contraseña** (mínimo de caracteres, mayúscula, minúscula, número y carácter especial), que se revisan en vivo al escribirla. No se repiten usuarios ni contraseñas, y las contraseñas se guardan con hash. Cada usuario ve solo sus pantallas y botones.
 - **Registro de compras** (página principal). Proveedor y fecha se escriben una vez; cada fila lleva material, cantidad, unidad y precio. El total se calcula en vivo.
 - **Varias compras a la vez.** "Nueva compra" agrega otro bloque, y cada uno tiene su propio Guardar.

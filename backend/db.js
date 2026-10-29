@@ -158,6 +158,7 @@ function sembrarCatalogo(db) {
     registrarEnCatalogo(db, 'material', nombre)
     completarMaterial(db, nombre, categoria, producto)
   }
+  for (const [proveedor, categoria] of CATALOGO_INICIAL.proveedorCategoria) vincularProveedorCategoria(db, proveedor, categoria)
 }
 
 /** Lo que ya está en las compras; cada material toma la categoría y el producto de su fila más reciente */

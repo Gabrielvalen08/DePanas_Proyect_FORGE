@@ -166,17 +166,14 @@ describe('PantallaUsuarios', () => {
     expect(campo).toHaveFocus()
   })
 
-  it('no deja usar la contraseña de otro usuario y pide cambiarla', async () => {
+  it('acepta una contraseña aunque otro usuario la use: no se compara, porque eso revelaría la del otro', async () => {
     const usuario = userEvent.setup()
     renderizar()
     const ventana = await abrirNuevo(usuario)
     await llenar(usuario, ventana, { clave: 'DePanas#2026' })
     await guardarYConfirmar(usuario, ventana)
 
-    const campo = within(ventana).getByLabelText(USUARIOS.campos.contrasena)
-    expect(await within(ventana).findByText(USUARIOS.validacion.contrasenaRepetida)).toBeInTheDocument()
-    expect(campo).toHaveFocus()
-    expect(screen.getByRole('dialog', { name: USUARIOS.tituloNuevo })).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: USUARIOS.tituloNuevo })).not.toBeInTheDocument())
   })
 
   it('pide al menos una pantalla y que las contraseñas coincidan', async () => {

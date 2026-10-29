@@ -188,6 +188,28 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 | Llenado | Una vez por base con las compras existentes (`user_version` 2) y, después, cada compra guardada o importada y cada artículo asignado en una compra suman la relación que falte. A mano se edita en la categoría | Que funcione desde el primer día sin cargar nada; lo que se quita a mano no reaparece al reabrir |
 | Respaldo | Las filas de categorías llevan `proveedores` (opcional, `version` sigue en 1); cargar suma y omite los que no existen | Los respaldos anteriores siguen cargando |
 
+## Seguridad del acceso (antes de entregar al cliente)
+
+| Tema | Decisión | Por qué |
+| ---- | -------- | ------- |
+| Sesión | Token al azar (`randomBytes(32)`) por sesión, en memoria (`backend/sesiones.js`); vence tras 8 h sin uso y cada pedido lo renueva | Antes la API no pedía sesión: cualquiera en la red podía cambiar la contraseña del administrador. En memoria basta para una app de escritorio: reiniciar obliga a entrar de nuevo |
+| Permisos | `backend/permisos.js` decide qué pantalla o función pide cada ruta, con las reglas de `shared/usuarios.js`; el usuario se vuelve a leer en cada pedido | Los permisos se revisaban solo en pantalla; así un cambio del administrador (o eliminar a alguien) se aplica en el acto |
+| Intentos | 5 contraseñas malas seguidas → 5 min de espera para ese usuario (429), también si no existe | Frena adivinar contraseñas sin revelar qué usuarios existen |
+| Red | El backend escucha solo en `127.0.0.1` (`HOST` para cambiarlo) | La app se usa en una sola computadora; desde la red nadie llega a la API |
+| Hash | PBKDF2-SHA256 de 100 000 a 600 000 iteraciones (OWASP); los hashes viejos se recalculan al entrar. En pruebas, `DEPANAS_ITERACIONES_HASH` (backend) y 1000 en Vitest | Más costoso de romper si alguien copia la base |
+| Contraseñas repetidas | Ya no se comparan con las de los demás usuarios | El aviso «Esa contraseña ya la usa otro usuario» revelaba la contraseña de otro |
+| Modo local | Sin cambios: sigue siendo una barrera de interfaz | No hay servidor que proteja los datos; la app del cliente usa siempre el servidor |
+
+## App de escritorio (Electron)
+
+| Tema | Decisión | Por qué |
+| ---- | -------- | ------- |
+| Herramienta | Electron 44 + electron-builder (NSIS x64, sin firma) | Playwright no crea ejecutables (es para pruebas); Electron 44 trae Node 24 con `node:sqlite`, así que el backend corre tal cual dentro de la app |
+| Servidor | `crearApp` dentro del proceso principal, en `127.0.0.1` y un puerto libre, sirviendo también el frontend compilado (`estaticos`) | Un solo proceso, sin Vite ni puertos fijos que choquen |
+| Datos | `%APPDATA%\De Panas SV\depanas.db`; el desinstalador no la borra | Sobrevive a actualizaciones y reinstalaciones |
+| Catálogo inicial | Las listas de `Datos De Panas.xlsx` (ya eran `db/catalogo.js`) y `proveedorCategoria`, sacado de sus filas; las compras del Excel no se cargan | En la app nueva, al elegir el proveedor ya salen solo sus artículos |
+| Pruebas | `desktop/pruebas/escritorio.spec.js` con Playwright `_electron`, sobre la app sin empaquetar o la empaquetada (`DEPANAS_EXE`) | Prueba lo que recibe el cliente: guardar, exportar y conservar los datos al reabrir |
+
 ## Mensajes del sistema
 
 - Todo texto que el sistema le dice al usuario vive en `frontend/src/utils/mensajes.js`, agrupado por tema (`ACCESO`, `COMPRA`, `LISTA_COMPRAS`, `VALIDACION`, `ASIGNACION`, `ESTADOS`, `PANTALLA_CATALOGO`, `USUARIOS`, `EXPORTAR`, `CARGAR`, `CONFIRMAR`). Los mensajes con datos son funciones (`COMPRA.confirmarGuardar.mensaje(proveedor, n, total)`).
@@ -197,4 +219,5 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 ## Pendientes
 - **Bundle:** el JS pasó de ~193 kB a ~339 kB (sin gzip), sobre todo por `motion`. Si importa, se puede cargar Motion de forma diferida.
 - `npm audit` reporta vulnerabilidades en `esbuild` (dev) y `react-router` 6. Arreglarlas implica subir versiones mayores (fuera del alcance).
+- **Backend (va en la app del cliente):** `body-parser` (alta) y `qs` (moderada) tienen arreglo compatible con `npm audit fix`, pero esas versiones se publicaron a fines de octubre de 2026. Aplicarlo cuando tengan al menos 2 semanas (desde el 12 de noviembre) en `backend/` y `desktop/`, y volver a armar el instalador.
 - Drawer móvil con gestos (`springConImpulso`, proyección de inercia) para una fase futura.

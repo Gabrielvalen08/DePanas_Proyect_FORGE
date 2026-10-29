@@ -8,7 +8,8 @@ export default defineConfig({
     proxy: {
       '/api': {
         // DEPANAS_API: otro backend (las pruebas e2e levantan uno aparte, ver playwright.config.js)
-        target: process.env.DEPANAS_API || 'http://localhost:3000',
+        // 127.0.0.1 y no localhost: el backend escucha solo en IPv4 local (index.js) y localhost puede ser ::1
+        target: process.env.DEPANAS_API || 'http://127.0.0.1:3000',
         changeOrigin: true,
       }
     }

@@ -52,4 +52,14 @@ export const CATALOGO_INICIAL = {
     ['Portion Cup Cuadrada', 'Desechables', ''],
     ['Tapa Portion Cup Cuadrado', 'Desechables', ''],
   ],
+  // [proveedor, categoría]: qué categorías surte cada proveedor, según las filas de compras
+  // del Excel. En Agregar compra, al elegir el proveedor solo salen los artículos de las suyas
+  proveedorCategoria: [
+    ['Selectos', 'Materia Prima'],
+    ['Selectos', 'Material Común'],
+    ['Selectos', 'Limpieza'],
+    ['MMAG', 'Desechables'],
+    ['Pepsi', 'Bebidas'],
+    ['Desechables Diver.', 'Desechables'],
+  ],
 }

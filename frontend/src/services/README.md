@@ -42,3 +42,12 @@ El catálogo es la **única fuente de las opciones**: cada compra guardada regis
 ## Tests
 
 `api.test.js` y `catalogo.test.js` cubren los dos modos: el servidor con `fetch` simulado (`simularServidor`) y el modo local sobre `localStorage`. Un cambio en los datos toca los dos modos y el backend, con tests en ambos lados.
+
+## Sesión con el servidor
+
+| Función | Qué hace |
+| ------- | -------- |
+| `iniciarSesion(usuario, contrasena)` | Con servidor devuelve el usuario y su `token`; un error lleva `status` (401 incorrecta, 429 demasiados intentos con `minutos`). En local comprueba el hash en `depanas_usuarios` y lo recalcula si tiene menos iteraciones |
+| `fijarTokenSesion(token)` | Lo llama `AuthContext` al entrar y al recargar: `pedir()` manda `Authorization: Bearer <token>` en cada pedido y vuelve a traer el catálogo |
+| `cerrarSesionServidor()` | Al salir: `DELETE /api/sesion` y olvida el token |
+| `EVENTO_SESION_VENCIDA` | Evento de `window` que se dispara cuando el servidor responde 401 a un pedido con token; `AuthContext` cierra la sesión |

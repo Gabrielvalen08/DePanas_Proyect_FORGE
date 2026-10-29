@@ -25,7 +25,7 @@ No hace falta tener `npm run dev` ni el backend abiertos: `playwright.config.js`
 
 | Archivo | Qué prueba |
 | --- | --- |
-| `acceso.spec.js` | Pantalla de acceso, contraseña incorrecta, ver/ocultar contraseña, permisos de César y Marta (el menú: Agregar compra, Lista de compras, Catálogo, Gestor de usuarios), Cerrar sesión con confirmación, sesión al recargar |
+| `acceso.spec.js` | La API responde 401 sin sesión (nadie lista ni cambia usuarios sin entrar); pantalla de acceso, contraseña incorrecta, ver/ocultar contraseña, permisos de César y Marta (el menú: Agregar compra, Lista de compras, Catálogo, Gestor de usuarios), Cerrar sesión con confirmación, sesión al recargar |
 | `navegacion.spec.js` | Cada botón del menú abre su pantalla con su título; Exportar y Cargar fuera del menú (se abren desde el ⋮ de Lista de compras y tienen Regresar); que la app use el servidor; rutas viejas (`/configuracion`, `/catalogo/materiales`) o inexistentes; secciones del Catálogo; "Saltar al contenido" |
 | `compras.spec.js` | Validación, total, filas y bloques; artículos filtrados por las categorías del proveedor; registrar una compra (con confirmación), verla en Lista de compras, exportarla a Excel (.xlsx, leído con `read-excel-file`) y eliminarla |
 | `catalogo.spec.js` | Agregar, renombrar y eliminar un proveedor; nombre vacío o repetido; exportar a Excel quitando un proveedor y cargar un respaldo eligiendo uno; buscador |

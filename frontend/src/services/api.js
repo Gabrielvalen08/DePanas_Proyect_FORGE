@@ -96,6 +96,15 @@ export const CATALOGO = {
     ['Portion Cup Cuadrada', 'Desechables', ''],
     ['Tapa Portion Cup Cuadrado', 'Desechables', ''],
   ].map(([nombre, categoria, producto]) => ({ nombre, categoria, producto })),
+  // [proveedor, categoría]: qué categorías surte cada proveedor, según las filas de compras del Excel
+  proveedorCategoria: [
+    ['Selectos', 'Materia Prima'],
+    ['Selectos', 'Material Común'],
+    ['Selectos', 'Limpieza'],
+    ['MMAG', 'Desechables'],
+    ['Pepsi', 'Bebidas'],
+    ['Desechables Diver.', 'Desechables'],
+  ],
 }
 
 const clave = texto => (texto || '').trim().toLowerCase()
@@ -144,6 +153,7 @@ function catalogoLocalInicial() {
   } catch {
     // Catálogo guardado ilegible: se usa solo el del Excel
   }
+  for (const [proveedor, categoria] of CATALOGO.proveedorCategoria) vincularLocal(cat, proveedor, categoria)
   for (const lista of getListas()) registrarCompraEn(cat, lista)
   return cat
 }
@@ -834,6 +844,32 @@ export async function eliminarDelCatalogo(tipo, nombre) {
 
 let modoPromesa = null
 let modoActual = null       // 'servidor' | 'local' una vez detectado (lo leen las funciones síncronas)
+let tokenSesion = null      // modo servidor: token de la sesión (Authorization: Bearer); lo fija AuthContext
+
+/** Evento de window cuando el servidor rechaza el token: AuthContext lo escucha y vuelve a pedir entrar */
+export const EVENTO_SESION_VENCIDA = 'depanas:sesion-vencida'
+
+/**
+ * Token de la sesión del servidor (o null al salir). AuthContext lo fija al entrar y al
+ * recargar la página; con él se vuelve a traer el catálogo, que también pide sesión.
+ */
+export function fijarTokenSesion(token) {
+  tokenSesion = token || null
+  if (tokenSesion && modoActual === 'servidor') refrescarCache()
+}
+
+/** Cierra la sesión en el servidor (si la hay) y olvida el token */
+export async function cerrarSesionServidor() {
+  const token = tokenSesion
+  tokenSesion = null
+  catalogoServidor = null
+  if (!token || modoActual !== 'servidor') return
+  try {
+    await fetch(`${BASE_URL}/sesion`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+  } catch {
+    // Sin servidor la sesión vence sola
+  }
+}
 let catalogoServidor = null // GET /api/catalogo: opciones de los desplegables y asignaciones
 
 /**
@@ -866,6 +902,7 @@ export function reiniciarModo() {
   modoPromesa = null
   modoActual = null
   catalogoServidor = null
+  tokenSesion = null
 }
 
 /**
@@ -873,18 +910,24 @@ export function reiniciarModo() {
  * (y error.campo cuando el servidor dice qué campo del formulario lo causó)
  */
 async function pedir(ruta, opciones = {}) {
-  const res = await fetch(`${BASE_URL}${ruta}`, opciones)
+  const conToken = Boolean(tokenSesion)
+  const headers = conToken ? { ...opciones.headers, Authorization: `Bearer ${tokenSesion}` } : opciones.headers
+  const res = await fetch(`${BASE_URL}${ruta}`, { ...opciones, headers })
   if (!res.ok) {
     let mensaje = `Error ${res.status}`
     let campo
+    let minutos
     try {
       const cuerpo = await res.json()
       mensaje = cuerpo.error || mensaje
       campo = cuerpo.campo
+      minutos = cuerpo.minutos
     } catch {
       // La respuesta de error no traía JSON
     }
-    throw Object.assign(new Error(mensaje), campo ? { campo } : {})
+    // La sesión venció (8 h sin uso, servidor reiniciado o usuario eliminado): AuthContext cierra la sesión
+    if (res.status === 401 && conToken && typeof window !== 'undefined') window.dispatchEvent(new Event(EVENTO_SESION_VENCIDA))
+    throw Object.assign(new Error(mensaje), { status: res.status }, campo ? { campo } : {}, minutos ? { minutos } : {})
   }
   return res
 }
@@ -1392,7 +1435,8 @@ const USUARIOS_INICIALES = [
   },
 ]
 
-const ITERACIONES_HASH = 100_000
+// 600 000 (OWASP para PBKDF2-SHA256), como el backend; en las pruebas de Vitest, menos para que no tarden
+const ITERACIONES_HASH = import.meta.env?.MODE === 'test' ? 1000 : 600_000
 const FORMATO_USUARIO = /^[A-Za-z0-9_.-]{3,30}$/
 const V = MENSAJES_USUARIOS.validacion
 
@@ -1415,6 +1459,9 @@ async function verificar(contrasena, guardado) {
   if (algoritmo !== 'pbkdf2' || !sal || !hash) return false
   return (await derivar(contrasena, deHex(sal), Number(iteraciones))) === hash
 }
+
+/** Hash con menos iteraciones que las actuales: se recalcula al entrar */
+const necesitaRehash = guardado => Number(String(guardado).split('$')[1]) < ITERACIONES_HASH
 
 /** Error con el campo del formulario que lo causó, como los del backend */
 const falloCampo = (mensaje, campo) => Object.assign(new Error(mensaje), campo ? { campo } : {})
@@ -1458,15 +1505,10 @@ function validarNombre(nombre) {
   if (nombre.length > 60) throw falloCampo(V.nombreLargo, 'nombre')
 }
 
-async function validarContrasena(usuarios, contrasena, excepto = '') {
+// No se compara con las contraseñas de los demás: eso le revelaría a quien crea un usuario la de otro
+function validarContrasena(contrasena) {
   const falta = faltaEnContrasena(contrasena, getRequisitosLocal())
   if (falta) throw falloCampo(falta, 'contrasena')
-  // Los hashes llevan sal: la única forma de saber si se repite es probarla contra cada uno
-  for (const u of usuarios) {
-    if (clave(u.usuario) !== clave(excepto) && await verificar(contrasena, u.contrasena)) {
-      throw falloCampo(V.contrasenaRepetida, 'contrasena')
-    }
-  }
 }
 
 function validarRol(rol) {
@@ -1499,9 +1541,14 @@ export async function iniciarSesion(usuario, contrasena) {
   if ((await detectarModo()) === 'servidor') {
     return pedirJSON('/sesion', 'POST', { usuario, contrasena })
   }
-  const registro = buscarUsuarioLocal(getUsuariosLocal(), recortado(usuario))
+  const usuarios = getUsuariosLocal()
+  const registro = buscarUsuarioLocal(usuarios, recortado(usuario))
   const limpia = recortado(contrasena)
   if (!registro || !limpia || !(await verificar(limpia, registro.contrasena))) throw new Error(V.incorrecta)
+  if (necesitaRehash(registro.contrasena)) {
+    registro.contrasena = await hashear(limpia)
+    setUsuariosLocal(usuarios)
+  }
   return publico(registro)
 }
 
@@ -1527,7 +1574,7 @@ export async function crearUsuario(datos) {
   const existente = buscarUsuarioLocal(usuarios, usuario)
   if (existente) throw falloCampo(V.usuarioRepetido(existente.usuario), 'usuario')
   validarNombre(nombre)
-  await validarContrasena(usuarios, contrasena)
+  validarContrasena(contrasena)
   const rol = validarRol(datos.rol ?? 'operador')
   const base = permisosDeRol(rol)
   const permisos = validarPermisos(datos.permisos ?? base.permisos)
@@ -1555,7 +1602,7 @@ export async function editarUsuario(usuario, datos) {
   }
   const contrasena = recortado(datos.contrasena)
   if (contrasena) {
-    await validarContrasena(usuarios, contrasena, registro.usuario)
+    validarContrasena(contrasena)
     cambios.contrasena = await hashear(contrasena)
   }
   if (registro.rol !== ROL_ADMIN) {

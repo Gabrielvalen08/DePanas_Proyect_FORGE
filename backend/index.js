@@ -33,8 +33,10 @@ mkdirSync(dirname(DB_PATH), { recursive: true })
 const { app, cerrar } = crearApp({ dbPath: DB_PATH, schemaPath: join(DB_DIR, 'schema.sql') })
 
 const PUERTO = process.env.PORT || 3000
-const servidor = app.listen(PUERTO, () => {
-  console.log(`De Panas backend corriendo en http://localhost:${PUERTO}`)
+// Solo esta computadora: desde la red nadie llega a la API. HOST=0.0.0.0 la abre a la red (no recomendado)
+const HOST = process.env.HOST || '127.0.0.1'
+const servidor = app.listen(PUERTO, HOST, () => {
+  console.log(`De Panas backend corriendo en http://${HOST === '127.0.0.1' ? 'localhost' : HOST}:${PUERTO}`)
   console.log(`Base de datos: ${DB_PATH}`)
 })
 

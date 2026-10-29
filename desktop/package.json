@@ -1,0 +1,62 @@
+{
+  "name": "depanas-escritorio",
+  "productName": "De Panas SV",
+  "version": "1.0.0",
+  "description": "De Panas SV: registro de compras y catálogo, app de escritorio para Windows",
+  "author": "De Panas SV",
+  "private": true,
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "preparar": "node scripts/preparar.mjs",
+    "start": "npm run preparar && electron .",
+    "dist": "npm run preparar && electron-builder --win nsis --x64",
+    "test:escritorio": "playwright test"
+  },
+  "dependencies": {
+    "cors": "2.8.6",
+    "express": "4.22.3",
+    "multer": "1.4.5-lts.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "electron": "44.7.2",
+    "electron-builder": "26.17.0",
+    "read-excel-file": "9.3.12"
+  },
+  "build": {
+    "appId": "sv.depanas.escritorio",
+    "productName": "De Panas SV",
+    "copyright": "De Panas SV",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "package.json",
+      "app/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "De Panas SV",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "De Panas SV Setup ${version}.exe"
+    }
+  }
+}

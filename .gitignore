@@ -21,3 +21,9 @@ frontend/test-results/
 frontend/playwright-report/
 frontend/blob-report/
 frontend/playwright/.cache/
+
+# App de escritorio (desktop/): copias que arma scripts/preparar.mjs, instalador e ícono generado
+desktop/app/
+desktop/build/
+desktop/test-results/
+desktop/playwright-report/

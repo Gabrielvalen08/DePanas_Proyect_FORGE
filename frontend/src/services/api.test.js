@@ -29,6 +29,9 @@ import {
   guardarLista,
   reiniciarModo,
   totalLista,
+  EVENTO_SESION_VENCIDA,
+  cerrarSesionServidor,
+  fijarTokenSesion,
 } from './api'
 import { FUNCIONES, RUTAS_ASIGNABLES } from '../../../shared/usuarios.js'
 
@@ -56,6 +59,40 @@ describe('api: modo servidor', () => {
     }))
     return llamadas
   }
+
+  it('con sesión, cada pedido lleva el token; un 401 avisa que la sesión venció y cerrar sesión la cierra en el servidor', async () => {
+    const llamadas = simularServidor({
+      'GET /compras': { cuerpo: [] },
+      'DELETE /compras/c-9': { status: 401, cuerpo: { error: 'Tu sesión venció' } },
+      'DELETE /sesion': { status: 204 },
+    })
+    fijarTokenSesion('token-de-prueba')
+    await fetchListas()
+    const pedido = vi.mocked(fetch).mock.calls.find(([url]) => url.includes('/compras'))
+    expect(pedido[1].headers).toMatchObject({ Authorization: 'Bearer token-de-prueba' })
+
+    const aviso = vi.fn()
+    window.addEventListener(EVENTO_SESION_VENCIDA, aviso)
+    await expect(eliminarLista('c-9')).rejects.toMatchObject({ status: 401 })
+    expect(aviso).toHaveBeenCalledTimes(1)
+    window.removeEventListener(EVENTO_SESION_VENCIDA, aviso)
+
+    await cerrarSesionServidor()
+    expect(llamadas.some(l => l.metodo === 'DELETE' && l.ruta === '/sesion')).toBe(true)
+  })
+
+  it('sin sesión un 401 no avisa nada (aún no se entró); demasiados intentos trae los minutos de espera', async () => {
+    simularServidor({
+      'GET /compras': { status: 401, cuerpo: { error: 'Tu sesión venció' } },
+      'POST /sesion': { status: 429, cuerpo: { error: 'Demasiados intentos', minutos: 5 } },
+    })
+    const aviso = vi.fn()
+    window.addEventListener(EVENTO_SESION_VENCIDA, aviso)
+    await expect(fetchListas()).rejects.toMatchObject({ status: 401 })
+    expect(aviso).not.toHaveBeenCalled()
+    window.removeEventListener(EVENTO_SESION_VENCIDA, aviso)
+    await expect(iniciarSesion('Cesar_01', 'mala')).rejects.toMatchObject({ status: 429, minutos: 5 })
+  })
 
   it('lee las compras del backend sin mezclar datos locales', async () => {
     simularServidor({ 'GET /compras': { cuerpo: [COMPRA] } })
@@ -318,6 +355,13 @@ describe('api: categoría y producto de cada material (modo local)', () => {
     ])
   })
 
+  it('un catálogo nuevo trae del Excel qué surte cada proveedor: con Pepsi solo salen las bebidas', async () => {
+    await detectarModo()
+    expect(getCategoriasDeProveedor('Pepsi')).toEqual(['Bebidas'])
+    expect(getMaterialesPorProveedor('Pepsi')).toEqual(['Agua', 'Gatorade', 'Lipton', 'Pepsi'])
+    expect(getCategoriasDeProveedor('Selectos')).toEqual(['Limpieza', 'Materia Prima', 'Material Común'])
+  })
+
   it('getMaterialesPorProveedor da solo los artículos de las categorías del proveedor; sin categorías, todos', async () => {
     await agregarAlCatalogo('categoria', { nombre: 'Lácteos', materiales: [], proveedores: [] })
     await agregarAlCatalogo('proveedor', { nombre: 'La Lechería' })
@@ -575,14 +619,35 @@ describe('api: usuarios (modo local)', () => {
     expect(await crearUsuario({ ...NUEVO, contrasena: 'arepa9' })).toMatchObject({ usuario: 'Luis_03' })
   })
 
-  it('no repite usuario ni contraseña, y no da el gestor', async () => {
+  it('no repite el usuario y no da el gestor', async () => {
     await expect(crearUsuario({ ...NUEVO, usuario: 'MARTA_02' })).rejects.toMatchObject({ campo: 'usuario' })
-    await expect(crearUsuario({ ...NUEVO, contrasena: 'DePanas#2026' })).rejects.toMatchObject({ campo: 'contrasena' })
     await expect(crearUsuario({ ...NUEVO, permisos: ['/usuarios'] })).rejects.toMatchObject({ campo: 'permisos' })
     await expect(crearUsuario({ ...NUEVO, permisos: [] })).rejects.toMatchObject({ campo: 'permisos' })
     await expect(crearUsuario({ ...NUEVO, funciones: ['compras.inventar'] })).rejects.toMatchObject({ campo: 'funciones' })
-    await expect(editarUsuario('Marta_02', { contrasena: 'DePanas#2026' })).rejects.toMatchObject({ campo: 'contrasena' })
     expect(await fetchUsuarios()).toHaveLength(2)
+  })
+
+  it('una contraseña que ya usa otro se acepta: no se compara, porque eso revelaría la del otro', async () => {
+    expect(await crearUsuario({ ...NUEVO, contrasena: 'DePanas#2026' })).toMatchObject({ usuario: NUEVO.usuario })
+    expect(await editarUsuario('Marta_02', { contrasena: 'DePanas#2026' })).toMatchObject({ usuario: 'Marta_02' })
+    expect(await iniciarSesion('Marta_02', 'DePanas#2026')).toMatchObject({ usuario: 'Marta_02' })
+  })
+
+  it('al entrar, una contraseña guardada con menos iteraciones se recalcula con las actuales', async () => {
+    await editarUsuario('Marta_02', { nombre: 'Marta' }) // guarda los usuarios en depanas_usuarios
+    // Un hash viejo de 10 iteraciones (en las pruebas el actual usa 1000; la app real, 600 000)
+    const sal = new Uint8Array(16).fill(7)
+    const llave = await crypto.subtle.importKey('raw', new TextEncoder().encode('5678'), 'PBKDF2', false, ['deriveBits'])
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: sal, iterations: 10 }, llave, 256)
+    const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('')
+    const usuarios = JSON.parse(localStorage.getItem('depanas_usuarios'))
+    usuarios.find(u => u.usuario === 'Marta_02').contrasena = `pbkdf2$10$${hex(sal)}$${hex(bits)}`
+    localStorage.setItem('depanas_usuarios', JSON.stringify(usuarios))
+
+    await iniciarSesion('Marta_02', '5678')
+    const despues = JSON.parse(localStorage.getItem('depanas_usuarios')).find(u => u.usuario === 'Marta_02')
+    expect(despues.contrasena).toMatch(/^pbkdf2\$1000\$/)
+    expect(await iniciarSesion('Marta_02', '5678')).toMatchObject({ usuario: 'Marta_02' })
   })
 
   it('el administrador conserva su rol, todas las pantallas y funciones, y no se elimina', async () => {

@@ -2,7 +2,9 @@
  * routes/usuarios.js
  * Usuarios del sistema (Gestor de usuarios), inicio de sesión y requisitos de contraseña.
  *
- *   POST   /api/sesion                  → { usuario, contrasena } → usuario público o 401
+ *   POST   /api/sesion                  → { usuario, contrasena } → { ...usuario público, token }, 401 o
+ *                                          429 tras varios intentos fallidos (ver sesiones.js)
+ *   DELETE /api/sesion                  → cierra la sesión del token
  *   GET    /api/usuarios                → [usuario público] (nunca la contraseña)
  *   POST   /api/usuarios                → crea { usuario, nombre, contrasena, rol, permisos?, funciones? }
  *                                          (sin permisos o funciones, toma los de su rol)
@@ -14,15 +16,19 @@
  * Usuario público: { usuario, nombre, rol, permisos, funciones } con las funciones
  * efectivas (shared/usuarios.js).
  *
- * Reglas: no se repite el usuario (sin distinguir mayúsculas) ni la contraseña; toda
- * contraseña nueva cumple los requisitos; solo hay un administrador (Cesar_01, con
+ * Toda la API (salvo /api/health y entrar) exige sesión, y estas rutas son solo del
+ * administrador (app.js, permisos.js).
+ *
+ * Reglas: no se repite el usuario (sin distinguir mayúsculas); toda contraseña nueva
+ * cumple los requisitos (no se compara con las de los demás: eso revelaría la de otro); solo hay un administrador (Cesar_01, con
  * permisos ["*"]); los demás son operadores o empleados y nunca reciben el Gestor de usuarios.
  * Los errores de un campo llevan { error, campo } para marcarlo en el formulario.
  */
 
 import { Router } from 'express'
 import { enTransaccion } from '../db.js'
-import { hashear, verificar } from '../contrasenas.js'
+import { hashear, necesitaRehash, verificar } from '../contrasenas.js'
+import { MAX_INTENTOS } from '../sesiones.js'
 import {
   FUNCIONES, RUTAS_ASIGNABLES, RUTA_USUARIOS, ROLES_ASIGNABLES, ROL_ADMIN,
   faltaEnContrasena, funcionesEfectivas, normalizarRequisitos, pantallaDeFuncion, permisosDeRol, validarRequisitos,
@@ -38,13 +44,13 @@ function fallo(status, mensaje, campo) {
   return Object.assign(new Error(mensaje), { status, campo })
 }
 
-function publico(fila) {
+export function publico(fila) {
   const permisos = JSON.parse(fila.permisos)
   const funciones = fila.funciones === null || fila.funciones === undefined ? null : JSON.parse(fila.funciones)
   return { usuario: fila.usuario, nombre: fila.nombre, rol: fila.rol, permisos, funciones: funcionesEfectivas({ rol: fila.rol, permisos, funciones }) }
 }
 
-function buscar(db, usuario) {
+export function buscar(db, usuario) {
   return db.prepare('SELECT * FROM usuarios WHERE usuario = ? COLLATE NOCASE').get(usuario)
 }
 
@@ -62,14 +68,9 @@ function validarNombre(nombre) {
   if (nombre.length > 60) throw fallo(400, 'El nombre es muy largo (máximo 60 caracteres)', 'nombre')
 }
 
-function validarContrasena(db, contrasena, excepto) {
+function validarContrasena(db, contrasena) {
   const falta = faltaEnContrasena(contrasena, leerRequisitos(db))
   if (falta) throw fallo(400, falta, 'contrasena')
-  // Los hashes llevan sal: la única forma de saber si se repite es probarla contra cada uno
-  const otros = db.prepare('SELECT contrasena FROM usuarios WHERE usuario != ? COLLATE NOCASE').all(excepto ?? '')
-  if (otros.some(o => verificar(contrasena, o.contrasena))) {
-    throw fallo(409, 'Esa contraseña ya la usa otro usuario. Elige una diferente', 'contrasena')
-  }
 }
 
 function validarRol(rol) {
@@ -100,7 +101,7 @@ function validarFunciones(funciones, permisos) {
   return FUNCIONES.filter(f => funciones.includes(f) && permisos.includes(pantallaDeFuncion(f)))
 }
 
-export function crearRutasUsuarios(getDb) {
+export function crearRutasUsuarios(getDb, sesiones) {
   const router = Router()
 
   /** Ejecuta fn y responde; los errores con status se devuelven tal cual */
@@ -151,7 +152,7 @@ export function crearRutasUsuarios(getDb) {
     // Contraseña vacía o ausente: se deja la que tenía
     const contrasena = texto(req.body?.contrasena)
     if (contrasena) {
-      validarContrasena(db, contrasena, registro.usuario)
+      validarContrasena(db, contrasena)
       db.prepare('UPDATE usuarios SET contrasena = ? WHERE id = ?').run(hashear(contrasena), registro.id)
     }
     // El administrador siempre entra a todo: su rol, pantallas y funciones no se editan
@@ -177,6 +178,8 @@ export function crearRutasUsuarios(getDb) {
     if (!registro) throw fallo(404, `No existe el usuario «${req.params.usuario}»`)
     if (registro.rol === ROL_ADMIN) throw fallo(403, 'El administrador no se puede eliminar')
     db.prepare('DELETE FROM usuarios WHERE id = ?').run(registro.id)
+    // Si estaba dentro, su sesión deja de servir
+    sesiones?.cerrarDeUsuario(registro.usuario)
     return { usuario: registro.usuario }
   }))
 
@@ -199,15 +202,35 @@ export function crearRutasRequisitos(getDb) {
   return router
 }
 
-export function crearRutaSesion(getDb) {
+/** Token de `Authorization: Bearer <token>` */
+export const tokenDe = req => (req.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
+
+export function crearRutaSesion(getDb, sesiones) {
   const router = Router()
   router.post('/', (req, res) => {
-    const registro = buscar(getDb(), texto(req.body?.usuario))
+    const db = getDb()
+    const usuario = texto(req.body?.usuario)
+    const restante = sesiones.bloqueoRestante(usuario)
+    if (restante > 0) {
+      const minutos = Math.ceil(restante / 60_000)
+      return res.status(429).json({ error: `Demasiados intentos. Espera ${minutos} min y vuelve a intentarlo.`, minutos })
+    }
+    const registro = buscar(db, usuario)
     const contrasena = texto(req.body?.contrasena)
     if (!registro || !contrasena || !verificar(contrasena, registro.contrasena)) {
-      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
+      sesiones.registrarFallo(usuario)
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos', intentos: MAX_INTENTOS })
     }
-    res.json(publico(registro))
+    sesiones.registrarExito(usuario)
+    // Hash de antes, con menos iteraciones: se recalcula ahora que se conoce la contraseña
+    if (necesitaRehash(registro.contrasena)) {
+      db.prepare('UPDATE usuarios SET contrasena = ? WHERE id = ?').run(hashear(contrasena), registro.id)
+    }
+    res.json({ ...publico(registro), token: sesiones.abrir(registro.usuario) })
+  })
+  router.delete('/', (req, res) => {
+    sesiones.cerrar(tokenDe(req))
+    res.status(204).end()
   })
   return router
 }
