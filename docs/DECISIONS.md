@@ -200,15 +200,19 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 | Contraseñas repetidas | Ya no se comparan con las de los demás usuarios | El aviso «Esa contraseña ya la usa otro usuario» revelaba la contraseña de otro |
 | Modo local | Sin cambios: sigue siendo una barrera de interfaz | No hay servidor que proteja los datos; la app del cliente usa siempre el servidor |
 
-## App de escritorio (Electron)
+## Entrega al cliente: .zip con Node.js oficial (sitio web local)
 
 | Tema | Decisión | Por qué |
 | ---- | -------- | ------- |
-| Herramienta | Electron 44 + electron-builder (NSIS x64, sin firma) | Playwright no crea ejecutables (es para pruebas); Electron 44 trae Node 24 con `node:sqlite`, así que el backend corre tal cual dentro de la app |
-| Servidor | `crearApp` dentro del proceso principal, en `127.0.0.1` y un puerto libre, sirviendo también el frontend compilado (`estaticos`) | Un solo proceso, sin Vite ni puertos fijos que choquen |
-| Datos | `%APPDATA%\De Panas SV\depanas.db`; el desinstalador no la borra | Sobrevive a actualizaciones y reinstalaciones |
-| Catálogo inicial | Las listas de `Datos De Panas.xlsx` (ya eran `db/catalogo.js`) y `proveedorCategoria`, sacado de sus filas; las compras del Excel no se cargan | En la app nueva, al elegir el proveedor ya salen solo sus artículos |
-| Pruebas | `desktop/pruebas/escritorio.spec.js` con Playwright `_electron`, sobre la app sin empaquetar o la empaquetada (`DEPANAS_EXE`) | Prueba lo que recibe el cliente: guardar, exportar y conservar los datos al reabrir |
+| Formato (1.2.0) | Un `.zip` con `Abrir De Panas SV.cmd`, `node/node.exe` (Node.js oficial **sin modificar**) y `app/` (nuestro código en JavaScript). Reemplaza al instalador de Electron (1.0.0 con ventana propia y 1.1.0 con ícono en la bandeja) | Lo pidió el cliente y evita el bloqueo de Windows |
+| Smart App Control | Solo se ejecuta un binario **firmado** (Node.js, firmado por OpenJS Foundation; `preparar.mjs` comprueba la firma). El `.exe` de Electron no tenía firma y Windows lo bloqueaba sin «Ejecutar de todas formas». Probado en una PC con Smart App Control activado: `node.exe` corre aunque venga de internet; un `.cmd` o `.lnk` con la marca de internet se bloquea y sin ella corre | Sin certificado de firma (con costo), la única forma de que corra |
+| Marca de internet | El cliente **desbloquea el .zip** (Propiedades → «Desbloquear») antes de extraerlo, o lo recibe por USB. `iniciar.mjs` crea un acceso directo en el escritorio, hecho en la computadora y por eso sin la marca | El `.cmd` descargado se bloquea; desbloquear es un paso de una sola vez |
+| Sitio web local | `servidor.mjs` corre **oculto** en `http://localhost:4510` (puerto fijo, en `127.0.0.1` y `::1`) y se abre en el navegador predeterminado; abrirlo otra vez solo abre otra pestaña | El cliente lo quiere en el navegador; puerto fijo para guardarlo en favoritos |
+| Apagar | Botón **«Apagar De Panas SV»** en el menú (con confirmación), solo en esta versión: `crearApp({ apagar })` hace que `/api/health` diga `apagable` y crea `POST /api/apagar` (con sesión); después queda `PantallaApagado` | Sin ventana ni ícono en la bandeja (dibujarlo exigiría otro ejecutable sin firma), hace falta una forma de apagarlo |
+| Host | `hostsPermitidos`: solo `localhost:4510`, `127.0.0.1:4510` y `[::1]:4510`; el resto recibe 403 | En el navegador conviven otras páginas: frena el DNS rebinding. Contra pedidos de otros sitios ya protegen el token en `Authorization` y la falta de CORS |
+| Datos | `%APPDATA%\De Panas SV\depanas.db`, fuera de la carpeta del `.zip`; errores en `registro.log` | Reemplazar o borrar la carpeta (versión nueva) no toca los datos |
+| Catálogo inicial | Las listas de `Datos De Panas.xlsx` (ya eran `db/catalogo.js`) y `proveedorCategoria`, sacado de sus filas; las compras del Excel no se cargan | Al elegir el proveedor ya salen solo sus artículos |
+| Pruebas | `desktop/pruebas/escritorio.spec.js`: abre el `.cmd` de la carpeta armada (`DEPANAS_PRUEBA=1`, datos y puerto temporales) y usa un Chromium de Playwright | Prueba lo que recibe el cliente: abrir, guardar, exportar, apagar y conservar los datos |
 
 ## Mensajes del sistema
 

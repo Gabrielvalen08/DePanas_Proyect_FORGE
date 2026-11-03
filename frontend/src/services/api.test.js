@@ -30,7 +30,9 @@ import {
   reiniciarModo,
   totalLista,
   EVENTO_SESION_VENCIDA,
+  apagarSistema,
   cerrarSesionServidor,
+  puedeApagar,
   fijarTokenSesion,
 } from './api'
 import { FUNCIONES, RUTAS_ASIGNABLES } from '../../../shared/usuarios.js'
@@ -52,7 +54,7 @@ describe('api: modo servidor', () => {
       const metodo = opciones.method || 'GET'
       const ruta = url.replace('/api', '').split('?')[0]
       llamadas.push({ metodo, ruta, url, cuerpo: opciones.body ? JSON.parse(opciones.body) : undefined })
-      if (ruta === '/health') return Response.json({ ok: true })
+      if (ruta === '/health') return Response.json(respuestas['GET /health']?.cuerpo ?? { ok: true })
       const r = respuestas[`${metodo} ${ruta}`]
       if (!r) return Response.json([])
       return r.status === 204 ? new Response(null, { status: 204 }) : Response.json(r.cuerpo, { status: r.status ?? 200 })
@@ -79,6 +81,25 @@ describe('api: modo servidor', () => {
 
     await cerrarSesionServidor()
     expect(llamadas.some(l => l.metodo === 'DELETE' && l.ruta === '/sesion')).toBe(true)
+  })
+
+  it('la versión del .zip se puede apagar: lo dice /api/health y apagarSistema llama a /api/apagar', async () => {
+    const llamadas = simularServidor({
+      'GET /health': { cuerpo: { ok: true, apagable: true } },
+      'POST /apagar': { cuerpo: { apagado: true } },
+    })
+    expect(puedeApagar()).toBe(false)
+    await detectarModo()
+    expect(puedeApagar()).toBe(true)
+    await apagarSistema()
+    expect(llamadas.some(l => l.metodo === 'POST' && l.ruta === '/apagar')).toBe(true)
+    expect(puedeApagar()).toBe(false)
+  })
+
+  it('un servidor de desarrollo no se puede apagar desde la interfaz', async () => {
+    simularServidor({})
+    await detectarModo()
+    expect(puedeApagar()).toBe(false)
   })
 
   it('sin sesión un 401 no avisa nada (aún no se entró); demasiados intentos trae los minutos de espera', async () => {

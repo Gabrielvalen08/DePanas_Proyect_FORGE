@@ -1,0 +1,11 @@
+/* Centrada sobre el collage, como la pantalla de acceso; sin fondo propio */
+.contenedor {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--space-4);
+}
+
+.contenedor > * {
+  width: min(100%, 32rem);
+}

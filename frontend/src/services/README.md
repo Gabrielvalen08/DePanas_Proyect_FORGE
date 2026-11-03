@@ -50,4 +50,5 @@ El catálogo es la **única fuente de las opciones**: cada compra guardada regis
 | `iniciarSesion(usuario, contrasena)` | Con servidor devuelve el usuario y su `token`; un error lleva `status` (401 incorrecta, 429 demasiados intentos con `minutos`). En local comprueba el hash en `depanas_usuarios` y lo recalcula si tiene menos iteraciones |
 | `fijarTokenSesion(token)` | Lo llama `AuthContext` al entrar y al recargar: `pedir()` manda `Authorization: Bearer <token>` en cada pedido y vuelve a traer el catálogo |
 | `cerrarSesionServidor()` | Al salir: `DELETE /api/sesion` y olvida el token |
+| `puedeApagar()`, `apagarSistema()` | Versión .zip: `/api/health` dice `apagable` y `POST /api/apagar` apaga el servidor de la computadora (el menú muestra «Apagar De Panas SV» solo entonces) |
 | `EVENTO_SESION_VENCIDA` | Evento de `window` que se dispara cuando el servidor responde 401 a un pedido con token; `AuthContext` cierra la sesión |

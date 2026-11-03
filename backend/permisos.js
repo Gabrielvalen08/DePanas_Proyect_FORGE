@@ -21,6 +21,8 @@ export function permisoRequerido(metodo, ruta) {
   const [recurso, segundo, tercero] = partes
 
   if (recurso === 'sesion') return null
+  // Apagar el sistema (versión del .zip): cualquier usuario que haya entrado
+  if (recurso === 'apagar' && metodo === 'POST') return null
   if (recurso === 'usuarios' || recurso === 'requisitos-contrasena') return 'admin'
 
   if (recurso === 'compras' || recurso === 'ingresos') {

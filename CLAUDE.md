@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 App web de contabilidad para el restaurante **De Panas SV**: registro de compras e insumos y, más adelante, costos, gastos y márgenes. Es un proyecto académico de POO. Los requisitos y el descubrimiento están en los PDF de la raíz (`Documento de requerimientos - De Panas.pdf`, `Documento de descubrimiento - De Panas.pdf`).
 
-Hay un **frontend** (`frontend/`) y un **backend** (`backend/`): Node.js + Express con SQLite (`node:sqlite`, Node ≥ 22.13) en `http://localhost:3000`, que escucha **solo en `127.0.0.1`** (`HOST=0.0.0.0` lo abre a la red; no recomendado). El frontend funciona también sin backend (modo local, ver abajo). Para el cliente se entrega una **app de escritorio para Windows** (`desktop/`, Electron) con los dos adentro; la guía de instalación del cliente está en `docs/INSTALACION_CLIENTE.md`.
+Hay un **frontend** (`frontend/`) y un **backend** (`backend/`): Node.js + Express con SQLite (`node:sqlite`, Node ≥ 22.13) en `http://localhost:3000`, que escucha **solo en `127.0.0.1`** (`HOST=0.0.0.0` lo abre a la red; no recomendado). El frontend funciona también sin backend (modo local, ver abajo). Para el cliente se entrega un **.zip para Windows** (`desktop/`) con los dos adentro y el Node.js oficial, que se usa en el navegador como sitio web local (`http://localhost:4510`); la guía de instalación del cliente está en `docs/INSTALACION_CLIENTE.md`.
 
 ## Comandos
 
@@ -15,9 +15,9 @@ Hay un **frontend** (`frontend/`) y un **backend** (`backend/`): Node.js + Expre
 - `npm install`, `npm start` (o `npm run dev` con recarga). La base vive en `backend/db/depanas.db` (ignorada por git).
 - `npm test`: tests con el runner nativo (`node --test`); cada test usa una base temporal. Importa `test/ayudantes.js` antes que `app.js`: baja las iteraciones del hash (`DEPANAS_ITERACIONES_HASH`) e inicia sesión (`entrar(base)`, `cabeceras(url)`), porque toda la API exige sesión. `test/seguridad.test.js` prueba sesión, permisos, bloqueo y recálculo del hash.
 
-### App de escritorio (desde `desktop/`)
+### Versión .zip para el cliente (desde `desktop/`, en Windows)
 
-- `npm install`, `npm start` (prepara `app/` y abre la app), `npm run dist` (arma `dist/De Panas SV Setup <versión>.exe`, NSIS x64 sin firma) y `npm run test:escritorio` (Playwright `_electron` sobre la app; `DEPANAS_EXE` para la empaquetada). `scripts/preparar.mjs` compila el frontend y copia `backend/`, `shared/` y `frontend/dist` a `desktop/app/`. `main.js` levanta `crearApp` en `127.0.0.1` con un puerto libre, sirve el frontend con la opción `estaticos` y guarda la base en `%APPDATA%\De Panas SV\depanas.db`. Electron 44 trae Node 24 con `node:sqlite`. Detalles en `desktop/README.md`.
+- `npm install`, `npm run preparar` (arma `salida/De Panas SV/`), `npm run dist` (además `dist/De Panas SV <versión>.zip`) y `npm run test:escritorio` (Playwright sobre la carpeta armada: abre el `.cmd` de verdad). La carpeta lleva `Abrir De Panas SV.cmd`, `node/node.exe` (el **Node.js oficial sin modificar**, firmado por OpenJS Foundation; `preparar.mjs` comprueba la firma) y `app/` (`iniciar.mjs`, `servidor.mjs`, backend, shared, frontend compilado y `node_modules`). Es un **sitio web local**: `iniciar.mjs` arranca `servidor.mjs` oculto (`crearApp` en `http://localhost:4510`, en `127.0.0.1` y `::1`, con `estaticos`, `hostsPermitidos` y `apagar`), abre el navegador predeterminado y crea un acceso directo en el escritorio. Se apaga con **«Apagar De Panas SV»** del menú (`POST /api/apagar`, solo si `/api/health` dice `apagable`). La base va en `%APPDATA%\De Panas SV\depanas.db`. **No es un `.exe` propio** porque Smart App Control bloquea los ejecutables sin firma; un `.cmd` o `.lnk` marcado como descargado de internet también se bloquea, así que el cliente **desbloquea el .zip** (Propiedades → «Desbloquear») antes de extraerlo. Variables solo para pruebas: `DEPANAS_DATOS`, `DEPANAS_PUERTO` y `DEPANAS_PRUEBA=1`. Detalles en `desktop/README.md`.
 
 ### Frontend (desde `frontend/`)
 

@@ -1,10 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { LogOut, Power } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { itemsNavegacion, itemsPie } from './navegacion'
+import { APAGADO } from '../utils/mensajes'
 import estilos from './Sidebar.module.css'
 
-export default function Sidebar({ onCerrarSesion }) {
+/** onApagar: solo en la versión del .zip (el servidor corre oculto en la computadora) */
+export default function Sidebar({ onCerrarSesion, onApagar }) {
   const { tienePermiso } = useAuth()
   const navegacionFiltrada = itemsNavegacion.filter(item => !item.oculto && tienePermiso(item.a))
   const pieFiltrado = itemsPie.filter(item => tienePermiso(item.a))
@@ -57,6 +59,12 @@ export default function Sidebar({ onCerrarSesion }) {
           >
             <LogOut size={18} aria-hidden="true" />
             <span className={estilos.etiqueta}>Cerrar sesión</span>
+          </button>
+        )}
+        {onApagar && (
+          <button type="button" onClick={onApagar} className={estilos.botonBloquear}>
+            <Power size={18} aria-hidden="true" />
+            <span className={estilos.etiqueta}>{APAGADO.boton}</span>
           </button>
         )}
       </div>

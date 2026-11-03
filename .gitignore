@@ -22,8 +22,7 @@ frontend/playwright-report/
 frontend/blob-report/
 frontend/playwright/.cache/
 
-# App de escritorio (desktop/): copias que arma scripts/preparar.mjs, instalador e ícono generado
-desktop/app/
-desktop/build/
+# Versión .zip (desktop/): la carpeta que arma scripts/preparar.mjs (el .zip va en desktop/dist/)
+desktop/salida/
 desktop/test-results/
 desktop/playwright-report/

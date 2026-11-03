@@ -12,9 +12,11 @@ import PantallaCatalogo from './pages/PantallaCatalogo'
 import PantallaExportar from './pages/PantallaExportar'
 import PantallaCargar from './pages/PantallaCargar'
 import PantallaUsuarios from './pages/PantallaUsuarios'
+import PantallaApagado from './pages/PantallaApagado'
+import { apagarSistema, puedeApagar } from './services/api'
 import { ConfirmDialog } from './components/common'
 import { rutaInicio } from './utils/permisos'
-import { ACCESO, CONFIRMAR } from './utils/mensajes'
+import { ACCESO, APAGADO, CONFIRMAR } from './utils/mensajes'
 import estilos from './App.module.css'
 
 /** /configuracion y sus secciones se llaman ahora /catalogo */
@@ -28,6 +30,20 @@ function AppContenido() {
   const { addToast } = useToast()
 
   const [confirmandoSalida, setConfirmandoSalida] = useState(false)
+  const [confirmandoApagar, setConfirmandoApagar] = useState(false)
+  const [apagado, setApagado] = useState(false)
+
+  // Versión del .zip: apaga el servidor de la computadora y deja la pestaña en «apagado»
+  async function apagar() {
+    try {
+      await apagarSistema()
+    } catch (error) {
+      addToast(APAGADO.error(error.message), 'error')
+      return
+    }
+    setApagado(true)
+    salir()
+  }
 
   function cerrarSesion() {
     salir()
@@ -52,12 +68,16 @@ function AppContenido() {
     window.scrollTo(0, 0)
   }, [pathname, autenticado])
 
+  if (apagado) return <PantallaApagado />
+
   if (!autenticado) {
     return <PantallaContrasena />
   }
 
   // Cada pantalla se abre solo con permiso; si no, se va a la primera que el usuario sí puede ver
   const inicio = rutaInicio(sesion)
+  // «Apagar De Panas SV» solo en la versión del .zip (el servidor lo avisa en /api/health)
+  const alApagar = puedeApagar() ? () => setConfirmandoApagar(true) : undefined
   const protegida = (permiso, elemento) => (tienePermiso(permiso) ? elemento : <Navigate to={inicio} replace />)
   // Dentro de cada pantalla, solo aparecen las acciones que el usuario tiene (funciones)
   const accionesCatalogo = Object.fromEntries(
@@ -68,7 +88,7 @@ function AppContenido() {
     <>
       <a href="#contenido" className="saltar-contenido">Saltar al contenido</a>
       <div className={estilos.layout}>
-        <Sidebar onCerrarSesion={() => setConfirmandoSalida(true)} />
+        <Sidebar onCerrarSesion={() => setConfirmandoSalida(true)} onApagar={alApagar} />
         <div className={estilos.areaPrincipal}>
           <Routes>
             {/* Agregar compra es la página principal */}
@@ -99,7 +119,7 @@ function AppContenido() {
             <Route path="*" element={<Navigate to={inicio} replace />} />
           </Routes>
         </div>
-        <BarraInferior onCerrarSesion={() => setConfirmandoSalida(true)} />
+        <BarraInferior onCerrarSesion={() => setConfirmandoSalida(true)} onApagar={alApagar} />
       </div>
 
       <ConfirmDialog
@@ -109,6 +129,15 @@ function AppContenido() {
         title={CONFIRMAR.cerrarSesion.titulo}
         message={CONFIRMAR.cerrarSesion.mensaje}
         confirmLabel={CONFIRMAR.cerrarSesion.confirmar}
+      />
+      <ConfirmDialog
+        isOpen={confirmandoApagar}
+        onClose={() => setConfirmandoApagar(false)}
+        onConfirm={apagar}
+        title={CONFIRMAR.apagar.titulo}
+        message={CONFIRMAR.apagar.mensaje}
+        confirmLabel={CONFIRMAR.apagar.confirmar}
+        danger
       />
     </>
   )

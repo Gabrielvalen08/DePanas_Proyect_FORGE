@@ -1,0 +1,31 @@
+DE PANAS SV - Registro de compras y catálogo
+=============================================
+
+Se usa en el navegador (Chrome, Edge...). Todo se guarda en esta computadora y no
+necesita internet.
+
+ANTES DE DESCOMPRIMIR (solo si el .zip llegó por correo, WhatsApp o internet)
+  Clic derecho al .zip > Propiedades > marca "Desbloquear" > Aceptar.
+  Sin ese paso, Windows (Smart App Control) puede no dejar abrir el sistema.
+
+ABRIR
+  Doble clic en "Abrir De Panas SV". Se abre el navegador en http://localhost:4510
+  La primera vez queda un acceso directo "De Panas SV" en el escritorio: desde ahí
+  se abre las siguientes veces.
+
+APAGAR
+  Dentro del sistema, en el menú: "Apagar De Panas SV".
+  Cerrar la pestaña del navegador NO lo apaga.
+
+USUARIOS INICIALES (cámbialos en el Gestor de usuarios)
+  Cesar_01 / DePanas#2026   (administrador)
+  Marta_02 / 5678           (operadora)
+
+DATOS
+  Se guardan en  %APPDATA%\De Panas SV\depanas.db  (fuera de esta carpeta).
+  Mover, reemplazar o borrar esta carpeta NO borra los datos.
+  Respaldo: en Lista de compras, menú ... > Exportar datos > Respaldo (.json).
+
+VERSIÓN NUEVA
+  Apaga el sistema, borra esta carpeta y descomprime la nueva en el mismo lugar.
+  Los datos se conservan.

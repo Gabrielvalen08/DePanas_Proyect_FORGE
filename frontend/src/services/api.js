@@ -845,6 +845,16 @@ export async function eliminarDelCatalogo(tipo, nombre) {
 let modoPromesa = null
 let modoActual = null       // 'servidor' | 'local' una vez detectado (lo leen las funciones síncronas)
 let tokenSesion = null      // modo servidor: token de la sesión (Authorization: Bearer); lo fija AuthContext
+let apagable = false        // el servidor se puede apagar desde el sistema (versión del .zip, /api/health)
+
+/** true si el sistema se puede apagar desde la interfaz (la versión del .zip; nunca en desarrollo ni en local) */
+export const puedeApagar = () => apagable
+
+/** Apaga el servidor (POST /api/apagar). Después ya no responde nada: hay que volver a abrir el sistema */
+export async function apagarSistema() {
+  await pedirJSON('/apagar', 'POST', {})
+  apagable = false
+}
 
 /** Evento de window cuando el servidor rechaza el token: AuthContext lo escucha y vuelve a pedir entrar */
 export const EVENTO_SESION_VENCIDA = 'depanas:sesion-vencida'
@@ -885,7 +895,10 @@ export function detectarModo() {
       try {
         const res = await fetch(`${BASE_URL}/health`)
         const json = res.ok ? await res.json() : null
-        if (json?.ok) modo = 'servidor'
+        if (json?.ok) {
+          modo = 'servidor'
+          apagable = json.apagable === true
+        }
       } catch {
         // Sin servidor: modo local
       }
@@ -903,6 +916,7 @@ export function reiniciarModo() {
   modoActual = null
   catalogoServidor = null
   tokenSesion = null
+  apagable = false
 }
 
 /**

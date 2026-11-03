@@ -212,6 +212,16 @@ export const ASIGNACION = {
 }
 
 // ---------------------------------------------------------------------------
+// Apagar el sistema (versión del .zip: el servidor corre oculto en la computadora)
+// ---------------------------------------------------------------------------
+export const APAGADO = {
+  boton: 'Apagar De Panas SV',
+  titulo: 'De Panas SV está apagado',
+  texto: 'Ya puedes cerrar esta pestaña. Para volver a usarlo, abre «De Panas SV» desde el escritorio.',
+  error: detalle => `No pudimos apagar el sistema${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
+}
+
+// ---------------------------------------------------------------------------
 // Navegación entre pantallas
 // ---------------------------------------------------------------------------
 export const NAVEGACION = {
@@ -637,6 +647,11 @@ export const CONFIRMAR = {
     mensaje: 'Se perderá lo que escribiste hasta ahora.',
     confirmar: 'Sí, descartar',
     volver: 'Seguir editando',
+  },
+  apagar: {
+    titulo: '¿Apagamos De Panas SV?',
+    mensaje: 'El sistema se cierra en esta computadora. Para volver a usarlo, abre «De Panas SV» desde el escritorio.',
+    confirmar: 'Sí, apagar',
   },
   cerrarSesion: {
     titulo: '¿Cerramos la sesión?',

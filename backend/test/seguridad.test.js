@@ -11,6 +11,8 @@ import { tmpdir } from 'os'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { pbkdf2Sync, randomBytes } from 'crypto'
+import { createServer } from 'net'
+import { request as httpRequest } from 'http'
 import { DatabaseSync } from 'node:sqlite'
 import { CLAVE_CESAR } from './ayudantes.js'
 import { crearApp } from '../app.js'
@@ -188,4 +190,71 @@ test('la API nunca devuelve el hash de una contraseña', async t => {
   const usuarios = await pedir(`${base}/usuarios`, { token: admin })
   assert.ok(!JSON.stringify(usuarios.cuerpo).includes('pbkdf2'))
   assert.ok(!JSON.stringify((await entrar(base, 'Marta_02', '5678')).cuerpo).includes('pbkdf2'))
+})
+
+/** Un puerto libre de esta computadora */
+const puertoLibre = () => new Promise(resolve => {
+  const s = createServer().listen(0, '127.0.0.1', () => {
+    const { port } = s.address()
+    s.close(() => resolve(port))
+  })
+})
+
+/** GET a /api/health con el encabezado Host indicado (fetch no deja cambiarlo) */
+const conHost = (puerto, host) => new Promise((resolve, reject) => {
+  const req = httpRequest({ host: '127.0.0.1', port: puerto, path: '/api/health', headers: { Host: host } }, res => {
+    res.resume()
+    resolve(res.statusCode)
+  })
+  req.on('error', reject)
+  req.end()
+})
+
+test('sitio web local: con hostsPermitidos, un pedido con otro Host (DNS rebinding) recibe 403', async t => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'depanas-seguridad-'))
+  const puerto = await puertoLibre()
+  const { app, cerrar } = crearApp({
+    dbPath: join(carpeta, 'depanas.db'), schemaPath: SCHEMA,
+    hostsPermitidos: [`localhost:${puerto}`, `127.0.0.1:${puerto}`, `[::1]:${puerto}`],
+  })
+  const servidor = await new Promise(resolve => { const s = app.listen(puerto, '127.0.0.1', () => resolve(s)) })
+  t.after(async () => {
+    servidor.closeAllConnections()
+    await new Promise(resolve => servidor.close(resolve))
+    cerrar()
+    rmSync(carpeta, { recursive: true, force: true })
+  })
+  assert.equal(await conHost(puerto, `localhost:${puerto}`), 200)
+  assert.equal(await conHost(puerto, `127.0.0.1:${puerto}`), 200)
+  assert.equal(await conHost(puerto, `malicioso.example:${puerto}`), 403)
+  assert.equal(await conHost(puerto, 'localhost:9999'), 403, 'otro puerto tampoco')
+})
+
+test('apagar (versión del .zip): health dice que se puede, exige sesión y llama a apagar', async t => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'depanas-seguridad-'))
+  let apagado = false
+  const { app, cerrar } = crearApp({ dbPath: join(carpeta, 'depanas.db'), schemaPath: SCHEMA, apagar: () => { apagado = true } })
+  const servidor = await new Promise(resolve => { const s = app.listen(0, '127.0.0.1', () => resolve(s)) })
+  t.after(async () => {
+    servidor.closeAllConnections()
+    await new Promise(resolve => servidor.close(resolve))
+    cerrar()
+    rmSync(carpeta, { recursive: true, force: true })
+  })
+  const base = `http://127.0.0.1:${servidor.address().port}/api`
+  assert.deepEqual((await pedir(`${base}/health`)).cuerpo, { ok: true, apagable: true })
+  assert.equal((await pedir(`${base}/apagar`, { metodo: 'POST' })).status, 401)
+  assert.equal(apagado, false)
+
+  const marta = await tokenDe(base, 'Marta_02', '5678')
+  assert.equal((await pedir(`${base}/apagar`, { metodo: 'POST', token: marta })).status, 200)
+  await new Promise(resolve => setTimeout(resolve, 300))
+  assert.equal(apagado, true)
+})
+
+test('apagar: sin la opción (desarrollo, e2e) no existe y health no lo ofrece', async t => {
+  const { base } = await levantar(t)
+  assert.deepEqual((await pedir(`${base}/health`)).cuerpo, { ok: true })
+  const admin = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
+  assert.notEqual((await pedir(`${base}/apagar`, { metodo: 'POST', token: admin })).status, 200)
 })
