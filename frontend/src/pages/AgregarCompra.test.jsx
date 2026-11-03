@@ -498,11 +498,13 @@ describe('AgregarCompra', () => {
     expect(screen.getByRole('combobox', { name: 'Artículo, fila 2' })).toHaveFocus()
   })
 
-  it('guarda la categoría y el producto de cada material y los muestra bajo el campo', async () => {
+  it('guarda la categoría y el producto de cada material y los deja en un tooltip, sin ocupar espacio en la fila', async () => {
     const usuario = userEvent.setup()
     renderizar()
     await llenarCompraValida(usuario)
     expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveAccessibleDescription('Materia Prima · Cachitos')
+    expect(screen.getByText('Materia Prima · Cachitos')).toHaveClass('solo-lector')
+    expect(screen.getByTitle('Materia Prima · Cachitos')).toBeInTheDocument()
     await guardarYConfirmar(usuario)
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))

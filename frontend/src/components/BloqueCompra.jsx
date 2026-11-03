@@ -502,7 +502,8 @@ export default function BloqueCompra({
                     >
                       {/* Material */}
                       <td>
-                        <div className={estilos.materialConBoton}>
+                        {/* Categoría y producto: en un tooltip, para que la fila no crezca */}
+                        <div className={estilos.materialConBoton} title={textoAsignacion(fila.material)}>
                           <button
                             type="button"
                             className={estilos.botonAsignarMini}
@@ -530,6 +531,7 @@ export default function BloqueCompra({
                               revisarMaterial(fila.material)
                             }}
                             ayuda={textoAsignacion(fila.material)}
+                            ayudaOculta
                             getSuggestions={sugerirMateriales}
                             error={errores[clave(fila.id, 'material')]}
                           />
@@ -684,7 +686,7 @@ export default function BloqueCompra({
   )
 }
 
-/** "Materia Prima · Cachitos" bajo el material, cuando ya tiene ambos asignados */
+/** "Materia Prima · Cachitos" en el tooltip del material, cuando ya tiene ambos asignados */
 function textoAsignacion(material) {
   if (!material.trim() || necesitaAsignacion(material)) return undefined
   const { categoria, producto } = getAsignacion(material)

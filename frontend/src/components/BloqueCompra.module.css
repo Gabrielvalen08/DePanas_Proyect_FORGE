@@ -1,7 +1,7 @@
 .bloque {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-2);
 }
 
 /* La tarjeta decide su layout por su propio ancho (página o modal) */
@@ -18,19 +18,31 @@
   border-radius: 0;
 }
 
+/* Con ratón, controles más bajos: caben más filas. Con pantalla táctil siguen en 44 px */
+@media (min-width: 1100px) {
+  .tarjeta {
+    --campo-alto: 2.25rem;
+  }
+
+  .eliminar,
+  .botonPunteado {
+    --alto-control: var(--campo-alto);
+  }
+}
+
 /* ---------- Encabezado: título + proveedor + fecha ---------- */
 .encabezado {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-4) var(--space-6);
-  padding: var(--space-4) var(--space-6);
+  gap: var(--space-2) var(--space-6);
+  padding: var(--space-2) var(--space-6);
   border-bottom: 1px solid var(--color-border);
 }
 
 .titulo {
   flex-shrink: 0;
   /* alinea el título con los inputs, que llevan label encima */
-  padding-top: calc(0.875rem * 1.6 + var(--space-2) + 0.55rem);
+  padding-top: calc(0.875rem * 1.6 + var(--space-2) + (var(--campo-alto) - 1.125rem * 1.2) / 2);
   font-size: 1.125rem;
   white-space: nowrap;
 }
@@ -39,7 +51,7 @@
   flex: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-4);
+  gap: var(--space-2) var(--space-4);
   min-width: 0;
 }
 
@@ -59,7 +71,7 @@
 }
 
 .tabla th {
-  padding: var(--space-3) var(--space-2);
+  padding: var(--space-1) var(--space-2);
   background: var(--color-surface-soft);
   border-bottom: 1px solid var(--color-border);
   font-size: 0.875rem;
@@ -81,7 +93,7 @@
 }
 
 .tabla td {
-  padding: var(--space-3) var(--space-2);
+  padding: var(--space-1) var(--space-2);
   border-bottom: 1px solid var(--color-border);
   vertical-align: top;
 }
@@ -103,18 +115,18 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-2) var(--space-6);
 }
 
 .botonPunteado {
   border-style: dashed;
 }
 
+/* El aviso va al lado del botón: no agrega otra línea */
 .agregarFila {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .ayudaFila {
@@ -162,8 +174,8 @@
 @container (max-width: 760px) {
   .encabezado {
     flex-direction: column;
-    gap: var(--space-3);
-    padding: var(--space-4);
+    gap: var(--space-2);
+    padding: var(--space-3);
   }
 
   .titulo {
@@ -193,12 +205,14 @@
     display: block;
   }
 
+  /* Cantidad con Unidad y Precio con Monto, de a dos. Arriba: un error debajo de un campo no mueve al de al lado */
   .tabla tr {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-3);
-    padding: var(--space-4);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--space-2);
+    padding: var(--space-3);
     border-bottom: 1px solid var(--color-border);
   }
 
@@ -210,6 +224,7 @@
   }
 
   .tabla td:first-child {
+    grid-column: 1 / -1;
     padding-right: var(--space-12);
   }
 
@@ -236,11 +251,14 @@
   .pieTabla {
     flex-direction: column-reverse;
     align-items: stretch;
-    padding: var(--space-4);
+    gap: var(--space-2);
+    padding: var(--space-3);
   }
 
   .agregarFila {
+    flex-direction: column;
     align-items: stretch;
+    gap: var(--space-1);
   }
 
   .total {
@@ -260,6 +278,21 @@
   .acciones > :first-child {
     flex-grow: 0.5;
   }
+
+  /* El aviso va en su propia línea, sobre los botones */
+  .acciones {
+    flex-wrap: wrap;
+  }
+
+  .acciones .ayudaGuardar {
+    flex: 1 0 100%;
+    margin-right: 0;
+    padding: 0;
+  }
+
+  .ayudaGuardar + * {
+    flex-grow: 0.5;
+  }
 }
 
 .materialConBoton {
@@ -276,7 +309,7 @@
 
 .botonAsignarMini {
   flex-shrink: 0;
-  margin-top: calc((var(--alto-control) - 1.5rem) / 2);
+  margin-top: calc((var(--campo-alto) - 1.5rem) / 2);
   width: 1.5rem;
   height: 1.5rem;
   display: flex;
