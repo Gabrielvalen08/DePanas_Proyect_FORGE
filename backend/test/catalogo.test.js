@@ -9,6 +9,7 @@ import { tmpdir } from 'os'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { DatabaseSync } from 'node:sqlite'
+import { cabeceras, entrar } from './ayudantes.js'
 import { crearApp } from '../app.js'
 import { abrirDB } from '../db.js'
 
@@ -31,13 +32,15 @@ async function levantar(t) {
     cerrar()
     rmSync(carpeta, { recursive: true, force: true })
   })
-  return `http://localhost:${servidor.address().port}/api`
+  const base = `http://localhost:${servidor.address().port}/api`
+  await entrar(base)
+  return base
 }
 
 async function pedir(url, metodo = 'GET', cuerpo) {
   const res = await fetch(url, {
     method: metodo,
-    headers: cuerpo ? { 'Content-Type': 'application/json' } : undefined,
+    headers: cabeceras(url, cuerpo ? { 'Content-Type': 'application/json' } : {}),
     body: cuerpo ? JSON.stringify(cuerpo) : undefined,
   })
   const texto = await res.text()
@@ -388,14 +391,23 @@ test('una compra o un artículo asignado en la compra ligan la categoría con su
     proveedor: 'Walmart', fecha: '2026-10-02',
     materiales: [{ material: 'Servilletas', cantidad: 1, unidad: 'caja', monto: 3, categoria: 'Desechables', producto: 'Todos' }],
   })
-  assert.deepEqual((await catalogo(base)).proveedoresPorCategoria.desechables, ['Walmart'])
+  // La base nueva ya trae los de Desechables del Excel (MMAG y Desechables Diver.)
+  assert.deepEqual((await catalogo(base)).proveedoresPorCategoria.desechables, ['Desechables Diver.', 'MMAG', 'Walmart'])
 
   const asignado = await pedir(`${base}/catalogo/materiales/${encodeURIComponent('Harina PAN')}`, 'PUT', {
     categoria: 'Limpieza', productos: ['Todos'], proveedor: 'walmart',
   })
   assert.equal(asignado.cuerpo.proveedorVinculado, true)
   assert.equal(asignado.cuerpo.proveedor, 'Walmart')
-  assert.deepEqual((await catalogo(base)).proveedoresPorCategoria.limpieza, ['Walmart'])
+  assert.deepEqual((await catalogo(base)).proveedoresPorCategoria.limpieza, ['Selectos', 'Walmart'])
+})
+
+test('una base nueva trae del Excel qué categorías surte cada proveedor', async t => {
+  const base = await levantar(t)
+  assert.deepEqual((await catalogo(base)).proveedoresPorCategoria, {
+    'materia prima': ['Selectos'], 'material común': ['Selectos'], limpieza: ['Selectos'],
+    desechables: ['Desechables Diver.', 'MMAG'], bebidas: ['Pepsi'],
+  })
 })
 
 test('una base del catálogo anterior liga una sola vez cada proveedor con las categorías de sus compras', t => {

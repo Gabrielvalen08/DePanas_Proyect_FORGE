@@ -1,0 +1,16 @@
+{
+  "name": "depanas-zip",
+  "version": "1.2.0",
+  "description": "Arma De Panas SV en un .zip para Windows: Node.js oficial (firmado) + el sistema, que se usa en el navegador",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preparar": "node scripts/preparar.mjs",
+    "dist": "node scripts/preparar.mjs --zip",
+    "test:escritorio": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "read-excel-file": "9.3.12"
+  }
+}

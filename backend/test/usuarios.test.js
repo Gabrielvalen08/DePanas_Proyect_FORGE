@@ -10,6 +10,7 @@ import { tmpdir } from 'os'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { DatabaseSync } from 'node:sqlite'
+import { CLAVE_CESAR, cabeceras, entrar } from './ayudantes.js'
 import { crearApp } from '../app.js'
 import { abrirDB } from '../db.js'
 import { hashear, verificar } from '../contrasenas.js'
@@ -17,7 +18,6 @@ import { HASH_CESAR_ANTERIOR } from '../db/usuarios.js'
 import { FUNCIONES, RUTAS_ASIGNABLES } from '../../shared/usuarios.js'
 
 const SCHEMA = join(dirname(fileURLToPath(import.meta.url)), '..', 'db', 'schema.sql')
-const CLAVE_CESAR = 'DePanas#2026'
 
 async function levantar(t) {
   // Windows no deja borrar la carpeta con la base abierta: primero se cierra todo, después se borra
@@ -31,7 +31,9 @@ async function levantar(t) {
     cerrar()
     rmSync(carpeta, { recursive: true, force: true })
   })
-  return { base: `http://localhost:${servidor.address().port}/api`, dbPath }
+  const base = `http://localhost:${servidor.address().port}/api`
+  await entrar(base)
+  return { base, dbPath }
 }
 
 function baseTemporal(t) {
@@ -43,7 +45,7 @@ function baseTemporal(t) {
 async function pedir(url, metodo = 'GET', cuerpo) {
   const res = await fetch(url, {
     method: metodo,
-    headers: cuerpo ? { 'Content-Type': 'application/json' } : undefined,
+    headers: cabeceras(url, cuerpo ? { 'Content-Type': 'application/json' } : {}),
     body: cuerpo ? JSON.stringify(cuerpo) : undefined,
   })
   const texto = await res.text()
@@ -81,7 +83,9 @@ test('sesión: César entra con su contraseña nueva (ya no con 1234) y Marta co
   const { base } = await levantar(t)
   const ok = await pedir(`${base}/sesion`, 'POST', { usuario: 'cesar_01', contrasena: CLAVE_CESAR })
   assert.equal(ok.status, 200)
-  assert.deepEqual(ok.cuerpo, { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'], funciones: ['*'] })
+  const { token, ...usuario } = ok.cuerpo
+  assert.deepEqual(usuario, { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'], funciones: ['*'] })
+  assert.match(token, /^[\w-]{40,}$/, 'entrar devuelve el token de la sesión')
   assert.equal(await entra(base, 'Cesar_01', '1234'), 401)
   assert.equal(await entra(base, 'Marta_02', '5678'), 200)
   assert.equal(await entra(base, 'Nadie', '1234'), 401)
@@ -140,15 +144,11 @@ test('crear: las pantallas y funciones del rol se pueden ajustar; las funciones 
   assert.deepEqual(sinPantalla.cuerpo.funciones, ['compras.eliminar'])
 })
 
-test('crear: no deja repetir el usuario ni la contraseña, ni crear otro administrador o un rol inventado', async t => {
+test('crear: no deja repetir el usuario, ni crear otro administrador o un rol inventado', async t => {
   const { base } = await levantar(t)
   const usuarioRepetido = await pedir(`${base}/usuarios`, 'POST', { ...NUEVO, usuario: 'MARTA_02' })
   assert.equal(usuarioRepetido.status, 409)
   assert.equal(usuarioRepetido.cuerpo.campo, 'usuario')
-
-  const contrasenaRepetida = await pedir(`${base}/usuarios`, 'POST', { ...NUEVO, contrasena: CLAVE_CESAR })
-  assert.equal(contrasenaRepetida.status, 409)
-  assert.equal(contrasenaRepetida.cuerpo.campo, 'contrasena')
 
   assert.equal((await pedir(`${base}/usuarios`, 'POST', { ...NUEVO, rol: 'admin' })).status, 403)
   const inventado = await pedir(`${base}/usuarios`, 'POST', { ...NUEVO, rol: 'jefe' })
@@ -190,17 +190,24 @@ test('editar: cambia contraseña, nombre, rol, pantallas y funciones; la contras
   assert.equal((await pedir(`${base}/usuarios/Luis_03`, 'PUT', { contrasena: 'Tequeño#7' })).status, 200)
   assert.equal(await entra(base, 'Luis_03', 'Arepa#99'), 401)
   assert.equal(await entra(base, 'Luis_03', 'Tequeño#7'), 200)
-  // Su propia contraseña no cuenta como repetida
   assert.equal((await pedir(`${base}/usuarios/Luis_03`, 'PUT', { contrasena: 'Tequeño#7' })).status, 200)
 })
 
-test('editar: la contraseña nueva cumple los requisitos y no puede ser la de otro', async t => {
+test('contraseñas: no se comparan con las de los demás (eso revelaría la de otro usuario)', async t => {
+  const { base } = await levantar(t)
+  // La misma contraseña que el administrador: se acepta y no se dice nada de él
+  const r = await pedir(`${base}/usuarios`, 'POST', { ...NUEVO, contrasena: CLAVE_CESAR })
+  assert.equal(r.status, 201)
+  assert.equal((await pedir(`${base}/usuarios/Marta_02`, 'PUT', { contrasena: CLAVE_CESAR })).status, 200)
+  assert.equal(await entra(base, 'Luis_03', CLAVE_CESAR), 200)
+  assert.equal(await entra(base, 'Marta_02', CLAVE_CESAR), 200)
+})
+
+test('editar: la contraseña nueva cumple los requisitos; no se puede dar el gestor ni hacer otro administrador', async t => {
   const { base } = await levantar(t)
   const debil = await pedir(`${base}/usuarios/Marta_02`, 'PUT', { contrasena: '5679' })
   assert.equal(debil.status, 400)
   assert.equal(debil.cuerpo.campo, 'contrasena')
-  const repetida = await pedir(`${base}/usuarios/Marta_02`, 'PUT', { contrasena: CLAVE_CESAR })
-  assert.equal(repetida.status, 409)
   assert.equal((await pedir(`${base}/usuarios/Marta_02`, 'PUT', { permisos: ['/usuarios'] })).status, 403)
   assert.equal((await pedir(`${base}/usuarios/Marta_02`, 'PUT', { rol: 'admin' })).status, 403)
   assert.equal((await pedir(`${base}/usuarios/Nadie`, 'PUT', { nombre: 'X' })).status, 404)

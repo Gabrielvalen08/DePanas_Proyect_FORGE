@@ -120,7 +120,7 @@
 }
 
 /* ---------- Móvil: cada lista se vuelve una tarjeta ---------- */
-@media (max-width: 767px) {
+@media (max-width: 1099px) {
   .toolbar {
     flex-direction: column-reverse;
     align-items: stretch;

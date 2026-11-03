@@ -18,6 +18,8 @@ Cada ruta pide su permiso (`protegida` en `App.jsx`, reglas en `utils/permisos.j
 
 `PantallaContrasena` no es una ruta: `App.jsx` la muestra en lugar de todo lo demás mientras `useAuth().autenticado` sea `false`. Pide usuario y contraseña, y su fondo es transparente para dejar ver el collage.
 
+`PantallaApagado` tampoco es una ruta: en la versión .zip (`desktop/`), tras «Apagar De Panas SV» (`apagarSistema` de `services/api.js`, solo si `puedeApagar()`), `App.jsx` la muestra en lugar de todo lo demás, porque el servidor ya no responde.
+
 Cada página pasa a `<Header>` su `frase` del día: `fraseDelDia('/')` o `fraseDelDia('/compras')`.
 
 ## Convenciones

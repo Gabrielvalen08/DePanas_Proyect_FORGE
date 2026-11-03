@@ -6,21 +6,32 @@
 import express from 'express'
 import cors from 'cors'
 import { copyFileSync, existsSync, rmSync } from 'fs'
+import { join } from 'path'
 
 import { abrirDB, consolidar, copiaConsistente } from './db.js'
 import { crearRutasCompras } from './routes/compras.js'
 import { crearRutasListas } from './routes/listas.js'
 import { crearRutasExport } from './routes/db_export.js'
 import { crearRutasCatalogo } from './routes/catalogo.js'
-import { crearRutaSesion, crearRutasRequisitos, crearRutasUsuarios } from './routes/usuarios.js'
+import { buscar, crearRutaSesion, crearRutasRequisitos, crearRutasUsuarios, publico, tokenDe } from './routes/usuarios.js'
+import { crearSesiones } from './sesiones.js'
+import { cumple, permisoRequerido } from './permisos.js'
 
 /**
  * @param {Object} opciones
  * @param {string} opciones.dbPath      ruta de depanas.db
  * @param {string} opciones.schemaPath  ruta de schema.sql
  * @param {string} [opciones.origenCors]
+ * @param {string} [opciones.estaticos] carpeta del frontend ya compilado (frontend/dist) para
+ *   servirlo desde este mismo servidor, como en la app de escritorio (desktop/)
+ * @param {ReturnType<typeof crearSesiones>} [opciones.sesiones] sesiones (las pruebas pasan unas con reloj propio)
+ * @param {string[]} [opciones.hostsPermitidos] encabezados Host aceptados (p. ej. ['localhost:4510']); el resto
+ *   recibe 403. Lo usa la app de escritorio, que es un sitio web local: frena el DNS rebinding (una página
+ *   de otro dominio que apunta su nombre a 127.0.0.1 para hablarle a este servidor)
+ * @param {() => void} [opciones.apagar] cómo apagar el sistema (la versión del .zip, desktop/portable/servidor.mjs).
+ *   Con ella, /api/health dice { apagable: true } y POST /api/apagar (con sesión) la llama
  */
-export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:5173' }) {
+export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:5173', estaticos, sesiones = crearSesiones(), hostsPermitidos, apagar }) {
   let db = abrirDB(dbPath, schemaPath)
   const getDb = () => db
   const rutaRespaldo = dbPath.replace(/\.db$/, '') + '.respaldo.db'
@@ -47,6 +58,13 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
   }
 
   const app = express()
+  if (hostsPermitidos) {
+    const permitidos = new Set(hostsPermitidos.map(h => h.toLowerCase()))
+    app.use((req, res, next) => {
+      if (permitidos.has(String(req.headers.host ?? '').toLowerCase())) return next()
+      res.status(403).send('Acceso no permitido')
+    })
+  }
   app.use(cors({ origin: origenCors }))
   app.use(express.json({ limit: '50mb' }))
   app.use(express.urlencoded({ extended: true }))
@@ -67,16 +85,48 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
     next()
   })
 
+  // Health-check: el frontend lo usa para decidir si trabaja con el servidor
+  app.get('/api/health', (_req, res) => res.json(apagar ? { ok: true, apagable: true } : { ok: true }))
+
+  // Toda la API exige sesión (salvo health y entrar) y el permiso de la ruta (permisos.js).
+  // El usuario se vuelve a leer en cada petición: si lo eliminan o le quitan una pantalla,
+  // deja de poder usarla en el acto.
+  app.use('/api', (req, res, next) => {
+    if (req.path === '/sesion' && req.method === 'POST') return next()
+    const sesion = sesiones.leer(tokenDe(req))
+    const registro = sesion && buscar(db, sesion.usuario)
+    if (!registro) return res.status(401).json({ error: 'Tu sesión venció o no es válida. Vuelve a entrar.' })
+    const usuario = publico(registro)
+    if (!cumple(usuario, permisoRequerido(req.method, req.path))) {
+      return res.status(403).json({ error: 'No tienes permiso para hacer esto.' })
+    }
+    req.usuario = usuario
+    next()
+  })
+
   app.use('/api/compras', crearRutasListas(getDb))
   app.use('/api/ingresos', crearRutasCompras(getDb))
   app.use('/api/db', crearRutasExport(getDb, reemplazarDB))
   app.use('/api/catalogo', crearRutasCatalogo(getDb))
-  app.use('/api/usuarios', crearRutasUsuarios(getDb))
-  app.use('/api/sesion', crearRutaSesion(getDb))
+  app.use('/api/usuarios', crearRutasUsuarios(getDb, sesiones))
+  app.use('/api/sesion', crearRutaSesion(getDb, sesiones))
   app.use('/api/requisitos-contrasena', crearRutasRequisitos(getDb))
 
-  // Health-check: el frontend lo usa para decidir si trabaja con el servidor
-  app.get('/api/health', (_req, res) => res.json({ ok: true }))
+  // Versión del .zip: cualquier usuario que haya entrado puede apagar el sistema (responde y después apaga)
+  if (apagar) {
+    app.post('/api/apagar', (_req, res) => {
+      res.on('finish', () => setTimeout(apagar, 100))
+      res.json({ apagado: true })
+    })
+  }
+
+  // App de escritorio: el frontend compilado sale de este mismo servidor; cualquier
+  // ruta que no sea de la API devuelve index.html para que la resuelva React Router
+  if (estaticos) {
+    app.use(express.static(estaticos))
+    app.get(/^\/(?!api(\/|$)).*/, (_req, res) => res.sendFile(join(estaticos, 'index.html')))
+    return { app, cerrar: () => db.close(), sesiones }
+  }
 
   // Ruta raíz informativa
   app.get('/', (_req, res) => {
@@ -94,5 +144,5 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
     `)
   })
 
-  return { app, cerrar: () => db.close() }
+  return { app, cerrar: () => db.close(), sesiones }
 }

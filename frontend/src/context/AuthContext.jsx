@@ -1,9 +1,11 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react'
-import { iniciarSesion } from '../services/api'
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react'
+import { EVENTO_SESION_VENCIDA, cerrarSesionServidor, fijarTokenSesion, iniciarSesion } from '../services/api'
+import { useToast } from './ToastContext'
 import { esAdmin, migrarPermisos, puedeAcceder, puedeHacer } from '../utils/permisos'
 import { ACCESO } from '../utils/mensajes'
 
-// { usuario, nombre, rol, permisos, funciones } de quien entró; dura hasta cerrar la pestaña.
+// { usuario, nombre, rol, permisos, funciones, token } de quien entró; dura hasta cerrar la pestaña.
+// token: el de la sesión del servidor (modo servidor), que cada pedido manda a la API.
 // Una sesión de antes de las funciones (sin la lista) las tiene todas en sus pantallas.
 const CLAVE_SESION = 'depanas_sesion'
 
@@ -22,11 +24,19 @@ const AuthContext = createContext(null)
 
 /**
  * Inicio de sesión con usuario y contraseña. Los usuarios y sus permisos viven en
- * la base (Gestor de usuarios); aquí solo se guarda quién entró. Es una barrera
- * de interfaz: la API no pide autenticación.
+ * la base (Gestor de usuarios). Con servidor, la API exige el token de la sesión y
+ * revisa los permisos (backend/permisos.js); en modo local es solo una barrera de interfaz.
+ * Si el servidor rechaza el token (8 h sin uso, servidor reiniciado o usuario eliminado),
+ * se cierra la sesión y se avisa.
  */
 export function AuthProvider({ children }) {
-  const [sesion, setSesion] = useState(leerSesion)
+  // Puede no haber ToastProvider (p. ej. en pruebas): entonces no se avisa
+  const addToast = useToast()?.addToast
+  const [sesion, setSesion] = useState(() => {
+    const guardada = leerSesion()
+    fijarTokenSesion(guardada?.token)
+    return guardada
+  })
 
   const tienePermiso = useCallback(ruta => puedeAcceder(ruta, sesion), [sesion])
   const tieneFuncion = useCallback(funcion => puedeHacer(funcion, sesion), [sesion])
@@ -41,10 +51,16 @@ export function AuthProvider({ children }) {
     let datos
     try {
       datos = await iniciarSesion(usuario, contrasena)
-    } catch {
+    } catch (error) {
+      // Demasiados intentos fallidos: el servidor dice cuántos minutos esperar
+      if (error?.status === 429) return { ok: false, error: ACCESO.demasiadosIntentos(error.minutos ?? 5) }
       return { ok: false, error: ACCESO.incorrecta }
     }
-    const nueva = { usuario: datos.usuario, nombre: datos.nombre, rol: datos.rol, permisos: datos.permisos, funciones: datos.funciones }
+    const nueva = {
+      usuario: datos.usuario, nombre: datos.nombre, rol: datos.rol, permisos: datos.permisos, funciones: datos.funciones,
+      ...(datos.token ? { token: datos.token } : {}),
+    }
+    fijarTokenSesion(nueva.token)
     try {
       window.sessionStorage.setItem(CLAVE_SESION, JSON.stringify(nueva))
     } catch {
@@ -55,6 +71,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   const salir = useCallback(() => {
+    cerrarSesionServidor()
     try {
       window.sessionStorage.removeItem(CLAVE_SESION)
     } catch {
@@ -62,6 +79,16 @@ export function AuthProvider({ children }) {
     }
     setSesion(null)
   }, [])
+
+  // El servidor rechazó el token: se vuelve a pedir entrar
+  useEffect(() => {
+    function alVencer() {
+      salir()
+      addToast?.(ACCESO.sesionVencida, 'error')
+    }
+    window.addEventListener(EVENTO_SESION_VENCIDA, alVencer)
+    return () => window.removeEventListener(EVENTO_SESION_VENCIDA, alVencer)
+  }, [salir, addToast])
 
   const valor = useMemo(
     () => ({

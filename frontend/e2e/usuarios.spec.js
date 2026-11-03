@@ -53,18 +53,12 @@ test.describe('Gestor de usuarios', () => {
     await confirmar(page, CONFIRMAR.descartar.confirmar)
   })
 
-  test('no deja repetir el usuario ni la contraseña de otro', async ({ page }) => {
+  test('no deja repetir el usuario (la contraseña no se compara con las de los demás)', async ({ page }) => {
     const ventana = await abrirNuevo(page)
     await llenar(ventana, { ...NUEVO, usuario: 'marta_02' })
     await ventana.getByRole('button', { name: USUARIOS.guardar }).click()
     // El usuario repetido se detecta antes de pedir confirmación
     await expect(ventana.getByText(USUARIOS.validacion.usuarioRepetido('Marta_02'))).toBeVisible()
-
-    await llenar(ventana, { ...NUEVO, contrasena: CESAR.contrasena })
-    await ventana.getByRole('button', { name: USUARIOS.guardar }).click()
-    await confirmar(page, CONFIRMAR.guardarCambios.confirmar)
-    await expect(ventana.getByText(USUARIOS.validacion.contrasenaRepetida)).toBeVisible()
-    await expect(ventana.getByLabel(USUARIOS.campos.contrasena, { exact: true })).toBeFocused()
 
     // Con datos escritos, cancelar pide descartar
     await ventana.getByRole('button', { name: USUARIOS.cancelar }).click()

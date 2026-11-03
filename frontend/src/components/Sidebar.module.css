@@ -136,7 +136,7 @@
   outline-color: var(--color-on-primary);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1099px) {
   .sidebar {
     display: none;
   }

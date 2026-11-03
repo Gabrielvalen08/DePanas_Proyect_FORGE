@@ -40,7 +40,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'node e2e/servidor-pruebas.js',
-      url: `http://localhost:${PUERTO_BACKEND}/api/health`,
+      url: `http://127.0.0.1:${PUERTO_BACKEND}/api/health`,
       env: { PORT: String(PUERTO_BACKEND) },
       reuseExistingServer: false,
       timeout: 30_000,
@@ -48,7 +48,7 @@ export default defineConfig({
     {
       command: `npx vite --port ${PUERTO_FRONTEND} --strictPort`,
       url: `http://localhost:${PUERTO_FRONTEND}`,
-      env: { DEPANAS_API: `http://localhost:${PUERTO_BACKEND}` },
+      env: { DEPANAS_API: `http://127.0.0.1:${PUERTO_BACKEND}` },
       reuseExistingServer: false,
       timeout: 60_000,
     },

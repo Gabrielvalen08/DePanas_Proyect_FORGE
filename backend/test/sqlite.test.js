@@ -10,6 +10,7 @@ import { tmpdir } from 'os'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { DatabaseSync } from 'node:sqlite'
+import { cabeceras, entrar } from './ayudantes.js'
 import { crearApp } from '../app.js'
 
 const SCHEMA = join(dirname(fileURLToPath(import.meta.url)), '..', 'db', 'schema.sql')
@@ -25,12 +26,14 @@ async function levantar(t) {
     cerrar()
     rmSync(carpeta, { recursive: true, force: true })
   })
-  return { base: `http://localhost:${servidor.address().port}/api`, carpeta, ruta }
+  const base = `http://localhost:${servidor.address().port}/api`
+  await entrar(base)
+  return { base, carpeta, ruta }
 }
 
 const pedir = (url, metodo, cuerpo) => fetch(url, {
   method: metodo,
-  headers: { 'Content-Type': 'application/json' },
+  headers: cabeceras(url, { 'Content-Type': 'application/json' }),
   body: JSON.stringify(cuerpo),
 }).then(async r => ({ status: r.status, cuerpo: await r.json() }))
 

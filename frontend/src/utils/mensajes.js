@@ -86,7 +86,8 @@ export const ACCESO = {
   etiquetaUsuario: 'Usuario',
   etiquetaContrasena: 'Contraseña',
   etiqueta: 'Contraseña de acceso',
-  placeholderUsuario: 'Usuario (ej. Cesar_01 o Marta_02)',
+  // Ejemplo genérico: nunca un usuario real (no se le dice a nadie qué usuarios existen)
+  placeholderUsuario: 'Usuario (ej. Juan_01)',
   placeholderContrasena: '••••',
   boton: 'Ingresar',
   olvideContrasena: 'Olvidé mi contraseña',
@@ -96,6 +97,9 @@ export const ACCESO = {
   incorrecta: 'Usuario o contraseña incorrectos. Revísalos e inténtalo de nuevo.',
   pie: 'De Panas SV · Aquí se viene a comer rico',
   bloqueado: 'Listo, cerramos la sesión. ¡Nos vemos pronto, pana!',
+  sesionVencida: 'Tu sesión se cerró por seguridad (mucho tiempo sin uso). Vuelve a entrar.',
+  demasiadosIntentos: minutos =>
+    `Demasiados intentos con una contraseña incorrecta. Espera ${minutos} ${minutos === 1 ? 'minuto' : 'minutos'} y vuelve a intentarlo.`,
 }
 
 // ---------------------------------------------------------------------------
@@ -205,6 +209,16 @@ export const ASIGNACION = {
   },
   errorGuardar: detalle =>
     `No pudimos guardar la categoría y el producto${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
+}
+
+// ---------------------------------------------------------------------------
+// Apagar el sistema (versión del .zip: el servidor corre oculto en la computadora)
+// ---------------------------------------------------------------------------
+export const APAGADO = {
+  boton: 'Apagar De Panas SV',
+  titulo: 'De Panas SV está apagado',
+  texto: 'Ya puedes cerrar esta pestaña. Para volver a usarlo, abre «De Panas SV» desde el escritorio.',
+  error: detalle => `No pudimos apagar el sistema${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
 }
 
 // ---------------------------------------------------------------------------
@@ -498,7 +512,6 @@ export const USUARIOS = {
     usuarioRepetido: usuario => `Ya existe el usuario «${usuario}». Elige otro`,
     nombre: 'Escribe el nombre de la persona',
     nombreLargo: 'El nombre es muy largo (máximo 60 caracteres)',
-    contrasenaRepetida: 'Esa contraseña ya la usa otro usuario. Elige una diferente',
     noCoinciden: 'Las contraseñas no coinciden',
     permisos: 'Elige al menos una pantalla',
     gestor: 'El Gestor de usuarios es solo del administrador',
@@ -634,6 +647,11 @@ export const CONFIRMAR = {
     mensaje: 'Se perderá lo que escribiste hasta ahora.',
     confirmar: 'Sí, descartar',
     volver: 'Seguir editando',
+  },
+  apagar: {
+    titulo: '¿Apagamos De Panas SV?',
+    mensaje: 'El sistema se cierra en esta computadora. Para volver a usarlo, abre «De Panas SV» desde el escritorio.',
+    confirmar: 'Sí, apagar',
   },
   cerrarSesion: {
     titulo: '¿Cerramos la sesión?',

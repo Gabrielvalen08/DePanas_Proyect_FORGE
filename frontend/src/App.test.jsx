@@ -2,7 +2,8 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from './App'
-import { ACCESO, CARGAR, CONFIRMAR } from './utils/mensajes'
+import { apagarSistema, puedeApagar } from './services/api'
+import { ACCESO, APAGADO, CARGAR, CONFIRMAR } from './utils/mensajes'
 
 vi.mock('./services/api', () => ({
   guardarLista: vi.fn(),
@@ -11,6 +12,11 @@ vi.mock('./services/api', () => ({
   eliminarLista: vi.fn(),
   totalLista: () => 0,
   detectarModo: () => Promise.resolve('local'),
+  fijarTokenSesion: () => {},
+  puedeApagar: vi.fn(() => false),
+  apagarSistema: vi.fn(async () => {}),
+  cerrarSesionServidor: async () => {},
+  EVENTO_SESION_VENCIDA: 'depanas:sesion-vencida',
   exportarDB: vi.fn(),
   importarDB: vi.fn(),
   exportarJSON: vi.fn(),
@@ -91,6 +97,33 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
       expect(screen.getByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
       expect(screen.getByRole('navigation', { name: 'Menú principal' })).toBeInTheDocument()
     })
+  })
+
+  it('sin servidor apagable (desarrollo, modo local) no aparece «Apagar»', () => {
+    iniciarComo({ usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'] })
+    renderizarApp()
+    expect(screen.queryByRole('button', { name: APAGADO.boton })).not.toBeInTheDocument()
+  })
+
+  it('en la versión del .zip, «Apagar De Panas SV» pide confirmar, apaga el servidor y deja la pantalla de apagado', async () => {
+    vi.mocked(puedeApagar).mockReturnValue(true)
+    const usuario = userEvent.setup()
+    iniciarComo({ usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/', '/compras'] })
+    renderizarApp()
+
+    await usuario.click(screen.getByRole('button', { name: APAGADO.boton }))
+    const confirmacion = await screen.findByRole('alertdialog', { name: CONFIRMAR.apagar.titulo })
+    await usuario.click(within(confirmacion).getByRole('button', { name: 'Cancelar' }))
+    expect(apagarSistema).not.toHaveBeenCalled()
+
+    await usuario.click(screen.getByRole('button', { name: APAGADO.boton }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.apagar.confirmar }))
+    expect(apagarSistema).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText(APAGADO.titulo)).toBeInTheDocument()
+    expect(screen.getByText(APAGADO.texto)).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Menú principal' })).not.toBeInTheDocument()
+    expect(sessionStorage.getItem('depanas_sesion')).toBeNull()
+    vi.mocked(puedeApagar).mockReturnValue(false)
   })
 
   it('permite cerrar sesión y volver a pedir contraseña', async () => {

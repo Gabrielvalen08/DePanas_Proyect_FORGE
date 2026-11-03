@@ -78,14 +78,18 @@
 }
 
 .accion {
-  flex-shrink: 0;
+  /* Si no cabe junto al título baja de línea; si tampoco cabe ahí, sus botones se acomodan
+     en varias líneas en vez de salirse de la tarjeta (que recorta lo que sobresale) */
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
   font-family: var(--fuente-titulos);
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-text-muted);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1099px) {
   .encabezado {
     padding: var(--space-4);
   }

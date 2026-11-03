@@ -21,3 +21,8 @@ frontend/test-results/
 frontend/playwright-report/
 frontend/blob-report/
 frontend/playwright/.cache/
+
+# Versión .zip (desktop/): la carpeta que arma scripts/preparar.mjs (el .zip va en desktop/dist/)
+desktop/salida/
+desktop/test-results/
+desktop/playwright-report/

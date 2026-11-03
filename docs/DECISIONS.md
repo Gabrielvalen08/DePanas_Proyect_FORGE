@@ -35,6 +35,7 @@ Escala de espaciado `--space-1` … `--space-12` (base 4px, en `rem`). Radios: i
 | Springs | `springSuave` `{ bounce: 0, duration: 0.35 }`; `springConImpulso` `{ bounce: 0.2, duration: 0.3 }` | Damping 1.0 por defecto; rebote solo con inercia |
 | Feedback de presión | CSS `:active`, 100ms (`scale(0.97)` o hundirse en la sombra) | Debe ser instantáneo; Motion agregaría latencia |
 | Navegación móvil | **Barra inferior** con los ítems `enBarra` de `navegacion.js` (Agregar, Compras, Catálogo) y **"Más"**, que abre una hoja desde abajo con el Gestor de usuarios y Cerrar sesión (Exportar y Cargar datos ya no van en el menú) | Con 7 ítems la barra necesitaba scroll horizontal y Usuarios y Cerrar sesión quedaban fuera de la pantalla sin aviso. La hoja atrapa el foco como `Modal` y se cierra con Escape, con el scrim o al elegir |
+| Punto de la vista de teléfono | **< 1100 px** (antes < 768 px). Entre ~770 y ~1025 px, con el menú lateral, las tablas no cabían y se cortaban el ⋮ y los botones de editar y eliminar (medido pantalla por pantalla; lo primero, Categorías a 1024 px). 1100 deja margen para nombres largos. La prueba e2e «a ningún ancho queda un botón cortado» revisa de 1280 a 320 px. |
 | Calidad | Vitest 2 + Testing Library, ESLint 9 con `jsx-a11y` (strict) y `react-hooks` v7 | `@eslint/js` fijado en `^9`: la v10 exige ESLint 10, que `jsx-a11y` no soporta |
 | Tests y Motion | `MotionGlobalConfig.skipAnimations = true` en `src/test/setup.js` | Las salidas animadas no hacen esperar a los tests |
 
@@ -188,6 +189,32 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 | Llenado | Una vez por base con las compras existentes (`user_version` 2) y, después, cada compra guardada o importada y cada artículo asignado en una compra suman la relación que falte. A mano se edita en la categoría | Que funcione desde el primer día sin cargar nada; lo que se quita a mano no reaparece al reabrir |
 | Respaldo | Las filas de categorías llevan `proveedores` (opcional, `version` sigue en 1); cargar suma y omite los que no existen | Los respaldos anteriores siguen cargando |
 
+## Seguridad del acceso (antes de entregar al cliente)
+
+| Tema | Decisión | Por qué |
+| ---- | -------- | ------- |
+| Sesión | Token al azar (`randomBytes(32)`) por sesión, en memoria (`backend/sesiones.js`); vence tras 8 h sin uso y cada pedido lo renueva | Antes la API no pedía sesión: cualquiera en la red podía cambiar la contraseña del administrador. En memoria basta para una app de escritorio: reiniciar obliga a entrar de nuevo |
+| Permisos | `backend/permisos.js` decide qué pantalla o función pide cada ruta, con las reglas de `shared/usuarios.js`; el usuario se vuelve a leer en cada pedido | Los permisos se revisaban solo en pantalla; así un cambio del administrador (o eliminar a alguien) se aplica en el acto |
+| Intentos | 5 contraseñas malas seguidas → 5 min de espera para ese usuario (429), también si no existe | Frena adivinar contraseñas sin revelar qué usuarios existen |
+| Red | El backend escucha solo en `127.0.0.1` (`HOST` para cambiarlo) | La app se usa en una sola computadora; desde la red nadie llega a la API |
+| Hash | PBKDF2-SHA256 de 100 000 a 600 000 iteraciones (OWASP); los hashes viejos se recalculan al entrar. En pruebas, `DEPANAS_ITERACIONES_HASH` (backend) y 1000 en Vitest | Más costoso de romper si alguien copia la base |
+| Contraseñas repetidas | Ya no se comparan con las de los demás usuarios | El aviso «Esa contraseña ya la usa otro usuario» revelaba la contraseña de otro |
+| Modo local | Sin cambios: sigue siendo una barrera de interfaz | No hay servidor que proteja los datos; la app del cliente usa siempre el servidor |
+
+## Entrega al cliente: .zip con Node.js oficial (sitio web local)
+
+| Tema | Decisión | Por qué |
+| ---- | -------- | ------- |
+| Formato (1.2.0) | Un `.zip` con `Abrir De Panas SV.cmd`, `node/node.exe` (Node.js oficial **sin modificar**) y `app/` (nuestro código en JavaScript). Reemplaza al instalador de Electron (1.0.0 con ventana propia y 1.1.0 con ícono en la bandeja) | Lo pidió el cliente y evita el bloqueo de Windows |
+| Smart App Control | Solo se ejecuta un binario **firmado** (Node.js, firmado por OpenJS Foundation; `preparar.mjs` comprueba la firma). El `.exe` de Electron no tenía firma y Windows lo bloqueaba sin «Ejecutar de todas formas». Probado en una PC con Smart App Control activado: `node.exe` corre aunque venga de internet; un `.cmd` o `.lnk` con la marca de internet se bloquea y sin ella corre | Sin certificado de firma (con costo), la única forma de que corra |
+| Marca de internet | El cliente **desbloquea el .zip** (Propiedades → «Desbloquear») antes de extraerlo, o lo recibe por USB. `iniciar.mjs` crea un acceso directo en el escritorio, hecho en la computadora y por eso sin la marca | El `.cmd` descargado se bloquea; desbloquear es un paso de una sola vez |
+| Sitio web local | `servidor.mjs` corre **oculto** en `http://localhost:4510` (puerto fijo, en `127.0.0.1` y `::1`) y se abre en el navegador predeterminado; abrirlo otra vez solo abre otra pestaña | El cliente lo quiere en el navegador; puerto fijo para guardarlo en favoritos |
+| Apagar | Botón **«Apagar De Panas SV»** en el menú (con confirmación), solo en esta versión: `crearApp({ apagar })` hace que `/api/health` diga `apagable` y crea `POST /api/apagar` (con sesión); después queda `PantallaApagado` | Sin ventana ni ícono en la bandeja (dibujarlo exigiría otro ejecutable sin firma), hace falta una forma de apagarlo |
+| Host | `hostsPermitidos`: solo `localhost:4510`, `127.0.0.1:4510` y `[::1]:4510`; el resto recibe 403 | En el navegador conviven otras páginas: frena el DNS rebinding. Contra pedidos de otros sitios ya protegen el token en `Authorization` y la falta de CORS |
+| Datos | `%APPDATA%\De Panas SV\depanas.db`, fuera de la carpeta del `.zip`; errores en `registro.log` | Reemplazar o borrar la carpeta (versión nueva) no toca los datos |
+| Catálogo inicial | Las listas de `Datos De Panas.xlsx` (ya eran `db/catalogo.js`) y `proveedorCategoria`, sacado de sus filas; las compras del Excel no se cargan | Al elegir el proveedor ya salen solo sus artículos |
+| Pruebas | `desktop/pruebas/escritorio.spec.js`: abre el `.cmd` de la carpeta armada (`DEPANAS_PRUEBA=1`, datos y puerto temporales) y usa un Chromium de Playwright | Prueba lo que recibe el cliente: abrir, guardar, exportar, apagar y conservar los datos |
+
 ## Mensajes del sistema
 
 - Todo texto que el sistema le dice al usuario vive en `frontend/src/utils/mensajes.js`, agrupado por tema (`ACCESO`, `COMPRA`, `LISTA_COMPRAS`, `VALIDACION`, `ASIGNACION`, `ESTADOS`, `PANTALLA_CATALOGO`, `USUARIOS`, `EXPORTAR`, `CARGAR`, `CONFIRMAR`). Los mensajes con datos son funciones (`COMPRA.confirmarGuardar.mensaje(proveedor, n, total)`).
@@ -197,4 +224,5 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 ## Pendientes
 - **Bundle:** el JS pasó de ~193 kB a ~339 kB (sin gzip), sobre todo por `motion`. Si importa, se puede cargar Motion de forma diferida.
 - `npm audit` reporta vulnerabilidades en `esbuild` (dev) y `react-router` 6. Arreglarlas implica subir versiones mayores (fuera del alcance).
+- **Backend (va en la app del cliente):** `body-parser` (alta) y `qs` (moderada) tienen arreglo compatible con `npm audit fix`, pero esas versiones se publicaron a fines de octubre de 2026. Aplicarlo cuando tengan al menos 2 semanas (desde el 12 de noviembre) en `backend/` y `desktop/`, y volver a armar el instalador.
 - Drawer móvil con gestos (`springConImpulso`, proyección de inercia) para una fase futura.
