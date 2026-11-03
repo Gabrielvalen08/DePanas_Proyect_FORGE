@@ -291,7 +291,7 @@
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1099px) {
   .cuerpo {
     padding: var(--space-4);
   }

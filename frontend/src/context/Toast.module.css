@@ -54,7 +54,7 @@
 }
 
 /* Móvil: arriba y centrado, porque abajo está la barra de navegación */
-@media (max-width: 767px) {
+@media (max-width: 1099px) {
   .pila {
     top: var(--space-4);
     right: 50%;

@@ -80,7 +80,7 @@
   padding: var(--space-4) var(--space-6) var(--space-6);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1099px) {
   .cuerpo { padding: var(--space-4); }
   .pie { padding: var(--space-4); }
   .pie > * { flex: 1 1 auto; }

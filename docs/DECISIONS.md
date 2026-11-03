@@ -35,6 +35,7 @@ Escala de espaciado `--space-1` … `--space-12` (base 4px, en `rem`). Radios: i
 | Springs | `springSuave` `{ bounce: 0, duration: 0.35 }`; `springConImpulso` `{ bounce: 0.2, duration: 0.3 }` | Damping 1.0 por defecto; rebote solo con inercia |
 | Feedback de presión | CSS `:active`, 100ms (`scale(0.97)` o hundirse en la sombra) | Debe ser instantáneo; Motion agregaría latencia |
 | Navegación móvil | **Barra inferior** con los ítems `enBarra` de `navegacion.js` (Agregar, Compras, Catálogo) y **"Más"**, que abre una hoja desde abajo con el Gestor de usuarios y Cerrar sesión (Exportar y Cargar datos ya no van en el menú) | Con 7 ítems la barra necesitaba scroll horizontal y Usuarios y Cerrar sesión quedaban fuera de la pantalla sin aviso. La hoja atrapa el foco como `Modal` y se cierra con Escape, con el scrim o al elegir |
+| Punto de la vista de teléfono | **< 1100 px** (antes < 768 px). Entre ~770 y ~1025 px, con el menú lateral, las tablas no cabían y se cortaban el ⋮ y los botones de editar y eliminar (medido pantalla por pantalla; lo primero, Categorías a 1024 px). 1100 deja margen para nombres largos. La prueba e2e «a ningún ancho queda un botón cortado» revisa de 1280 a 320 px. |
 | Calidad | Vitest 2 + Testing Library, ESLint 9 con `jsx-a11y` (strict) y `react-hooks` v7 | `@eslint/js` fijado en `^9`: la v10 exige ESLint 10, que `jsx-a11y` no soporta |
 | Tests y Motion | `MotionGlobalConfig.skipAnimations = true` en `src/test/setup.js` | Las salidas animadas no hacen esperar a los tests |
 

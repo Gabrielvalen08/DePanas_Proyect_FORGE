@@ -13,7 +13,7 @@ const ToastContext = createContext(null)
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
   const siguienteId = useRef(1)
-  const esMovil = useConsultaMedia('(max-width: 767px)')
+  const esMovil = useConsultaMedia('(max-width: 1099px)')
 
   const quitarToast = useCallback((id) => {
     setToasts(prev => prev.filter(t => t.id !== id))

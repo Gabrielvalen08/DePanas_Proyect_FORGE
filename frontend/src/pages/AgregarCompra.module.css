@@ -10,7 +10,7 @@
   min-width: 14rem;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1099px) {
   .botonNueva {
     width: 100%;
   }

@@ -70,6 +70,7 @@ React 18 + Vite 5 + react-router-dom 6, en JavaScript (JSX) sin TypeScript. Íco
 - Assets de marca en `frontend/public/brand/` (logo, `arepa.png` para el menú, el collage `patron-elementos-graficos.webp` y los íconos de favicon/PWA, conectados en `index.html` y `public/site.webmanifest`).
 - Fondo: el collage de la pág. 10 del brandbook va en `body::before` al 10 % (tokens `--patron-*`). Una pantalla con fondo crema no pinta su propio `background`. El texto directo sobre el collage usa `--color-text`, nunca `--color-text-muted` (no llega a AA sobre los trazos).
 - Header: transparente arriba, crema sólido con sombra al hacer scroll, sin `backdrop-filter`.
+- **Vista de teléfono por debajo de 1100 px** (`@media (max-width: 1099px)`; lo solo de escritorio, `(min-width: 1100px)`; `ToastContext` usa la misma consulta): barra inferior en vez de menú lateral y tablas como tarjetas. Va en 1100 y no en 768 porque con el menú lateral las tablas se cortaban antes (lo primero, Categorías del Catálogo a ~1024 px); ver el comentario en `styles/base.css`. Ningún botón puede quedar cortado a ningún ancho: lo vigila `e2e/navegacion.spec.js` (de 1280 a 320 px). Una acción que no cabe baja de línea (`Tarjeta` deja que su `accion` se acomode en varias líneas).
 - Textos para el usuario: siempre desde `src/utils/mensajes.js` (voz de marca de la diapositiva 10; errores y validaciones sin modismos).
 
 Las skills ejecutan scripts desde la raíz del repo, p. ej. `python .claude/skills/ui-ux-pro-max/scripts/search.py "<consulta>" --domain ux`.
