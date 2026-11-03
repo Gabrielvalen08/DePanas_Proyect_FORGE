@@ -613,6 +613,46 @@ describe('AgregarCompra', () => {
     expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({ material: 'Queso', categoria: 'Bebidas', producto: 'Todos' })
   })
 
+  it('el botón "+" siempre se ve: apagado con el campo vacío y con un artículo que ya tiene categoría y producto', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    expect(screen.getByRole('button', { name: COMPRA.asignarArticulo('') })).toBeDisabled()
+
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
+    expect(screen.getByRole('button', { name: COMPRA.asignarArticulo('Tocino La Rioja') })).toBeDisabled()
+  })
+
+  it('con un artículo nuevo, el botón "+" abre de una vez una sola ventana', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Harina Nueva')
+
+    const boton = screen.getByRole('button', { name: COMPRA.asignarArticulo('Harina Nueva') })
+    expect(boton).toBeEnabled()
+    await usuario.click(boton)
+
+    expect(await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })).toBeInTheDocument()
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+  })
+
+  it('al asignarle categoría y producto al artículo, el botón "+" se apaga', async () => {
+    asignaciones.set('harina nueva', { nombre: 'Harina Nueva', categoria: 'Materia Prima', producto: '' })
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Harina Nueva')
+    await usuario.click(screen.getByRole('button', { name: COMPRA.asignarArticulo('Harina Nueva') }))
+
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloExistente })
+    await usuario.click(within(ventana).getByRole('button', { name: 'Cachitos' }))
+    await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.guardar }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: COMPRA.asignarArticulo('Harina Nueva') })).toBeDisabled()
+  })
+
   it('si se descarta la asignación ("Ahora no"), aparece el botón "+" para reabrirla y muestra el proveedor', async () => {
     const usuario = userEvent.setup()
     renderizar()

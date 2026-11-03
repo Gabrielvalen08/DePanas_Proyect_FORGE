@@ -105,7 +105,8 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
  * compra guardada pasa a ser la nueva referencia.
  * Cada material lleva su categoría y su producto (como en el Excel): si se
  * escribe uno nuevo o sin asignar, se piden en una ventana emergente
- * (AsignarMaterial) al elegirlo, al salir del campo o, si faltan, al guardar.
+ * (AsignarMaterial) con el botón «+», al elegirlo, al salir del campo o, si
+ * faltan, al guardar.
  *
  * Props:
  *  - titulo: texto del encabezado (por defecto "Detalle de compra")
@@ -278,10 +279,10 @@ export default function BloqueCompra({
     return filas.find(f => !estaVacia(f) && necesitaAsignacion(f.material))
   }
 
-  function necesitaBotonAsignar(fila) {
+  // El «+» siempre se ve; se activa con un artículo escrito al que le falte categoría o producto
+  function puedeAsignar(fila) {
     const nombre = fila.material?.trim()
-    if (!nombre) return false
-    return necesitaAsignacion(nombre) && omitidos.has(nombre.toLowerCase())
+    return Boolean(nombre) && necesitaAsignacion(nombre)
   }
 
   function reabrirAsignacion(fila) {
@@ -502,17 +503,16 @@ export default function BloqueCompra({
                       {/* Material */}
                       <td>
                         <div className={estilos.materialConBoton}>
-                          {necesitaBotonAsignar(fila) && (
-                            <button
-                              type="button"
-                              className={estilos.botonAsignarMini}
-                              aria-label={`Asignar categoría y producto a ${fila.material}`}
-                              title={`Asignar categoría y producto a «${fila.material}»`}
-                              onClick={() => reabrirAsignacion(fila)}
-                            >
-                              <Plus size={14} aria-hidden="true" />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            className={estilos.botonAsignarMini}
+                            aria-label={COMPRA.asignarArticulo(fila.material.trim())}
+                            title={COMPRA.asignarArticulo(fila.material.trim())}
+                            disabled={!puedeAsignar(fila)}
+                            onClick={() => reabrirAsignacion(fila)}
+                          >
+                            <Plus size={14} aria-hidden="true" />
+                          </button>
                           <AutocompleteInput
                             id={`${id}-material-${fila.id}`}
                             etiqueta={`Artículo, fila ${n}`}
