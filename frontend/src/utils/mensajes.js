@@ -124,8 +124,14 @@ export const COMPRA = {
   },
   confirmarGuardar: {
     titulo: '¿Guardamos esta compra?',
-    mensaje: (proveedor, n, total) =>
-      `Se guardará la compra en ${proveedor} con ${n} ${articulos(n)} por ${total}.`,
+    // En partes: la cantidad de artículos y el total van en negrita
+    mensaje: (proveedor, n, total) => [
+      { texto: `Se guardará la compra en ${proveedor} con ` },
+      { texto: `${n} ${articulos(n)}`, negrita: true },
+      { texto: ' por ' },
+      { texto: total, negrita: true },
+      { texto: '.' },
+    ],
     confirmar: 'Sí, guardar',
   },
   confirmarCancelar: {

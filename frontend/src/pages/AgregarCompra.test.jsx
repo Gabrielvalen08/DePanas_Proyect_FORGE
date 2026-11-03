@@ -349,7 +349,11 @@ describe('AgregarCompra', () => {
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
 
     const confirmacion = await screen.findByRole('alertdialog', { name: COMPRA.confirmarGuardar.titulo })
-    expect(within(confirmacion).getByText(COMPRA.confirmarGuardar.mensaje('Walmart', 1, '$7.00'))).toBeInTheDocument()
+    expect(confirmacion).toHaveTextContent('Se guardará la compra en Walmart con 1 artículo por $7.00.')
+    // La cantidad de artículos y el total van en negrita; el resto, no
+    expect(within(confirmacion).getByText('1 artículo').tagName).toBe('STRONG')
+    expect(within(confirmacion).getByText('$7.00').tagName).toBe('STRONG')
+    expect(confirmacion.querySelectorAll('strong')).toHaveLength(2)
     expect(guardarLista).not.toHaveBeenCalled()
 
     await usuario.click(within(confirmacion).getByRole('button', { name: 'Cancelar' }))
