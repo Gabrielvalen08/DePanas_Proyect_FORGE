@@ -32,15 +32,21 @@ function filaVacia() {
 }
 
 /**
- * Monto de la fila: cantidad × precio unitario, redondeado a centavos. Una fila
- * que viene de una compra guardada conserva su monto exacto hasta que se toque
- * la cantidad o el precio (el precio unitario mostrado va redondeado).
+ * Monto de la fila: cantidad × precio unitario, redondeado a centavos. Un monto
+ * escrito a mano (montoEscrito) se conserva exacto aunque cambie la cantidad; el
+ * de una compra guardada, hasta que se toque la cantidad o el precio (el precio
+ * unitario mostrado va redondeado).
  */
 function montoDe(fila) {
   if (fila.montoOriginal !== undefined) return fila.montoOriginal
   const cantidad = Number(fila.cantidad)
   const precio = Number(fila.precio)
   return cantidad > 0 && precio > 0 ? redondear(cantidad * precio, 2) : 0
+}
+
+/** Precio unitario de un monto escrito; sin cantidad válida todavía no hay precio */
+function precioDesdeMonto(monto, cantidad) {
+  return Number(cantidad) > 0 ? String(redondear(monto / Number(cantidad), 4)) : ''
 }
 
 function filasDesde(materiales) {
@@ -62,7 +68,7 @@ function filasDesde(materiales) {
 
 // Una fila sin material, cantidad ni monto no cuenta: se ignora al guardar
 function estaVacia(fila) {
-  return !fila.material.trim() && !fila.cantidad && !fila.precio
+  return !fila.material.trim() && !fila.cantidad && !fila.precio && fila.montoOriginal === undefined
 }
 
 function validarFila(fila) {
@@ -72,7 +78,7 @@ function validarFila(fila) {
   if (!cantidadValida) errores.cantidad = VALIDACION.cantidad
   if (!fila.unidad) errores.unidad = VALIDACION.unidad
   // Con cantidad válida, el monto (cantidad × precio, a centavos) tampoco puede quedar en 0
-  // Una fila de una compra guardada que nadie tocó conserva su monto: su precio no se revisa
+  // Un monto escrito, o el de una compra guardada que nadie tocó, se conserva: su precio no se revisa
   const precioIntacto = fila.montoOriginal !== undefined
   if (!precioIntacto && (!fila.precio || isNaN(fila.precio) || Number(fila.precio) <= 0 || (cantidadValida && montoDe(fila) <= 0)))
     errores.precio = VALIDACION.precio
@@ -93,9 +99,10 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
  * BloqueCompra
  * Formulario de una lista de compra: fecha y proveedor en el encabezado,
  * y filas de materiales (material, cantidad + unidad, precio unitario y monto).
- * El monto de cada fila es cantidad × precio unitario. Al elegir un material se
- * sugiere el precio unitario de su última compra (con su unidad); se puede cambiar
- * y la compra guardada pasa a ser la nueva referencia.
+ * Se escribe el precio unitario o el monto y el otro se calcula; al cambiar la
+ * cantidad se mantiene el último escrito. Al elegir un material se sugiere el
+ * precio unitario de su última compra (con su unidad); se puede cambiar y la
+ * compra guardada pasa a ser la nueva referencia.
  * Cada material lleva su categoría y su producto (como en el Excel): si se
  * escribe uno nuevo o sin asignar, se piden en una ventana emergente
  * (AsignarMaterial) al elegirlo, al salir del campo o, si faltan, al guardar.
@@ -202,12 +209,37 @@ export default function BloqueCompra({
     setBloqueado(false)
     const filaActual = filas.find(f => f.id === filaId)
     const actualizada = { ...filaActual, [campo]: valor }
-    // Tocar la cantidad o el precio vuelve a calcular el monto; el precio escrito deja de ser el sugerido
-    if (campo === 'cantidad' || campo === 'precio') actualizada.montoOriginal = undefined
-    if (campo === 'precio') actualizada.precioSugerido = false
+    // Se mantiene el último escrito: con un monto escrito, la cantidad recalcula el precio;
+    // si no, recalcula el monto. El precio escrito deja de ser el sugerido
+    if (campo === 'cantidad') {
+      if (filaActual.montoEscrito) actualizada.precio = precioDesdeMonto(filaActual.montoOriginal, valor)
+      else actualizada.montoOriginal = undefined
+    }
+    if (campo === 'precio') {
+      actualizada.montoOriginal = undefined
+      actualizada.montoEscrito = false
+      actualizada.precioSugerido = false
+    }
 
     setFilas(prev => prev.map(f => (f.id === filaId ? actualizada : f)))
     if (errores[clave(filaId, campo)]) fijarError(clave(filaId, campo), validarFila(actualizada)[campo])
+  }
+
+  /** Monto escrito a mano: se guarda exacto y de él sale el precio unitario; borrarlo limpia los dos */
+  function cambiarMonto(filaId, valor) {
+    setBloqueado(false)
+    const filaActual = filas.find(f => f.id === filaId)
+    const monto = Number(valor)
+    const actualizada = {
+      ...filaActual,
+      montoOriginal: monto > 0 ? monto : undefined,
+      montoEscrito: monto > 0,
+      precio: monto > 0 ? precioDesdeMonto(monto, filaActual.cantidad) : '',
+      precioSugerido: false,
+    }
+
+    setFilas(prev => prev.map(f => (f.id === filaId ? actualizada : f)))
+    if (errores[clave(filaId, 'precio')]) fijarError(clave(filaId, 'precio'), validarFila(actualizada).precio)
   }
 
   /** Pone el precio y la unidad de la última compra del material, salvo que el precio ya lo haya escrito la persona */
@@ -216,7 +248,7 @@ export default function BloqueCompra({
     const encontrado = getPrecioSugerido(material)
     const sugerido = encontrado && redondear(encontrado.precio, 2) > 0 ? encontrado : null
     setFilas(prev => prev.map(f => {
-      if (f.id !== filaId || (f.precio !== '' && !f.precioSugerido)) return f
+      if (f.id !== filaId || f.montoEscrito || (f.precio !== '' && !f.precioSugerido)) return f
       if (!sugerido) return f.precioSugerido ? { ...f, precio: '', precioSugerido: false } : f
       return {
         ...f,
@@ -550,16 +582,16 @@ export default function BloqueCompra({
                         />
                       </td>
 
-                      {/* Monto = cantidad × precio unitario (se calcula solo) */}
+                      {/* Monto = cantidad × precio unitario, o escrito a mano (y de él sale el precio) */}
                       <td>
-                        <Campo
+                        <CampoMoneda
                           id={`${id}-monto-${fila.id}`}
                           etiqueta={`Monto, fila ${n}`}
                           etiquetaOculta
                           prefijo="$"
-                          readOnly
-                          tabIndex={-1}
-                          value={montoDe(fila) > 0 ? montoDe(fila).toFixed(2) : ''}
+                          value={montoDe(fila) > 0 ? montoDe(fila) : ''}
+                          onChange={valor => cambiarMonto(fila.id, valor)}
+                          onBlur={() => salirDeCampoFila(fila.id, 'precio')}
                         />
                       </td>
 
