@@ -70,7 +70,15 @@ export default function FichaProveedor({ ficha, onCambiar, errores = {} }) {
             </li>
           ))}
         </ul>
-        <Boton variante="secundario" tamano="sm" icono={<Plus />} onClick={() => cambiar({ telefonos: [...ficha.telefonos, ''] })} className={estilos.agregar}>
+        {/* No se abre otro teléfono mientras haya uno en blanco */}
+        <Boton
+          variante="secundario"
+          tamano="sm"
+          icono={<Plus />}
+          onClick={() => cambiar({ telefonos: [...ficha.telefonos, ''] })}
+          disabled={ficha.telefonos.some(t => !t.trim())}
+          className={estilos.agregar}
+        >
           {T.agregarTelefono}
         </Boton>
       </fieldset>
