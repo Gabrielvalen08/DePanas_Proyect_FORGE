@@ -666,7 +666,7 @@ export default function BloqueCompra({
           porConfirmar?.proveedor ?? '',
           porConfirmar?.materiales.length ?? 0,
           formatearPrecio(total),
-        )}
+        ).map(({ texto, negrita }, i) => (negrita ? <strong key={i}>{texto}</strong> : texto))}
         confirmLabel={COMPRA.confirmarGuardar.confirmar}
       />
 
