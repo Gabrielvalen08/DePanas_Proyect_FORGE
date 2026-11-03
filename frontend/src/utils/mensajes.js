@@ -134,7 +134,6 @@ export const COMPRA = {
     confirmar: 'Sí, cancelar',
     volver: 'Seguir editando',
   },
-  ultimoPrecio: (precio, unidad) => `Última compra: ${precio} por ${unidad}`,
   asignarArticulo: material => `Asignar categoría y producto${material ? ` a ${material}` : ''}`,
   faltaAsignacion: material =>
     `La compra no se guardó: falta decirnos la categoría y el producto de «${material}».`,
