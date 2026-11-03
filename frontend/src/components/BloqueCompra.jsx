@@ -577,7 +577,6 @@ export default function BloqueCompra({
                           value={fila.precio}
                           onChange={valor => cambiarFila(fila.id, 'precio', valor)}
                           onBlur={() => salirDeCampoFila(fila.id, 'precio')}
-                          ayuda={textoUltimoPrecio(fila.material)}
                           error={errores[clave(fila.id, 'precio')]}
                         />
                       </td>
@@ -683,12 +682,6 @@ export default function BloqueCompra({
       />
     </>
   )
-}
-
-/** "Última compra: $1.00 por bolsa" bajo el precio, cuando el material ya se compró antes */
-function textoUltimoPrecio(material) {
-  const sugerido = getPrecioSugerido(material)
-  return sugerido ? COMPRA.ultimoPrecio(formatearPrecio(sugerido.precio), sugerido.unidad) : undefined
 }
 
 /** "Materia Prima · Cachitos" bajo el material, cuando ya tiene ambos asignados */

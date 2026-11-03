@@ -397,7 +397,8 @@ describe('AgregarCompra', () => {
     const precio = screen.getByLabelText('Precio unitario, fila 1')
     expect(precio).toHaveValue('1.00')
     expect(screen.getByLabelText('Unidad, fila 1')).toHaveValue('bolsa')
-    expect(precio).toHaveAccessibleDescription(COMPRA.ultimoPrecio('$1.00', 'bolsa'))
+    expect(precio).not.toHaveAccessibleDescription() // el precio ya se ve: sin mensaje debajo
+    expect(screen.queryByText(/Última compra/)).not.toBeInTheDocument()
 
     await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '5')
     expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('5.00')
@@ -416,7 +417,6 @@ describe('AgregarCompra', () => {
     await usuario.clear(precio)
     await usuario.type(precio, '120') // subió 20 centavos: 1-2-0 → $1.20
     expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('6.00')
-    expect(precio).toHaveAccessibleDescription(COMPRA.ultimoPrecio('$1.00', 'bolsa')) // se sigue viendo el anterior
 
     await guardarYConfirmar(usuario)
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
@@ -448,7 +448,6 @@ describe('AgregarCompra', () => {
     await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.tab()
     expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue('')
-    expect(screen.getByLabelText('Precio unitario, fila 1')).not.toHaveAccessibleDescription(/Última compra/)
   })
 
   it('sin proveedor, escribir un material avisa que primero se elige el proveedor y lo enfoca', async () => {
