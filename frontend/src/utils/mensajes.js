@@ -124,8 +124,14 @@ export const COMPRA = {
   },
   confirmarGuardar: {
     titulo: '¿Guardamos esta compra?',
-    mensaje: (proveedor, n, total) =>
-      `Se guardará la compra en ${proveedor} con ${n} ${articulos(n)} por ${total}.`,
+    // En partes: la cantidad de artículos y el total van en negrita
+    mensaje: (proveedor, n, total) => [
+      { texto: `Se guardará la compra en ${proveedor} con ` },
+      { texto: `${n} ${articulos(n)}`, negrita: true },
+      { texto: ' por ' },
+      { texto: total, negrita: true },
+      { texto: '.' },
+    ],
     confirmar: 'Sí, guardar',
   },
   confirmarCancelar: {
@@ -134,7 +140,7 @@ export const COMPRA = {
     confirmar: 'Sí, cancelar',
     volver: 'Seguir editando',
   },
-  ultimoPrecio: (precio, unidad) => `Última compra: ${precio} por ${unidad}`,
+  asignarArticulo: material => `Asignar categoría y producto${material ? ` a ${material}` : ''}`,
   faltaAsignacion: material =>
     `La compra no se guardó: falta decirnos la categoría y el producto de «${material}».`,
 }

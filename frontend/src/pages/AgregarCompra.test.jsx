@@ -5,6 +5,7 @@ import { ToastProvider } from '../context/ToastContext'
 import { asignarMaterial, guardarLista } from '../services/api'
 import { fechaHoyISO } from '../utils/formato'
 import AgregarCompra from './AgregarCompra'
+import BloqueCompra from '../components/BloqueCompra'
 import { ASIGNACION, COMPRA, VALIDACION } from '../utils/mensajes'
 
 // Catálogo de prueba: categoría y producto por material (como en el Excel)
@@ -169,6 +170,123 @@ describe('AgregarCompra', () => {
     expect(screen.getByText('$12.00')).toBeInTheDocument()
   })
 
+  it('al escribir el monto calcula el precio unitario y guarda el monto exacto', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
+    await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '3')
+    await usuario.selectOptions(screen.getByLabelText('Unidad, fila 1'), 'kg')
+    await usuario.type(screen.getByLabelText('Monto, fila 1'), '1000') // cajero: $10.00
+
+    expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue('3.33')
+    expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('10.00')
+
+    await guardarYConfirmar(usuario)
+    await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({ cantidad: 3, monto: 10 })
+  })
+
+  it('al cambiar la cantidad se mantiene el último escrito: el monto o el precio', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const cantidad = screen.getByLabelText('Cantidad, fila 1')
+    const precio = screen.getByLabelText('Precio unitario, fila 1')
+    const monto = screen.getByLabelText('Monto, fila 1')
+    await usuario.type(cantidad, '2')
+
+    await usuario.type(monto, '1000') // $10.00: queda el monto y cambia el precio
+    expect(precio).toHaveValue('5.00')
+    await usuario.clear(cantidad)
+    await usuario.type(cantidad, '4')
+    expect(monto).toHaveValue('10.00')
+    expect(precio).toHaveValue('2.50')
+
+    await usuario.clear(precio)
+    await usuario.type(precio, '300') // $3.00: queda el precio y cambia el monto
+    expect(monto).toHaveValue('12.00')
+    await usuario.clear(cantidad)
+    await usuario.type(cantidad, '5')
+    expect(precio).toHaveValue('3.00')
+    expect(monto).toHaveValue('15.00')
+  })
+
+  it('un monto escrito antes de la cantidad se conserva y el precio sale al poner la cantidad', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const precio = screen.getByLabelText('Precio unitario, fila 1')
+    await usuario.type(screen.getByLabelText('Monto, fila 1'), '800')
+    expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('8.00')
+    expect(precio).toHaveValue('')
+
+    await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
+    expect(precio).toHaveValue('4.00')
+    expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('8.00')
+  })
+
+  it('borrar un monto escrito limpia también el precio', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
+    await usuario.type(screen.getByLabelText('Monto, fila 1'), '800')
+    await usuario.clear(screen.getByLabelText('Monto, fila 1'))
+
+    expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('')
+    expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue('')
+  })
+
+  it('el error de precio se quita al escribir un monto válido', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
+    await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
+    await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+    const precio = screen.getByLabelText('Precio unitario, fila 1')
+    expect(precio).toHaveAccessibleDescription(VALIDACION.precio)
+
+    await usuario.type(screen.getByLabelText('Monto, fila 1'), '800')
+    expect(precio).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('el precio sugerido no reemplaza un monto escrito a mano', async () => {
+    precios.set('tocino la rioja', { precio: 1, unidad: 'bolsa' })
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByLabelText('Monto, fila 1'), '800')
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
+    await usuario.tab()
+
+    expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('8.00')
+    expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue('')
+  })
+
+  it('una compra guardada conserva su monto hasta que se toque, y su cantidad recalcula como antes', async () => {
+    const usuario = userEvent.setup()
+    render(
+      <ToastProvider>
+        <BloqueCompra
+          inicial={{ proveedor: 'Walmart', fecha: '2026-10-01', materiales: [{ material: 'Tocino La Rioja', cantidad: 3, unidad: 'kg', monto: 10 }] }}
+          alGuardar={vi.fn()}
+        />
+      </ToastProvider>
+    )
+    const monto = screen.getByLabelText('Monto, fila 1')
+    expect(monto).toHaveValue('10.00')
+    expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue('3.33')
+
+    const cantidad = screen.getByLabelText('Cantidad, fila 1')
+    await usuario.clear(cantidad)
+    await usuario.type(cantidad, '6')
+    expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue('3.33')
+    expect(monto).toHaveValue('20.00') // 6 × 3.3333
+
+    await usuario.clear(monto)
+    await usuario.type(monto, '1800')
+    expect(monto).toHaveValue('18.00')
+    expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue('3.00')
+  })
+
   it('guarda la lista, avisa y deja el formulario vacío', async () => {
     const usuario = userEvent.setup()
     renderizar()
@@ -231,7 +349,11 @@ describe('AgregarCompra', () => {
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
 
     const confirmacion = await screen.findByRole('alertdialog', { name: COMPRA.confirmarGuardar.titulo })
-    expect(within(confirmacion).getByText(COMPRA.confirmarGuardar.mensaje('Walmart', 1, '$7.00'))).toBeInTheDocument()
+    expect(confirmacion).toHaveTextContent('Se guardará la compra en Walmart con 1 artículo por $7.00.')
+    // La cantidad de artículos y el total van en negrita; el resto, no
+    expect(within(confirmacion).getByText('1 artículo').tagName).toBe('STRONG')
+    expect(within(confirmacion).getByText('$7.00').tagName).toBe('STRONG')
+    expect(confirmacion.querySelectorAll('strong')).toHaveLength(2)
     expect(guardarLista).not.toHaveBeenCalled()
 
     await usuario.click(within(confirmacion).getByRole('button', { name: 'Cancelar' }))
@@ -279,7 +401,8 @@ describe('AgregarCompra', () => {
     const precio = screen.getByLabelText('Precio unitario, fila 1')
     expect(precio).toHaveValue('1.00')
     expect(screen.getByLabelText('Unidad, fila 1')).toHaveValue('bolsa')
-    expect(precio).toHaveAccessibleDescription(COMPRA.ultimoPrecio('$1.00', 'bolsa'))
+    expect(precio).not.toHaveAccessibleDescription() // el precio ya se ve: sin mensaje debajo
+    expect(screen.queryByText(/Última compra/)).not.toBeInTheDocument()
 
     await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '5')
     expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('5.00')
@@ -298,7 +421,6 @@ describe('AgregarCompra', () => {
     await usuario.clear(precio)
     await usuario.type(precio, '120') // subió 20 centavos: 1-2-0 → $1.20
     expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('6.00')
-    expect(precio).toHaveAccessibleDescription(COMPRA.ultimoPrecio('$1.00', 'bolsa')) // se sigue viendo el anterior
 
     await guardarYConfirmar(usuario)
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
@@ -330,7 +452,6 @@ describe('AgregarCompra', () => {
     await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.tab()
     expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue('')
-    expect(screen.getByLabelText('Precio unitario, fila 1')).not.toHaveAccessibleDescription(/Última compra/)
   })
 
   it('sin proveedor, escribir un material avisa que primero se elige el proveedor y lo enfoca', async () => {
@@ -377,11 +498,13 @@ describe('AgregarCompra', () => {
     expect(screen.getByRole('combobox', { name: 'Artículo, fila 2' })).toHaveFocus()
   })
 
-  it('guarda la categoría y el producto de cada material y los muestra bajo el campo', async () => {
+  it('guarda la categoría y el producto de cada material y los deja en un tooltip, sin ocupar espacio en la fila', async () => {
     const usuario = userEvent.setup()
     renderizar()
     await llenarCompraValida(usuario)
     expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveAccessibleDescription('Materia Prima · Cachitos')
+    expect(screen.getByText('Materia Prima · Cachitos')).toHaveClass('solo-lector')
+    expect(screen.getByTitle('Materia Prima · Cachitos')).toBeInTheDocument()
     await guardarYConfirmar(usuario)
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
@@ -493,6 +616,46 @@ describe('AgregarCompra', () => {
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
     expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({ material: 'Queso', categoria: 'Bebidas', producto: 'Todos' })
+  })
+
+  it('el botón "+" siempre se ve: apagado con el campo vacío y con un artículo que ya tiene categoría y producto', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    expect(screen.getByRole('button', { name: COMPRA.asignarArticulo('') })).toBeDisabled()
+
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
+    expect(screen.getByRole('button', { name: COMPRA.asignarArticulo('Tocino La Rioja') })).toBeDisabled()
+  })
+
+  it('con un artículo nuevo, el botón "+" abre de una vez una sola ventana', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Harina Nueva')
+
+    const boton = screen.getByRole('button', { name: COMPRA.asignarArticulo('Harina Nueva') })
+    expect(boton).toBeEnabled()
+    await usuario.click(boton)
+
+    expect(await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })).toBeInTheDocument()
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+  })
+
+  it('al asignarle categoría y producto al artículo, el botón "+" se apaga', async () => {
+    asignaciones.set('harina nueva', { nombre: 'Harina Nueva', categoria: 'Materia Prima', producto: '' })
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Harina Nueva')
+    await usuario.click(screen.getByRole('button', { name: COMPRA.asignarArticulo('Harina Nueva') }))
+
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloExistente })
+    await usuario.click(within(ventana).getByRole('button', { name: 'Cachitos' }))
+    await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.guardar }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: COMPRA.asignarArticulo('Harina Nueva') })).toBeDisabled()
   })
 
   it('si se descarta la asignación ("Ahora no"), aparece el botón "+" para reabrirla y muestra el proveedor', async () => {

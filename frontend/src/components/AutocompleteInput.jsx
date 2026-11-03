@@ -13,7 +13,7 @@ import estilos from './AutocompleteInput.module.css'
  * filtra y se elige una con clic o flechas + Enter. También acepta texto nuevo.
  * getSuggestions(texto) es síncrona; con texto vacío devuelve todas.
  * Props: id, value, onChange, onBlur, placeholder, getSuggestions,
- *        etiqueta, etiquetaOculta, error, ayuda,
+ *        etiqueta, etiquetaOculta, error, ayuda, ayudaOculta,
  *        onSeleccionar(valor): se llama al elegir una opción de la lista
  */
 export default function AutocompleteInput({
@@ -28,6 +28,7 @@ export default function AutocompleteInput({
   etiquetaOculta = false,
   error,
   ayuda,
+  ayudaOculta,
 }) {
   const [sugerencias, setSugerencias] = useState([])
   const [abierto, setAbierto] = useState(false)
@@ -112,6 +113,7 @@ export default function AutocompleteInput({
       etiquetaOculta={etiquetaOculta}
       error={error}
       ayuda={ayuda}
+      ayudaOculta={ayudaOculta}
       value={value}
       placeholder={placeholder}
       autoComplete="off"

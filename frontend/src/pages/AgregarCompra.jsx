@@ -49,7 +49,7 @@ export default function AgregarCompra() {
     <>
       <Header title="Agregar compra" frase={fraseDelDia('/')} />
 
-      <main id="contenido" tabIndex={-1}>
+      <main id="contenido" tabIndex={-1} className={estilos.contenido}>
         {/* popLayout: la compra que sale no empuja a la que entra */}
         <AnimatePresence initial={false} mode="popLayout">
           {bloques.map((bloque, i) => (
