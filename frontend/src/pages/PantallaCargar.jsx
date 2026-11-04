@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { ArrowLeft, FileJson, ListChecks, Upload } from 'lucide-react'
 import Header from '../components/Header'
 import { useRegresar } from '../hooks/useRegresar'
@@ -7,6 +7,7 @@ import { contenidoCompra } from '../../../shared/carga-compras.js'
 import { Boton, ConfirmDialog, Insignia, SelectorArchivo, Tarjeta } from '../components/common'
 import { leerComprasJSON, analizarCompras, importarCompras, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { formatearFecha, formatearPrecio } from '../utils/formato'
 import { CARGAR, CONFIRMAR, fraseDelDia } from '../utils/mensajes'
 import estilos from './PantallaCargar.module.css'
@@ -34,6 +35,14 @@ export default function PantallaCargar() {
   const [analisis, setAnalisis] = useState([])
   const [revision, setRevision] = useState(null)
   const [decisiones, setDecisiones] = useState([])
+
+  // Un archivo elegido sin aplicar. «Registrar» es el botón de cargar: con nada elegido no hay qué registrar
+  const puedeRegistrar = seleccion.length > 0 && !decisiones.some(d => d.accion !== 'omitir' && !d.existentes.length && !d.entrantes.length)
+  const registrarDesdeAviso = useCallback(() => setConfirmandoCarga(true), [])
+  const registro = useDatosSinGuardar({
+    sucio: compras?.length > 0,
+    registrar: puedeRegistrar ? registrarDesdeAviso : undefined,
+  })
 
   async function abrir(archivo) {
     const turno = ++lectura.current
@@ -68,6 +77,7 @@ export default function PantallaCargar() {
   }
 
   async function cargar() {
+    registro.aceptar()
     setOcupado(true)
     setError('')
     setResultado('')
@@ -83,6 +93,8 @@ export default function PantallaCargar() {
             existentes: c.existente.materiales.map((_, i) => i), entrantes: [],
             proveedor: 'existente', fecha: 'existente',
           })))
+          // Hay que decidir qué hacer con las que cambiaron: se queda en la pantalla
+          registro.terminar(false)
           return
         }
       }
@@ -96,7 +108,9 @@ export default function PantallaCargar() {
       setSeleccion([])
       setNombreArchivo('')
       limpiarArchivo()
+      registro.terminar(true)
     } catch (err) {
+      registro.terminar(false)
       limpiarArchivo()
       const mensaje = CARGAR.error(err.message)
       setError(mensaje)
@@ -219,7 +233,10 @@ export default function PantallaCargar() {
 
       <ConfirmDialog
         isOpen={confirmandoCarga}
-        onClose={() => setConfirmandoCarga(false)}
+        onClose={() => {
+          setConfirmandoCarga(false)
+          registro.cerrar()
+        }}
         onConfirm={cargar}
         title={CONFIRMAR.cargar.titulo}
         message={CONFIRMAR.cargar.mensaje(seleccion.length, formatearPrecio(total))}

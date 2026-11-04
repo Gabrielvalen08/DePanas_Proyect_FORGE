@@ -30,6 +30,7 @@ No hace falta tener `npm run dev` ni el backend abiertos: `playwright.config.js`
 | `compras.spec.js` | Validación, total, filas y bloques; artículos filtrados por las categorías del proveedor; registrar una compra (con confirmación), verla en Lista de compras, exportarla a Excel (.xlsx, leído con `read-excel-file`) y eliminarla |
 | `catalogo.spec.js` | Agregar, renombrar y eliminar un proveedor; nombre vacío o repetido; exportar a Excel quitando un proveedor y cargar un respaldo eligiendo uno; buscador |
 | `usuarios.spec.js` | Gestor de usuarios: requisitos de contraseña en vivo, usuario o contraseña repetidos; un empleado que registra compras pero no ve el Catálogo ni puede eliminarlas; darle el Catálogo solo para consultar; cambiar los requisitos |
+| `aviso-salida.spec.js` | Aviso antes de perder datos, en escritorio y móvil: «Salir sin guardar», «Registrar» y X/Esc; Agregar compra, editar compra, catálogo, usuarios, requisitos, Cargar y Exportar; sin cambios o tras guardar no avisa |
 | `movil.spec.js` | Proyecto `movil` (Pixel 7): barra inferior, hoja "Más" (Gestor de usuarios y Cerrar sesión), que nada se salga del ancho y que Marta no vea el gestor |
 | `ayudantes.js` | `entrar(page, usuario)`, `menu(page)`, `confirmar(page, etiqueta)` (toda acción pasa por un `ConfirmDialog`), `salir(page)` y el vigilante de errores |
 

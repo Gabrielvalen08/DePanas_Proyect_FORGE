@@ -218,6 +218,18 @@ export const ASIGNACION = {
 }
 
 // ---------------------------------------------------------------------------
+// Aviso antes de perder datos sin guardar
+// ---------------------------------------------------------------------------
+export const AVISO_SALIDA = {
+  titulo: '¿Salimos sin guardar?',
+  mensaje: 'Tienes datos sin registrar. Si sales ahora, se pierden.',
+  mensajeSinRegistrar: 'Elegiste un rango y todavía no lo has descargado. Si sales ahora, se pierde.',
+  salir: 'Salir sin guardar',
+  registrar: 'Registrar',
+  seguir: 'Seguir aquí',
+}
+
+// ---------------------------------------------------------------------------
 // Apagar el sistema (versión del .zip: el servidor corre oculto en la computadora)
 // ---------------------------------------------------------------------------
 export const APAGADO = {

@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { AlertCircle, Check, Pencil, ShieldCheck, UserPlus, X } from 'lucide-react'
 import { Boton, Campo, ConfirmDialog, CuerpoModal, Modal, PieModal } from './common'
 import { tituloDeRuta } from './navegacion'
 import { FUNCIONES, FUNCIONES_POR_PANTALLA, ROLES_ASIGNABLES, RUTAS_ASIGNABLES, permisosDeRol } from '../utils/permisos'
+import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { revisarContrasena } from '../../../shared/usuarios.js'
 import { CONFIRMAR, USUARIOS } from '../utils/mensajes'
 import estilos from './EditorUsuario.module.css'
@@ -31,10 +32,11 @@ const firma = lista => [...new Set(lista)].sort().join('\n')
 export default function EditorUsuario({ edicion, usuarios, requisitos, alGuardar, alCerrar }) {
   const primerCampoRef = useRef(null)
   const nuevo = !edicion?.registro
+  const { intentarCerrar, cierreRef } = useCierreConAviso(alCerrar)
   return (
     <Modal
       abierto={Boolean(edicion)}
-      alCerrar={alCerrar}
+      alCerrar={intentarCerrar}
       titulo={nuevo ? USUARIOS.tituloNuevo : USUARIOS.tituloEditar(edicion.registro.usuario)}
       icono={nuevo ? <UserPlus /> : <Pencil />}
       focoInicial={primerCampoRef}
@@ -48,13 +50,14 @@ export default function EditorUsuario({ edicion, usuarios, requisitos, alGuardar
           alGuardar={alGuardar}
           alCerrar={alCerrar}
           primerCampoRef={primerCampoRef}
+          cierreRef={cierreRef}
         />
       )}
     </Modal>
   )
 }
 
-function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, primerCampoRef }) {
+function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, primerCampoRef, cierreRef }) {
   const nuevo = !registro
   const esAdmin = registro?.rol === 'admin'
   const [usuario, setUsuario] = useState(registro?.usuario ?? '')
@@ -77,6 +80,9 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
   const confirmacionRef = useRef(null)
   const permisosRef = useRef(null)
   const rolRef = useRef(null)
+  const formRef = useRef(null)
+  const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
+  const avisoSalida = useDatosSinGuardar({ sucio: cambiado, registrar: registrarDesdeAviso, cierreRef })
 
   const revision = revisarContrasena(contrasena.trim(), requisitos)
 
@@ -147,6 +153,7 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
     const nuevos = validar()
     if (Object.keys(nuevos).length > 0) {
       mostrarErrores(nuevos)
+      avisoSalida.terminar(false)
       return
     }
     setErrores({})
@@ -154,6 +161,7 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
   }
 
   async function guardarConfirmado() {
+    avisoSalida.aceptar()
     setGuardando(true)
     try {
       const pantallas = RUTAS_ASIGNABLES.filter(r => permisos.includes(r))
@@ -168,9 +176,11 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
           funciones: FUNCIONES.filter(f => funciones.includes(f) && pantallas.some(r => FUNCIONES_POR_PANTALLA[r]?.includes(f))),
         }),
       })
+      avisoSalida.terminar(true)
     } catch (error) {
       // Usuario o contraseña repetidos, etc.: se marca el campo para cambiarlo
       if (error?.campo) mostrarErrores({ [error.campo]: error.message })
+      avisoSalida.terminar(false)
     } finally {
       setGuardando(false)
     }
@@ -178,7 +188,7 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
 
   return (
     <>
-      <form onSubmit={guardar} noValidate>
+      <form ref={formRef} onSubmit={guardar} noValidate>
         <CuerpoModal>
           <div className={estilos.columnas}>
             <div className={estilos.campos}>
@@ -339,7 +349,10 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
       {/* Fuera del <form>: los eventos del portal no deben llegar a su onSubmit */}
       <ConfirmDialog
         isOpen={confirmando === 'guardar'}
-        onClose={() => setConfirmando(null)}
+        onClose={() => {
+          setConfirmando(null)
+          avisoSalida.cerrar()
+        }}
         onConfirm={guardarConfirmado}
         title={CONFIRMAR.guardarCambios.titulo}
         message={CONFIRMAR.guardarCambios.mensaje}

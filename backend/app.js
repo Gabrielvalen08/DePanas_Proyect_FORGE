@@ -15,6 +15,7 @@ import { crearRutasExport } from './routes/db_export.js'
 import { crearRutasCatalogo } from './routes/catalogo.js'
 import { buscar, crearRutaSesion, crearRutasRequisitos, crearRutasUsuarios, publico, tokenDe } from './routes/usuarios.js'
 import { crearSesiones } from './sesiones.js'
+import { crearPestanas, ESPERA_APAGADO_MS } from './pestanas.js'
 import { cumple, permisoRequerido } from './permisos.js'
 
 /**
@@ -29,10 +30,17 @@ import { cumple, permisoRequerido } from './permisos.js'
  *   recibe 403. Lo usa la app de escritorio, que es un sitio web local: frena el DNS rebinding (una página
  *   de otro dominio que apunta su nombre a 127.0.0.1 para hablarle a este servidor)
  * @param {() => void} [opciones.apagar] cómo apagar el sistema (la versión del .zip, desktop/portable/servidor.mjs).
- *   Con ella, /api/health dice { apagable: true } y POST /api/apagar (con sesión) la llama
+ *   Con ella, /api/health dice { apagable: true }, POST /api/apagar (con sesión) la llama y también
+ *   se llama al cerrarse la última pestaña con sesión (pestanas.js)
+ * @param {number} [opciones.esperaApagadoMs] cuánto esperar tras cerrarse la última pestaña (las pruebas usan menos)
  */
-export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:5173', estaticos, sesiones = crearSesiones(), hostsPermitidos, apagar }) {
+export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:5173', estaticos, sesiones = crearSesiones(), hostsPermitidos, apagar, esperaApagadoMs = ESPERA_APAGADO_MS }) {
   let db = abrirDB(dbPath, schemaPath)
+  const pestanas = apagar ? crearPestanas({ apagar, sesionVigente: sesiones.vigente, esperaMs: esperaApagadoMs }) : null
+  const cerrar = () => {
+    pestanas?.cancelar()
+    db.close()
+  }
   const getDb = () => db
   const rutaRespaldo = dbPath.replace(/\.db$/, '') + '.respaldo.db'
 
@@ -86,7 +94,11 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
   })
 
   // Health-check: el frontend lo usa para decidir si trabaja con el servidor
-  app.get('/api/health', (_req, res) => res.json(apagar ? { ok: true, apagable: true } : { ok: true }))
+  // Versión del .zip: es lo primero que pide una página al cargar, así que cancela el apagado (recarga con F5)
+  app.get('/api/health', (_req, res) => {
+    pestanas?.cancelar()
+    res.json(apagar ? { ok: true, apagable: true } : { ok: true })
+  })
 
   // Toda la API exige sesión (salvo health y entrar) y el permiso de la ruta (permisos.js).
   // El usuario se vuelve a leer en cada petición: si lo eliminan o le quitan una pantalla,
@@ -118,6 +130,18 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
       res.on('finish', () => setTimeout(apagar, 100))
       res.json({ apagado: true })
     })
+
+    // Cada pestaña se registra al entrar y avisa al irse; la última apaga el sistema (pestanas.js)
+    app.post('/api/pestanas', (req, res) => {
+      const id = req.body?.id
+      if (typeof id !== 'string' || !id || id.length > 64) return res.status(400).json({ error: 'Pestaña no válida' })
+      pestanas.registrar(id, tokenDe(req))
+      res.json({ ok: true })
+    })
+    app.post('/api/pestanas/:id/cerrar', (req, res) => {
+      pestanas.cerrar(req.params.id)
+      res.json({ ok: true })
+    })
   }
 
   // App de escritorio: el frontend compilado sale de este mismo servidor; cualquier
@@ -125,7 +149,7 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
   if (estaticos) {
     app.use(express.static(estaticos))
     app.get(/^\/(?!api(\/|$)).*/, (_req, res) => res.sendFile(join(estaticos, 'index.html')))
-    return { app, cerrar: () => db.close(), sesiones }
+    return { app, cerrar, sesiones }
   }
 
   // Ruta raíz informativa
@@ -144,5 +168,5 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
     `)
   })
 
-  return { app, cerrar: () => db.close(), sesiones }
+  return { app, cerrar, sesiones }
 }

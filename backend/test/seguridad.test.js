@@ -258,3 +258,106 @@ test('apagar: sin la opción (desarrollo, e2e) no existe y health no lo ofrece',
   const admin = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
   assert.notEqual((await pedir(`${base}/apagar`, { metodo: 'POST', token: admin })).status, 200)
 })
+
+// ---- Versión del .zip: cerrar la última pestaña con sesión apaga el sistema ----
+
+const ESPERA = 150
+const esperar = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+async function levantarApagable(t, sesiones = crearSesiones()) {
+  const carpeta = mkdtempSync(join(tmpdir(), 'depanas-seguridad-'))
+  const estado = { apagados: 0 }
+  const { app, cerrar } = crearApp({
+    dbPath: join(carpeta, 'depanas.db'), schemaPath: SCHEMA, sesiones, esperaApagadoMs: ESPERA,
+    apagar: () => { estado.apagados++ },
+  })
+  const servidor = await new Promise(resolve => { const s = app.listen(0, '127.0.0.1', () => resolve(s)) })
+  t.after(async () => {
+    servidor.closeAllConnections()
+    await new Promise(resolve => servidor.close(resolve))
+    cerrar()
+    rmSync(carpeta, { recursive: true, force: true })
+  })
+  return { base: `http://127.0.0.1:${servidor.address().port}/api`, estado }
+}
+
+const registrar = (base, token, id) => pedir(`${base}/pestanas`, { metodo: 'POST', cuerpo: { id }, token })
+const cerrarPestana = (base, token, id) => pedir(`${base}/pestanas/${id}/cerrar`, { metodo: 'POST', token })
+
+test('pestañas: al cerrarse la última con sesión, el sistema se apaga después de la espera', async t => {
+  const { base, estado } = await levantarApagable(t)
+  const token = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
+  assert.equal((await registrar(base, token, 'a')).status, 200)
+  assert.equal((await cerrarPestana(base, token, 'a')).status, 200)
+  assert.equal(estado.apagados, 0, 'todavía no: puede ser una recarga')
+  await esperar(ESPERA * 2)
+  assert.equal(estado.apagados, 1)
+})
+
+test('pestañas: recargar (GET /api/health al volver la página) cancela el apagado', async t => {
+  const { base, estado } = await levantarApagable(t)
+  const token = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
+  await registrar(base, token, 'a')
+  await cerrarPestana(base, token, 'a')
+  assert.equal((await pedir(`${base}/health`)).status, 200)
+  await registrar(base, token, 'a2')
+  await esperar(ESPERA * 2)
+  assert.equal(estado.apagados, 0)
+})
+
+test('pestañas: con varias abiertas, solo se apaga al cerrarse la última', async t => {
+  const { base, estado } = await levantarApagable(t)
+  const cesar = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
+  const marta = await tokenDe(base, 'Marta_02', '5678')
+  await registrar(base, cesar, 'a')
+  await registrar(base, marta, 'b')
+
+  await cerrarPestana(base, cesar, 'a')
+  await esperar(ESPERA * 2)
+  assert.equal(estado.apagados, 0, 'queda la de Marta')
+
+  await cerrarPestana(base, marta, 'b')
+  await esperar(ESPERA * 2)
+  assert.equal(estado.apagados, 1)
+})
+
+test('pestañas: una con la sesión vencida ya no cuenta (quedó en la pantalla de contraseña)', async t => {
+  const reloj = { ahora: 1_000_000 }
+  const { base, estado } = await levantarApagable(t, crearSesiones({ ahora: () => reloj.ahora }))
+  const vieja = await tokenDe(base, 'Marta_02', '5678')
+  await registrar(base, vieja, 'vieja')
+  reloj.ahora += DURACION_SESION_MS + 1
+  const nueva = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
+  await registrar(base, nueva, 'nueva')
+
+  await cerrarPestana(base, nueva, 'nueva')
+  await esperar(ESPERA * 2)
+  assert.equal(estado.apagados, 1)
+})
+
+test('pestañas: sin sesión responden 401, sin id válido 400 y mirarlas no renueva la sesión', async t => {
+  const { base, estado } = await levantarApagable(t)
+  assert.equal((await registrar(base, undefined, 'a')).status, 401)
+  assert.equal((await cerrarPestana(base, undefined, 'a')).status, 401)
+  await esperar(ESPERA * 2)
+  assert.equal(estado.apagados, 0, 'sin sesión nadie apaga el sistema')
+
+  const token = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
+  assert.equal((await pedir(`${base}/pestanas`, { metodo: 'POST', cuerpo: {}, token })).status, 400)
+  assert.equal((await registrar(base, token, 'x'.repeat(65))).status, 400)
+
+  const reloj = { ahora: 5 }
+  const sesiones = crearSesiones({ ahora: () => reloj.ahora })
+  const t1 = sesiones.abrir('Cesar_01')
+  reloj.ahora += DURACION_SESION_MS
+  assert.equal(sesiones.vigente(t1), true)
+  reloj.ahora += 1
+  assert.equal(sesiones.vigente(t1), false, 'vigente no renovó la sesión')
+})
+
+test('pestañas: fuera de la versión del .zip las rutas no existen', async t => {
+  const { base } = await levantar(t)
+  const token = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
+  assert.equal((await registrar(base, token, 'a')).status, 404)
+  assert.equal((await cerrarPestana(base, token, 'a')).status, 404)
+})

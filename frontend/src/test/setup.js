@@ -28,3 +28,14 @@ URL.revokeObjectURL ??= () => {}
 
 // api.js persiste en localStorage: cada test arranca con los datos mock
 beforeEach(() => localStorage.clear())
+
+// El router de datos (useBlocker) crea un Request con el AbortSignal de jsdom, y el Request de
+// Node solo acepta el suyo. Las pruebas no cancelan navegaciones: basta con no pasárselo
+const RequestDeNode = globalThis.Request
+globalThis.Request = class extends RequestDeNode {
+  constructor(url, opciones = {}) {
+    const resto = { ...opciones }
+    delete resto.signal
+    super(url, resto)
+  }
+}
