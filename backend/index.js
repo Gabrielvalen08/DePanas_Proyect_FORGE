@@ -10,6 +10,7 @@
  *   GET  /api/catalogo                     → opciones de los desplegables y categoría/producto de cada material
  *   PUT  /api/catalogo/materiales/:nombre  → asigna categoría y producto a un material
  *   POST /api/sesion                      → inicia sesión { usuario, contrasena }
+ *   POST /api/pestanas, /api/pestanas/:id/cerrar → solo en el .zip: cerrar la última pestaña apaga (pestanas.js)
  *   GET/POST/PUT/DELETE  /api/usuarios     → Gestor de usuarios (roles, pantallas y funciones; contraseñas con hash)
  *   GET/PUT  /api/requisitos-contrasena    → lo que pide toda contraseña nueva
  *   GET  /api/db/exportar                  → descarga una copia de depanas.db

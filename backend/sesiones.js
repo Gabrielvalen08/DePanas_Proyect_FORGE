@@ -43,6 +43,12 @@ export function crearSesiones({ ahora = () => Date.now() } = {}) {
       return sesion
     },
 
+    /** ¿Sigue válida? A diferencia de leer, no la renueva: mirar no es usarla */
+    vigente(token) {
+      const sesion = token ? sesiones.get(token) : undefined
+      return Boolean(sesion) && ahora() - sesion.ultimoUso <= DURACION_SESION_MS
+    },
+
     cerrar(token) {
       sesiones.delete(token)
     },

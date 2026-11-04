@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import { ToastProvider, useToast } from './context/ToastContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { DatosSinGuardarProvider, usePedirSalida } from './context/DatosSinGuardarContext'
 import Sidebar from './components/Sidebar'
 import BarraInferior from './components/BarraInferior'
 import { tituloDeRuta } from './components/navegacion'
@@ -13,7 +14,7 @@ import PantallaExportar from './pages/PantallaExportar'
 import PantallaCargar from './pages/PantallaCargar'
 import PantallaUsuarios from './pages/PantallaUsuarios'
 import PantallaApagado from './pages/PantallaApagado'
-import { apagarSistema, puedeApagar } from './services/api'
+import { apagarSistema, avisarCierrePestana, detectarModo, puedeApagar, registrarPestana } from './services/api'
 import { ConfirmDialog } from './components/common'
 import { rutaInicio } from './utils/permisos'
 import { ACCESO, APAGADO, CONFIRMAR } from './utils/mensajes'
@@ -32,6 +33,39 @@ function AppContenido() {
   const [confirmandoSalida, setConfirmandoSalida] = useState(false)
   const [confirmandoApagar, setConfirmandoApagar] = useState(false)
   const [apagado, setApagado] = useState(false)
+  // Versión del .zip: lo dice /api/health, que al recargar la página responde después del primer dibujo
+  const [apagable, setApagable] = useState(puedeApagar)
+  const pedirSalida = usePedirSalida()
+
+  useEffect(() => {
+    let vigente = true
+    detectarModo().then(() => { if (vigente) setApagable(puedeApagar()) })
+    return () => { vigente = false }
+  }, [])
+
+  // Versión del .zip, con sesión: cerrar la última pestaña apaga el sistema. El navegador pide
+  // confirmar con su ventana genérica; al salir se avisa al servidor, que espera unos segundos
+  // porque una recarga también pasa por aquí (ver backend/pestanas.js)
+  useEffect(() => {
+    if (!apagable || !autenticado || apagado) return undefined
+    registrarPestana().catch(() => {})
+    function avisar(e) {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    // persisted: el navegador trajo la página de su caché al volver atrás
+    function alVolver(e) {
+      if (e.persisted) registrarPestana().catch(() => {})
+    }
+    window.addEventListener('beforeunload', avisar)
+    window.addEventListener('pagehide', avisarCierrePestana)
+    window.addEventListener('pageshow', alVolver)
+    return () => {
+      window.removeEventListener('beforeunload', avisar)
+      window.removeEventListener('pagehide', avisarCierrePestana)
+      window.removeEventListener('pageshow', alVolver)
+    }
+  }, [apagable, autenticado, apagado])
 
   // Versión del .zip: apaga el servidor de la computadora y deja la pestaña en «apagado»
   async function apagar() {
@@ -76,8 +110,11 @@ function AppContenido() {
 
   // Cada pantalla se abre solo con permiso; si no, se va a la primera que el usuario sí puede ver
   const inicio = rutaInicio(sesion)
-  // «Apagar De Panas SV» solo en la versión del .zip (el servidor lo avisa en /api/health)
-  const alApagar = puedeApagar() ? () => setConfirmandoApagar(true) : undefined
+  // En la versión del .zip se sale con «Apagar De Panas SV» (el servidor lo avisa en /api/health)
+  // y no hay «Cerrar sesión»: cambiar de usuario es apagar y volver a abrir.
+  // Con datos sin guardar, el aviso sale antes de la confirmación de cada uno
+  const alApagar = apagable ? () => pedirSalida(() => setConfirmandoApagar(true)) : undefined
+  const alCerrarSesion = apagable ? undefined : () => pedirSalida(() => setConfirmandoSalida(true))
   const protegida = (permiso, elemento) => (tienePermiso(permiso) ? elemento : <Navigate to={inicio} replace />)
   // Dentro de cada pantalla, solo aparecen las acciones que el usuario tiene (funciones)
   const accionesCatalogo = Object.fromEntries(
@@ -88,7 +125,7 @@ function AppContenido() {
     <>
       <a href="#contenido" className="saltar-contenido">Saltar al contenido</a>
       <div className={estilos.layout}>
-        <Sidebar onCerrarSesion={() => setConfirmandoSalida(true)} onApagar={alApagar} />
+        <Sidebar onCerrarSesion={alCerrarSesion} onApagar={alApagar} />
         <div className={estilos.areaPrincipal}>
           <Routes>
             {/* Agregar compra es la página principal */}
@@ -119,7 +156,7 @@ function AppContenido() {
             <Route path="*" element={<Navigate to={inicio} replace />} />
           </Routes>
         </div>
-        <BarraInferior onCerrarSesion={() => setConfirmandoSalida(true)} onApagar={alApagar} />
+        <BarraInferior onCerrarSesion={alCerrarSesion} onApagar={alApagar} />
       </div>
 
       <ConfirmDialog
@@ -147,7 +184,9 @@ export default function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <AppContenido />
+        <DatosSinGuardarProvider>
+          <AppContenido />
+        </DatosSinGuardarProvider>
       </AuthProvider>
     </ToastProvider>
   )

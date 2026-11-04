@@ -33,7 +33,12 @@ Programa para registrar las compras de la cocina y administrar el catálogo (pro
   - La primera vez queda un acceso directo **De Panas SV** en el escritorio; las siguientes veces se abre desde ahí.
 - **Abrirlo otra vez** mientras está encendido solo abre otra pestaña.
 - **Apagar:** dentro del sistema, en el menú, **«Apagar De Panas SV»** (pide confirmación).
-- **Cerrar la pestaña del navegador no lo apaga:** el favorito o el acceso directo lo vuelven a mostrar.
+- **Cerrar la pestaña o la ventana del navegador también lo apaga**, si ya entraste:
+  - El navegador pregunta **«¿Salir del sitio?»**: **Salir** apaga y **Cancelar** se queda. Esa ventana es del navegador: el sistema no puede cambiarle el texto ni los botones.
+  - Con varias pestañas abiertas con sesión, se apaga al cerrar la última.
+  - **Recargar la página (F5) no lo apaga**, aunque el navegador haga una pregunta parecida.
+  - En la pantalla de contraseña no pregunta ni se apaga: sigue encendido y el acceso directo lo retoma.
+- **Cambiar de usuario:** apaga el sistema y vuelve a abrirlo. Esta versión no tiene «Cerrar sesión».
 - Si el favorito no abre nada, es que está apagado: ábrelo con el acceso directo.
 
 ## 3. Entrar
@@ -48,6 +53,7 @@ La primera pantalla pide usuario y contraseña:
 - **Cambia estas contraseñas** desde **Gestor de usuarios** (solo el administrador).
 - Tras **5 contraseñas incorrectas seguidas**, ese usuario debe esperar **5 minutos** antes de volver a intentar.
 - La sesión dura mientras la pestaña esté abierta (hasta 8 horas sin uso). **Cada pestaña nueva pide entrar.**
+- **Si vas a salir con datos sin guardar, el sistema avisa:** puedes elegir **«Registrar»** o **«Salir sin guardar»**.
 
 ## 4. Dónde quedan los datos
 

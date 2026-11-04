@@ -13,7 +13,8 @@ import estilos from './BarraInferior.module.css'
 /**
  * Navegación móvil (< 1100px, ver styles/base.css). La píldora activa se desliza entre ítems.
  * Solo los ítems con `enBarra` van en la barra; el resto, el Gestor de usuarios
- * y Cerrar sesión se abren desde "Más", así nada queda fuera de la pantalla.
+ * y Cerrar sesión (o Apagar, en la versión del .zip) se abren desde "Más", así nada
+ * queda fuera de la pantalla.
  */
 export default function BarraInferior({ onCerrarSesion, onApagar }) {
   const { tienePermiso } = useAuth()
@@ -39,7 +40,7 @@ export default function BarraInferior({ onCerrarSesion, onApagar }) {
           </li>
         ))}
 
-        {(enMas.length > 0 || onCerrarSesion) && (
+        {(enMas.length > 0 || onCerrarSesion || onApagar) && (
           <li className={estilos.celda}>
             <button
               type="button"

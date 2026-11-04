@@ -4,7 +4,7 @@ Hooks reutilizables sin UI propia. Lo que dibuja algo va en `components/`.
 
 | Hook                         | Uso                                                                 |
 | ---------------------------- | ------------------------------------------------------------------- |
-| `useFocoAtrapado(activo, alCerrar, focoInicialRef)` | Devuelve un ref para el contenedor: atrapa Tab/Shift+Tab, cierra con Escape y devuelve el foco al cerrar. Lo usa `Modal`. |
+| `useFocoAtrapado(activo, alCerrar, focoInicialRef)` | Devuelve un ref para el contenedor: atrapa Tab/Shift+Tab, cierra con Escape y devuelve el foco al cerrar, salvo que otra ventana ya lo tenga (el aviso de salida sobre una ventana). Lo usa `Modal`. |
 | `useScrollDetectado()`       | Devuelve `[centinelaRef, hayScroll]` con `IntersectionObserver` (sin listener de scroll). Lo usa `Header`: con scroll aparece su fondo crema sólido y su sombra. |
 | `useRegresar(destino)`       | Función para un botón Regresar: vuelve a la pantalla anterior o, si la actual se abrió directo (recarga, enlace), va a `destino` en vez de salir de la app. La usan Exportar y Cargar datos (`Header` con `alRegresar`). |
 | `useConsultaMedia(consulta)` | `true` mientras se cumpla la media query. Lo usa `ToastContext` para elegir el borde de entrada. |

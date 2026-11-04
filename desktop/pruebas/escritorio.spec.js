@@ -2,7 +2,8 @@
  * La versión .zip completa (desktop/salida/De Panas SV, que arma `npm run preparar`):
  * «Abrir De Panas SV.cmd» arranca el servidor oculto y termina; el sistema se usa en el
  * navegador; la API no responde sin sesión ni a otro Host; abrir otra vez no levanta otro
- * servidor; «Apagar De Panas SV» lo apaga y al volver a abrir los datos siguen.
+ * servidor; no hay «Cerrar sesión»; «Apagar De Panas SV» lo apaga, cerrar la última pestaña
+ * también (F5 no), y al volver a abrir los datos siguen.
  */
 
 import { test, expect, chromium } from '@playwright/test'
@@ -64,6 +65,40 @@ async function entrar(pagina, puerto) {
 
 const confirmar = (pagina, etiqueta) => pagina.getByRole('alertdialog').getByRole('button', { name: etiqueta }).click()
 
+// El servidor espera unos 5 s tras cerrarse la última pestaña. /api/health cancela ese apagado
+// (es lo que pide una página al volver), así que aquí no se puede preguntar antes de tiempo
+const ESPERA_APAGADO_MS = 5000
+const dormir = ms => new Promise(resolve => setTimeout(resolve, ms))
+const estaEncendido = async puerto => (await salud(puerto)) !== null
+
+// Un solo manejador por pestaña: aceptar dos veces el mismo diálogo lanza una excepción
+const conManejador = new WeakSet()
+function aceptarDialogos(pagina) {
+  if (conManejador.has(pagina)) return
+  conManejador.add(pagina)
+  pagina.on('dialog', dialogo => dialogo.accept())
+}
+
+/** Una pestaña abierta por script: es la única que el propio script puede cerrar */
+async function abrirPestana(lanzadera, puerto) {
+  const [pagina] = await Promise.all([
+    lanzadera.waitForEvent('popup'),
+    lanzadera.evaluate(url => { window.open(url) }, `http://localhost:${puerto}`),
+  ])
+  return pagina
+}
+
+/**
+ * Cierra la pestaña por el camino normal del navegador: pregunta, se acepta y corre pagehide.
+ * page.close() de Playwright no sirve aquí: destruye la página sin que llegue el aviso. Con
+ * Alt+F4 y Ctrl+W en Edge real el aviso sí llega, también cuando el navegador entero se cierra.
+ */
+async function cerrarPestana(pagina) {
+  // Sin un clic antes, el navegador no pregunta
+  await pagina.mouse.click(5, 5)
+  await Promise.all([pagina.waitForEvent('close'), pagina.evaluate(() => window.close()).catch(() => {})])
+}
+
 test.beforeAll(() => {
   if (!existsSync(join(CARPETA, 'Abrir De Panas SV.cmd'))) throw new Error('Primero arma la carpeta: npm run preparar')
 })
@@ -88,6 +123,10 @@ test('el .zip: se abre con el .cmd, funciona en el navegador, se apaga desde el 
 
     let pagina = await navegador.newPage({ acceptDownloads: true })
     await entrar(pagina, puerto)
+
+    // En el .zip no se cierra sesión: se apaga
+    await expect(pagina.getByRole('button', { name: APAGADO.boton })).toBeVisible()
+    await expect(pagina.getByRole('button', { name: 'Cerrar sesión' })).toHaveCount(0)
 
     // Catálogo del Excel: con Pepsi solo salen sus bebidas
     const formulario = pagina.getByRole('form', { name: 'Detalle de compra' }).first()
@@ -128,20 +167,68 @@ test('el .zip: se abre con el .cmd, funciona en el navegador, se apaga desde el 
 
     // Volver a abrir: la compra sigue
     await abrirSistema(datos, puerto)
-    pagina = await navegador.newPage()
+    const lanzadera = await navegador.newPage() // se queda sin sesión: no cuenta como pestaña
+    await lanzadera.goto(`http://localhost:${puerto}`)
+    pagina = await abrirPestana(lanzadera, puerto)
+    aceptarDialogos(pagina)
     await entrar(pagina, puerto)
     await pagina.getByRole('link', { name: 'Lista de compras' }).first().click()
     await expect(pagina.getByRole('button', { name: /Ver compra en Pepsi/ })).toBeVisible()
+
+    // F5 no lo apaga, y al recargar sigue sin haber «Cerrar sesión»
+    await pagina.reload()
+    await expect(pagina.getByRole('button', { name: /Ver compra en Pepsi/ })).toBeVisible()
+    await expect(pagina.getByRole('button', { name: APAGADO.boton })).toBeVisible()
+    await expect(pagina.getByRole('button', { name: 'Cerrar sesión' })).toHaveCount(0)
+    await dormir(ESPERA_APAGADO_MS + 1500)
+    expect(await estaEncendido(puerto)).toBe(true)
+
+    // Con dos pestañas con sesión, cerrar una no lo apaga
+    const segunda = await abrirPestana(lanzadera, puerto)
+    aceptarDialogos(segunda)
+    await entrar(segunda, puerto)
+    await cerrarPestana(segunda)
+    await dormir(ESPERA_APAGADO_MS + 1500)
+    expect(await estaEncendido(puerto)).toBe(true)
+
+    // Cerrar la última sí, después de la espera
+    await cerrarPestana(pagina)
+    await dormir(ESPERA_APAGADO_MS + 1500)
+    expect(await estaEncendido(puerto)).toBe(false)
+
+    // Al abrir de nuevo, los datos siguen. Una pestaña en la pantalla de contraseña no lo apaga al cerrarse
+    await abrirSistema(datos, puerto)
+    pagina = await abrirPestana(lanzadera, puerto)
+    await expect(pagina.getByRole('heading', { name: ACCESO.titulo })).toBeVisible()
+    await cerrarPestana(pagina)
+    await dormir(ESPERA_APAGADO_MS + 1500)
+    expect(await estaEncendido(puerto)).toBe(true)
+
+    pagina = await abrirPestana(lanzadera, puerto)
+    await entrar(pagina, puerto)
+    await pagina.getByRole('link', { name: 'Lista de compras' }).first().click()
+    await expect(pagina.getByRole('button', { name: /Ver compra en Pepsi/ })).toBeVisible()
+
+    // Tras «Apagar» no queda nada: cerrar la pestaña ya no pregunta
     await pagina.getByRole('button', { name: APAGADO.boton }).click()
     await confirmar(pagina, CONFIRMAR.apagar.confirmar)
+    await expect(pagina.getByText(APAGADO.titulo)).toBeVisible()
     await expect.poll(() => salud(puerto)).toBeNull()
+    let pregunto = false
+    pagina.on('dialog', dialogo => {
+      pregunto = true
+      dialogo.accept()
+    })
+    await cerrarPestana(pagina)
+    expect(pregunto).toBe(false)
   } finally {
     await navegador.close()
     // Si algo falló a mitad, que no quede un servidor de prueba encendido
     if (await salud(puerto)) {
-      execFile('powershell.exe', ['-NoProfile', '-Command',
-        `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*servidor.mjs*' -and $_.CommandLine -like '*salida*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`])
+      await new Promise(resolve => execFile('powershell.exe', ['-NoProfile', '-Command',
+        `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*servidor.mjs*' -and $_.CommandLine -like '*salida*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`], resolve))
     }
-    rmSync(datos, { recursive: true, force: true })
+    // Windows tarda en soltar la base aunque el proceso ya haya terminado
+    rmSync(datos, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 })
   }
 })

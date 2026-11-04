@@ -856,6 +856,29 @@ export async function apagarSistema() {
   apagable = false
 }
 
+// Identifica esta carga de la página ante el servidor. No se guarda: una pestaña duplicada copia sessionStorage
+const ID_PESTANA = globalThis.crypto?.randomUUID?.() ?? String(Math.random())
+
+/** Versión del .zip: esta pestaña tiene sesión; el sistema se apaga al cerrarse la última (backend/pestanas.js) */
+export async function registrarPestana() {
+  await pedirJSON('/pestanas', 'POST', { id: ID_PESTANA })
+}
+
+/**
+ * Versión del .zip: la página se va (pagehide). keepalive deja terminar la petición aunque la
+ * pestaña se cierre; sendBeacon no sirve porque no manda el encabezado Authorization.
+ */
+export function avisarCierrePestana() {
+  if (!tokenSesion) return
+  fetch(`${BASE_URL}/pestanas/${encodeURIComponent(ID_PESTANA)}/cerrar`, {
+    method: 'POST',
+    keepalive: true,
+    headers: { Authorization: `Bearer ${tokenSesion}` },
+  }).catch(() => {
+    // La página ya se va: no hay a quién avisarle
+  })
+}
+
 /** Evento de window cuando el servidor rechaza el token: AuthContext lo escucha y vuelve a pedir entrar */
 export const EVENTO_SESION_VENCIDA = 'depanas:sesion-vencida'
 

@@ -5,6 +5,7 @@ import { useRegresar } from '../hooks/useRegresar'
 import { Boton, Campo, ConfirmDialog, Tarjeta } from '../components/common'
 import { exportarCompras, fetchListas, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { formatearPrecio } from '../utils/formato'
 import { rangoRapido } from '../utils/exportar'
 import { CONFIRMAR, EXPORTAR, VALIDACION, fraseDelDia } from '../utils/mensajes'
@@ -33,6 +34,10 @@ export default function PantallaExportar() {
 
   const rangoInvalido = Boolean(desde && hasta && desde > hasta)
 
+  // Un rango elegido y todavía sin descargar. Aquí no hay nada que registrar: el aviso ofrece «Seguir aquí»
+  const [rangoDescargado, setRangoDescargado] = useState('|')
+  useDatosSinGuardar({ sucio: `${desde}|${hasta}` !== rangoDescargado })
+
   useEffect(() => {
     if (rangoInvalido) return undefined
     let vigente = true
@@ -58,6 +63,7 @@ export default function PantallaExportar() {
     setDescargando(true)
     try {
       addToast(EXPORTAR.descargado(await exportarCompras({ desde, hasta, formato })))
+      setRangoDescargado(`${desde}|${hasta}`)
     } catch (error) {
       addToast(EXPORTAR.error(error.message), 'error')
     } finally {

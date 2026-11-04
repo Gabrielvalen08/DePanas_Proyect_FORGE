@@ -213,6 +213,7 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 | Host | `hostsPermitidos`: solo `localhost:4510`, `127.0.0.1:4510` y `[::1]:4510`; el resto recibe 403 | En el navegador conviven otras páginas: frena el DNS rebinding. Contra pedidos de otros sitios ya protegen el token en `Authorization` y la falta de CORS |
 | Datos | `%APPDATA%\De Panas SV\depanas.db`, fuera de la carpeta del `.zip`; errores en `registro.log` | Reemplazar o borrar la carpeta (versión nueva) no toca los datos |
 | Catálogo inicial | Las listas de `Datos De Panas.xlsx` (ya eran `db/catalogo.js`) y `proveedorCategoria`, sacado de sus filas; las compras del Excel no se cargan | Al elegir el proveedor ya salen solo sus artículos |
+| Cerrar la pestaña | La última pestaña con sesión apaga el sistema tras 5 s (`backend/pestanas.js`). Se avisa con `pagehide` y `fetch` keepalive; `GET /api/health` cancela la espera para que F5 no apague. La ventana «¿Salir del sitio?» es del navegador y no admite texto propio. Sin «Cerrar sesión» en esta versión |
 | Pruebas | `desktop/pruebas/escritorio.spec.js`: abre el `.cmd` de la carpeta armada (`DEPANAS_PRUEBA=1`, datos y puerto temporales) y usa un Chromium de Playwright | Prueba lo que recibe el cliente: abrir, guardar, exportar, apagar y conservar los datos |
 
 ## Mensajes del sistema

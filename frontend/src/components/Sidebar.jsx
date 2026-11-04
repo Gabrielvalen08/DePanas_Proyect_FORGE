@@ -5,7 +5,7 @@ import { itemsNavegacion, itemsPie } from './navegacion'
 import { APAGADO } from '../utils/mensajes'
 import estilos from './Sidebar.module.css'
 
-/** onApagar: solo en la versión del .zip (el servidor corre oculto en la computadora) */
+/** En la versión del .zip (el servidor corre oculto en la computadora) llega onApagar y no onCerrarSesion */
 export default function Sidebar({ onCerrarSesion, onApagar }) {
   const { tienePermiso } = useAuth()
   const navegacionFiltrada = itemsNavegacion.filter(item => !item.oculto && tienePermiso(item.a))

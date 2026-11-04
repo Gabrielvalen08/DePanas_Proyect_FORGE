@@ -6,6 +6,7 @@ import AsignarMaterial from './AsignarMaterial'
 import { Boton, Campo, CampoMoneda, ConfirmDialog, Selector } from './common'
 import { asignarMaterial, getAsignacion, getMaterialesPorProveedor, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { ASIGNACION, COMPRA, VALIDACION } from '../utils/mensajes'
 import { fechaHoyISO, formatearPrecio, textoBusqueda } from '../utils/formato'
 import { springSuave } from '../styles/movimiento'
@@ -71,6 +72,15 @@ function estaVacia(fila) {
   return !fila.material.trim() && !fila.cantidad && !fila.precio && fila.montoOriginal === undefined
 }
 
+/** Lo que se guardaría, para saber si una compra cambió. El IVA (cuando exista) también va aquí */
+function firmaCompra(proveedor, fecha, filas) {
+  return JSON.stringify([
+    proveedor.trim(),
+    fecha,
+    filas.filter(f => !estaVacia(f)).map(f => [f.material.trim(), Number(f.cantidad), f.unidad, montoDe(f)]),
+  ])
+}
+
 function validarFila(fila) {
   const errores = {}
   if (!fila.material.trim()) errores.material = VALIDACION.material
@@ -116,6 +126,8 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
  *  - cancelarVacio: deja Cancelar activo aunque no haya nada (para quitar un bloque vacío)
  *  - textoGuardar, enfocarAlMontar, plano (sin tarjeta, p. ej. dentro de un modal;
  *    el título solo queda para lectores de pantalla porque el modal ya trae el suyo)
+ *  - cierreRef: dentro de una ventana, para que su X, Esc y clic fuera pasen por el aviso
+ *    de datos sin guardar (ver context/DatosSinGuardarContext.jsx)
  */
 export default function BloqueCompra({
   titulo = 'Detalle de compra',
@@ -127,6 +139,7 @@ export default function BloqueCompra({
   enfocarAlMontar = false,
   plano = false,
   cancelarVacio = false,
+  cierreRef,
 }) {
   const id = useId().replace(/:/g, '')
   const [proveedor, setProveedor] = useState(inicial?.proveedor ?? '')
@@ -148,6 +161,13 @@ export default function BloqueCompra({
 
   const campoPorEnfocar = useRef(null) // tras un intento fallido de guardar, el primer campo con error
   const filaPorEnfocar = useRef(null)
+
+  // Sin guardar: una compra nueva si tiene datos (solo la fecha de hoy no cuenta); una guardada, si cambió
+  const [firmaInicial] = useState(() => firmaCompra(inicial?.proveedor ?? '', inicial?.fecha ?? '', filasDesde(inicial?.materiales || inicial?.productos)))
+  const hayDatos = Boolean(proveedor.trim()) || filas.some(f => !estaVacia(f))
+  const sucio = inicial ? firmaCompra(proveedor, fecha, filas) !== firmaInicial : hayDatos
+  const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
+  const registro = useDatosSinGuardar({ sucio, registrar: registrarDesdeAviso, cierreRef })
 
   useEffect(() => {
     if (enfocarAlMontar) document.getElementById(`${id}-proveedor`)?.focus()
@@ -317,7 +337,10 @@ export default function BloqueCompra({
     if (porAsignar) {
       setOmitidos(prev => new Set(prev).add(porAsignar.nombre.toLowerCase()))
     }
-    if (guardarDespues.current && porAsignar) addToast(COMPRA.faltaAsignacion(porAsignar.nombre), 'error')
+    if (guardarDespues.current && porAsignar) {
+      addToast(COMPRA.faltaAsignacion(porAsignar.nombre), 'error')
+      registro.terminar(false)
+    }
     guardarDespues.current = false
     setPorAsignar(null)
   }
@@ -362,6 +385,7 @@ export default function BloqueCompra({
       campoPorEnfocar.current = primerCampoConError(nuevos)
       setErrores(nuevos)
       setBloqueado(true)
+      registro.terminar(false)
       return
     }
 
@@ -404,13 +428,16 @@ export default function BloqueCompra({
 
   async function guardarConfirmada() {
     const lista = porConfirmar
+    registro.aceptar()
     setGuardando(true)
     try {
       const guardada = await alGuardar(lista)
       alGuardado?.(guardada ?? lista)
+      registro.terminar(true)
     } catch {
       // El padre notifica el error; no se reintenta igual: hay que cambiar algo primero
       setBloqueado(true)
+      registro.terminar(false)
     } finally {
       setGuardando(false)
     }
@@ -421,9 +448,6 @@ export default function BloqueCompra({
     if (hayDatos) setConfirmandoCancelar(true)
     else alCancelar?.()
   }
-
-  // Sin proveedor ni filas con datos no hay nada que guardar ni que cancelar
-  const hayDatos = Boolean(proveedor.trim()) || filas.some(f => !estaVacia(f))
 
   // No se abre una fila nueva mientras la última no tenga material, cantidad y precio
   const ultimaIncompleta = Object.keys(validarFila(filas[filas.length - 1])).length > 0
@@ -661,7 +685,10 @@ export default function BloqueCompra({
 
       <ConfirmDialog
         isOpen={porConfirmar !== null}
-        onClose={() => setPorConfirmar(null)}
+        onClose={() => {
+          setPorConfirmar(null)
+          registro.cerrar()
+        }}
         onConfirm={guardarConfirmada}
         title={COMPRA.confirmarGuardar.titulo}
         message={COMPRA.confirmarGuardar.mensaje(
@@ -675,7 +702,10 @@ export default function BloqueCompra({
       <ConfirmDialog
         isOpen={confirmandoCancelar}
         onClose={() => setConfirmandoCancelar(false)}
-        onConfirm={() => alCancelar?.()}
+        onConfirm={() => {
+          registro.descartar()
+          alCancelar?.()
+        }}
         title={COMPRA.confirmarCancelar.titulo}
         message={COMPRA.confirmarCancelar.mensaje}
         confirmLabel={COMPRA.confirmarCancelar.confirmar}
