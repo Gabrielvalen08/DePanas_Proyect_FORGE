@@ -23,6 +23,8 @@ export function permisoRequerido(metodo, ruta) {
   if (recurso === 'sesion') return null
   // Apagar el sistema (versión del .zip): cualquier usuario que haya entrado
   if (recurso === 'apagar' && metodo === 'POST') return null
+  // Avisar que una pestaña entró o se fue (versión del .zip): cualquier sesión
+  if (recurso === 'pestanas' && metodo === 'POST') return null
   if (recurso === 'usuarios' || recurso === 'requisitos-contrasena') return 'admin'
 
   if (recurso === 'compras' || recurso === 'ingresos') {

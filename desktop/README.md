@@ -36,7 +36,13 @@ Para no depender del paso «Desbloquear» haría falta un lanzador `.exe` **firm
     - los errores van a `%APPDATA%\De Panas SV\registro.log`.
 - **«Apagar De Panas SV»:**
   - con la opción `apagar`, `/api/health` responde `{ apagable: true }` y existe `POST /api/apagar` (con sesión);
-  - el frontend muestra el botón en el menú solo entonces (`puedeApagar()` de `api.js`) y, al apagar, queda `PantallaApagado`.
+  - el frontend muestra el botón en el menú solo entonces (`puedeApagar()` de `api.js`) y, al apagar, queda `PantallaApagado`;
+  - en esta versión no hay «Cerrar sesión»: cambiar de usuario es apagar y volver a abrir.
+- **Cerrar la pestaña o la ventana lo apaga** (`backend/pestanas.js`, solo con la opción `apagar`):
+  - con sesión, `beforeunload` hace que el navegador pregunte. **No se le puede poner texto ni botones propios**; sale su «¿Salir del sitio?» (y al recargar, su pregunta equivalente);
+  - cada pestaña se registra al entrar (`POST /api/pestanas`) y, en `pagehide`, avisa con `fetch` y `keepalive` (`POST /api/pestanas/:id/cerrar`). `sendBeacon` no sirve porque no manda `Authorization`;
+  - el servidor espera **unos 5 s** antes de apagar. `GET /api/health`, lo primero que pide una página al cargar, cancela la espera: así F5 no apaga. **Por eso un monitor que consulte `/api/health` durante la espera también la cancela**;
+  - se apaga al cerrarse la última pestaña **con sesión**: la de contraseña no cuenta (ni avisa ni apaga).
 - **`scripts/preparar.mjs`** arma `salida/De Panas SV/`:
   1. compila el frontend;
   2. copia `portable/`, el `node.exe` que lo corre (exige Node ≥ 22.13 y la firma `Valid` de OpenJS Foundation), `backend/` sin pruebas ni bases, `shared/`, el frontend compilado, `backend/node_modules` (solo dependencias de producción) y el ícono;
@@ -56,7 +62,14 @@ La prueba (`pruebas/escritorio.spec.js`):
 - la API responde 401 sin sesión y 403 a otro `Host`;
 - abrirlo otra vez no levanta otro servidor;
 - con un Chromium de Playwright: entra, con Pepsi solo salen bebidas, registra una compra y la exporta a Excel;
-- **«Apagar»** lo apaga, y al volver a abrir la compra sigue.
+- no hay «Cerrar sesión», tampoco después de recargar;
+- **«Apagar»** lo apaga, y al volver a abrir la compra sigue;
+- F5 no lo apaga; con dos pestañas, cerrar una tampoco; cerrar la última sí, y al abrir de nuevo los datos siguen;
+- cerrar una pestaña en la pantalla de contraseña no lo apaga, y después de «Apagar» cerrar la pestaña ya no pregunta.
+
+La prueba cierra con `window.close()`, porque `page.close()` de Playwright destruye la página sin que llegue el aviso. Alt+F4 y Ctrl+W se comprobaron a mano en Edge real (también cuando se cierra el navegador entero); **antes de entregar, repítelo con el `.zip` en el navegador del cliente**.
+
+Si el navegador muere de golpe (Administrador de tareas, se va la luz), el aviso no llega y la pestaña sigue contando: el sistema queda encendido hasta «Apagar De Panas SV» o hasta reiniciar la computadora.
 
 Variables **solo para pruebas**:
 - `DEPANAS_DATOS`: carpeta de datos;

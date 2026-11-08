@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Check, KeyRound } from 'lucide-react'
 import { Boton, Campo, ConfirmDialog, CuerpoModal, Modal, PieModal } from './common'
+import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { MAXIMO_LARGO, MINIMO_ABSOLUTO } from '../../../shared/usuarios.js'
 import { CONFIRMAR, USUARIOS } from '../utils/mensajes'
 import estilos from './EditorUsuario.module.css'
@@ -21,22 +22,26 @@ const OPCIONES = ['mayuscula', 'minuscula', 'numero', 'especial']
  */
 export default function EditorRequisitos({ requisitos, abierto, alGuardar, alCerrar }) {
   const minimoRef = useRef(null)
+  const { intentarCerrar, cierreRef } = useCierreConAviso(alCerrar)
   return (
-    <Modal abierto={abierto} alCerrar={alCerrar} titulo={R.tituloEditor} icono={<KeyRound />} focoInicial={minimoRef}>
+    <Modal abierto={abierto} alCerrar={intentarCerrar} titulo={R.tituloEditor} icono={<KeyRound />} focoInicial={minimoRef}>
       {abierto && requisitos && (
-        <Formulario requisitos={requisitos} alGuardar={alGuardar} alCerrar={alCerrar} minimoRef={minimoRef} />
+        <Formulario requisitos={requisitos} alGuardar={alGuardar} alCerrar={alCerrar} minimoRef={minimoRef} cierreRef={cierreRef} />
       )}
     </Modal>
   )
 }
 
-function Formulario({ requisitos, alGuardar, alCerrar, minimoRef }) {
+function Formulario({ requisitos, alGuardar, alCerrar, minimoRef, cierreRef }) {
   const [minimo, setMinimo] = useState(String(requisitos.minimo))
   const [opciones, setOpciones] = useState(() => Object.fromEntries(OPCIONES.map(o => [o, requisitos[o]])))
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [confirmando, setConfirmando] = useState(null) // null | 'guardar' | 'descartar'
   const cambiado = Number(minimo) !== requisitos.minimo || OPCIONES.some(o => opciones[o] !== requisitos[o])
+  const formRef = useRef(null)
+  const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
+  const avisoSalida = useDatosSinGuardar({ sucio: cambiado, registrar: registrarDesdeAviso, cierreRef })
 
   function guardar(e) {
     e.preventDefault()
@@ -44,16 +49,20 @@ function Formulario({ requisitos, alGuardar, alCerrar, minimoRef }) {
     if (!Number.isInteger(n) || n < MINIMO_ABSOLUTO || n > MAXIMO_LARGO) {
       setError(R.ayudaMinimo(MINIMO_ABSOLUTO, MAXIMO_LARGO))
       minimoRef.current?.focus()
+      avisoSalida.terminar(false)
       return
     }
     setConfirmando('guardar')
   }
 
   async function guardarConfirmado() {
+    avisoSalida.aceptar()
     setGuardando(true)
     try {
       await alGuardar({ minimo: Number(minimo), ...opciones })
+      avisoSalida.terminar(true)
     } catch (err) {
+      avisoSalida.terminar(false)
       if (err?.campo === 'minimo') {
         setError(err.message)
         minimoRef.current?.focus()
@@ -65,7 +74,7 @@ function Formulario({ requisitos, alGuardar, alCerrar, minimoRef }) {
 
   return (
     <>
-      <form onSubmit={guardar} noValidate>
+      <form ref={formRef} onSubmit={guardar} noValidate>
         <CuerpoModal>
           <div className={estilos.campos}>
             <p className={estilos.nota}>{R.intro}</p>
@@ -115,7 +124,10 @@ function Formulario({ requisitos, alGuardar, alCerrar, minimoRef }) {
 
       <ConfirmDialog
         isOpen={confirmando === 'guardar'}
-        onClose={() => setConfirmando(null)}
+        onClose={() => {
+          setConfirmando(null)
+          avisoSalida.cerrar()
+        }}
         onConfirm={guardarConfirmado}
         title={CONFIRMAR.guardarCambios.titulo}
         message={CONFIRMAR.guardarCambios.mensaje}

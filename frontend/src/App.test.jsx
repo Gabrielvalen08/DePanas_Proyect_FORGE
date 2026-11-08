@@ -1,8 +1,8 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import App from './App'
-import { apagarSistema, puedeApagar } from './services/api'
+import { apagarSistema, avisarCierrePestana, puedeApagar, registrarPestana } from './services/api'
 import { ACCESO, APAGADO, CARGAR, CONFIRMAR } from './utils/mensajes'
 
 vi.mock('./services/api', () => ({
@@ -15,6 +15,8 @@ vi.mock('./services/api', () => ({
   fijarTokenSesion: () => {},
   puedeApagar: vi.fn(() => false),
   apagarSistema: vi.fn(async () => {}),
+  registrarPestana: vi.fn(async () => {}),
+  avisarCierrePestana: vi.fn(),
   cerrarSesionServidor: async () => {},
   EVENTO_SESION_VENCIDA: 'depanas:sesion-vencida',
   exportarDB: vi.fn(),
@@ -57,11 +59,9 @@ function iniciarComo(sesion) {
 }
 
 function renderizarApp(rutaInicial = '/') {
-  return render(
-    <MemoryRouter initialEntries={[rutaInicial]}>
-      <App />
-    </MemoryRouter>
-  )
+  // Router de datos, como main.jsx: lo exige useBlocker (aviso de datos sin guardar)
+  const router = createMemoryRouter([{ path: '*', element: <App /> }], { initialEntries: [rutaInicial] })
+  return render(<RouterProvider router={router} />)
 }
 
 describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
@@ -216,6 +216,83 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     expect(screen.queryByRole('link', { name: 'Catálogo' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Agregar compra' })).not.toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Lista de compras', level: 1 })).toBeInTheDocument()
+  })
+})
+
+describe('App - versión del .zip: solo Apagar, y cerrar la pestaña apaga', () => {
+  const pideConfirmar = () => {
+    const e = new Event('beforeunload', { cancelable: true })
+    act(() => { window.dispatchEvent(e) })
+    return e.defaultPrevented
+  }
+
+  beforeEach(() => {
+    sessionStorage.clear()
+    vi.mocked(registrarPestana).mockClear()
+    vi.mocked(avisarCierrePestana).mockClear()
+    vi.mocked(puedeApagar).mockReturnValue(true)
+  })
+  afterEach(() => vi.mocked(puedeApagar).mockReturnValue(false))
+
+  it('no hay «Cerrar sesión»: solo «Apagar De Panas SV»', async () => {
+    iniciarComo(CESAR)
+    renderizarApp()
+    expect(await screen.findByRole('heading', { name: 'Agregar compra', level: 1 })).toBeInTheDocument()
+    const lateral = screen.getByRole('complementary')
+    expect(within(lateral).getByRole('button', { name: APAGADO.boton })).toBeInTheDocument()
+    expect(within(lateral).queryByRole('button', { name: /Cerrar sesión/ })).not.toBeInTheDocument()
+  })
+
+  it('en el teléfono, un empleado sin ítems en «Más» igual puede apagar', async () => {
+    const usuario = userEvent.setup()
+    iniciarComo({ usuario: 'Ana_04', nombre: 'Ana', rol: 'empleado', permisos: ['/', '/compras'], funciones: [] })
+    renderizarApp()
+    await usuario.click(within(screen.getByRole('navigation', { name: 'Menú principal móvil' })).getByRole('button', { name: 'Más' }))
+    const hoja = screen.getByRole('dialog', { name: 'Más opciones' })
+    expect(within(hoja).getByRole('button', { name: APAGADO.boton })).toBeInTheDocument()
+    expect(within(hoja).queryByRole('button', { name: /Cerrar sesión/ })).not.toBeInTheDocument()
+  })
+
+  it('con sesión: la pestaña se registra, cerrarla pide confirmar y avisa al servidor', async () => {
+    iniciarComo(CESAR)
+    renderizarApp()
+    await waitFor(() => expect(registrarPestana).toHaveBeenCalledTimes(1))
+    expect(pideConfirmar()).toBe(true)
+    act(() => { window.dispatchEvent(new Event('pagehide')) })
+    expect(avisarCierrePestana).toHaveBeenCalledTimes(1)
+  })
+
+  it('en la pantalla de contraseña no hay aviso ni apagado', async () => {
+    renderizarApp()
+    expect(await screen.findByRole('heading', { name: ACCESO.titulo })).toBeInTheDocument()
+    await act(async () => {})
+    expect(pideConfirmar()).toBe(false)
+    act(() => { window.dispatchEvent(new Event('pagehide')) })
+    expect(avisarCierrePestana).not.toHaveBeenCalled()
+    expect(registrarPestana).not.toHaveBeenCalled()
+  })
+
+  it('después de «Apagar De Panas SV» ya no pide confirmar al cerrar', async () => {
+    const usuario = userEvent.setup()
+    iniciarComo(CESAR)
+    renderizarApp()
+    await usuario.click(within(screen.getByRole('complementary')).getByRole('button', { name: APAGADO.boton }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.apagar.confirmar }))
+    expect(await screen.findByText(APAGADO.titulo)).toBeInTheDocument()
+    expect(pideConfirmar()).toBe(false)
+  })
+})
+
+describe('App - fuera del .zip', () => {
+  it('sí hay «Cerrar sesión» y cerrar la pestaña sin datos no pide confirmar', async () => {
+    sessionStorage.clear()
+    iniciarComo(CESAR)
+    renderizarApp()
+    expect(await screen.findByRole('heading', { name: 'Agregar compra', level: 1 })).toBeInTheDocument()
+    expect(within(screen.getByRole('complementary')).getByRole('button', { name: /Cerrar sesión/ })).toBeInTheDocument()
+    const e = new Event('beforeunload', { cancelable: true })
+    act(() => { window.dispatchEvent(e) })
+    expect(e.defaultPrevented).toBe(false)
   })
 })
 

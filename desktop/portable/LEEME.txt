@@ -15,7 +15,9 @@ ABRIR
 
 APAGAR
   Dentro del sistema, en el menú: "Apagar De Panas SV".
-  Cerrar la pestaña del navegador NO lo apaga.
+  También se apaga al cerrar la pestaña o la ventana del navegador: el navegador pregunta
+  "¿Salir del sitio?". "Salir" apaga y "Cancelar" se queda. Recargar la página (F5) no apaga.
+  Para cambiar de usuario: apaga y vuelve a abrir.
 
 USUARIOS INICIALES (cámbialos en el Gestor de usuarios)
   Cesar_01 / DePanas#2026   (administrador)

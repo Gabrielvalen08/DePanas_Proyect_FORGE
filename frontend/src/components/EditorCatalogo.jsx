@@ -1,8 +1,9 @@
-import { useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { Check, Pencil, Plus, Search, X } from 'lucide-react'
 import { Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
 import { SelectorOpciones } from './AsignarMaterial'
 import FichaProveedor, { fichaInicial } from './FichaProveedor'
+import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { getCategorias, getProductos, ordenarMaterialesPorCategoria as ordenarPorCategoria } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
 import { listaProductos, sinProducto, tieneProducto } from '../../../shared/productos.js'
@@ -28,10 +29,11 @@ import estilos from './EditorCatalogo.module.css'
 export default function EditorCatalogo({ tipo, edicion, materiales = [], proveedores = [], alGuardar, alCerrar }) {
   const nombreRef = useRef(null)
   const nuevo = !edicion?.registro
+  const { intentarCerrar, cierreRef } = useCierreConAviso(alCerrar)
   return (
     <Modal
       abierto={Boolean(edicion)}
-      alCerrar={alCerrar}
+      alCerrar={intentarCerrar}
       titulo={nuevo ? PANTALLA_CATALOGO.tituloNuevo(tipo) : PANTALLA_CATALOGO.tituloEditar(tipo)}
       icono={nuevo ? <Plus /> : <Pencil />}
       focoInicial={nombreRef}
@@ -46,13 +48,14 @@ export default function EditorCatalogo({ tipo, edicion, materiales = [], proveed
           alGuardar={alGuardar}
           alCerrar={alCerrar}
           nombreRef={nombreRef}
+          cierreRef={cierreRef}
         />
       )}
     </Modal>
   )
 }
 
-function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerrar, nombreRef }) {
+function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerrar, nombreRef, cierreRef }) {
   const registro = edicion.registro
   const esMaterial = tipo === 'material'
   const esProveedor = tipo === 'proveedor'
@@ -78,6 +81,9 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
   const cambiado = nombre !== inicial.nombre || categoria !== inicial.categoria || productos.join('\n') !== inicial.productos ||
     [...elegidos].sort().join('\n') !== inicial.elegidos || JSON.stringify(ficha) !== inicial.ficha ||
     [...proveedores].sort().join('\n') !== inicial.proveedores
+  const formRef = useRef(null)
+  const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
+  const avisoSalida = useDatosSinGuardar({ sucio: cambiado, registrar: registrarDesdeAviso, cierreRef })
 
   // Sin cambios no hay nada que descartar: se cierra sin preguntar
   function pedirCancelar() {
@@ -100,11 +106,15 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
       }
     }
     setErrores(nuevos)
-    if (Object.keys(nuevos).length > 0) return
+    if (Object.keys(nuevos).length > 0) {
+      avisoSalida.terminar(false)
+      return
+    }
     setConfirmando('guardar')
   }
 
   async function guardarConfirmado() {
+    avisoSalida.aceptar()
     setGuardando(true)
     try {
       if (esMaterial) {
@@ -118,9 +128,11 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
       } else {
         await alGuardar({ nombre: nombre.trim() })
       }
+      avisoSalida.terminar(true)
     } catch (err) {
       // El padre muestra el error; la ventana queda abierta para corregir el campo que lo causó
       if (err?.campo) setErrores(prev => ({ ...prev, [err.campo]: err.message }))
+      avisoSalida.terminar(false)
     } finally {
       setGuardando(false)
     }
@@ -128,7 +140,7 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
 
   return (
     <>
-      <form onSubmit={guardar} noValidate>
+      <form ref={formRef} onSubmit={guardar} noValidate>
         <CuerpoModal>
           <Campo
             ref={nombreRef}
@@ -225,7 +237,10 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
       {/* Fuera del <form>: los eventos del portal no deben llegar a su onSubmit */}
       <ConfirmDialog
         isOpen={confirmando === 'guardar'}
-        onClose={() => setConfirmando(null)}
+        onClose={() => {
+          setConfirmando(null)
+          avisoSalida.cerrar()
+        }}
         onConfirm={guardarConfirmado}
         title={CONFIRMAR.guardarCambios.titulo}
         message={CONFIRMAR.guardarCambios.mensaje}

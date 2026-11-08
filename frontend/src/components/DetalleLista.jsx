@@ -4,6 +4,7 @@ import BloqueCompra from './BloqueCompra'
 import { Boton, ConfirmDialog, CuerpoModal, Modal, PieModal } from './common'
 import { actualizarLista, eliminarLista, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { useCierreConAviso } from '../context/DatosSinGuardarContext'
 import { formatearFechaTexto, formatearPrecio } from '../utils/formato'
 import { COMPRA } from '../utils/mensajes'
 import estilos from './DetalleLista.module.css'
@@ -24,6 +25,8 @@ export default function DetalleLista({ lista, alCerrar, alCambio, puedeEditar = 
     setModo('ver')
     alCerrar()
   }
+  // La X, Esc y el clic fuera avisan si hay cambios sin guardar en la edición; el botón Cancelar conserva su confirmación
+  const { intentarCerrar, cierreRef } = useCierreConAviso(cerrar)
 
   async function guardarCambios(datos) {
     try {
@@ -57,7 +60,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio, puedeEditar = 
     <>
       <Modal
         abierto={lista !== null}
-        alCerrar={cerrar}
+        alCerrar={intentarCerrar}
         titulo={modo === 'editar' ? 'Editar compra' : `Compra en ${lista?.proveedor ?? ''}`}
         icono={<ShoppingCart />}
         anchoMax={modo === 'editar' ? 'lg' : 'md'}
@@ -134,6 +137,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio, puedeEditar = 
               alGuardado={alGuardado}
               alCancelar={() => setModo('ver')}
               enfocarAlMontar
+              cierreRef={cierreRef}
             />
           </div>
         )}

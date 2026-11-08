@@ -55,7 +55,9 @@ export function useFocoAtrapado(activo, alCerrar, focoInicialRef) {
     contenedor.addEventListener('keydown', alTeclear)
     return () => {
       contenedor.removeEventListener('keydown', alTeclear)
-      anterior?.focus?.()
+      // Si otra ventana se abrió mientras esta se cerraba (el aviso y «¿Guardamos…?»), el foco se queda en ella
+      const otraVentana = document.activeElement?.closest?.('[aria-modal="true"]')
+      if (!otraVentana || otraVentana === contenedor) anterior?.focus?.()
     }
   }, [activo, focoInicialRef])
 
