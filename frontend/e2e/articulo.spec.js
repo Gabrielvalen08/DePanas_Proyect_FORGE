@@ -17,6 +17,16 @@ async function completarYGuardar(page, ventana) {
   await expect(ventana).toBeHidden()
 }
 
+/** Las pruebas comparten la base y las de Compras esperan terminar sin compras */
+async function borrarComprasDe(request, articulo) {
+  const { token } = await (await request.post('/api/sesion', { data: { usuario: CESAR.usuario, contrasena: CESAR.contrasena } })).json()
+  const headers = { Authorization: `Bearer ${token}` }
+  const compras = await (await request.get('/api/compras', { headers })).json()
+  for (const compra of compras) {
+    if (compra.materiales.some(m => m.material === articulo)) await request.delete(`/api/compras/${compra.id}`, { headers })
+  }
+}
+
 test.describe('Formulario de artículo en Agregar compra', () => {
   test('el «+» crea un artículo y el lápiz lo renombra en el catálogo', async ({ page }, info) => {
     await entrar(page, CESAR)
@@ -152,13 +162,39 @@ test.describe('Formulario de artículo en Agregar compra', () => {
     await expect(page.getByRole('alertdialog')).toHaveCount(0)
     await expect(page.getByRole('form', { name: 'Detalle de compra' })).toHaveCount(1)
 
-    // Las pruebas comparten la base y las de Compras esperan terminar sin compras
-    const { token } = await (await request.post('/api/sesion', { data: { usuario: CESAR.usuario, contrasena: CESAR.contrasena } })).json()
-    const headers = { Authorization: `Bearer ${token}` }
-    const compras = await (await request.get('/api/compras', { headers })).json()
-    for (const compra of compras) {
-      if (compra.materiales.some(m => m.material === articulo)) await request.delete(`/api/compras/${compra.id}`, { headers })
-    }
+    await borrarComprasDe(request, articulo)
+  })
+
+  test('guardar solo con categoría marca la fila de una vez y la compra ya no pregunta', async ({ page, request }, info) => {
+    await entrar(page, CESAR)
+    const articulo = `Pimienta e2e ${info.project.name}`
+    await elegirProveedor(page)
+    const formulario = formularioCompra(page)
+    const fila = formulario.getByRole('combobox', { name: 'Artículo, fila 1' })
+    await fila.fill(articulo)
+    await page.keyboard.press('Escape')
+    await fila.blur()
+
+    const ventana = page.getByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await ventana.getByRole('group', { name: 'Categoría' }).getByRole('button', { name: 'Limpieza', exact: true }).click()
+    await ventana.getByRole('button', { name: ASIGNACION.guardar }).click()
+    await confirmar(page, ASIGNACION.confirmar.confirmar)
+    await expect(ventana).toBeHidden()
+
+    // La señal sale antes de guardar la compra
+    await expect(fila).toHaveAccessibleDescription(COMPRA.articuloIncompleto)
+    await expect(formulario.getByTitle(COMPRA.articuloIncompleto)).toBeVisible()
+
+    await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('2')
+    await formulario.getByRole('combobox', { name: 'Unidad, fila 1' }).selectOption('lb')
+    await formulario.getByRole('textbox', { name: 'Precio unitario, fila 1' }).fill('3.00')
+    await formulario.getByRole('button', { name: 'Guardar compra' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await confirmar(page, COMPRA.confirmarGuardar.confirmar)
+    await expect(page.getByText(COMPRA.guardada)).toBeVisible()
+    await expect(page.getByRole('form', { name: 'Detalle de compra' })).toHaveCount(1)
+
+    await borrarComprasDe(request, articulo)
   })
 
   test('sin permiso de editar el catálogo el lápiz sale apagado', async ({ page, request }, info) => {

@@ -724,6 +724,57 @@ describe('AgregarCompra', () => {
     expect(await screen.findByText(/va a Materia Prima\. Ya quedó en el catálogo\./)).toBeInTheDocument()
   })
 
+  it('guardar solo con categoría marca la fila de una vez; la compra se guarda sin volver a preguntar', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const material = await compraConArticuloNuevo(usuario, 'Sal de mar')
+    await usuario.click(screen.getByRole('button', { name: COMPRA.agregarArticulo('Sal de mar') }))
+
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await usuario.click(within(ventana).getByRole('button', { name: 'Materia Prima' }))
+    await guardarArticulo(usuario, ventana)
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    // La señal sale al cerrar el formulario, antes de guardar la compra
+    expect(material.className).toMatch(/conError/)
+    expect(material).toHaveAccessibleDescription(COMPRA.articuloIncompleto)
+    expect(screen.getByTitle(COMPRA.articuloIncompleto)).toBeInTheDocument()
+    expect(guardarLista).not.toHaveBeenCalled()
+
+    // Al guardar la compra ya no pregunta
+    await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+    const confirmar = await screen.findByRole('alertdialog', { name: COMPRA.confirmarGuardar.titulo })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await usuario.click(within(confirmar).getByRole('button', { name: COMPRA.confirmarGuardar.confirmar }))
+    await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({ material: 'Sal de mar', categoria: 'Materia Prima', producto: '' })
+  })
+
+  it('tras guardar solo con categoría, el botón dice que falta el producto y, al agregarlo, se quita la señal', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    const material = screen.getByRole('combobox', { name: 'Artículo, fila 1' })
+    await usuario.type(material, 'Sal de mar')
+    await usuario.tab()
+
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await usuario.click(within(ventana).getByRole('button', { name: 'Materia Prima' }))
+    await guardarArticulo(usuario, ventana)
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByTitle(COMPRA.articuloIncompleto)).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: COMPRA.editarArticulo('Sal de mar') }))
+    const edicion = await screen.findByRole('dialog', { name: ASIGNACION.tituloEditar })
+    expect(within(edicion).getByText(ASIGNACION.faltaInformacion(false, true))).toBeInTheDocument()
+    await usuario.click(within(edicion).getByRole('button', { name: 'Cachitos' }))
+    await guardarArticulo(usuario, edicion)
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(material.className).not.toMatch(/conError/)
+    expect(screen.queryByTitle(COMPRA.articuloIncompleto)).not.toBeInTheDocument()
+  })
+
   it('de la segunda compra en adelante, un artículo sin producto ya no pide nada ni sale en rojo', async () => {
     // Ya se compró una vez sin producto
     comprasPorArticulo.set('mr músculo antigrasa', 1)

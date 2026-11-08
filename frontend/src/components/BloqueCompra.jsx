@@ -386,9 +386,11 @@ export default function BloqueCompra({
     )))
     fijarError(clave(filaId, 'material'), undefined)
     sugerirPrecio(filaId, final)
+    // Guardado sin productos: ya se sabe que le falta y la fila se marca de una vez, sin volver a preguntar
     setOmitidos(prev => {
       const next = new Set(prev)
       next.delete(claveNombre(anterior))
+      if (!productos.length) next.add(claveNombre(final))
       return next
     })
     setPorAsignar(null)
