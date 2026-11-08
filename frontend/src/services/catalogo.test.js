@@ -1,5 +1,6 @@
 import {
   agregarAlCatalogo,
+  asignarMaterial,
   editarEnCatalogo,
   eliminarDelCatalogo,
   exportarCatalogo,
@@ -8,10 +9,13 @@ import {
   fetchListas,
   getAsignacion,
   getCategorias,
+  getCategoriasDeProveedor,
+  getComprasDeMaterial,
   getProveedores,
   guardarLista,
   reiniciarModo,
 } from './api'
+import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
 import { readSheet } from 'read-excel-file/universal'
 import { ordenarFilas } from '../../../shared/catalogo-json.js'
 
@@ -49,6 +53,40 @@ describe('catálogo en modo local', () => {
     const [lista] = await fetchListas({ material: 'Arroz blanco' })
     expect(lista.materiales.find(m => m.material === 'Arroz blanco')).toMatchObject({ categoria: 'Granos', producto: 'Arepas' })
     expect(getCategorias()).toContain('Granos')
+  })
+
+  it('editar un artículo desde una compra: avisa el renombre, liga la categoría con el proveedor y marca el campo si el nombre se repite', async () => {
+    const renombres = []
+    const escuchar = e => renombres.push(e.detail)
+    window.addEventListener(EVENTO_ARTICULO_RENOMBRADO, escuchar)
+    await fetchCatalogo()
+    const compras = getComprasDeMaterial('Arroz')
+    expect(compras).toBeGreaterThan(0)
+
+    const r = await editarEnCatalogo('material', 'Arroz', { nombre: 'Arroz blanco', categoria: 'Granos', productos: ['Arepas'], proveedor: 'MMAG' })
+    window.removeEventListener(EVENTO_ARTICULO_RENOMBRADO, escuchar)
+
+    expect(r).toMatchObject({ anterior: 'Arroz', nombre: 'Arroz blanco', compras })
+    expect(renombres).toEqual([{ anterior: 'Arroz', nombre: 'Arroz blanco' }])
+    expect(getComprasDeMaterial('Arroz')).toBe(0)
+    expect(getComprasDeMaterial('arroz blanco')).toBe(compras)
+    expect(getCategoriasDeProveedor('MMAG')).toContain('Granos')
+
+    await expect(editarEnCatalogo('material', 'Arroz blanco', { nombre: 'pepsi' })).rejects.toMatchObject({ campo: 'nombre' })
+  })
+
+  it('cambiar solo la categoría de un artículo no avisa ningún renombre', async () => {
+    const escuchar = vi.fn()
+    window.addEventListener(EVENTO_ARTICULO_RENOMBRADO, escuchar)
+    await editarEnCatalogo('material', 'Arroz', { nombre: 'Arroz', categoria: 'Granos', productos: ['Arepas'] })
+    window.removeEventListener(EVENTO_ARTICULO_RENOMBRADO, escuchar)
+    expect(escuchar).not.toHaveBeenCalled()
+  })
+
+  it('crear un artículo nuevo con un nombre ya registrado falla en el campo nombre', async () => {
+    await fetchCatalogo()
+    await expect(asignarMaterial('arroz', { categoria: 'Granos', productos: ['Arepas'], nuevo: true })).rejects.toMatchObject({ campo: 'nombre' })
+    expect(getAsignacion('Arroz').categoria).not.toBe('Granos')
   })
 
   it('eliminar una categoría deja sin ella a sus materiales, y no vuelve a aparecer', async () => {

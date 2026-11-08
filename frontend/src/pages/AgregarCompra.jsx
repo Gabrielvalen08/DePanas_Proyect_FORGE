@@ -13,9 +13,9 @@ import estilos from './AgregarCompra.module.css'
 /**
  * Página principal. Cada bloque es una compra distinta (un proveedor y una
  * fecha) y se guarda por separado. "Nueva compra" agrega otro bloque debajo.
- *
+ * Props: puedeEditarArticulo (el usuario tiene catalogo.editar; activa el lápiz de cada artículo)
  */
-export default function AgregarCompra() {
+export default function AgregarCompra({ puedeEditarArticulo = true }) {
   const { addToast } = useToast()
   const siguiente = useRef(2)
   const [bloques, setBloques] = useState([{ clave: 1, enfocar: false }])
@@ -67,6 +67,7 @@ export default function AgregarCompra() {
                 alCancelar={() => retirarBloque(bloque.clave)}
                 enfocarAlMontar={bloque.enfocar}
                 cancelarVacio={bloques.length > 1}
+                puedeEditarArticulo={puedeEditarArticulo}
               />
             </motion.div>
           ))}

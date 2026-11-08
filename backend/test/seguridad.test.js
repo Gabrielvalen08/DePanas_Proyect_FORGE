@@ -104,6 +104,36 @@ test('permisos: un empleado registra y corrige compras, pero no elimina, ni toca
   assert.equal((await pedir(`${base}/compras/${id}`, { metodo: 'DELETE', token: admin })).status, 204)
 })
 
+test('permisos: sin catalogo.editar se crean artículos y se completa lo que falta, pero no se cambia lo ya asignado', async t => {
+  const { base } = await levantar(t)
+  const admin = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
+  await pedir(`${base}/usuarios`, {
+    metodo: 'POST', token: admin, cuerpo: { usuario: 'Ana_04', nombre: 'Ana', contrasena: 'Tequeño#1', rol: 'empleado' },
+  })
+  const ana = await tokenDe(base, 'Ana_04', 'Tequeño#1')
+  const asignar = (nombre, cuerpo, token = ana) =>
+    pedir(`${base}/catalogo/materiales/${encodeURIComponent(nombre)}`, { metodo: 'PUT', token, cuerpo })
+
+  // Crea uno nuevo
+  assert.equal((await asignar('Sal de mar', { categoria: 'Materia Prima', productos: ['Todos'] })).status, 200)
+  // Repetir lo mismo no cambia nada: se permite
+  assert.equal((await asignar('Sal de mar', { categoria: 'materia prima', productos: ['todos'] })).status, 200)
+  // Cambiar la categoría o los productos de uno ya asignado es editar el catálogo
+  assert.equal((await asignar('Sal de mar', { categoria: 'Limpieza', productos: ['Todos'] })).status, 403)
+  assert.equal((await asignar('Sal de mar', { categoria: 'Materia Prima', productos: ['Cachitos'] })).status, 403)
+  // Y renombrar con la ruta del catálogo, también
+  const renombrar = (token, nombre) => pedir(`${base}/catalogo/material/${encodeURIComponent('Sal de mar')}`, { metodo: 'PUT', token, cuerpo: { nombre } })
+  assert.equal((await renombrar(ana, 'Sal')).status, 403)
+
+  // Un artículo que perdió su categoría se puede completar
+  await pedir(`${base}/catalogo/categoria/${encodeURIComponent('Materia Prima')}`, { metodo: 'DELETE', token: admin })
+  assert.equal((await asignar('Sal de mar', { categoria: 'Limpieza', productos: ['Todos'] })).status, 200)
+
+  // Quien tiene catalogo.editar sí cambia lo asignado
+  assert.equal((await asignar('Sal de mar', { categoria: 'Bebidas', productos: ['Cachitos'] }, admin)).status, 200)
+  assert.equal((await renombrar(admin, 'Sal')).status, 200)
+})
+
 test('permisos: un operador tiene todo menos el Gestor de usuarios y los requisitos de contraseña', async t => {
   const { base } = await levantar(t)
   const marta = await tokenDe(base, 'Marta_02', '5678')

@@ -1,11 +1,3 @@
-.descripcion {
-  margin-bottom: var(--space-4);
-  font-family: var(--fuente-texto);
-  font-size: 1.0625rem;
-  line-height: 1.5;
-  color: var(--color-text);
-}
-
 .asignado {
   margin-bottom: var(--space-2);
   font-size: 0.9375rem;

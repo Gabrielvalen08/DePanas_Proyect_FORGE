@@ -402,6 +402,47 @@ test('una compra o un artículo asignado en la compra ligan la categoría con su
   assert.deepEqual((await catalogo(base)).proveedoresPorCategoria.limpieza, ['Selectos', 'Walmart'])
 })
 
+test('crear un artículo nuevo con un nombre ya registrado da 409 en el campo nombre y no lo cambia', async t => {
+  const base = await levantar(t)
+  const crear = nombre => pedir(`${base}/catalogo/materiales/${encodeURIComponent(nombre)}`, 'PUT', {
+    categoria: 'Limpieza', productos: ['Todos'], nuevo: true,
+  })
+  assert.equal((await crear('Harina PAN')).status, 200)
+  const repetido = await crear('harina pan')
+  assert.equal(repetido.status, 409)
+  assert.equal(repetido.cuerpo.campo, 'nombre')
+  assert.match(repetido.cuerpo.error, /Harina PAN/)
+})
+
+test('editar un artículo desde una compra: renombra en el catálogo y en sus compras, y liga la categoría con el proveedor', async t => {
+  const base = await levantar(t)
+  await pedir(`${base}/compras`, 'POST', {
+    proveedor: 'Walmart', fecha: '2026-10-02',
+    materiales: [{ material: 'Servilletas', cantidad: 1, unidad: 'caja', monto: 3, categoria: 'Desechables', producto: 'Todos' }],
+  })
+
+  const editado = await pedir(`${base}/catalogo/material/Servilletas`, 'PUT', {
+    nombre: 'Servilletas finas', categoria: 'Limpieza', productos: ['Cachitos'], proveedor: 'Walmart',
+  })
+  assert.equal(editado.status, 200)
+  assert.equal(editado.cuerpo.anterior, 'Servilletas')
+  assert.equal(editado.cuerpo.compras, 1)
+
+  const cat = await catalogo(base)
+  assert.ok(cat.proveedoresPorCategoria.limpieza.includes('Walmart'))
+  assert.ok(!cat.materiales.some(m => m.nombre === 'Servilletas'))
+  const { cuerpo: compras } = await pedir(`${base}/compras`)
+  const fila = compras.flatMap(c => c.materiales).find(m => m.material === 'Servilletas finas')
+  assert.equal(fila.categoria, 'Limpieza')
+  assert.equal(fila.producto, 'Cachitos')
+
+  // Renombrar con el nombre de otro: 409 en el campo nombre
+  await pedir(`${base}/catalogo/materiales/Sal`, 'PUT', { categoria: 'Limpieza', productos: ['Todos'] })
+  const choque = await pedir(`${base}/catalogo/material/${encodeURIComponent('Servilletas finas')}`, 'PUT', { nombre: 'sal' })
+  assert.equal(choque.status, 409)
+  assert.equal(choque.cuerpo.campo, 'nombre')
+})
+
 test('una base nueva trae del Excel qué categorías surte cada proveedor', async t => {
   const base = await levantar(t)
   assert.deepEqual((await catalogo(base)).proveedoresPorCategoria, {

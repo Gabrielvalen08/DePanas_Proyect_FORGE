@@ -1,67 +1,128 @@
-import { useId, useRef, useState } from 'react'
-import { Check, Plus, Tags } from 'lucide-react'
-import { Boton, Campo, CuerpoModal, Insignia, Modal, PieModal } from './common'
-import { getCategorias, getCategoriasDeProveedor, getProductos } from '../services/api'
+import { useCallback, useId, useRef, useState } from 'react'
+import { Check, Pencil, Plus, Tags } from 'lucide-react'
+import { Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
+import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
+import { getAsignacion, getCategorias, getCategoriasDeProveedor, getComprasDeMaterial, getProductos } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
-import { ASIGNACION } from '../utils/mensajes'
+import { ASIGNACION, CONFIRMAR } from '../utils/mensajes'
 import estilos from './AsignarMaterial.module.css'
+
+const mismoNombre = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase()
 
 /**
  * AsignarMaterial
- * Ventana emergente que pide la categoría y los productos de un material,
- * como las columnas del Excel (un artículo puede ir en varios productos).
- * Solo muestra lo que le falta: si ya tiene categoría, solo pide los productos (y al revés).
- * Las opciones son botones; al escribir se filtran, y si lo escrito no
- * existe se puede agregar como nuevo.
+ * Ventana para crear un artículo o editar su nombre, su categoría y sus productos,
+ * como las columnas del Excel (un artículo puede ir en varios productos). Las opciones
+ * son botones; al escribir se filtran, y si lo escrito no existe se puede agregar como nuevo.
+ *
+ * Según material.modo:
+ *  - nuevo: aún no está registrado; todo se llena (el nombre viene de lo escrito en la fila).
+ *  - editar: ya registrado y con permiso; todo viene lleno y se puede cambiar.
+ *  - completar: ya registrado y sin permiso para editar; solo se pide lo que le falta.
  *
  * Props:
- *  - material: { nombre, existe, categoria, producto, productos } (de getAsignacion) o null para cerrar
- *  - alGuardar({ categoria, productos }): async; si lanza, la ventana sigue abierta
+ *  - material: { nombre, existe, categoria, producto, productos, modo, pedido } o null para cerrar.
+ *    pedido: la ventana la abrió el sistema o el «+» (ofrece «Ahora no»); si no, el lápiz (ofrece «Cancelar»)
+ *  - proveedor: el de la compra (sus categorías van primero)
+ *  - alGuardar({ nombre, categoria, productos }): async; si lanza, la ventana sigue abierta
  *  - alCancelar()
  */
 export default function AsignarMaterial({ material, proveedor, alGuardar, alCancelar }) {
+  const nombreRef = useRef(null)
   const primerBuscadorRef = useRef(null)
+  const { intentarCerrar, cierreRef } = useCierreConAviso(alCancelar)
+  // Con el nombre ya escrito se sigue con la categoría; al editar o sin nombre, se empieza por él
+  const empiezaEnNombre = material?.modo === 'editar' ? !material.pedido : material?.modo === 'nuevo' && !material.nombre
+  const titulo = material?.modo === 'nuevo'
+    ? ASIGNACION.tituloNuevo
+    : material?.pedido ? ASIGNACION.tituloExistente : ASIGNACION.tituloEditar
   return (
     <Modal
       abierto={Boolean(material)}
-      alCerrar={alCancelar}
-      titulo={material?.existe ? ASIGNACION.tituloExistente : ASIGNACION.tituloNuevo}
-      icono={<Tags />}
-      focoInicial={primerBuscadorRef}
+      alCerrar={intentarCerrar}
+      titulo={titulo}
+      icono={material && !material.pedido ? <Pencil /> : <Tags />}
+      focoInicial={empiezaEnNombre ? nombreRef : primerBuscadorRef}
     >
       {material && (
-        <Formulario material={material} proveedor={proveedor} alGuardar={alGuardar} alCancelar={alCancelar} primerBuscadorRef={primerBuscadorRef} />
+        <Formulario
+          material={material}
+          proveedor={proveedor}
+          alGuardar={alGuardar}
+          alCancelar={alCancelar}
+          nombreRef={nombreRef}
+          primerBuscadorRef={primerBuscadorRef}
+          cierreRef={cierreRef}
+        />
       )}
     </Modal>
   )
 }
 
-function Formulario({ material, proveedor, alGuardar, alCancelar, primerBuscadorRef }) {
-  const pideCategoria = !material.categoria
-  const pideProducto = !material.productos?.length
+function Formulario({ material, proveedor, alGuardar, alCancelar, nombreRef, primerBuscadorRef, cierreRef }) {
+  const completando = material.modo === 'completar'
+  // Al completar, lo que ya tiene se muestra y no se cambia (eso es editar el catálogo)
+  const pideCategoria = !completando || !material.categoria
+  const pideProducto = !completando || !material.productos?.length
+  const [nombre, setNombre] = useState(material.nombre)
   const [categoria, setCategoria] = useState(material.categoria)
   const [productos, setProductos] = useState(material.productos ?? [])
   const [errores, setErrores] = useState({})
   const [guardando, setGuardando] = useState(false)
+  const [confirmando, setConfirmando] = useState(null) // null | 'guardar' | 'descartar'
   // Las categorías que ya surte el proveedor de la compra van primero
-  const [delProveedor] = useState(() => getCategoriasDeProveedor(proveedor))
   const [categorias] = useState(() => {
+    const delProveedor = getCategoriasDeProveedor(proveedor)
     const suyas = new Set(delProveedor.map(c => textoBusqueda(c)))
     return [...delProveedor, ...getCategorias().filter(c => !suyas.has(textoBusqueda(c)))]
   })
 
-  async function guardar() {
+  const cambiado = nombre.trim() !== material.nombre.trim() || categoria.trim() !== material.categoria ||
+    productos.join('\n') !== (material.productos ?? []).join('\n')
+  const formRef = useRef(null)
+  const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
+  const avisoSalida = useDatosSinGuardar({ sucio: cambiado, registrar: registrarDesdeAviso, cierreRef })
+
+  // Sin cambios no hay nada que descartar: se cierra sin preguntar
+  function pedirCancelar() {
+    if (cambiado) setConfirmando('descartar')
+    else alCancelar()
+  }
+
+  function guardar(e) {
+    e.preventDefault()
     const nuevos = {}
+    const limpio = nombre.trim()
+    if (!limpio) nuevos.nombre = ASIGNACION.faltaNombre
+    else if (!mismoNombre(limpio, material.nombre) && getAsignacion(limpio).existe) {
+      nuevos.nombre = ASIGNACION.yaExiste(getAsignacion(limpio).nombre)
+    }
     if (!categoria.trim()) nuevos.categoria = ASIGNACION.faltaCategoria
     if (!productos.length) nuevos.producto = ASIGNACION.faltaProducto
     setErrores(nuevos)
-    if (Object.keys(nuevos).length > 0) return
+    if (Object.keys(nuevos).length > 0) {
+      avisoSalida.terminar(false)
+      return
+    }
+    // Editar sin haber cambiado nada: no hay nada que confirmar ni guardar
+    if (material.modo === 'editar' && !cambiado) {
+      avisoSalida.terminar(true)
+      alCancelar()
+      return
+    }
+    setConfirmando('guardar')
+  }
 
+  async function guardarConfirmado() {
+    avisoSalida.aceptar()
     setGuardando(true)
     try {
-      await alGuardar({ categoria: categoria.trim(), productos })
-    } catch {
-      // El padre muestra el error; la ventana queda abierta para reintentar
+      await alGuardar({ nombre: nombre.trim(), categoria: categoria.trim(), productos })
+      avisoSalida.terminar(true)
+    } catch (err) {
+      // El padre muestra el error; la ventana queda abierta para corregir el campo que lo causó
+      if (err?.campo) setErrores(prev => ({ ...prev, [err.campo]: err.message }))
+      avisoSalida.terminar(false)
     } finally {
       setGuardando(false)
     }
@@ -75,53 +136,103 @@ function Formulario({ material, proveedor, alGuardar, alCancelar, primerBuscador
 
   return (
     <>
-      <CuerpoModal>
-        <p className={estilos.descripcion}>
-          {material.existe
-            ? ASIGNACION.descripcionExistente(material.nombre, pideCategoria, pideProducto)
-            : ASIGNACION.descripcionNuevo(material.nombre, proveedor)}
-        </p>
-        {proveedor && (
-          <p className={estilos.asignado}>Proveedor: <strong>{proveedor}</strong></p>
-        )}
-        {!pideCategoria && (
-          <p className={estilos.asignado}>Categoría: <strong>{material.categoria}</strong></p>
-        )}
-        {!pideProducto && (
-          <p className={estilos.asignado}>{ASIGNACION.etiquetaProductos}: <strong>{material.producto}</strong></p>
-        )}
+      <form ref={formRef} onSubmit={guardar} noValidate>
+        <CuerpoModal>
+          {proveedor && (
+            <p className={estilos.asignado}>Proveedor: <strong>{proveedor}</strong></p>
+          )}
+          {completando && (
+            <p className={estilos.asignado}>{ASIGNACION.etiquetaArticulo}: <strong>{material.nombre}</strong></p>
+          )}
+          {!pideCategoria && (
+            <p className={estilos.asignado}>Categoría: <strong>{material.categoria}</strong></p>
+          )}
+          {!pideProducto && (
+            <p className={estilos.asignado}>{ASIGNACION.etiquetaProductos}: <strong>{material.producto}</strong></p>
+          )}
 
-        {pideCategoria && (
-          <SelectorOpciones
-            titulo="Categoría"
-            nombre="categoría"
-            opciones={categorias}
-            valor={categoria}
-            onCambiar={v => elegir('categoria', v)}
-            error={errores.categoria}
-            buscadorRef={primerBuscadorRef}
-            ayuda={proveedor && delProveedor.length ? ASIGNACION.categoriasDelProveedor(proveedor) : undefined}
-          />
-        )}
-        {pideProducto && (
-          <SelectorOpciones
-            titulo={ASIGNACION.etiquetaProductos}
-            nombre="producto"
-            multiple
-            opciones={getProductos()}
-            valor={productos}
-            onCambiar={v => elegir('producto', v)}
-            error={errores.producto}
-            buscadorRef={pideCategoria ? undefined : primerBuscadorRef}
-          />
-        )}
-      </CuerpoModal>
-      <PieModal>
-        <Boton variante="fantasma" onClick={alCancelar}>{ASIGNACION.ahoraNo}</Boton>
-        <Boton variante="primario" icono={<Check />} cargando={guardando} onClick={guardar}>
-          {guardando ? 'Guardando…' : ASIGNACION.guardar}
-        </Boton>
-      </PieModal>
+          {!completando && (
+            <fieldset className={estilos.grupo}>
+              <legend className={estilos.titulo}>{ASIGNACION.etiquetaArticulo}</legend>
+              <Campo
+                ref={nombreRef}
+                id="asignar-material-nombre"
+                etiqueta={ASIGNACION.nombreArticulo}
+                etiquetaOculta
+                value={nombre}
+                autoComplete="off"
+                onChange={e => {
+                  setNombre(e.target.value)
+                  setErrores(prev => ({ ...prev, nombre: undefined }))
+                }}
+                error={errores.nombre}
+              />
+            </fieldset>
+          )}
+          {pideCategoria && (
+            <SelectorOpciones
+              titulo="Categoría"
+              nombre="categoría"
+              opciones={categorias}
+              valor={categoria}
+              onCambiar={v => elegir('categoria', v)}
+              error={errores.categoria}
+              buscadorRef={primerBuscadorRef}
+            />
+          )}
+          {pideProducto && (
+            <SelectorOpciones
+              titulo={ASIGNACION.etiquetaProductos}
+              nombre="producto"
+              multiple
+              opciones={getProductos()}
+              valor={productos}
+              onCambiar={v => elegir('producto', v)}
+              error={errores.producto}
+              buscadorRef={pideCategoria ? undefined : primerBuscadorRef}
+            />
+          )}
+        </CuerpoModal>
+        <PieModal>
+          <Boton variante="fantasma" onClick={pedirCancelar}>{material.pedido ? ASIGNACION.ahoraNo : ASIGNACION.cancelar}</Boton>
+          <Boton type="submit" variante="primario" icono={<Check />} cargando={guardando}>
+            {guardando ? 'Guardando…' : ASIGNACION.guardar}
+          </Boton>
+        </PieModal>
+      </form>
+
+      {/* Fuera del <form>: los eventos del portal no deben llegar a su onSubmit */}
+      <ConfirmDialog
+        isOpen={confirmando === 'guardar'}
+        onClose={() => {
+          setConfirmando(null)
+          avisoSalida.cerrar()
+        }}
+        onConfirm={guardarConfirmado}
+        title={ASIGNACION.confirmar.titulo}
+        message={ASIGNACION.confirmar.mensaje({
+          modo: material.modo,
+          anterior: material.nombre,
+          nombre: nombre.trim(),
+          categoria: categoria.trim(),
+          productos,
+          compras: material.existe ? getComprasDeMaterial(material.nombre) : 0,
+        })}
+        confirmLabel={ASIGNACION.confirmar.confirmar}
+      />
+      <ConfirmDialog
+        isOpen={confirmando === 'descartar'}
+        onClose={() => setConfirmando(null)}
+        onConfirm={() => {
+          avisoSalida.descartar()
+          alCancelar()
+        }}
+        title={CONFIRMAR.descartar.titulo}
+        message={CONFIRMAR.descartar.mensaje}
+        confirmLabel={CONFIRMAR.descartar.confirmar}
+        cancelLabel={CONFIRMAR.descartar.volver}
+        danger
+      />
     </>
   )
 }

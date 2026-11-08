@@ -14,9 +14,10 @@ import estilos from './DetalleLista.module.css'
  * Modal con los productos de una lista de compra. Permite editarla
  * (BloqueCompra dentro del modal) y eliminarla con confirmación.
  * Props: lista (null = cerrado), alCerrar, alCambio (tras editar o eliminar),
- * puedeEditar y puedeEliminar (funciones del usuario; sin ellas no salen sus botones)
+ * puedeEditar y puedeEliminar (funciones del usuario; sin ellas no salen sus botones),
+ * puedeEditarArticulo (catalogo.editar; activa el lápiz de cada artículo al editar)
  */
-export default function DetalleLista({ lista, alCerrar, alCambio, puedeEditar = true, puedeEliminar = true }) {
+export default function DetalleLista({ lista, alCerrar, alCambio, puedeEditar = true, puedeEliminar = true, puedeEditarArticulo = true }) {
   const { addToast } = useToast()
   const [modo, setModo] = useState('ver') // 'ver' | 'editar'
   const [confirmando, setConfirmando] = useState(false)
@@ -138,6 +139,7 @@ export default function DetalleLista({ lista, alCerrar, alCambio, puedeEditar = 
               alCancelar={() => setModo('ver')}
               enfocarAlMontar
               cierreRef={cierreRef}
+              puedeEditarArticulo={puedeEditarArticulo}
             />
           </div>
         )}

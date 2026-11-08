@@ -35,7 +35,7 @@ export default defineConfig({
   },
   projects: [
     { name: 'escritorio', use: { ...devices['Desktop Chrome'] }, testIgnore: /movil\.spec/ },
-    { name: 'movil', use: { ...devices['Pixel 7'] }, testMatch: /(movil|aviso-salida)\.spec/ },
+    { name: 'movil', use: { ...devices['Pixel 7'] }, testMatch: /(movil|aviso-salida|articulo)\.spec/ },
   ],
   webServer: [
     {

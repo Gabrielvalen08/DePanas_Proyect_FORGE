@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Plus, Save, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import AsignarMaterial from './AsignarMaterial'
 import { Boton, Campo, CampoMoneda, ConfirmDialog, Selector } from './common'
-import { asignarMaterial, getAsignacion, getMaterialesPorProveedor, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
+import { asignarMaterial, editarEnCatalogo, getAsignacion, getMaterialesPorProveedor, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { useDatosSinGuardar } from '../context/DatosSinGuardarContext'
+import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
 import { ASIGNACION, COMPRA, VALIDACION } from '../utils/mensajes'
 import { fechaHoyISO, formatearPrecio, textoBusqueda } from '../utils/formato'
 import { springSuave } from '../styles/movimiento'
@@ -27,6 +28,8 @@ const CAMPOS_FILA = [
 let siguienteIdFila = 1
 
 const redondear = (valor, decimales) => Math.round(valor * 10 ** decimales) / 10 ** decimales
+// Como el catálogo: sin distinguir mayúsculas ni espacios en los extremos
+const claveNombre = nombre => (nombre || '').trim().toLowerCase()
 
 function filaVacia() {
   return { id: siguienteIdFila++, material: '', cantidad: '', unidad: '', precio: '' }
@@ -115,8 +118,10 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
  * compra guardada pasa a ser la nueva referencia.
  * Cada material lleva su categoría y su producto (como en el Excel): si se
  * escribe uno nuevo o sin asignar, se piden en una ventana emergente
- * (AsignarMaterial) con el botón «+», al elegirlo, al salir del campo o, si
- * faltan, al guardar.
+ * (AsignarMaterial) al elegirlo, al salir del campo o, si faltan, al guardar.
+ * Junto a cada artículo hay un botón: «+» si el campo está vacío o el artículo no
+ * está registrado (crea uno nuevo); lápiz si ya está registrado (edita su nombre,
+ * categoría y productos en el catálogo y en sus compras).
  *
  * Props:
  *  - titulo: texto del encabezado (por defecto "Detalle de compra")
@@ -128,6 +133,7 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
  *    el título solo queda para lectores de pantalla porque el modal ya trae el suyo)
  *  - cierreRef: dentro de una ventana, para que su X, Esc y clic fuera pasen por el aviso
  *    de datos sin guardar (ver context/DatosSinGuardarContext.jsx)
+ *  - puedeEditarArticulo: el usuario tiene catalogo.editar; sin él, el lápiz sale apagado
  */
 export default function BloqueCompra({
   titulo = 'Detalle de compra',
@@ -140,6 +146,7 @@ export default function BloqueCompra({
   plano = false,
   cancelarVacio = false,
   cierreRef,
+  puedeEditarArticulo = false,
 }) {
   const id = useId().replace(/:/g, '')
   const [proveedor, setProveedor] = useState(inicial?.proveedor ?? '')
@@ -163,7 +170,8 @@ export default function BloqueCompra({
   const filaPorEnfocar = useRef(null)
 
   // Sin guardar: una compra nueva si tiene datos (solo la fecha de hoy no cuenta); una guardada, si cambió
-  const [firmaInicial] = useState(() => firmaCompra(inicial?.proveedor ?? '', inicial?.fecha ?? '', filasDesde(inicial?.materiales || inicial?.productos)))
+  const [filasIniciales, setFilasIniciales] = useState(() => filasDesde(inicial?.materiales || inicial?.productos))
+  const firmaInicial = firmaCompra(inicial?.proveedor ?? '', inicial?.fecha ?? '', filasIniciales)
   const hayDatos = Boolean(proveedor.trim()) || filas.some(f => !estaVacia(f))
   const sucio = inicial ? firmaCompra(proveedor, fecha, filas) !== firmaInicial : hayDatos
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
@@ -186,6 +194,23 @@ export default function BloqueCompra({
       filaPorEnfocar.current = null
     }
   }, [filas, id])
+
+  // Un artículo renombrado (aquí o en otra compra abierta): el cambio ya está guardado,
+  // así que no cuenta como dato sin guardar
+  useEffect(() => {
+    function alRenombrar({ detail: { anterior, nombre } }) {
+      const renombrar = lista => lista.map(f => (claveNombre(f.material) === claveNombre(anterior) ? { ...f, material: nombre } : f))
+      setFilas(renombrar)
+      setFilasIniciales(renombrar)
+      setOmitidos(prev => {
+        const next = new Set(prev)
+        next.delete(claveNombre(anterior))
+        return next
+      })
+    }
+    window.addEventListener(EVENTO_ARTICULO_RENOMBRADO, alRenombrar)
+    return () => window.removeEventListener(EVENTO_ARTICULO_RENOMBRADO, alRenombrar)
+  }, [])
 
   const sugerirProveedores = useCallback(texto => filtrar(getProveedores(), texto), [])
   const sugerirMateriales  = useCallback(
@@ -288,10 +313,20 @@ export default function BloqueCompra({
   }
 
   // --- Categoría y producto de cada material ---
-  function revisarMaterial(valor) {
+  /**
+   * Abre la ventana del artículo de una fila. pedido: la abrió el sistema o el «+»; si no, el lápiz.
+   * Un artículo registrado se edita con permiso; sin él, solo se completa lo que le falte.
+   */
+  function abrirFormulario(filaId, nombre, pedido) {
+    const asignacion = getAsignacion(nombre)
+    const modo = !asignacion.existe ? 'nuevo' : puedeEditarArticulo ? 'editar' : 'completar'
+    setPorAsignar({ ...asignacion, filaId, modo, pedido })
+  }
+
+  function revisarMaterial(filaId, valor) {
     const nombre = (valor || '').trim()
-    if (porAsignar || !necesitaAsignacion(nombre) || omitidos.has(nombre.toLowerCase())) return
-    setPorAsignar(getAsignacion(nombre))
+    if (porAsignar || !necesitaAsignacion(nombre) || omitidos.has(claveNombre(nombre))) return
+    abrirFormulario(filaId, nombre, true)
   }
 
   /** Siguiente fila con un material sin categoría o producto */
@@ -299,31 +334,52 @@ export default function BloqueCompra({
     return filas.find(f => !estaVacia(f) && necesitaAsignacion(f.material))
   }
 
-  // El «+» siempre se ve; se activa con un artículo escrito al que le falte categoría o producto
-  function puedeAsignar(fila) {
-    const nombre = fila.material?.trim()
-    return Boolean(nombre) && necesitaAsignacion(nombre)
+  /** Qué botón lleva la fila: «+» para crear o completar, lápiz para editar (apagado sin permiso) */
+  function botonDeFila(fila) {
+    const nombre = fila.material.trim()
+    if (!nombre || !getAsignacion(nombre).existe) return { Icono: Plus, activo: true, etiqueta: COMPRA.agregarArticulo(nombre) }
+    if (puedeEditarArticulo) return { Icono: Pencil, activo: true, etiqueta: COMPRA.editarArticulo(nombre), lapiz: true }
+    if (necesitaAsignacion(nombre)) return { Icono: Plus, activo: true, etiqueta: COMPRA.asignarArticulo(nombre) }
+    return { Icono: Pencil, activo: false, etiqueta: COMPRA.sinPermisoEditarArticulo(nombre), lapiz: true }
   }
 
-  function reabrirAsignacion(fila) {
-    const nombre = fila.material?.trim()
-    if (!nombre) return
+  function alTocarBotonDeFila(fila, lapiz) {
+    if (!exigirProveedor()) return
+    const nombre = fila.material.trim()
     setOmitidos(prev => {
       const next = new Set(prev)
-      next.delete(nombre.toLowerCase())
+      next.delete(claveNombre(nombre))
       return next
     })
-    setPorAsignar(getAsignacion(nombre))
+    abrirFormulario(fila.id, nombre, !lapiz)
   }
 
-  async function asignar(eleccion) {
+  async function asignar({ nombre, categoria, productos }) {
+    const { modo, nombre: anterior, filaId } = porAsignar
+    let final
     try {
       // Con el proveedor de la compra: la categoría elegida queda como suya
-      addToast(ASIGNACION.asignado(await asignarMaterial(porAsignar.nombre, { ...eleccion, proveedor })))
+      if (modo === 'editar') {
+        const editado = await editarEnCatalogo('material', anterior, { nombre, categoria, productos, proveedor })
+        addToast(ASIGNACION.editado(editado))
+        final = editado.nombre
+      } else {
+        const asignado = await asignarMaterial(nombre, {
+          categoria, productos, proveedor, ...(modo === 'nuevo' ? { nuevo: true } : {}),
+        })
+        addToast(ASIGNACION.asignado(asignado))
+        final = asignado.material.nombre
+      }
     } catch (error) {
       addToast(ASIGNACION.errorGuardar(error.message), 'error')
       throw error
     }
+    // La fila (y las que llevaban ese nombre) toman el nombre con que quedó
+    setFilas(prev => prev.map(f => (
+      f.id === filaId || (anterior && claveNombre(f.material) === claveNombre(anterior)) ? { ...f, material: final } : f
+    )))
+    fijarError(clave(filaId, 'material'), undefined)
+    sugerirPrecio(filaId, final)
     setPorAsignar(null)
     setBloqueado(false)
     if (guardarDespues.current) {
@@ -335,7 +391,7 @@ export default function BloqueCompra({
 
   function omitirAsignacion() {
     if (porAsignar) {
-      setOmitidos(prev => new Set(prev).add(porAsignar.nombre.toLowerCase()))
+      setOmitidos(prev => new Set(prev).add(claveNombre(porAsignar.nombre)))
     }
     if (guardarDespues.current && porAsignar) {
       addToast(COMPRA.faltaAsignacion(porAsignar.nombre), 'error')
@@ -393,7 +449,7 @@ export default function BloqueCompra({
     const pendiente = pendienteDeAsignar()
     if (pendiente) {
       guardarDespues.current = true
-      setPorAsignar(getAsignacion(pendiente.material))
+      abrirFormulario(pendiente.id, pendiente.material.trim(), true)
       return
     }
 
@@ -516,6 +572,7 @@ export default function BloqueCompra({
               <AnimatePresence initial={false}>
                 {filas.map((fila, i) => {
                   const n = i + 1
+                  const boton = botonDeFila(fila)
                   return (
                     <motion.tr
                       key={fila.id}
@@ -531,12 +588,12 @@ export default function BloqueCompra({
                           <button
                             type="button"
                             className={estilos.botonAsignarMini}
-                            aria-label={COMPRA.asignarArticulo(fila.material.trim())}
-                            title={COMPRA.asignarArticulo(fila.material.trim())}
-                            disabled={!puedeAsignar(fila)}
-                            onClick={() => reabrirAsignacion(fila)}
+                            aria-label={boton.etiqueta}
+                            title={boton.etiqueta}
+                            disabled={!boton.activo}
+                            onClick={() => alTocarBotonDeFila(fila, boton.lapiz)}
                           >
-                            <Plus size={14} aria-hidden="true" />
+                            <boton.Icono size={14} aria-hidden="true" />
                           </button>
                           <AutocompleteInput
                             id={`${id}-material-${fila.id}`}
@@ -547,12 +604,12 @@ export default function BloqueCompra({
                             onSeleccionar={valor => {
                               if (!proveedor.trim()) return
                               sugerirPrecio(fila.id, valor)
-                              revisarMaterial(valor)
+                              revisarMaterial(fila.id, valor)
                             }}
                             onBlur={() => {
                               salirDeCampoFila(fila.id, 'material')
                               sugerirPrecio(fila.id, fila.material)
-                              revisarMaterial(fila.material)
+                              revisarMaterial(fila.id, fila.material)
                             }}
                             ayuda={textoAsignacion(fila.material)}
                             ayudaOculta
