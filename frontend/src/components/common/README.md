@@ -9,7 +9,8 @@ import { Boton, Campo, Selector, Tarjeta, Insignia, Modal, ConfirmDialog, Cuerpo
 | Componente    | Props principales                                                              |
 | ------------- | ------------------------------------------------------------------------------ |
 | `Boton`       | `variante` (`primario` · `secundario` · `fantasma` · `peligro` · `icono`), `tamano` (`sm` · `md`), `icono`, `cargando`, `sombra`, `ancho`, `a` (ruta → se renderiza como `Link`) |
-| `Campo`       | `id`, `etiqueta`, `etiquetaOculta`, `tipo`, `prefijo`, `error`, `ayuda`, `ayudaOculta` (la ayuda solo para lectores de pantalla), `children` (contenido extra dentro del control) |
+| `Campo`       | `id`, `etiqueta`, `etiquetaOculta`, `tipo`, `prefijo`, `error`, `ayuda`, `ayudaOculta` (la ayuda solo para lectores de pantalla), `marcado` (borde rojo sin mensaje debajo), `children` (contenido extra dentro del control) |
+| `AvisoDestacado` | `id`, `texto`. Advertencia llamativa en amarillo que no impide seguir (p. ej. un nombre parecido a otro). La región viva queda siempre montada; sin `texto` no ocupa espacio |
 | `CampoMoneda` | Igual que `Campo`; `onChange(valor)` recibe el monto ya convertido (`'1.25'` o `''`). Tipo cajero: el punto está fijo y los dígitos entran por la derecha empezando por los centavos (5 → 0.05, 500 → 5.00) |
 | `Selector`    | `id`, `etiqueta`, `etiquetaOculta`, `opciones` (`string[]` o `{ valor, texto }[]`), `error` |
 | `Tarjeta`     | `titulo`, `icono`, `accion`, `sombra`, `franja`, `interactiva` + `a` u `onClick` |

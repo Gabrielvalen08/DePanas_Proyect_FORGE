@@ -7,12 +7,14 @@ import { fechaHoyISO } from '../utils/formato'
 import AgregarCompra from './AgregarCompra'
 import BloqueCompra from '../components/BloqueCompra'
 import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
-import { ASIGNACION, COMPRA, CONFIRMAR, VALIDACION } from '../utils/mensajes'
+import { ASIGNACION, COMPRA, CONFIRMAR, NOMBRE_PARECIDO, VALIDACION } from '../utils/mensajes'
 
 // Catálogo de prueba: categoría y producto por material (como en el Excel)
 const asignaciones = vi.hoisted(() => new Map())
 // Precio unitario de la última compra de cada material (como lo calcula el backend)
 const precios = vi.hoisted(() => new Map())
+// En cuántas compras guardadas está cada artículo
+const comprasPorArticulo = vi.hoisted(() => new Map())
 const ASIGNACIONES_INICIALES = [
   ['tocino la rioja', { nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos' }],
   ['pechugas de pollo', { nombre: 'Pechugas de Pollo', categoria: 'Materia Prima', producto: 'Arepas/Empanadas' }],
@@ -42,7 +44,7 @@ vi.mock('../services/api', () => {
   getProductos:         () => ['Cachitos', 'Arepas/Empanadas', 'Todos'],
   getAsignacion:        asignacion,
   getPrecioSugerido:    m => precios.get((m || '').trim().toLowerCase()) ?? null,
-  necesitaAsignacion:   m => Boolean((m || '').trim()) && (!asignacion(m).categoria || !asignacion(m).producto),
+  necesitaAsignacion:   m => Boolean((m || '').trim()) && (!asignacion(m).categoria || !asignacion(m).producto) && !comprasPorArticulo.get(m.trim().toLowerCase()),
   asignarMaterial:      vi.fn(async (nombre, { categoria, productos }) => {
     const previo = asignacion(nombre)
     const material = { nombre: previo.nombre, categoria, producto: productos.join(', ') }
@@ -50,7 +52,7 @@ vi.mock('../services/api', () => {
     const productosNuevos = productos.filter(p => p === 'Arepas Rellenas')
     return { material, materialNuevo: !previo.existe, categoriaNueva: categoria === 'Lácteos', productoNuevo: productosNuevos.length > 0, productosNuevos }
   }),
-  getComprasDeMaterial: m => ((m || '').trim().toLowerCase() === 'tocino la rioja' ? 3 : 0),
+  getComprasDeMaterial: m => comprasPorArticulo.get((m || '').trim().toLowerCase()) ?? 0,
   editarEnCatalogo:     vi.fn(async (_tipo, anterior, { nombre, categoria, productos }) => {
     const producto = productos.join(', ')
     asignaciones.delete(anterior.trim().toLowerCase())
@@ -111,6 +113,8 @@ describe('AgregarCompra', () => {
     vi.mocked(editarEnCatalogo).mockClear()
     asignaciones.clear()
     precios.clear()
+    comprasPorArticulo.clear()
+    comprasPorArticulo.set('tocino la rioja', 3)
     ASIGNACIONES_INICIALES.forEach(([clave, valor]) => asignaciones.set(clave, valor))
   })
 
@@ -632,22 +636,190 @@ describe('AgregarCompra', () => {
     expect(asignarMaterial).not.toHaveBeenCalled()
   })
 
-  it('al guardar la compra con un material sin asignar, lo pide y después guarda la compra', async () => {
+  /** Una compra lista para guardar, con un artículo nuevo al que aún no se le dijo nada */
+  async function compraConArticuloNuevo(usuario, nombre = 'Queso') {
+    await llenarCompraValida(usuario)
+    const material = screen.getByRole('combobox', { name: 'Artículo, fila 1' })
+    await usuario.clear(material)
+    await usuario.type(material, nombre)
+    await usuario.keyboard('{Escape}')
+    return material
+  }
+
+  it('«Ahora no» al guardar: la compra se guarda igual, sin categoría ni producto', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await compraConArticuloNuevo(usuario)
+    await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.ahoraNo }))
+    const confirmar = await screen.findByRole('alertdialog', { name: COMPRA.confirmarGuardar.titulo })
+    await usuario.click(within(confirmar).getByRole('button', { name: COMPRA.confirmarGuardar.confirmar }))
+
+    await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({ material: 'Queso', categoria: '', producto: '' })
+    expect(asignarMaterial).not.toHaveBeenCalled()
+  })
+
+  it('la X al guardar cierra la ventana sin guardar la compra, y la fila queda marcada', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await compraConArticuloNuevo(usuario)
+    await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+
+    await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await usuario.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(guardarLista).not.toHaveBeenCalled()
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveAccessibleDescription(COMPRA.articuloIncompleto)
+  })
+
+  it('con «Ahora no» la fila queda en rojo con la señal; el botón recuerda qué falta y, al completarlo, se quita', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    const material = screen.getByRole('combobox', { name: 'Artículo, fila 1' })
+    await usuario.type(material, 'Harina Nueva')
+    await usuario.tab()
+
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    expect(within(ventana).queryByText(ASIGNACION.faltaInformacion(true, true))).not.toBeInTheDocument()
+    await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.ahoraNo }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    // Marcada, sin mensaje de error debajo: no impide guardar
+    expect(material).toHaveAccessibleDescription(COMPRA.articuloIncompleto)
+    expect(material.className).toMatch(/conError/)
+    expect(material).not.toHaveAttribute('aria-invalid')
+    expect(screen.getByTitle(COMPRA.articuloIncompleto)).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: COMPRA.agregarArticulo('Harina Nueva') }))
+    const otra = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    expect(within(otra).getByText(ASIGNACION.faltaInformacion(true, true))).toBeInTheDocument()
+
+    await usuario.click(within(otra).getByRole('button', { name: 'Materia Prima' }))
+    await usuario.click(within(otra).getByRole('button', { name: 'Cachitos' }))
+    await guardarArticulo(usuario, otra)
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(material.className).not.toMatch(/conError/)
+    expect(screen.queryByTitle(COMPRA.articuloIncompleto)).not.toBeInTheDocument()
+  })
+
+  it('la categoría basta: el formulario guarda un artículo sin productos', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Sal de mar')
+    await usuario.tab()
+
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await usuario.click(within(ventana).getByRole('button', { name: 'Materia Prima' }))
+    await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.guardar }))
+    expect(await screen.findByText('Se agregará «Sal de mar» al catálogo, en Materia Prima.')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: ASIGNACION.confirmar.confirmar }))
+
+    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Sal de mar', { categoria: 'Materia Prima', productos: [], proveedor: 'Walmart', nuevo: true }))
+    expect(await screen.findByText(/va a Materia Prima\. Ya quedó en el catálogo\./)).toBeInTheDocument()
+  })
+
+  it('de la segunda compra en adelante, un artículo sin producto ya no pide nada ni sale en rojo', async () => {
+    // Ya se compró una vez sin producto
+    comprasPorArticulo.set('mr músculo antigrasa', 1)
     const usuario = userEvent.setup()
     renderizar()
     await llenarCompraValida(usuario)
     const material = screen.getByRole('combobox', { name: 'Artículo, fila 1' })
     await usuario.clear(material)
-    await usuario.type(material, 'Queso')
-    await usuario.keyboard('{Escape}')
+    await usuario.type(material, 'Mr Músculo Antigrasa')
+    await usuario.tab()
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(material.className).not.toMatch(/conError/)
+    expect(material).toHaveAccessibleDescription('Limpieza')
+
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await usuario.click(await screen.findByRole('button', { name: COMPRA.confirmarGuardar.confirmar }))
+    await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({ categoria: 'Limpieza', producto: '' })
+  })
+
+  it('un nombre parecido a otro registrado avisa en el formulario, sin impedir guardar', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Riojo')
+    await usuario.tab()
 
     const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
-    await usuario.click(within(ventana).getByRole('button', { name: 'Ahora no' }))
-    expect(await screen.findByText(COMPRA.faltaAsignacion('Queso'))).toBeInTheDocument()
-    expect(guardarLista).not.toHaveBeenCalled()
+    const texto = NOMBRE_PARECIDO.aviso('Tocino La Riojo', 'Tocino La Rioja', 'material')
+    expect(within(ventana).getByText(texto)).toBeInTheDocument()
+    const nombre = within(ventana).getByRole('textbox', { name: ASIGNACION.nombreArticulo })
+    expect(nombre).toHaveAccessibleDescription(texto)
 
+    await usuario.click(within(ventana).getByRole('button', { name: 'Materia Prima' }))
+    await guardarArticulo(usuario, ventana)
+    await waitFor(() => expect(asignarMaterial).toHaveBeenCalled())
+  })
+
+  it('al corregir el nombre parecido, el aviso se quita', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.click(screen.getByRole('button', { name: COMPRA.agregarArticulo('') }))
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    const nombre = within(ventana).getByRole('textbox', { name: ASIGNACION.nombreArticulo })
+    await usuario.type(nombre, 'Pechugas de Pollos')
+    expect(within(ventana).getByText(NOMBRE_PARECIDO.aviso('Pechugas de Pollos', 'Pechugas de Pollo', 'material'))).toBeInTheDocument()
+    await usuario.clear(nombre)
+    await usuario.type(nombre, 'Servilletas')
+    expect(within(ventana).queryByText(/se parece a/)).not.toBeInTheDocument()
+  })
+
+  it('una categoría o un producto nuevos parecidos a otros también avisan', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.click(screen.getByRole('button', { name: COMPRA.agregarArticulo('') }))
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+
+    await usuario.type(within(ventana).getByRole('textbox', { name: 'Buscar o agregar categoría' }), 'Bebida')
+    expect(within(ventana).getByText(NOMBRE_PARECIDO.aviso('Bebida', 'Bebidas', 'categoria'))).toBeInTheDocument()
+
+    const producto = within(ventana).getByRole('textbox', { name: 'Buscar o agregar producto' })
+    await usuario.type(producto, 'Cachito')
+    expect(within(ventana).getByText(NOMBRE_PARECIDO.aviso('Cachito', 'Cachitos', 'producto'))).toBeInTheDocument()
+    // Sigue visible al agregarlo como nuevo: solo es una sugerencia
+    await usuario.click(within(ventana).getByRole('button', { name: 'Agregar «Cachito»' }))
+    expect(within(ventana).getByText(NOMBRE_PARECIDO.aviso('Cachito', 'Cachitos', 'producto'))).toBeInTheDocument()
+  })
+
+  it('un proveedor parecido a otro avisa al salir del campo, no mientras se escribe', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const campo = screen.getByRole('combobox', { name: 'Proveedor' })
+    await usuario.type(campo, 'Walmar')
+    const texto = NOMBRE_PARECIDO.aviso('Walmar', 'Walmart', 'proveedor')
+    expect(screen.queryByText(texto)).not.toBeInTheDocument()
+
+    await usuario.tab()
+    expect(await screen.findByText(texto)).toBeInTheDocument()
+    expect(campo).toHaveAccessibleDescription(texto)
+
+    await usuario.clear(campo)
+    await usuario.type(campo, 'Walmart')
+    await usuario.tab()
+    expect(screen.queryByText(/se parece a/)).not.toBeInTheDocument()
+  })
+
+  it('al guardar la compra con un artículo nuevo, lo pide y después guarda la compra', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await compraConArticuloNuevo(usuario)
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
+
     const otra = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
     await usuario.click(within(otra).getByRole('button', { name: 'Bebidas' }))
     await usuario.click(within(otra).getByRole('button', { name: 'Todos' }))

@@ -27,8 +27,6 @@ export const MENSAJES_CATALOGO_JSON = {
   vacio: esperado => `El archivo no trae ${NOMBRES[esperado]}.`,
   fila: (n, detalle) => `Fila ${n}: ${detalle}`,
   sinNombre: 'falta el nombre',
-  sinCategoria: 'falta la categoría',
-  sinProductos: 'elige al menos un producto',
   productoConComa: 'el nombre del producto no puede llevar comas',
 }
 
@@ -48,11 +46,8 @@ function normalizarFila(tipo, fila, n) {
     }
   }
   if (tipo === 'material') {
-    const categoria = texto(fila.categoria)
-    const productos = listaProductos(fila.productos ?? fila.producto)
-    if (!categoria) throw fallo(MENSAJES_CATALOGO_JSON.fila(n, MENSAJES_CATALOGO_JSON.sinCategoria))
-    if (!productos.length) throw fallo(MENSAJES_CATALOGO_JSON.fila(n, MENSAJES_CATALOGO_JSON.sinProductos))
-    return { nombre, categoria, productos }
+    // Un artículo puede estar incompleto (se dijo «Ahora no» al comprarlo): su respaldo también debe cargar
+    return { nombre, categoria: texto(fila.categoria), productos: listaProductos(fila.productos ?? fila.producto) }
   }
   if (tipo === 'producto' && !nombreProductoValido(nombre)) {
     throw fallo(MENSAJES_CATALOGO_JSON.fila(n, MENSAJES_CATALOGO_JSON.productoConComa))

@@ -1,8 +1,10 @@
 import {
   agregarAlCatalogo,
+  articuloIncompleto,
   asignarMaterial,
   editarEnCatalogo,
   eliminarDelCatalogo,
+  eliminarLista,
   exportarCatalogo,
   exportarCompras,
   fetchCatalogo,
@@ -13,6 +15,8 @@ import {
   getComprasDeMaterial,
   getProveedores,
   guardarLista,
+  importarCatalogo,
+  necesitaAsignacion,
   reiniciarModo,
 } from './api'
 import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
@@ -81,6 +85,45 @@ describe('catálogo en modo local', () => {
     await editarEnCatalogo('material', 'Arroz', { nombre: 'Arroz', categoria: 'Granos', productos: ['Arepas'] })
     window.removeEventListener(EVENTO_ARTICULO_RENOMBRADO, escuchar)
     expect(escuchar).not.toHaveBeenCalled()
+  })
+
+  it('se pregunta por un artículo incompleto solo si nunca se ha comprado', async () => {
+    await fetchCatalogo()
+    expect(necesitaAsignacion('Sal de mar')).toBe(true) // nuevo
+    const lista = await guardarLista({
+      proveedor: 'MMAG', fecha: '2026-10-02', categoria: '',
+      materiales: [{ material: 'Sal de mar', cantidad: 1, unidad: 'kg', monto: 2, categoria: '', producto: '' }],
+    })
+    expect(getAsignacion('Sal de mar')).toMatchObject({ existe: true, categoria: '', producto: '' })
+    expect(articuloIncompleto('Sal de mar')).toBe(true)
+    expect(getComprasDeMaterial('Sal de mar')).toBe(1)
+    expect(necesitaAsignacion('Sal de mar')).toBe(false)
+    // Sin categoría no queda ligado a ninguna que nadie eligió
+    expect(getCategoriasDeProveedor('MMAG')).not.toContain('Materia Prima')
+
+    // Si se borra esa única compra, vuelve a contar como primera vez
+    await eliminarLista(lista.id)
+    expect(necesitaAsignacion('Sal de mar')).toBe(true)
+  })
+
+  it('un artículo puede quedar sin productos en el Catálogo, y su respaldo se vuelve a cargar', async () => {
+    const creado = await agregarAlCatalogo('material', { nombre: 'Sal de mar', categoria: 'Granos', productos: [] })
+    expect(creado).toMatchObject({ categoria: 'Granos', producto: '' })
+    await editarEnCatalogo('material', 'Arroz', { nombre: 'Arroz', categoria: 'Granos', productos: [] })
+    expect(getAsignacion('Arroz')).toMatchObject({ categoria: 'Granos', producto: '' })
+    const [lista] = await fetchListas({ material: 'Arroz' })
+    expect(lista.materiales.find(m => m.material === 'Arroz').producto).toBe('')
+
+    await expect(agregarAlCatalogo('material', { nombre: 'Otra', categoria: '', productos: [] })).rejects.toThrow('Elige una categoría')
+
+    // Respaldo con un artículo incompleto: carga, no crea una categoría en blanco y no borra lo que ya tiene
+    const resultado = await importarCatalogo('material', [
+      { nombre: 'Sal de mar', categoria: '', productos: [] }, { nombre: 'Sin nada', categoria: '', productos: [] },
+    ])
+    expect(resultado).toMatchObject({ nuevos: 1, actualizados: 1 })
+    expect(getAsignacion('Sal de mar').categoria).toBe('Granos')
+    expect(getAsignacion('Sin nada')).toMatchObject({ existe: true, categoria: '', producto: '' })
+    expect(getCategorias()).not.toContain('')
   })
 
   it('crear un artículo nuevo con un nombre ya registrado falla en el campo nombre', async () => {

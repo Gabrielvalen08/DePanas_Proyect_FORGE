@@ -182,27 +182,47 @@ function completarDesdeCompras(db) {
 }
 
 /**
+ * El registro de ese nombre, sin distinguir mayúsculas. COLLATE NOCASE de SQLite solo las ignora
+ * en ASCII («AZÚCAR» y «Azúcar» le parecen distintos), así que un nombre no hallado se compara
+ * también en JavaScript, igual que el frontend. Las tildes sí distinguen: «Azucar» es otro nombre.
+ */
+export function buscarEnCatalogo(db, tipo, nombre) {
+  const limpio = nombre.trim()
+  const directo = db.prepare('SELECT nombre, categoria, producto FROM catalogo WHERE tipo = ? AND nombre = ? COLLATE NOCASE').get(tipo, limpio)
+  if (directo) return directo
+  const clave = limpio.toLowerCase()
+  return db.prepare('SELECT nombre, categoria, producto FROM catalogo WHERE tipo = ?').all(tipo)
+    .find(f => f.nombre.toLowerCase() === clave)
+}
+
+/**
  * Devuelve el nombre ya registrado (con su escritura original, sin distinguir
  * mayúsculas) o registra uno nuevo. { nombre, nuevo }
  */
 export function registrarEnCatalogo(db, tipo, nombre) {
   const limpio = nombre.trim()
-  const existente = db.prepare('SELECT nombre FROM catalogo WHERE tipo = ? AND nombre = ? COLLATE NOCASE').get(tipo, limpio)
+  const existente = buscarEnCatalogo(db, tipo, limpio)
   if (existente) return { nombre: existente.nombre, nuevo: false }
   db.prepare('INSERT INTO catalogo (tipo, nombre) VALUES (?, ?)').run(tipo, limpio)
   return { nombre: limpio, nuevo: true }
 }
+
+/** Cambia más que mayúsculas ASCII: las filas de `ingresos` solo se encuentran luego con COLLATE NOCASE */
+const difiereParaSQLite = (a, b) => a.replace(/[A-Z]/g, c => c.toLowerCase()) !== b.replace(/[A-Z]/g, c => c.toLowerCase())
 
 /**
  * Registra en el catálogo el proveedor, los materiales y sus categorías y
  * productos de una compra (ya validada). Llamar dentro de la transacción del guardado.
  */
 export function registrarCompra(db, compra) {
-  registrarEnCatalogo(db, 'proveedor', compra.proveedor)
+  const proveedor = registrarEnCatalogo(db, 'proveedor', compra.proveedor).nombre
+  // «AZÚCAR» se guarda como el «Azúcar» registrado; si no, renombrarlo no alcanzaría esas filas
+  if (difiereParaSQLite(proveedor, compra.proveedor)) compra.proveedor = proveedor
   for (const m of compra.materiales) {
     const categoria = (m.categoria || compra.categoria || '').trim()
     const producto = (m.producto || '').trim()
-    registrarEnCatalogo(db, 'material', m.material)
+    const material = registrarEnCatalogo(db, 'material', m.material).nombre
+    if (difiereParaSQLite(material, m.material)) m.material = material
     if (categoria) registrarEnCatalogo(db, 'categoria', categoria)
     // Una fila puede llevar varios productos («Arepas, Empanadas»): se registra cada uno
     for (const nombre of listaProductos(producto)) registrarEnCatalogo(db, 'producto', nombre)

@@ -1,10 +1,11 @@
 import { useCallback, useId, useRef, useState } from 'react'
 import { Check, Pencil, Plus, Tags } from 'lucide-react'
-import { Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
+import { AvisoDestacado, Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
 import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
-import { getAsignacion, getCategorias, getCategoriasDeProveedor, getComprasDeMaterial, getProductos } from '../services/api'
+import { getAsignacion, getCategorias, getCategoriasDeProveedor, getComprasDeMaterial, getMateriales, getProductos } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
-import { ASIGNACION, CONFIRMAR } from '../utils/mensajes'
+import { ASIGNACION, CONFIRMAR, NOMBRE_PARECIDO } from '../utils/mensajes'
+import { nombreParecido } from '../utils/parecidos'
 import estilos from './AsignarMaterial.module.css'
 
 const mismoNombre = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase()
@@ -21,16 +22,21 @@ const mismoNombre = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim(
  *  - completar: ya registrado y sin permiso para editar; solo se pide lo que le falta.
  *
  * Props:
- *  - material: { nombre, existe, categoria, producto, productos, modo, pedido } o null para cerrar.
- *    pedido: la ventana la abrió el sistema o el «+» (ofrece «Ahora no»); si no, el lápiz (ofrece «Cancelar»)
+ * La categoría es obligatoria al guardar; los productos no (no todo artículo va en un producto).
+ *
+ * Props:
+ *  - material: { nombre, existe, categoria, producto, productos, modo, pedido, marcado } o null para cerrar.
+ *    pedido: la ventana la abrió el sistema o el «+» (ofrece «Ahora no»); si no, el lápiz (ofrece «Cancelar»).
+ *    marcado: ya se dijo «Ahora no»; se recuerda qué le falta
  *  - proveedor: el de la compra (sus categorías van primero)
  *  - alGuardar({ nombre, categoria, productos }): async; si lanza, la ventana sigue abierta
- *  - alCancelar()
+ *  - alOmitir(): «Ahora no» (o Guardar sin nada nuevo); la compra sigue su curso sin estos datos
+ *  - alCerrar(): Cancelar, la X, Esc o el clic fuera
  */
-export default function AsignarMaterial({ material, proveedor, alGuardar, alCancelar }) {
+export default function AsignarMaterial({ material, proveedor, alGuardar, alOmitir, alCerrar }) {
   const nombreRef = useRef(null)
   const primerBuscadorRef = useRef(null)
-  const { intentarCerrar, cierreRef } = useCierreConAviso(alCancelar)
+  const { intentarCerrar, cierreRef } = useCierreConAviso(alCerrar)
   // Con el nombre ya escrito se sigue con la categoría; al editar o sin nombre, se empieza por él
   const empiezaEnNombre = material?.modo === 'editar' ? !material.pedido : material?.modo === 'nuevo' && !material.nombre
   const titulo = material?.modo === 'nuevo'
@@ -49,7 +55,7 @@ export default function AsignarMaterial({ material, proveedor, alGuardar, alCanc
           material={material}
           proveedor={proveedor}
           alGuardar={alGuardar}
-          alCancelar={alCancelar}
+          alSalir={material.pedido ? alOmitir : alCerrar}
           nombreRef={nombreRef}
           primerBuscadorRef={primerBuscadorRef}
           cierreRef={cierreRef}
@@ -59,7 +65,7 @@ export default function AsignarMaterial({ material, proveedor, alGuardar, alCanc
   )
 }
 
-function Formulario({ material, proveedor, alGuardar, alCancelar, nombreRef, primerBuscadorRef, cierreRef }) {
+function Formulario({ material, proveedor, alGuardar, alSalir, nombreRef, primerBuscadorRef, cierreRef }) {
   const completando = material.modo === 'completar'
   // Al completar, lo que ya tiene se muestra y no se cambia (eso es editar el catálogo)
   const pideCategoria = !completando || !material.categoria
@@ -86,8 +92,11 @@ function Formulario({ material, proveedor, alGuardar, alCancelar, nombreRef, pri
   // Sin cambios no hay nada que descartar: se cierra sin preguntar
   function pedirCancelar() {
     if (cambiado) setConfirmando('descartar')
-    else alCancelar()
+    else alSalir()
   }
+
+  // Solo una sugerencia: no impide guardar. Un artículo ya registrado no se compara consigo mismo
+  const parecido = completando ? null : nombreParecido(nombre, getMateriales(), { excluir: material.existe ? material.nombre : undefined })
 
   function guardar(e) {
     e.preventDefault()
@@ -98,16 +107,15 @@ function Formulario({ material, proveedor, alGuardar, alCancelar, nombreRef, pri
       nuevos.nombre = ASIGNACION.yaExiste(getAsignacion(limpio).nombre)
     }
     if (!categoria.trim()) nuevos.categoria = ASIGNACION.faltaCategoria
-    if (!productos.length) nuevos.producto = ASIGNACION.faltaProducto
     setErrores(nuevos)
     if (Object.keys(nuevos).length > 0) {
       avisoSalida.terminar(false)
       return
     }
-    // Editar sin haber cambiado nada: no hay nada que confirmar ni guardar
-    if (material.modo === 'editar' && !cambiado) {
+    // Un artículo registrado sin ningún cambio: no hay nada que confirmar ni guardar
+    if (material.existe && !cambiado) {
       avisoSalida.terminar(true)
-      alCancelar()
+      alSalir()
       return
     }
     setConfirmando('guardar')
@@ -138,6 +146,9 @@ function Formulario({ material, proveedor, alGuardar, alCancelar, nombreRef, pri
     <>
       <form ref={formRef} onSubmit={guardar} noValidate>
         <CuerpoModal>
+          {material.marcado && (
+            <AvisoDestacado texto={ASIGNACION.faltaInformacion(!material.categoria, !material.productos?.length)} />
+          )}
           {proveedor && (
             <p className={estilos.asignado}>Proveedor: <strong>{proveedor}</strong></p>
           )}
@@ -154,19 +165,26 @@ function Formulario({ material, proveedor, alGuardar, alCancelar, nombreRef, pri
           {!completando && (
             <fieldset className={estilos.grupo}>
               <legend className={estilos.titulo}>{ASIGNACION.etiquetaArticulo}</legend>
-              <Campo
-                ref={nombreRef}
-                id="asignar-material-nombre"
-                etiqueta={ASIGNACION.nombreArticulo}
-                etiquetaOculta
-                value={nombre}
-                autoComplete="off"
-                onChange={e => {
-                  setNombre(e.target.value)
-                  setErrores(prev => ({ ...prev, nombre: undefined }))
-                }}
-                error={errores.nombre}
-              />
+              <div>
+                <Campo
+                  ref={nombreRef}
+                  id="asignar-material-nombre"
+                  etiqueta={ASIGNACION.nombreArticulo}
+                  etiquetaOculta
+                  value={nombre}
+                  autoComplete="off"
+                  aria-describedby={parecido ? 'asignar-material-parecido' : undefined}
+                  onChange={e => {
+                    setNombre(e.target.value)
+                    setErrores(prev => ({ ...prev, nombre: undefined }))
+                  }}
+                  error={errores.nombre}
+                />
+                <AvisoDestacado
+                  id="asignar-material-parecido"
+                  texto={parecido && NOMBRE_PARECIDO.aviso(nombre, parecido, 'material')}
+                />
+              </div>
             </fieldset>
           )}
           {pideCategoria && (
@@ -225,7 +243,7 @@ function Formulario({ material, proveedor, alGuardar, alCancelar, nombreRef, pri
         onClose={() => setConfirmando(null)}
         onConfirm={() => {
           avisoSalida.descartar()
-          alCancelar()
+          alSalir()
         }}
         title={CONFIRMAR.descartar.titulo}
         message={CONFIRMAR.descartar.mensaje}
@@ -263,6 +281,9 @@ export function SelectorOpciones({
   const puedeAgregar = permitirNuevas && Boolean(buscado) && !exacta && !elegidas.some(e => textoBusqueda(e) === buscado)
   // Con nombres de producto la coma separa la lista: no se puede agregar uno con coma
   const conComa = multiple && busqueda.includes(',')
+  // Lo escrito (o lo último agregado como nuevo) puede ser un error de dedo de una opción que ya existe
+  const porRevisar = !permitirNuevas ? '' : puedeAgregar ? busqueda : nuevas[nuevas.length - 1] ?? ''
+  const parecida = nombreParecido(porRevisar, opciones)
 
   function alternar(opcion) {
     if (!multiple) return onCambiar(opcion)
@@ -294,19 +315,26 @@ export function SelectorOpciones({
     >
       <legend className={estilos.titulo}>{titulo}</legend>
       {ayuda && <p id={`${id}-ayuda`} className={estilos.ayuda}>{ayuda}</p>}
-      <Campo
-        ref={buscadorRef}
-        id={`${id}-buscar`}
-        etiqueta={permitirNuevas ? `Buscar o agregar ${nombre}` : `Buscar ${nombre}`}
-        etiquetaOculta
-        placeholder={!permitirNuevas
-          ? `Buscar ${nombre}…`
-          : nombre === 'categoría' ? 'Buscar o escribir categoría nueva…' : 'Buscar o escribir producto nuevo…'}
-        value={busqueda}
-        autoComplete="off"
-        onChange={e => setBusqueda(e.target.value)}
-        onKeyDown={alTeclear}
-      />
+      <div>
+        <Campo
+          ref={buscadorRef}
+          id={`${id}-buscar`}
+          etiqueta={permitirNuevas ? `Buscar o agregar ${nombre}` : `Buscar ${nombre}`}
+          etiquetaOculta
+          placeholder={!permitirNuevas
+            ? `Buscar ${nombre}…`
+            : nombre === 'categoría' ? 'Buscar o escribir categoría nueva…' : 'Buscar o escribir producto nuevo…'}
+          value={busqueda}
+          autoComplete="off"
+          aria-describedby={parecida ? `${id}-parecido` : undefined}
+          onChange={e => setBusqueda(e.target.value)}
+          onKeyDown={alTeclear}
+        />
+        <AvisoDestacado
+          id={`${id}-parecido`}
+          texto={parecida && NOMBRE_PARECIDO.aviso(porRevisar, parecida, nombre === 'categoría' ? 'categoria' : 'producto')}
+        />
+      </div>
 
       <div className={estilos.opciones}>
         {nuevas.map(n => (

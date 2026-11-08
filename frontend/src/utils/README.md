@@ -24,6 +24,10 @@ Funciones puras, sin React. Cada archivo tiene su `*.test.js`.
 | `nombreArchivo(desde, hasta, ext)` | `depanas_compras_2026-10-01_2026-10-31.xlsx` |
 | `rangoRapido('mes' \| 'mesAnterior' \| 'ano' \| 'todo')` | `{ desde, hasta }` en fecha local |
 
+`parecidos.js`: `nombreParecido(texto, lista, { excluir })` da el nombre de `lista` al que más se parece `texto` (tildes, mayúsculas, espacios, letras cambiadas, faltantes, sobrantes, invertidas o repetidas; `Gatired` → `Gatorade`) o `null`. Es solo una sugerencia: no avisa si ya es un registro de la lista ni al comparar con `excluir`. Umbral: similitud ≥ 0.6, más estricto en nombres de hasta 5 letras.
+
+`eventos.js`: `EVENTO_ARTICULO_RENOMBRADO` (`detail: { anterior, nombre }`). Lo emite `api.js`; lo escuchan `BloqueCompra` y `PantallaMaestra`.
+
 `mensajes.js`: **todo lo que el sistema le dice al usuario**, con la voz de marca (Brandbook, diapositiva 10 "Voz de Marca": cercano, venezolano, vibrante).
 
 | Grupo | Contenido |

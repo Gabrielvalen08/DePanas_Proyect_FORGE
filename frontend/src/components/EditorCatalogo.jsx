@@ -1,6 +1,6 @@
 import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { Check, Pencil, Plus, Search, X } from 'lucide-react'
-import { Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
+import { AvisoDestacado, Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
 import { SelectorOpciones } from './AsignarMaterial'
 import FichaProveedor, { fichaInicial } from './FichaProveedor'
 import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
@@ -8,7 +8,8 @@ import { getCategorias, getProductos, ordenarMaterialesPorCategoria as ordenarPo
 import { textoBusqueda } from '../utils/formato'
 import { listaProductos, sinProducto, tieneProducto } from '../../../shared/productos.js'
 import { normalizarFicha } from '../../../shared/proveedores.js'
-import { CONFIRMAR, PANTALLA_CATALOGO } from '../utils/mensajes'
+import { CONFIRMAR, NOMBRE_PARECIDO, PANTALLA_CATALOGO } from '../utils/mensajes'
+import { nombreParecido } from '../utils/parecidos'
 import estilos from './EditorCatalogo.module.css'
 
 /**
@@ -85,6 +86,10 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
   const avisoSalida = useDatosSinGuardar({ sucio: cambiado, registrar: registrarDesdeAviso, cierreRef })
 
+  // Solo una sugerencia: los nombres ya registrados de este tipo, sin contar el que se edita
+  const yaRegistrados = esMaterial ? todos.map(m => m.nombre) : esProveedor ? todosProveedores : esCategoria ? getCategorias() : getProductos()
+  const parecido = nombreParecido(nombre, yaRegistrados, { excluir: registro?.nombre })
+
   // Sin cambios no hay nada que descartar: se cierra sin preguntar
   function pedirCancelar() {
     if (cambiado) setConfirmando('descartar')
@@ -96,7 +101,6 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
     const nuevos = {}
     if (!nombre.trim()) nuevos.nombre = PANTALLA_CATALOGO.faltaNombre
     if (esMaterial && !categoria.trim()) nuevos.categoria = 'Elige o escribe una categoría'
-    if (esMaterial && !productos.length) nuevos.producto = PANTALLA_CATALOGO.faltaProductos
     // La ficha se revisa con las mismas reglas que el backend (shared/proveedores.js)
     if (esProveedor) {
       try {
@@ -142,19 +146,26 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
     <>
       <form ref={formRef} onSubmit={guardar} noValidate>
         <CuerpoModal>
-          <Campo
-            ref={nombreRef}
-            id="editor-catalogo-nombre"
-            etiqueta={PANTALLA_CATALOGO.etiquetaNombre(tipo)}
-            value={nombre}
-            autoComplete="off"
-            onChange={e => {
-              setNombre(e.target.value)
-              if (errores.nombre) setErrores(prev => ({ ...prev, nombre: undefined }))
-            }}
-            error={errores.nombre}
-            ayuda={registro ? PANTALLA_CATALOGO.ayudaRenombrar(edicion.uso ?? 0) : undefined}
-          />
+          <div>
+            <Campo
+              ref={nombreRef}
+              id="editor-catalogo-nombre"
+              etiqueta={PANTALLA_CATALOGO.etiquetaNombre(tipo)}
+              value={nombre}
+              autoComplete="off"
+              aria-describedby={parecido ? 'editor-catalogo-parecido' : undefined}
+              onChange={e => {
+                setNombre(e.target.value)
+                if (errores.nombre) setErrores(prev => ({ ...prev, nombre: undefined }))
+              }}
+              error={errores.nombre}
+              ayuda={registro ? PANTALLA_CATALOGO.ayudaRenombrar(edicion.uso ?? 0) : undefined}
+            />
+            <AvisoDestacado
+              id="editor-catalogo-parecido"
+              texto={parecido && NOMBRE_PARECIDO.aviso(nombre, parecido, tipo)}
+            />
+          </div>
           {esProveedor && (
             <FichaProveedor
               ficha={ficha}

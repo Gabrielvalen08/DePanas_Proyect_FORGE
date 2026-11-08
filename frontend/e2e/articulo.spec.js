@@ -1,5 +1,5 @@
 import { test, expect, entrar, confirmar, CESAR } from './ayudantes.js'
-import { ASIGNACION, COMPRA, VALIDACION } from '../src/utils/mensajes.js'
+import { ASIGNACION, COMPRA, NOMBRE_PARECIDO, VALIDACION } from '../src/utils/mensajes.js'
 
 const formularioCompra = page => page.getByRole('form', { name: 'Detalle de compra' }).first()
 
@@ -75,6 +75,90 @@ test.describe('Formulario de artículo en Agregar compra', () => {
     await nombre.fill('azucar')
     await ventana.getByRole('button', { name: ASIGNACION.guardar }).click()
     await expect(ventana.getByText(/Ya existe un artículo/)).toBeVisible()
+  })
+
+  test('un error de dedo avisa que se parece a otro artículo, sin impedir seguir', async ({ page }) => {
+    await entrar(page, CESAR)
+    await elegirProveedor(page)
+    const formulario = formularioCompra(page)
+    await formulario.getByRole('combobox', { name: 'Artículo, fila 1' }).fill('Gatired')
+    await page.keyboard.press('Escape')
+    await formulario.getByRole('button', { name: COMPRA.agregarArticulo('Gatired') }).click()
+
+    const ventana = page.getByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await expect(ventana.getByText(NOMBRE_PARECIDO.aviso('Gatired', 'Gatorade', 'material'))).toBeVisible()
+    await ventana.getByRole('textbox', { name: ASIGNACION.nombreArticulo }).fill('Azucar morena')
+    await expect(ventana.getByText(/se parece a/)).toHaveCount(0)
+  })
+
+  test('un proveedor parecido avisa al salir del campo', async ({ page }) => {
+    await entrar(page, CESAR)
+    const proveedor = formularioCompra(page).getByRole('combobox', { name: 'Proveedor' })
+    await proveedor.fill('Selecto')
+    await page.keyboard.press('Escape')
+    await proveedor.blur()
+    await expect(page.getByText(NOMBRE_PARECIDO.aviso('Selecto', 'Selectos', 'proveedor'))).toBeVisible()
+  })
+
+  test('sin producto: la primera compra pregunta y marca; la segunda ya no pide nada', async ({ page, request }, info) => {
+    await entrar(page, CESAR)
+    const articulo = `Sal e2e ${info.project.name}`
+
+    /** Escribe el artículo y sale del campo: ahí es cuando se pregunta, si hay que preguntar */
+    async function escribirArticulo() {
+      await elegirProveedor(page)
+      const formulario = formularioCompra(page)
+      const fila = formulario.getByRole('combobox', { name: 'Artículo, fila 1' })
+      await fila.fill(articulo)
+      await page.keyboard.press('Escape')
+      await fila.blur()
+      return { formulario, fila }
+    }
+
+    async function llenarResto(formulario) {
+      await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('2')
+      await formulario.getByRole('combobox', { name: 'Unidad, fila 1' }).selectOption('lb')
+      await formulario.getByRole('textbox', { name: 'Precio unitario, fila 1' }).fill('3.00')
+    }
+
+    // Primera compra: pregunta; con «Ahora no» la fila queda en rojo y aun así se guarda
+    const { formulario, fila } = await escribirArticulo()
+    const ventana = page.getByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await ventana.getByRole('button', { name: ASIGNACION.ahoraNo }).click()
+    await expect(ventana).toBeHidden()
+    await expect(fila).toHaveAccessibleDescription(COMPRA.articuloIncompleto)
+    await expect(formulario.getByTitle(COMPRA.articuloIncompleto)).toBeVisible()
+
+    await formulario.getByRole('button', { name: COMPRA.agregarArticulo(articulo) }).click()
+    await expect(ventana.getByText(ASIGNACION.faltaInformacion(true, true))).toBeVisible()
+    await ventana.getByRole('button', { name: ASIGNACION.ahoraNo }).click()
+    await expect(ventana).toBeHidden()
+
+    await llenarResto(formulario)
+    await formulario.getByRole('button', { name: 'Guardar compra' }).click()
+    await confirmar(page, COMPRA.confirmarGuardar.confirmar)
+    await expect(page.getByText(COMPRA.guardada)).toBeVisible()
+    // La compra guardada sale con una animación: se sigue cuando ya solo queda el bloque nuevo
+    await expect(page.getByRole('form', { name: 'Detalle de compra' })).toHaveCount(1)
+
+    // Segunda compra del mismo artículo: ni formulario ni rojo
+    const segunda = await escribirArticulo()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(segunda.formulario.getByTitle(COMPRA.articuloIncompleto)).toHaveCount(0)
+    await llenarResto(segunda.formulario)
+    await segunda.formulario.getByRole('button', { name: 'Guardar compra' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await confirmar(page, COMPRA.confirmarGuardar.confirmar)
+    await expect(page.getByRole('alertdialog')).toHaveCount(0)
+    await expect(page.getByRole('form', { name: 'Detalle de compra' })).toHaveCount(1)
+
+    // Las pruebas comparten la base y las de Compras esperan terminar sin compras
+    const { token } = await (await request.post('/api/sesion', { data: { usuario: CESAR.usuario, contrasena: CESAR.contrasena } })).json()
+    const headers = { Authorization: `Bearer ${token}` }
+    const compras = await (await request.get('/api/compras', { headers })).json()
+    for (const compra of compras) {
+      if (compra.materiales.some(m => m.material === articulo)) await request.delete(`/api/compras/${compra.id}`, { headers })
+    }
   })
 
   test('sin permiso de editar el catálogo el lápiz sale apagado', async ({ page, request }, info) => {

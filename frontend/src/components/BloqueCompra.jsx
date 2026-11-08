@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
+import { AlertCircle, Pencil, Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import AsignarMaterial from './AsignarMaterial'
-import { Boton, Campo, CampoMoneda, ConfirmDialog, Selector } from './common'
+import { AvisoDestacado, Boton, Campo, CampoMoneda, ConfirmDialog, Selector } from './common'
 import { asignarMaterial, editarEnCatalogo, getAsignacion, getMaterialesPorProveedor, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
-import { ASIGNACION, COMPRA, VALIDACION } from '../utils/mensajes'
+import { ASIGNACION, COMPRA, NOMBRE_PARECIDO, VALIDACION } from '../utils/mensajes'
+import { nombreParecido } from '../utils/parecidos'
 import { fechaHoyISO, formatearPrecio, textoBusqueda } from '../utils/formato'
 import { springSuave } from '../styles/movimiento'
 import estilos from './BloqueCompra.module.css'
@@ -118,7 +119,9 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
  * compra guardada pasa a ser la nueva referencia.
  * Cada material lleva su categoría y su producto (como en el Excel): si se
  * escribe uno nuevo o sin asignar, se piden en una ventana emergente
- * (AsignarMaterial) al elegirlo, al salir del campo o, si faltan, al guardar.
+ * (AsignarMaterial) al elegirlo, al salir del campo o al guardar, solo si el
+ * artículo nunca se ha comprado. Con «Ahora no» la compra se guarda igual y la
+ * fila queda en rojo con una señal; la siguiente compra ya no pide nada.
  * Junto a cada artículo hay un botón: «+» si el campo está vacío o el artículo no
  * está registrado (crea uno nuevo); lápiz si ya está registrado (edita su nombre,
  * categoría y productos en el catálogo y en sus compras).
@@ -163,7 +166,8 @@ export default function BloqueCompra({
   const { addToast } = useToast()
 
   const formRef        = useRef(null)
-  const [omitidos, setOmitidos] = useState(() => new Set()) // "Ahora no": no se vuelve a pedir al salir del campo
+  const [omitidos, setOmitidos] = useState(() => new Set()) // "Ahora no": no se vuelve a pedir y la fila queda marcada
+  const [proveedorRevisado, setProveedorRevisado] = useState(false) // al salir del campo se avisa si se parece a otro
   const guardarDespues = useRef(false)     // la ventana se abrió al guardar: se guarda al terminar
 
   const campoPorEnfocar = useRef(null) // tras un intento fallido de guardar, el primer campo con error
@@ -230,12 +234,15 @@ export default function BloqueCompra({
   // --- Encabezado ---
   function cambiarEncabezado(campo, valor) {
     setBloqueado(false)
-    if (campo === 'proveedor') setProveedor(valor)
-    else if (campo === 'fecha') setFecha(valor)
+    if (campo === 'proveedor') {
+      setProveedor(valor)
+      setProveedorRevisado(false)
+    } else if (campo === 'fecha') setFecha(valor)
     if (errores[campo]) fijarError(campo, validarEncabezado(campo, valor))
   }
 
   function salirDeEncabezado(campo) {
+    if (campo === 'proveedor') setProveedorRevisado(true)
     if (!intentoGuardar) return
     const valor = campo === 'proveedor' ? proveedor : fecha
     fijarError(campo, validarEncabezado(campo, valor))
@@ -320,7 +327,7 @@ export default function BloqueCompra({
   function abrirFormulario(filaId, nombre, pedido) {
     const asignacion = getAsignacion(nombre)
     const modo = !asignacion.existe ? 'nuevo' : puedeEditarArticulo ? 'editar' : 'completar'
-    setPorAsignar({ ...asignacion, filaId, modo, pedido })
+    setPorAsignar({ ...asignacion, filaId, modo, pedido, marcado: omitidos.has(claveNombre(nombre)) })
   }
 
   function revisarMaterial(filaId, valor) {
@@ -329,9 +336,14 @@ export default function BloqueCompra({
     abrirFormulario(filaId, nombre, true)
   }
 
-  /** Siguiente fila con un material sin categoría o producto */
+  /** Siguiente fila con un artículo que se debe preguntar (y al que no se le dijo «Ahora no») */
   function pendienteDeAsignar() {
-    return filas.find(f => !estaVacia(f) && necesitaAsignacion(f.material))
+    return filas.find(f => !estaVacia(f) && necesitaAsignacion(f.material) && !omitidos.has(claveNombre(f.material)))
+  }
+
+  /** La fila queda en rojo: se dijo «Ahora no» y al artículo aún le falta información */
+  function filaMarcada(fila) {
+    return omitidos.has(claveNombre(fila.material)) && necesitaAsignacion(fila.material)
   }
 
   /** Qué botón lleva la fila: «+» para crear o completar, lápiz para editar (apagado sin permiso) */
@@ -345,13 +357,7 @@ export default function BloqueCompra({
 
   function alTocarBotonDeFila(fila, lapiz) {
     if (!exigirProveedor()) return
-    const nombre = fila.material.trim()
-    setOmitidos(prev => {
-      const next = new Set(prev)
-      next.delete(claveNombre(nombre))
-      return next
-    })
-    abrirFormulario(fila.id, nombre, !lapiz)
+    abrirFormulario(fila.id, fila.material.trim(), !lapiz)
   }
 
   async function asignar({ nombre, categoria, productos }) {
@@ -380,23 +386,39 @@ export default function BloqueCompra({
     )))
     fijarError(clave(filaId, 'material'), undefined)
     sugerirPrecio(filaId, final)
+    setOmitidos(prev => {
+      const next = new Set(prev)
+      next.delete(claveNombre(anterior))
+      return next
+    })
     setPorAsignar(null)
     setBloqueado(false)
-    if (guardarDespues.current) {
-      guardarDespues.current = false
-      // Si otro material también falta, se pide; si no, se guarda la compra
-      setTimeout(() => formRef.current?.requestSubmit(), 0)
-    }
+    seguirGuardando()
   }
 
+  /** La ventana se abrió al guardar: si otro artículo también falta, se pide; si no, sigue la compra */
+  function seguirGuardando() {
+    if (!guardarDespues.current) return
+    guardarDespues.current = false
+    setTimeout(() => formRef.current?.requestSubmit(), 0)
+  }
+
+  /** Lo pedido por el sistema o el «+» y no completado no se vuelve a preguntar, y la fila queda marcada */
+  function marcarOmitido() {
+    if (porAsignar?.pedido) setOmitidos(prev => new Set(prev).add(claveNombre(porAsignar.nombre)))
+  }
+
+  /** «Ahora no»: el artículo queda sin esos datos y, si se estaba guardando, la compra se guarda igual */
   function omitirAsignacion() {
-    if (porAsignar) {
-      setOmitidos(prev => new Set(prev).add(claveNombre(porAsignar.nombre)))
-    }
-    if (guardarDespues.current && porAsignar) {
-      addToast(COMPRA.faltaAsignacion(porAsignar.nombre), 'error')
-      registro.terminar(false)
-    }
+    marcarOmitido()
+    setPorAsignar(null)
+    seguirGuardando()
+  }
+
+  /** Cancelar, la X, Esc o el clic fuera: cierra sin guardar la compra */
+  function cerrarAsignacion() {
+    marcarOmitido()
+    if (guardarDespues.current) registro.terminar(false)
     guardarDespues.current = false
     setPorAsignar(null)
   }
@@ -510,6 +532,9 @@ export default function BloqueCompra({
 
   const total = filas.reduce((suma, f) => suma + montoDe(f), 0)
 
+  // Solo una sugerencia, al salir del campo: mientras se escribe, casi todo «se parece» a algo
+  const proveedorParecido = proveedorRevisado ? nombreParecido(proveedor, getProveedores()) : null
+
   /** Id del primer campo con error, en el orden en que aparecen en pantalla */
   function primerCampoConError(conError) {
     if (conError.fecha) return `${id}-fecha`
@@ -547,6 +572,11 @@ export default function BloqueCompra({
                   onBlur={() => salirDeEncabezado('proveedor')}
                   getSuggestions={sugerirProveedores}
                   error={errores.proveedor}
+                  aria-describedby={proveedorParecido ? `${id}-proveedor-parecido` : undefined}
+                />
+                <AvisoDestacado
+                  id={`${id}-proveedor-parecido`}
+                  texto={proveedorParecido && NOMBRE_PARECIDO.aviso(proveedor, proveedorParecido, 'proveedor')}
                 />
               </div>
             </div>
@@ -573,6 +603,7 @@ export default function BloqueCompra({
                 {filas.map((fila, i) => {
                   const n = i + 1
                   const boton = botonDeFila(fila)
+                  const marcada = filaMarcada(fila)
                   return (
                     <motion.tr
                       key={fila.id}
@@ -595,6 +626,11 @@ export default function BloqueCompra({
                           >
                             <boton.Icono size={14} aria-hidden="true" />
                           </button>
+                          {marcada && (
+                            <span className={estilos.faltaInformacion} title={COMPRA.articuloIncompleto}>
+                              <AlertCircle size={18} aria-hidden="true" />
+                            </span>
+                          )}
                           <AutocompleteInput
                             id={`${id}-material-${fila.id}`}
                             etiqueta={`Artículo, fila ${n}`}
@@ -611,8 +647,9 @@ export default function BloqueCompra({
                               sugerirPrecio(fila.id, fila.material)
                               revisarMaterial(fila.id, fila.material)
                             }}
-                            ayuda={textoAsignacion(fila.material)}
+                            ayuda={marcada ? COMPRA.articuloIncompleto : textoAsignacion(fila.material)}
                             ayudaOculta
+                            marcado={marcada}
                             getSuggestions={sugerirMateriales}
                             error={errores[clave(fila.id, 'material')]}
                           />
@@ -738,7 +775,13 @@ export default function BloqueCompra({
       </form>
 
       {/* Fuera del <form>: los eventos del portal no deben llegar a su onSubmit */}
-      <AsignarMaterial material={porAsignar} proveedor={proveedor} alGuardar={asignar} alCancelar={omitirAsignacion} />
+      <AsignarMaterial
+        material={porAsignar}
+        proveedor={proveedor}
+        alGuardar={asignar}
+        alOmitir={omitirAsignacion}
+        alCerrar={cerrarAsignacion}
+      />
 
       <ConfirmDialog
         isOpen={porConfirmar !== null}
@@ -773,9 +816,10 @@ export default function BloqueCompra({
   )
 }
 
-/** "Materia Prima · Cachitos" en el tooltip del material, cuando ya tiene ambos asignados */
+/** "Materia Prima · Cachitos" (o solo la categoría, si no va en ningún producto) en el tooltip del material */
 function textoAsignacion(material) {
-  if (!material.trim() || necesitaAsignacion(material)) return undefined
+  if (!material.trim()) return undefined
   const { categoria, producto } = getAsignacion(material)
-  return `${categoria} · ${producto}`
+  if (!categoria) return undefined
+  return producto ? `${categoria} · ${producto}` : categoria
 }

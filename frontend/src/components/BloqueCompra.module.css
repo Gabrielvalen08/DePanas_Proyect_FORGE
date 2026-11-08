@@ -307,6 +307,15 @@
   min-width: 0;
 }
 
+/* Le falta información al artículo: la misma señal que un campo con error */
+.faltaInformacion {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: var(--campo-alto);
+  color: var(--color-danger);
+}
+
 .botonAsignarMini {
   flex-shrink: 0;
   margin-top: calc((var(--campo-alto) - 1.5rem) / 2);

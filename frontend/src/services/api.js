@@ -402,8 +402,16 @@ export function getPrecioSugerido(material) {
   return sugerido
 }
 
-/** true si al material le falta la categoría o el producto */
+/**
+ * ¿Hay que preguntarle la categoría y el producto? Solo si le falta alguno y nunca se ha comprado:
+ * no todo artículo va en un producto, así que de la segunda compra en adelante ya no se pide nada.
+ */
 export function necesitaAsignacion(material) {
+  return articuloIncompleto(material) && getComprasDeMaterial(material) === 0
+}
+
+/** ¿Al material le falta la categoría o el producto? */
+export function articuloIncompleto(material) {
   if (!(material || '').trim()) return false
   const { categoria, producto } = getAsignacion(material)
   return !categoria || !producto
@@ -454,7 +462,6 @@ export async function asignarMaterial(material, { categoria, productos, producto
 
   const cat = (categoria || '').trim()
   if (!cat) throw new Error('Elige una categoría')
-  if (!elegidos.length) throw new Error('Elige al menos un producto')
 
   const catalogoLocal = getCatalogoLocal()
   const repetido = nuevo && buscarLocal(catalogoLocal, 'material', material)
@@ -677,7 +684,6 @@ export async function agregarAlCatalogo(tipo, datos) {
   }
   const productos = listaProductos(datos.productos ?? datos.producto)
   if (!datos.categoria?.trim()) throw new Error('Elige una categoría')
-  if (!productos.length) throw new Error('Elige al menos un producto')
   registrarEn(cat, 'material', nombre)
   const c = registrarEn(cat, 'categoria', datos.categoria)
   const p = registrarProductos(cat, productos)
@@ -749,7 +755,7 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
   }
   let categoriaNueva = false
   let productosNuevos = []
-  if (tipo === 'material' && datos.categoria?.trim() && productos.length) {
+  if (tipo === 'material' && datos.categoria?.trim()) {
     const c = registrarEn(cat, 'categoria', datos.categoria)
     const p = registrarProductos(cat, productos)
     Object.assign(cat.materiales.find(m => m.nombre === nuevo), { categoria: c.nombre, producto: p.texto })
@@ -1175,7 +1181,8 @@ function normalizar({ proveedor, fecha, categoria, materiales, productos }) {
   return {
     proveedor: (proveedor || '').trim(),
     fecha,
-    categoria: (categoria || 'Materia Prima').trim(),
+    // Sin categoría no se inventa: ligaría al proveedor con una que nadie eligió (artículo con «Ahora no»)
+    categoria: (categoria ?? 'Materia Prima').trim(),
     materiales: mat,
     productos: mat.map(m => ({ ...m, producto: m.material, precio: m.monto })),
   }
@@ -1437,10 +1444,12 @@ export async function importarCatalogo(tipo, filas) {
       if (!fichaVacia(ficha)) fijarFichaLocal(cat, nombre, ficha)
     } else if (tipo === 'material') {
       const destino = cat.materiales.find(m => m.nombre === nombre)
-      const c = registrarEn(cat, 'categoria', fila.categoria)
+      // Un respaldo puede traer un artículo incompleto: lo que no trae no se toca
+      const categoria = fila.categoria || destino.categoria
+      const c = categoria ? registrarEn(cat, 'categoria', categoria).nombre : ''
       const p = registrarProductos(cat, [...listaProductos(destino.producto), ...fila.productos])
-      Object.assign(destino, { categoria: c.nombre, producto: p.texto })
-      propagar(nombre, { categoria: c.nombre, producto: p.texto })
+      Object.assign(destino, { categoria: c, producto: p.texto })
+      propagar(nombre, { categoria: c, producto: p.texto })
     } else {
       if (tipo === 'categoria') {
         // Suma los proveedores del archivo; los que no existen se omiten
