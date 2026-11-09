@@ -140,9 +140,11 @@ export const COMPRA = {
     confirmar: 'Sí, cancelar',
     volver: 'Seguir editando',
   },
+  agregarArticulo: material => `Agregar artículo nuevo${material ? `: ${material}` : ''}`,
+  editarArticulo: material => `Editar artículo: ${material}`,
   asignarArticulo: material => `Asignar categoría y producto${material ? ` a ${material}` : ''}`,
-  faltaAsignacion: material =>
-    `La compra no se guardó: falta decirnos la categoría y el producto de «${material}».`,
+  sinPermisoEditarArticulo: material => `No tienes permiso para editar el artículo ${material}`,
+  articuloIncompleto: 'A este artículo le falta información. Toca el botón de al lado para completarla.',
 }
 
 // ---------------------------------------------------------------------------
@@ -178,43 +180,78 @@ export const VALIDACION = {
 // ---------------------------------------------------------------------------
 // Categoría y producto de cada material
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Nombre parecido a otro ya registrado (posible error de dedo)
+// ---------------------------------------------------------------------------
+export const NOMBRE_PARECIDO = {
+  aviso: (escrito, parecido, tipo) => {
+    const femenino = tipo === 'categoria'
+    return `«${escrito.trim()}» se parece a «${parecido}», que ya está ${femenino ? 'registrada' : 'registrado'}. ` +
+      `Revisa si es ${femenino ? 'la misma' : 'el mismo'}.`
+  },
+}
+
+/** Dónde va un artículo: «Limpieza · Cachitos», o solo la categoría si no lleva productos */
+const destinoArticulo = (categoria, producto) => (producto ? `${categoria} · ${producto}` : categoria)
+
+/** « Y estrenamos la categoría «X» y el producto «Y».» cuando se crearon opciones nuevas */
+function estrenosAsignacion(categoria, categoriaNueva, productosNuevos) {
+  const nuevos = [
+    categoriaNueva && `la categoría «${categoria}»`,
+    productosNuevos.length === 1 && `el producto «${productosNuevos[0]}»`,
+    productosNuevos.length > 1 && `los productos ${productosNuevos.map(p => `«${p}»`).join(', ')}`,
+  ].filter(Boolean)
+  return nuevos.length ? ` Y estrenamos ${nuevos.join(' y ')}.` : ''
+}
+
 export const ASIGNACION = {
   tituloNuevo: 'Artículo nuevo',
   tituloExistente: 'Categoría y producto',
-  descripcionNuevo: (material, proveedor) =>
-    `«${material}» es nuevo por aquí${proveedor ? ` (de ${proveedor})` : ''}. ¿A qué categoría y productos pertenece? Lo recordaremos para las próximas compras.`,
-  descripcionExistente: (material, pideCategoria, pideProducto) =>
-    pideCategoria && pideProducto
-      ? `Cuéntanos a qué categoría y productos pertenece «${material}».`
-      : pideCategoria
-        ? `Cuéntanos a qué categoría pertenece «${material}».`
-        : `Cuéntanos a qué productos se destina «${material}».`,
+  tituloEditar: 'Editar artículo',
+  etiquetaArticulo: 'Artículo',
+  nombreArticulo: 'Nombre del artículo',
+  faltaNombre: 'Escribe el nombre del artículo',
+  yaExiste: nombre => `Ya existe un artículo llamado «${nombre}»`,
   noExiste: (texto, esCategoria) =>
     `«${texto}» todavía no existe. Pulsa Enter o «Agregar» para crear ${esCategoria ? 'una categoría nueva' : 'un producto nuevo'}.`,
-  categoriasDelProveedor: proveedor =>
-    `Primero van las categorías de ${proveedor}. Si eliges otra, también quedará como suya.`,
   faltaCategoria: 'Elige o escribe una categoría',
-  faltaProducto: 'Elige al menos un producto',
+  faltaInformacion: (sinCategoria, sinProducto) =>
+    sinCategoria && sinProducto
+      ? 'Este artículo aún no tiene categoría ni producto asociados.'
+      : sinCategoria ? 'Este artículo aún no tiene categoría asociada.' : 'Este artículo aún no tiene producto asociado.',
   etiquetaProductos: 'Productos',
   productoConComa: 'El nombre de un producto no puede llevar comas.',
   sinCoincidencias: 'Nada por aquí con ese nombre',
   ahoraNo: 'Ahora no',
+  cancelar: 'Cancelar',
   guardar: 'Guardar',
+  confirmar: {
+    titulo: '¿Guardamos este artículo?',
+    // modo: 'nuevo' | 'completar' | 'editar'. compras: en cuántas compras ya está el artículo
+    mensaje: ({ modo, anterior, nombre, categoria, productos, compras }) => {
+      const destino = destinoArticulo(categoria, productos.join(', '))
+      if (modo === 'nuevo') return `Se agregará «${nombre}» al catálogo, en ${destino}.`
+      const renombrado = anterior !== nombre ? `«${anterior}» pasará a llamarse «${nombre}». ` : ''
+      const enCompras = compras > 0 ? ` También se actualizará en ${compras} ${plural(compras, 'compra', 'compras')}.` : ''
+      return `${renombrado}«${nombre}» quedará en ${destino}.${enCompras}`
+    },
+    confirmar: 'Sí, guardar',
+  },
   asignado: ({ material, materialNuevo, categoriaNueva, productoNuevo, productosNuevos }) => {
     const prods = productosNuevos ?? (productoNuevo ? [material.producto] : [])
-    const nuevos = [
-      categoriaNueva && `la categoría «${material.categoria}»`,
-      prods.length === 1 && `el producto «${prods[0]}»`,
-      prods.length > 1 && `los productos ${prods.map(p => `«${p}»`).join(', ')}`,
-    ].filter(Boolean)
     return (
-      `¡Anotado! «${material.nombre}» va a ${material.categoria} · ${material.producto}.` +
+      `¡Anotado! «${material.nombre}» va a ${destinoArticulo(material.categoria, material.producto)}.` +
       (materialNuevo ? ' Ya quedó en el catálogo.' : '') +
-      (nuevos.length ? ` Y estrenamos ${nuevos.join(' y ')}.` : '')
+      estrenosAsignacion(material.categoria, categoriaNueva, prods)
     )
   },
+  editado: ({ anterior, nombre, categoria, producto, compras, categoriaNueva, productosNuevos = [] }) =>
+    (anterior !== nombre ? `¡Chévere! «${anterior}» ahora se llama «${nombre}» y va a ` : `¡Anotado! «${nombre}» va a `) +
+    `${destinoArticulo(categoria, producto)}.` +
+    (compras > 0 ? ` Se actualizó en ${compras} ${plural(compras, 'compra', 'compras')}.` : '') +
+    estrenosAsignacion(categoria, categoriaNueva, productosNuevos),
   errorGuardar: detalle =>
-    `No pudimos guardar la categoría y el producto${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
+    `No pudimos guardar el artículo${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
 }
 
 // ---------------------------------------------------------------------------
@@ -405,7 +442,6 @@ export const PANTALLA_CATALOGO = {
     otros: n => `+${n}`,
     sinDato: '—',
   },
-  faltaProductos: 'Elige al menos un producto',
   listaMateriales: (nombres, max = 4) =>
     nombres.length <= max ? nombres.join(', ') : `${nombres.slice(0, max).join(', ')} y ${nombres.length - max} más`,
   // Ventana de edición de una categoría o un producto: qué artículos lleva

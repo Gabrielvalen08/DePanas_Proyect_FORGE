@@ -6,6 +6,7 @@ import DetalleLista from '../components/DetalleLista'
 import { Boton, EstadoVacio, Insignia, MenuAcciones, Tarjeta } from '../components/common'
 import { fetchListas, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
 import { formatearFecha, formatearPrecio } from '../utils/formato'
 import { COMPRA, ESTADOS, LISTA_COMPRAS, fraseDelDia } from '../utils/mensajes'
 import estilos from './PantallaMaestra.module.css'
@@ -13,11 +14,12 @@ import estilos from './PantallaMaestra.module.css'
 /**
  * Lista de compras (/compras). Filtrar, Agregar compra y el menú ⋮ (Exportar y Cargar
  * datos) van en el encabezado de la tabla. Las compras van por fecha, la más reciente arriba.
- * Props: puedeAgregar, puedeExportar, puedeCargar, puedeEditar, puedeEliminar (según los permisos
- * y las funciones del usuario)
+ * Props: puedeAgregar, puedeExportar, puedeCargar, puedeEditar, puedeEliminar, puedeEditarArticulo
+ * (según los permisos y las funciones del usuario)
  */
 export default function PantallaMaestra({
   puedeAgregar = true, puedeExportar = true, puedeCargar = true, puedeEditar = true, puedeEliminar = true,
+  puedeEditarArticulo = true,
 }) {
   const { addToast } = useToast()
 
@@ -35,6 +37,19 @@ export default function PantallaMaestra({
       .catch(() => { if (vigente) addToast(COMPRA.errorCargar, 'error') })
     return () => { vigente = false } // descarta respuestas viejas si cambian los filtros
   }, [filters, version, addToast])
+
+  // Un artículo renombrado al editar una compra: la tabla y la compra abierta ya no muestran el nombre viejo
+  useEffect(() => {
+    function alRenombrar({ detail: { anterior, nombre } }) {
+      const igual = m => m.material.trim().toLowerCase() === anterior.trim().toLowerCase()
+      setListaAbierta(lista => (lista
+        ? { ...lista, materiales: lista.materiales.map(m => (igual(m) ? { ...m, material: nombre } : m)) }
+        : lista))
+      setVersion(v => v + 1)
+    }
+    window.addEventListener(EVENTO_ARTICULO_RENOMBRADO, alRenombrar)
+    return () => window.removeEventListener(EVENTO_ARTICULO_RENOMBRADO, alRenombrar)
+  }, [])
 
   const filtrosActivos = contarFiltrosActivos(filters)
   const hayFiltros = filtrosActivos > 0
@@ -161,6 +176,7 @@ export default function PantallaMaestra({
         alCambio={() => setVersion(v => v + 1)}
         puedeEditar={puedeEditar}
         puedeEliminar={puedeEliminar}
+        puedeEditarArticulo={puedeEditarArticulo}
       />
     </>
   )

@@ -7,6 +7,7 @@ import estilos from './Campo.module.css'
  * Input con label siempre presente, ayuda y error enlazados por aria-describedby.
  * children: contenido extra dentro del control (p. ej. la lista del autocompletado).
  * ayudaOculta: la ayuda queda solo para lectores de pantalla (no ocupa espacio).
+ * marcado: borde rojo sin mensaje debajo (falta información, pero no impide guardar).
  */
 const Campo = forwardRef(function Campo(
   {
@@ -18,6 +19,7 @@ const Campo = forwardRef(function Campo(
     error,
     ayuda,
     ayudaOculta = false,
+    marcado = false,
     className,
     children,
     'aria-describedby': describedByExterno,
@@ -44,7 +46,7 @@ const Campo = forwardRef(function Campo(
           ref={ref}
           id={id}
           type={tipo}
-          className={[estilos.input, prefijo && estilos.conPrefijo, error && estilos.conError]
+          className={[estilos.input, prefijo && estilos.conPrefijo, (error || marcado) && estilos.conError]
             .filter(Boolean).join(' ')}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}

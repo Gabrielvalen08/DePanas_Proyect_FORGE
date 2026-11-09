@@ -67,6 +67,7 @@
   --color-on-danger:     var(--blanco);
   --color-success:       var(--verde-fresco);
   --color-warning:       var(--amarillo-criollo);
+  --color-on-warning:    var(--avila-profundo); /* nunca blanco ni crema sobre el amarillo (brandbook) */
   --color-focus:         var(--rojo-vinotinto);
 
   /* Estados hover: mezclas de la paleta, sin colores nuevos */

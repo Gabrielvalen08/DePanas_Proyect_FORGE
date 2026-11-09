@@ -432,7 +432,9 @@ describe('api: categoría y producto de cada material (modo local)', () => {
 
   it('pide categoría y producto', async () => {
     await expect(asignarMaterial('Sal', { categoria: '', producto: 'Todos' })).rejects.toThrow('Elige una categoría')
-    await expect(asignarMaterial('Sal', { categoria: 'Materia Prima', productos: [] })).rejects.toThrow('Elige al menos un producto')
+    // Los productos son opcionales
+    const sinProductos = await asignarMaterial('Sal', { categoria: 'Materia Prima', productos: [] })
+    expect(sinProductos.material).toMatchObject({ nombre: 'Sal', categoria: 'Materia Prima', producto: '' })
   })
 
   it('un artículo puede llevar varios productos: se guardan todos y cada uno cuenta en el catálogo', async () => {
@@ -491,7 +493,7 @@ describe('api: cargar un respaldo de una sección del Catálogo (modo local)', (
   })
 
   it('un respaldo de otra sección o con filas inválidas se rechaza sin cambiar nada', async () => {
-    await expect(importarCatalogo('material', [{ nombre: 'Sal', categoria: '' }])).rejects.toThrow('Fila 1: falta la categoría')
+    await expect(importarCatalogo('material', [{ nombre: 'Sal', categoria: 'Bebidas' }, { nombre: '' }])).rejects.toThrow('Fila 2: falta el nombre')
     expect(getAsignacion('Sal').existe).toBe(false)
   })
 })

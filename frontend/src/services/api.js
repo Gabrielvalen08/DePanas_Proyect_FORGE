@@ -27,6 +27,7 @@ import {
 } from '../../../shared/productos.js'
 import { fichaVacia, leerFicha, normalizarFicha } from '../../../shared/proveedores.js'
 import { CARGAR } from '../utils/mensajes'
+import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
 import { catalogoAJson, catalogoAXlsx, comprasAJson, comprasAXlsx, nombreArchivo, nombreArchivoCatalogo } from '../utils/exportar'
 import { MENSAJES_CATALOGO_JSON, filasDelCatalogo, validarCatalogoJSON } from '../../../shared/catalogo-json.js'
 import { migrarPermisos } from '../utils/permisos'
@@ -401,11 +402,27 @@ export function getPrecioSugerido(material) {
   return sugerido
 }
 
-/** true si al material le falta la categoría o el producto */
+/**
+ * ¿Hay que preguntarle la categoría y el producto? Solo si le falta alguno y nunca se ha comprado:
+ * no todo artículo va en un producto, así que de la segunda compra en adelante ya no se pide nada.
+ */
 export function necesitaAsignacion(material) {
+  return articuloIncompleto(material) && getComprasDeMaterial(material) === 0
+}
+
+/** ¿Al material le falta la categoría o el producto? */
+export function articuloIncompleto(material) {
   if (!(material || '').trim()) return false
   const { categoria, producto } = getAsignacion(material)
   return !categoria || !producto
+}
+
+/** En cuántas compras guardadas está un material. Igual en los dos modos */
+export function getComprasDeMaterial(material) {
+  const k = clave(material)
+  if (!k) return 0
+  if (modoActual !== 'local') return catalogo().uso?.material?.[k] ?? 0
+  return getListas().filter(l => l.materiales.some(m => clave(m.material) === k)).length
 }
 
 /**
@@ -413,16 +430,17 @@ export function necesitaAsignacion(material) {
  * igual que la categoría o los productos escritos que aún no existían.
  * eleccion: { categoria, productos: [] } (o `producto` como texto «Arepas, Empanadas»).
  * Con `proveedor` (el de la compra), la categoría queda ligada a ese proveedor.
+ * Con `nuevo`, falla (error.campo = 'nombre') si ya hay un artículo con ese nombre.
  * Devuelve { material: { nombre, categoria, producto, productos }, materialNuevo, categoriaNueva,
  *   productoNuevo, productosNuevos } (+ proveedor y proveedorVinculado si vino `proveedor`)
  */
-export async function asignarMaterial(material, { categoria, productos, producto, proveedor }) {
+export async function asignarMaterial(material, { categoria, productos, producto, proveedor, nuevo = false }) {
   const elegidos = listaProductos(productos ?? producto)
   const deProveedor = (proveedor || '').trim()
   if ((await detectarModo()) === 'servidor') {
     const resultado = await pedirJSON(
       `/catalogo/materiales/${encodeURIComponent(material.trim())}`, 'PUT',
-      { categoria, productos: elegidos, ...(deProveedor ? { proveedor: deProveedor } : {}) }
+      { categoria, productos: elegidos, ...(deProveedor ? { proveedor: deProveedor } : {}), ...(nuevo ? { nuevo: true } : {}) }
     )
     // Se aplica en el acto para que el formulario lo vea sin esperar la recarga
     if (catalogoServidor) {
@@ -444,9 +462,10 @@ export async function asignarMaterial(material, { categoria, productos, producto
 
   const cat = (categoria || '').trim()
   if (!cat) throw new Error('Elige una categoría')
-  if (!elegidos.length) throw new Error('Elige al menos un producto')
 
   const catalogoLocal = getCatalogoLocal()
+  const repetido = nuevo && buscarLocal(catalogoLocal, 'material', material)
+  if (repetido) throw Object.assign(new Error(yaExiste('material', repetido)), { campo: 'nombre' })
   const mat = registrarEn(catalogoLocal, 'material', material)
   const c = registrarEn(catalogoLocal, 'categoria', cat)
   const p = registrarProductos(catalogoLocal, elegidos)
@@ -665,7 +684,6 @@ export async function agregarAlCatalogo(tipo, datos) {
   }
   const productos = listaProductos(datos.productos ?? datos.producto)
   if (!datos.categoria?.trim()) throw new Error('Elige una categoría')
-  if (!productos.length) throw new Error('Elige al menos un producto')
   registrarEn(cat, 'material', nombre)
   const c = registrarEn(cat, 'categoria', datos.categoria)
   const p = registrarProductos(cat, productos)
@@ -687,6 +705,7 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
   if ((await detectarModo()) === 'servidor') {
     const resultado = await pedirJSON(`/catalogo/${tipo}/${encodeURIComponent(nombreActual)}`, 'PUT', datos)
     await refrescarCache()
+    avisarRenombrado(tipo, resultado)
     return resultado
   }
   await delay(100)
@@ -697,7 +716,10 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
   if (tipo === 'producto' && !nombreProductoValido(nuevo)) throw new Error(PRODUCTO_CON_COMA)
   const productos = listaProductos(datos.productos ?? datos.producto)
   const choque = buscarLocal(cat, tipo, nuevo)
-  if (choque && clave(choque) !== clave(anterior)) throw new Error(yaExiste(tipo, choque))
+  if (choque && clave(choque) !== clave(anterior)) {
+    const error = new Error(yaExiste(tipo, choque))
+    throw tipo === 'material' ? Object.assign(error, { campo: 'nombre' }) : error
+  }
   // Se valida antes de tocar nada, para no dejar el cambio a medias
   if (conMateriales(tipo) && datos.materiales !== undefined) resolverMateriales(cat, datos.materiales)
   if (tipo === 'categoria' && datos.proveedores !== undefined) resolverProveedores(cat, datos.proveedores)
@@ -733,12 +755,14 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
   }
   let categoriaNueva = false
   let productosNuevos = []
-  if (tipo === 'material' && datos.categoria?.trim() && productos.length) {
+  if (tipo === 'material' && datos.categoria?.trim()) {
     const c = registrarEn(cat, 'categoria', datos.categoria)
     const p = registrarProductos(cat, productos)
     Object.assign(cat.materiales.find(m => m.nombre === nuevo), { categoria: c.nombre, producto: p.texto })
     categoriaNueva = c.nuevo
     productosNuevos = p.nuevos
+    // Editado desde una compra: la categoría elegida también queda como del proveedor de esa compra
+    if (datos.proveedor?.trim()) vincularLocal(cat, datos.proveedor.trim(), c.nombre)
   }
   setCatalogoLocal(cat)
 
@@ -777,10 +801,18 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
     ? { categoria: asignado.categoria, producto: asignado.producto, productos: listaProductos(asignado.producto) }
     : tipo === 'proveedor' ? { ficha: leerFicha(cat.fichas?.[clave(nuevo)]) }
       : tipo === 'categoria' ? { proveedores: [...(cat.proveedoresPorCategoria?.[clave(nuevo)] ?? [])] } : {}
-  return {
+  const resultado = {
     anterior, nombre: nuevo, ...extra, compras: compras.size, materiales,
     categoriaNueva, productoNuevo: productosNuevos.length > 0, productosNuevos,
   }
+  avisarRenombrado(tipo, resultado)
+  return resultado
+}
+
+/** Un artículo cambió de nombre: las compras abiertas y Lista de compras se ponen al día */
+function avisarRenombrado(tipo, { anterior, nombre }) {
+  if (tipo !== 'material' || anterior === nombre || typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(EVENTO_ARTICULO_RENOMBRADO, { detail: { anterior, nombre } }))
 }
 
 /**
@@ -1149,7 +1181,8 @@ function normalizar({ proveedor, fecha, categoria, materiales, productos }) {
   return {
     proveedor: (proveedor || '').trim(),
     fecha,
-    categoria: (categoria || 'Materia Prima').trim(),
+    // Sin categoría no se inventa: ligaría al proveedor con una que nadie eligió (artículo con «Ahora no»)
+    categoria: (categoria ?? 'Materia Prima').trim(),
     materiales: mat,
     productos: mat.map(m => ({ ...m, producto: m.material, precio: m.monto })),
   }
@@ -1411,10 +1444,12 @@ export async function importarCatalogo(tipo, filas) {
       if (!fichaVacia(ficha)) fijarFichaLocal(cat, nombre, ficha)
     } else if (tipo === 'material') {
       const destino = cat.materiales.find(m => m.nombre === nombre)
-      const c = registrarEn(cat, 'categoria', fila.categoria)
+      // Un respaldo puede traer un artículo incompleto: lo que no trae no se toca
+      const categoria = fila.categoria || destino.categoria
+      const c = categoria ? registrarEn(cat, 'categoria', categoria).nombre : ''
       const p = registrarProductos(cat, [...listaProductos(destino.producto), ...fila.productos])
-      Object.assign(destino, { categoria: c.nombre, producto: p.texto })
-      propagar(nombre, { categoria: c.nombre, producto: p.texto })
+      Object.assign(destino, { categoria: c, producto: p.texto })
+      propagar(nombre, { categoria: c, producto: p.texto })
     } else {
       if (tipo === 'categoria') {
         // Suma los proveedores del archivo; los que no existen se omiten

@@ -71,7 +71,7 @@ test('agregar: proveedor, y material con categoría y producto nuevos; no admite
   const cat = await catalogo(base)
   assert.ok(cat.proveedores.includes('La Colonia'))
   assert.ok(cat.productos.includes('Arepas Rellenas'))
-  assert.equal((await pedir(url(base, 'material'), 'POST', { nombre: 'Sal', categoria: 'Materia Prima' })).status, 400)
+  assert.equal((await pedir(url(base, 'material'), 'POST', { nombre: 'Sal', producto: 'Todos' })).status, 400, 'sin categoría')
 })
 
 test('renombrar un proveedor lo cambia en todas sus compras', async t => {
@@ -283,7 +283,7 @@ test('el nombre de un producto no puede llevar comas (son el separador de la lis
   const r = await pedir(url(base, 'producto'), 'POST', { nombre: 'Arepas, Tequeños' })
   assert.equal(r.status, 400)
   assert.match(r.cuerpo.error, /no puede llevar comas/)
-  assert.equal((await pedir(url(base, 'material'), 'POST', { nombre: 'Sal', categoria: 'Materia Prima', productos: [] })).status, 400)
+  assert.equal((await pedir(url(base, 'material'), 'POST', { nombre: 'Sal', categoria: 'Materia Prima', productos: ['Arepas, Tequeños'] })).status, 400)
 })
 
 test('ficha del proveedor: ubicación, varios teléfonos y contactos; se conserva al renombrar y se valida', async t => {
@@ -356,9 +356,9 @@ test('cargar un respaldo de una sección: crea lo que falta, actualiza lo que ex
   assert.deepEqual(material(cat, 'Tocino La Rioja').productos, ['Cachitos', 'Tequeños', 'Pastelitos'])
 
   // Un archivo inválido no cambia nada (todo o nada) y explica qué fila falla
-  const malo = await importar('material', [{ nombre: 'Sal', categoria: 'Materia Prima', productos: ['Todos'] }, { nombre: 'Azúcar', categoria: '' }])
+  const malo = await importar('material', [{ nombre: 'Sal', categoria: 'Materia Prima', productos: ['Todos'] }, { nombre: '', categoria: 'Bebidas' }])
   assert.equal(malo.status, 400)
-  assert.match(malo.cuerpo.error, /Fila 2: falta la categoría/)
+  assert.match(malo.cuerpo.error, /Fila 2: falta el nombre/)
   assert.equal(material(await catalogo(base), 'Sal'), undefined)
 })
 
@@ -400,6 +400,122 @@ test('una compra o un artículo asignado en la compra ligan la categoría con su
   assert.equal(asignado.cuerpo.proveedorVinculado, true)
   assert.equal(asignado.cuerpo.proveedor, 'Walmart')
   assert.deepEqual((await catalogo(base)).proveedoresPorCategoria.limpieza, ['Selectos', 'Walmart'])
+})
+
+test('las mayúsculas con tilde no duplican: «AZÚCAR» es el «Azúcar» registrado, y sus compras se renombran con él', async t => {
+  const base = await levantar(t)
+  const asignar = (nombre, cuerpo) => pedir(`${base}/catalogo/materiales/${encodeURIComponent(nombre)}`, 'PUT', cuerpo)
+  assert.equal((await asignar('Azúcar morena', { categoria: 'Limpieza', productos: ['Todos'] })).status, 200)
+  const repetido = await asignar('AZÚCAR MORENA', { categoria: 'Limpieza', productos: ['Todos'], nuevo: true })
+  assert.equal(repetido.status, 409)
+  assert.match(repetido.cuerpo.error, /Azúcar morena/)
+  assert.equal((await catalogo(base)).materiales.filter(m => m.nombre.toLowerCase() === 'azúcar morena').length, 1)
+
+  // Una compra escrita en mayúsculas queda con el nombre registrado
+  await pedir(`${base}/compras`, 'POST', {
+    proveedor: 'Walmart', fecha: '2026-10-02',
+    materiales: [{ material: 'AZÚCAR MORENA', cantidad: 1, unidad: 'kg', monto: 3, categoria: 'Limpieza', producto: 'Todos' }],
+  })
+  const cat = await catalogo(base)
+  assert.equal(cat.materiales.filter(m => m.nombre.toLowerCase() === 'azúcar morena').length, 1)
+  assert.equal(cat.uso.material['azúcar morena'], 1)
+  const renombrado = await pedir(`${base}/catalogo/material/${encodeURIComponent('Azúcar morena')}`, 'PUT', { nombre: 'Azúcar rubia' })
+  assert.equal(renombrado.cuerpo.compras, 1)
+  const { cuerpo: compras } = await pedir(`${base}/compras`)
+  assert.equal(compras[0].materiales[0].material, 'Azúcar rubia')
+
+  // Las tildes sí distinguen: «Azucar» es otro nombre (la interfaz advierte que se parece)
+  assert.equal((await asignar('Azucar rubia', { categoria: 'Limpieza', productos: ['Todos'], nuevo: true })).status, 200)
+})
+
+test('los productos son opcionales: un artículo se crea o edita sin ellos, pero siempre con categoría', async t => {
+  const base = await levantar(t)
+  const asignado = await pedir(`${base}/catalogo/materiales/${encodeURIComponent('Sal de mar')}`, 'PUT', { categoria: 'Limpieza', productos: [] })
+  assert.equal(asignado.status, 200)
+  assert.equal(asignado.cuerpo.material.producto, '')
+
+  const creado = await pedir(`${base}/catalogo/material`, 'POST', { nombre: 'Sal gruesa', categoria: 'Limpieza', productos: [] })
+  assert.equal(creado.status, 200)
+  assert.equal(creado.cuerpo.producto, '')
+  assert.equal((await pedir(`${base}/catalogo/material`, 'POST', { nombre: 'Otra', categoria: '', productos: [] })).status, 400)
+
+  // Quitarle todos los productos se aplica a sus compras
+  await pedir(`${base}/compras`, 'POST', {
+    proveedor: 'Walmart', fecha: '2026-10-02',
+    materiales: [{ material: 'Queso', cantidad: 1, unidad: 'kg', monto: 3, categoria: 'Limpieza', producto: 'Todos' }],
+  })
+  const editado = await pedir(`${base}/catalogo/material/Queso`, 'PUT', { categoria: 'Limpieza', productos: [] })
+  assert.equal(editado.status, 200)
+  const { cuerpo: compras } = await pedir(`${base}/compras`)
+  assert.equal(compras[0].materiales[0].producto, '')
+  // Productos sin categoría no se aceptan
+  assert.equal((await pedir(`${base}/catalogo/material/Queso`, 'PUT', { categoria: '', productos: ['Todos'] })).status, 400)
+})
+
+test('una compra de un artículo sin datos se guarda sin inventar nada, y su respaldo se vuelve a cargar', async t => {
+  const base = await levantar(t)
+  const guardada = await pedir(`${base}/compras`, 'POST', {
+    proveedor: 'Tienda nueva', fecha: '2026-10-02', categoria: '',
+    materiales: [{ material: 'Sal de mar', cantidad: 1, unidad: 'kg', monto: 2, categoria: '', producto: '' }],
+  })
+  assert.equal(guardada.status, 201)
+  let cat = await catalogo(base)
+  const material = cat.materiales.find(m => m.nombre === 'Sal de mar')
+  assert.equal(material.categoria, '')
+  assert.equal(material.producto, '')
+  assert.equal(cat.uso.material['sal de mar'], 1)
+  assert.ok(!cat.categorias.includes(''))
+  assert.ok(!Object.values(cat.proveedoresPorCategoria).flat().includes('Tienda nueva'))
+
+  const cargado = await pedir(`${base}/catalogo/material/importar`, 'POST', {
+    filas: [{ nombre: 'Sal de mar', categoria: '', productos: [] }, { nombre: 'Sin nada', categoria: '', productos: [] }],
+  })
+  assert.equal(cargado.status, 200)
+  assert.equal(cargado.cuerpo.nuevos, 1)
+  cat = await catalogo(base)
+  assert.equal(cat.materiales.find(m => m.nombre === 'Sin nada').categoria, '')
+  assert.ok(!cat.categorias.includes(''))
+})
+
+test('crear un artículo nuevo con un nombre ya registrado da 409 en el campo nombre y no lo cambia', async t => {
+  const base = await levantar(t)
+  const crear = nombre => pedir(`${base}/catalogo/materiales/${encodeURIComponent(nombre)}`, 'PUT', {
+    categoria: 'Limpieza', productos: ['Todos'], nuevo: true,
+  })
+  assert.equal((await crear('Harina PAN')).status, 200)
+  const repetido = await crear('harina pan')
+  assert.equal(repetido.status, 409)
+  assert.equal(repetido.cuerpo.campo, 'nombre')
+  assert.match(repetido.cuerpo.error, /Harina PAN/)
+})
+
+test('editar un artículo desde una compra: renombra en el catálogo y en sus compras, y liga la categoría con el proveedor', async t => {
+  const base = await levantar(t)
+  await pedir(`${base}/compras`, 'POST', {
+    proveedor: 'Walmart', fecha: '2026-10-02',
+    materiales: [{ material: 'Servilletas', cantidad: 1, unidad: 'caja', monto: 3, categoria: 'Desechables', producto: 'Todos' }],
+  })
+
+  const editado = await pedir(`${base}/catalogo/material/Servilletas`, 'PUT', {
+    nombre: 'Servilletas finas', categoria: 'Limpieza', productos: ['Cachitos'], proveedor: 'Walmart',
+  })
+  assert.equal(editado.status, 200)
+  assert.equal(editado.cuerpo.anterior, 'Servilletas')
+  assert.equal(editado.cuerpo.compras, 1)
+
+  const cat = await catalogo(base)
+  assert.ok(cat.proveedoresPorCategoria.limpieza.includes('Walmart'))
+  assert.ok(!cat.materiales.some(m => m.nombre === 'Servilletas'))
+  const { cuerpo: compras } = await pedir(`${base}/compras`)
+  const fila = compras.flatMap(c => c.materiales).find(m => m.material === 'Servilletas finas')
+  assert.equal(fila.categoria, 'Limpieza')
+  assert.equal(fila.producto, 'Cachitos')
+
+  // Renombrar con el nombre de otro: 409 en el campo nombre
+  await pedir(`${base}/catalogo/materiales/Sal`, 'PUT', { categoria: 'Limpieza', productos: ['Todos'] })
+  const choque = await pedir(`${base}/catalogo/material/${encodeURIComponent('Servilletas finas')}`, 'PUT', { nombre: 'sal' })
+  assert.equal(choque.status, 409)
+  assert.equal(choque.cuerpo.campo, 'nombre')
 })
 
 test('una base nueva trae del Excel qué categorías surte cada proveedor', async t => {

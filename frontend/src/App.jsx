@@ -132,7 +132,7 @@ function AppContenido() {
             <Route
               path="/"
               element={protegida('/', (
-                <AgregarCompra />
+                <AgregarCompra puedeEditarArticulo={tieneFuncion('catalogo.editar')} />
               ))}
             />
             <Route path="/compras" element={protegida('/compras', (
@@ -142,6 +142,7 @@ function AppContenido() {
                 puedeCargar={tienePermiso('/cargar')}
                 puedeEditar={tieneFuncion('compras.editar')}
                 puedeEliminar={tieneFuncion('compras.eliminar')}
+                puedeEditarArticulo={tieneFuncion('catalogo.editar')}
               />
             ))} />
             <Route path="/catalogo" element={protegida('/catalogo', <PantallaCatalogo acciones={accionesCatalogo} />)} />

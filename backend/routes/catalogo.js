@@ -10,14 +10,17 @@
  *                                               proveedoresPorCategoria: { categoría: [proveedores] } }
  *   PUT    /api/catalogo/materiales/:nombre → asigna { categoria, producto } a un material
  *                                             (lo crea si no existe; usado al registrar compras).
- *                                             Con `proveedor`, la categoría queda ligada a ese proveedor
- *   POST   /api/catalogo/:tipo              → agrega { nombre } (material: + categoria y producto;
+ *                                             Con `proveedor`, la categoría queda ligada a ese proveedor.
+ *                                             Con `nuevo: true`, 409 si ya existe. Sin catalogo.editar solo
+ *                                             se completa lo que le falte (403 si cambia lo ya asignado)
+ *   POST   /api/catalogo/:tipo              → agrega { nombre } (material: + categoria y producto opcional;
  *                                             categoría o producto: + materiales opcional;
  *                                             categoría: + proveedores opcional)
  *   PUT    /api/catalogo/:tipo/:nombre      → cambia el nombre (y, en un material, su categoría y
  *                                             producto; en una categoría o un producto, sus
  *                                             materiales; en una categoría, sus proveedores)
- *                                             y lo actualiza en todas las compras
+ *                                             y lo actualiza en todas las compras. Un material acepta
+ *                                             `proveedor`: la categoría queda ligada a ese proveedor
  *   DELETE /api/catalogo/:tipo/:nombre      → quita la opción; las compras conservan su texto
  *   POST   /api/catalogo/:tipo/importar     → carga { filas } de un respaldo de la sección (shared/catalogo-json.js):
  *                                             crea lo que falta y actualiza lo que existe, sin borrar nada.
@@ -34,7 +37,8 @@
  */
 
 import { Router } from 'express'
-import { enTransaccion, leerProveedoresPorCategoria, registrarEnCatalogo, vincularProveedorCategoria } from '../db.js'
+import { buscarEnCatalogo, enTransaccion, leerProveedoresPorCategoria, registrarEnCatalogo, vincularProveedorCategoria } from '../db.js'
+import { cumple } from '../permisos.js'
 import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../shared/productos.js'
@@ -50,7 +54,12 @@ const texto = v => (typeof v === 'string' ? v.trim() : '')
 
 /** Cuántas compras usan cada proveedor o material, y cuántos materiales cada categoría o producto */
 function leerUso(db) {
-  const contar = filas => Object.fromEntries(filas.map(f => [f.k.toLowerCase(), f.n]))
+  // Se suman: «AZÚCAR» y «Azúcar» son dos grupos para SQLite y una sola clave aquí
+  const contar = filas => filas.reduce((uso, f) => {
+    const k = f.k.toLowerCase()
+    uso[k] = (uso[k] ?? 0) + f.n
+    return uso
+  }, {})
   const enCompras = campo => contar(db.prepare(
     `SELECT ${campo} AS k, COUNT(DISTINCT compra_id) AS n FROM ingresos WHERE ${campo} != '' GROUP BY ${campo} COLLATE NOCASE`
   ).all())
@@ -127,9 +136,7 @@ export function leerCatalogo(db) {
   }
 }
 
-function buscar(db, tipo, nombre) {
-  return db.prepare('SELECT nombre, categoria, producto FROM catalogo WHERE tipo = ? AND nombre = ? COLLATE NOCASE').get(tipo, nombre)
-}
+const buscar = buscarEnCatalogo
 
 /** Error con código HTTP, para responder 400/404/409 desde dentro de una transacción */
 function fallo(status, mensaje) {
@@ -148,7 +155,8 @@ function leerProductos(cuerpo) {
  * propaga a sus compras. Devuelve { cat, producto (texto), productosNuevos }
  */
 function asignar(db, material, categoria, productos) {
-  const cat = registrarEnCatalogo(db, 'categoria', categoria)
+  // Un respaldo puede traer un artículo sin categoría: no se crea una categoría en blanco
+  const cat = categoria ? registrarEnCatalogo(db, 'categoria', categoria) : { nombre: '', nuevo: false }
   const registrados = listaProductos(productos).map(p => registrarEnCatalogo(db, 'producto', p))
   const producto = textoProductos(registrados.map(p => p.nombre))
   db.prepare("UPDATE catalogo SET categoria = ?, producto = ? WHERE tipo = 'material' AND nombre = ?")
@@ -292,7 +300,7 @@ function importarFilas(db, tipo, filas) {
       if (!fichaVacia(ficha)) guardarFicha(db, nombre, ficha)
     } else if (tipo === 'material') {
       const actual = buscar(db, 'material', nombre)
-      asignar(db, nombre, fila.categoria, [...listaProductos(actual?.producto), ...fila.productos])
+      asignar(db, nombre, fila.categoria || actual?.categoria || '', [...listaProductos(actual?.producto), ...fila.productos])
     } else {
       if (tipo === 'categoria') {
         // Suma los proveedores del archivo; los que no existen se omiten
@@ -348,7 +356,17 @@ export function crearRutasCatalogo(getDb) {
 
     responder(res, db => enTransaccion(db, () => {
       const productos = leerProductos(req.body)
-      if (!productos.length) throw fallo(400, 'Elige al menos un producto')
+      const existente = buscar(db, 'material', material)
+      // Crear un artículo nuevo nunca se funde con otro que ya se llame igual
+      if (req.body?.nuevo === true && existente) {
+        throw Object.assign(fallo(409, `Ya existe un artículo llamado «${existente.nombre}»`), { campo: 'nombre' })
+      }
+      // Sin catalogo.editar solo se completa lo que falta: cambiar lo ya asignado es editar el catálogo
+      if (existente && !cumple(req.usuario, { funciones: ['catalogo.editar'] })) {
+        const cambiaCategoria = existente.categoria && existente.categoria.toLowerCase() !== categoria.toLowerCase()
+        const cambiaProductos = existente.producto && existente.producto.toLowerCase() !== textoProductos(productos).toLowerCase()
+        if (cambiaCategoria || cambiaProductos) throw fallo(403, 'No tienes permiso para hacer esto.')
+      }
       const mat = registrarEnCatalogo(db, 'material', material)
       const { categoria: c, producto, productos: lista, ...nuevos } = respuestaAsignacion(asignar(db, mat.nombre, categoria, productos))
       // El artículo se le compra a este proveedor: su categoría pasa a ser de él
@@ -382,7 +400,6 @@ export function crearRutasCatalogo(getDb) {
 
     responder(res, db => enTransaccion(db, () => {
       const productos = tipo === 'material' ? leerProductos(req.body) : []
-      if (tipo === 'material' && !productos.length) throw fallo(400, 'Elige al menos un producto')
       const materiales = conMateriales(tipo) ? leerMateriales(req.body) : undefined
       const proveedores = tipo === 'categoria' ? leerProveedores(req.body) : undefined
       const existente = buscar(db, tipo, nombre)
@@ -413,9 +430,8 @@ export function crearRutasCatalogo(getDb) {
 
     responder(res, db => enTransaccion(db, () => {
       const productos = tipo === 'material' ? leerProductos(req.body) : []
-      if (tipo === 'material' && (categoria === '') !== (productos.length === 0)) {
-        throw fallo(400, categoria ? 'Elige al menos un producto' : 'Elige una categoría')
-      }
+      // Los productos son opcionales; sin categoría ni productos solo cambia el nombre
+      if (tipo === 'material' && !categoria && productos.length > 0) throw fallo(400, 'Elige una categoría')
       const materiales = conMateriales(tipo) ? leerMateriales(req.body) : undefined
       const proveedores = tipo === 'categoria' ? leerProveedores(req.body) : undefined
       const ficha = tipo === 'proveedor' ? fichaDelCuerpo(req.body) : undefined
@@ -423,7 +439,8 @@ export function crearRutasCatalogo(getDb) {
       if (!registro) throw fallo(404, `No existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${actual}»`)
       const choque = buscar(db, tipo, nuevo)
       if (choque && choque.nombre.toLowerCase() !== registro.nombre.toLowerCase()) {
-        throw fallo(409, `Ya existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${choque.nombre}»`)
+        const error = fallo(409, `Ya existe ${ARTICULO[tipo]} ${NOMBRE_TIPO[tipo]} llamado «${choque.nombre}»`)
+        throw tipo === 'material' ? Object.assign(error, { campo: 'nombre' }) : error
       }
 
       // Nuevo nombre en el catálogo y en todas las compras
@@ -443,7 +460,12 @@ export function crearRutasCatalogo(getDb) {
       }
 
       let asignacion = { categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
-      if (tipo === 'material' && categoria) asignacion = respuestaAsignacion(asignar(db, nuevo, categoria, productos))
+      if (tipo === 'material' && categoria) {
+        asignacion = respuestaAsignacion(asignar(db, nuevo, categoria, productos))
+        // Editado desde una compra: la categoría elegida también queda como del proveedor de esa compra
+        const proveedor = texto(req.body?.proveedor)
+        if (proveedor) vincularProveedorCategoria(db, proveedor, asignacion.categoria)
+      }
       const cambiados = materiales ? fijarMateriales(db, tipo, nuevo, materiales) : 0
       if (proveedores) fijarProveedores(db, nuevo, proveedores)
       if (ficha) guardarFicha(db, nuevo, ficha)
