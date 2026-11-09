@@ -9,6 +9,7 @@ Aplicación web local para que **De Panas**, un negocio de comida venezolana, re
 - Restricciones: sin presupuesto para hosting ni dominio, todo en dólares y funcionando en la red local (computadora + tablet), sin internet.
 - Lo levantamos conversando con César y lo validamos con él en una llamada el 25/09/2026. Detalle en [Documento de descubrimiento](Documento%20de%20descubrimiento%20-%20De%20Panas.pdf) y [Documento de requerimientos](Documento%20de%20requerimientos%20-%20De%20Panas.pdf).
 - El negocio ya llevaba sus compras en un Excel (`Datos De Panas.xlsx`). Sus listas de proveedores, categorías, materiales y productos son el catálogo inicial de la app.
+- Probamos el programa con el cliente el 13/10/2026 y el 29/10/2026. Las decisiones de cada sesión están en [Pruebas de usuario](docs/PRUEBAS_USUARIO.md).
 
 ## Funcionalidades
 
@@ -171,11 +172,12 @@ Más detalle en [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) y [docs/DECISIONS.md]
 
 ## Equipo FORGE
 
-| Integrante | GitHub | Rol |
-|---|---|---|
-| Gabriel Valencia | [@Gabrielvalen08](https://github.com/Gabrielvalen08) | [COMPLETAR: rol] |
-| Soham Villacorta | [@casoham](https://github.com/casoham) | [COMPLETAR: rol] |
-| Alejandro Salgado | [@alsalgado-24](https://github.com/alsalgado-24) | [COMPLETAR: rol] |
+| Integrante | GitHub | Rol | Aportes principales |
+|---|---|---|---|
+| Gabriel Valencia | [@Gabrielvalen08](https://github.com/Gabrielvalen08) | Formulario de compras y entrega al cliente | El .zip con el Node.js oficial para que Windows lo deje abrir, la corrección de seguridad de la API, el monto editable que calcula el precio, el «+» y el lápiz del artículo, el aviso de nombres parecidos y los artículos por proveedor |
+| Pedro Rodríguez | [@PedroR007102](https://github.com/PedroR007102) | Datos y catálogo | La ficha del proveedor, un artículo en varios productos, exportar y cargar cada sección del catálogo, el precio tipo cajero, la validación campo por campo y el IVA |
+| Alejandro Salgado | [@alsalgado-24](https://github.com/alsalgado-24) | Usuarios, seguridad y calidad | El gestor de usuarios con hash, los requisitos de contraseña, los roles y permisos por función, las pruebas automáticas con Playwright, la vista de teléfono y el aviso antes de perder datos |
+| Soham Villacorta | [@casoham](https://github.com/casoham) | Enlace con el cliente e integración | Las reuniones del 13/10 y el 29/10, las pruebas con César y Marta, el paso de Configuración a Catálogo, la pantalla de Cargar con la comparación de versiones, la revisión y fusión de PRs (#8, #18, #19 y #25) y la integración de las ramas de cambios |
 
 ## Estado y próximos pasos
 
