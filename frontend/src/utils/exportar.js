@@ -10,8 +10,8 @@ import { respaldoCatalogo } from '../../../shared/catalogo-json.js'
  * Y los de cada sección del Catálogo (Exportar de su menú ⋮): Excel y respaldo .json.
  */
 
-const COLUMNAS = ['Fecha', 'Proveedor', 'Artículo', 'Cantidad', 'Unidad', 'Monto', 'Categoría', 'Producto']
-const ANCHOS = [12, 22, 28, 10, 10, 12, 18, 24]
+const COLUMNAS = ['Fecha', 'Proveedor', 'Artículo', 'Cantidad', 'Unidad', 'Monto', 'IVA', 'Categoría', 'Producto']
+const ANCHOS = [12, 22, 28, 10, 10, 12, 10, 18, 24]
 
 const porFecha = compras => [...compras].sort((a, b) => a.fecha.localeCompare(b.fecha))
 
@@ -33,13 +33,16 @@ async function libroExcel(hoja, encabezados, filas, anchos) {
 export function comprasAXlsx(compras) {
   const filas = []
   for (const c of porFecha(compras)) {
-    for (const m of c.materiales) {
+    c.materiales.forEach((m, i) => {
       filas.push([
         // La fecha va como texto ISO: un valor de fecha de Excel podría correrse un día por la zona horaria
         texto(c.fecha), texto(c.proveedor), texto(m.material), numero(m.cantidad), texto(m.unidad),
-        numero(m.monto, '#,##0.00'), texto(m.categoria), texto(m.producto),
+        numero(m.monto, '#,##0.00'),
+        // El IVA es de la compra: solo en su primera fila, para que sumar la columna dé el IVA real
+        i === 0 ? numero(c.iva, '#,##0.00') : null,
+        texto(m.categoria), texto(m.producto),
       ])
-    }
+    })
   }
   return libroExcel('Compras', COLUMNAS, filas, ANCHOS)
 }
@@ -52,6 +55,7 @@ export function comprasAJson(compras) {
     proveedor: c.proveedor,
     fecha: c.fecha,
     categoria: c.categoria ?? '',
+    iva: c.iva ?? 0,
     materiales: c.materiales.map(({ material, cantidad, unidad, monto, categoria, producto }) => ({
       material, cantidad, unidad, monto, categoria: categoria ?? '', producto: producto ?? '',
     })),

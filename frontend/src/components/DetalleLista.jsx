@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { Pencil, ShoppingCart, Trash2 } from 'lucide-react'
 import BloqueCompra from './BloqueCompra'
 import { Boton, ConfirmDialog, CuerpoModal, Modal, PieModal } from './common'
-import { actualizarLista, eliminarLista, totalLista } from '../services/api'
+import { actualizarLista, eliminarLista, subtotalLista, totalLista } from '../services/api'
+import { ivaDe } from '../../../shared/iva.js'
 import { useToast } from '../context/ToastContext'
 import { useCierreConAviso } from '../context/DatosSinGuardarContext'
 import { formatearFechaTexto, formatearPrecio } from '../utils/formato'
-import { COMPRA } from '../utils/mensajes'
+import { COMPRA, IVA } from '../utils/mensajes'
 import estilos from './DetalleLista.module.css'
 
 /**
@@ -100,7 +101,15 @@ export default function DetalleLista({ lista, alCerrar, alCambio, puedeEditar = 
                 </tbody>
                 <tfoot>
                   <tr>
-                    <th scope="row" colSpan={2}>Cost</th>
+                    <th scope="row" colSpan={2}>{IVA.subtotal}</th>
+                    <td className={estilos.numerico}>{formatearPrecio(subtotalLista(lista))}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" colSpan={2}>{IVA.titulo}</th>
+                    <td className={estilos.numerico}>{formatearPrecio(ivaDe(lista))}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" colSpan={2}>{IVA.total}</th>
                     <td className={`${estilos.numerico} ${estilos.total}`}>{formatearPrecio(totalLista(lista))}</td>
                   </tr>
                 </tfoot>

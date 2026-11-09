@@ -33,6 +33,7 @@ vi.mock('./services/api', () => ({
   getAsignacion: m => ({ existe: false, nombre: m, categoria: '', producto: '' }),
   necesitaAsignacion: () => false,
   getPrecioSugerido: () => null,
+  getIvaPorProveedor: () => false,
   asignarMaterial: vi.fn(),
   fetchCatalogo: () => Promise.resolve({ proveedores: ['Selectos'], categorias: [], productos: [], materiales: [], uso: {}, fichas: {} }),
   iniciarSesion: async (usuario, contrasena) => {

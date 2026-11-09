@@ -2,7 +2,8 @@ import { ArrowLeftRight, Check, Undo2, X } from 'lucide-react'
 import { Boton, Insignia, Tarjeta } from './common'
 import { totalLista } from '../services/api'
 import { formatearFecha, formatearPrecio } from '../utils/formato'
-import { CARGAR } from '../utils/mensajes'
+import { CARGAR, IVA } from '../utils/mensajes'
+import { ivaDe } from '../../../shared/iva.js'
 import estilos from './CompararCompra.module.css'
 
 const ATRIBUTOS = [
@@ -113,13 +114,21 @@ function Resumen({ compra, otra }) {
 
 /**
  * Una compra que ya existe y llega con cambios: la guardada frente a la del
- * archivo. Se marcan las filas que se quedan y de dónde salen proveedor y fecha.
+ * archivo. Se marcan las filas que se quedan y de dónde salen proveedor, fecha e IVA.
  */
 export default function CompararCompra({ comparacion, decision, alCambiar, ocupado }) {
   const { existente, entrante, origen } = comparacion
   const descartada = decision.accion === 'omitir'
   const materiales = [...decision.existentes.map(i => existente.materiales[i]), ...decision.entrantes.map(i => entrante.materiales[i])]
-  const final = { proveedor: comparacion[decision.proveedor].proveedor, fecha: comparacion[decision.fecha].fecha, materiales }
+  const final = {
+    proveedor: comparacion[decision.proveedor].proveedor, fecha: comparacion[decision.fecha].fecha,
+    iva: ivaDe(comparacion[decision.iva ?? 'existente']), materiales,
+  }
+  // El IVA solo se ofrece si alguna de las dos lo lleva
+  const campos = ivaDe(existente) > 0 || ivaDe(entrante) > 0 ? ['proveedor', 'fecha', 'iva'] : ['proveedor', 'fecha']
+  const datoDe = (lado, campo) => (campo === 'iva' ? ivaDe(comparacion[lado]) : comparacion[lado][campo])
+  const textoDe = (lado, campo) =>
+    campo === 'fecha' ? formatearFecha(datoDe(lado, campo)) : campo === 'iva' ? formatearPrecio(datoDe(lado, campo)) : datoDe(lado, campo)
 
   return (
     <Tarjeta titulo={`${CARGAR.comparar}: ${existente.proveedor}`} icono={<ArrowLeftRight />} franja>
@@ -157,13 +166,13 @@ export default function CompararCompra({ comparacion, decision, alCambiar, ocupa
         </div>
 
         <div className={estilos.datos}>
-          {['proveedor', 'fecha'].map(campo => (
+          {campos.map(campo => (
             <fieldset key={campo} className={estilos.grupo} disabled={ocupado || descartada}>
-              <legend className={estilos.legenda}>{CARGAR[campo]}</legend>
+              <legend className={estilos.legenda}>{campo === 'iva' ? IVA.titulo : CARGAR[campo]}</legend>
               {['existente', 'entrante'].map(lado => {
-                const valor = campo === 'fecha' ? formatearFecha(comparacion[lado][campo]) : comparacion[lado][campo]
-                const activa = decision[campo] === lado
-                const distinto = comparacion.existente[campo] !== comparacion.entrante[campo]
+                const valor = textoDe(lado, campo)
+                const activa = (decision[campo] ?? 'existente') === lado
+                const distinto = datoDe('existente', campo) !== datoDe('entrante', campo)
                 return (
                   <label key={lado} className={[estilos.opcion, activa && estilos.opcionActiva].filter(Boolean).join(' ')}>
                     <input

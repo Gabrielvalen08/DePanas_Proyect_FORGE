@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import { reiniciarModo } from '../services/api'
-import { PANTALLA_CATALOGO, CONFIRMAR } from '../utils/mensajes'
+import { PANTALLA_CATALOGO, CONFIRMAR, ASIGNACION } from '../utils/mensajes'
 import PantallaCatalogo from './PantallaCatalogo'
 
 // Usa api.js real en modo local (sin servidor), sobre localStorage
@@ -321,7 +321,7 @@ describe('PantallaCatalogo', () => {
     })
   })
 
-  it('una categoría elige los proveedores que la surten (solo entre los que existen) y la tabla los muestra', async () => {
+  it('una categoría elige los proveedores que la surten, puede crear uno nuevo con coma y la tabla los muestra', async () => {
     const usuario = userEvent.setup()
     renderizar('/catalogo/categorias')
     const tabla = await screen.findByRole('table')
@@ -333,10 +333,12 @@ describe('PantallaCatalogo', () => {
     const grupo = within(ventana).getByRole('group', { name: PANTALLA_CATALOGO.etiquetaProveedores })
     expect(within(grupo).getByText(PANTALLA_CATALOGO.ayudaProveedores)).toBeInTheDocument()
 
-    // No se crean proveedores desde aquí
-    await usuario.type(within(grupo).getByRole('textbox', { name: 'Buscar proveedor' }), 'Nadie')
-    expect(within(grupo).queryByRole('button', { name: /Agregar «Nadie»/ })).not.toBeInTheDocument()
-    await usuario.clear(within(grupo).getByRole('textbox', { name: 'Buscar proveedor' }))
+    // Un proveedor nuevo se escribe aquí; a diferencia de un producto, su nombre puede llevar comas
+    const buscador = within(grupo).getByRole('textbox', { name: 'Buscar o agregar proveedor' })
+    expect(buscador).toHaveAttribute('placeholder', 'Buscar o escribir proveedor nuevo…')
+    await usuario.type(buscador, 'Distribuidora X, S.A.')
+    expect(within(grupo).getByText(ASIGNACION.noExiste('Distribuidora X, S.A.', false, true))).toBeInTheDocument()
+    await usuario.click(within(grupo).getByRole('button', { name: 'Agregar «Distribuidora X, S.A.»' }))
 
     await usuario.click(within(grupo).getByRole('button', { name: 'MMAG' }))
     expect(within(grupo).getByRole('button', { name: /MMAG/ })).toHaveAttribute('aria-pressed', 'true')
@@ -346,7 +348,10 @@ describe('PantallaCatalogo', () => {
     await waitFor(() => {
       const actualizada = screen.getByRole('rowheader', { name: 'Servicios' }).closest('tr')
       expect(within(actualizada).getByText(/MMAG/)).toBeInTheDocument()
+      expect(within(actualizada).getByText(/Distribuidora X, S\.A\./)).toBeInTheDocument()
     })
+    await usuario.click(screen.getByRole('link', { name: /Proveedores/ }))
+    expect(await screen.findByRole('rowheader', { name: 'Distribuidora X, S.A.' })).toBeInTheDocument()
   })
 
   it('el buscador filtra sin distinguir tildes', async () => {

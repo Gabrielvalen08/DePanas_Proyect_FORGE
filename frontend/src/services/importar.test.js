@@ -25,7 +25,7 @@ it('exportación e importación local conservan todos los atributos y omiten una
   expect(listas).toHaveLength(1)
   expect(listas[0].origen_id).toBe(compra.id)
   const exportadas = JSON.parse(comprasAJson(listas))
-  for (const c of exportadas) expect({ ...c, id: compra.id }).toEqual({ ...compra, origen_id: compra.id })
+  for (const c of exportadas) expect({ ...c, id: compra.id }).toEqual({ ...compra, iva: 0, origen_id: compra.id })
 })
 it('envía compras completas al servidor y propaga sus errores sin escribir datos locales', async () => {
   const fetch = vi.fn(async url => url.endsWith('/health') ? Response.json({ ok: true }) : Response.json({ error: 'No se pudo guardar' }, { status: 500 }))

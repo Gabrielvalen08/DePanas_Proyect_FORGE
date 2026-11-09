@@ -91,7 +91,7 @@ export default function PantallaCargar() {
           setDecisiones(conflictos.map(c => ({
             origen: c.origen, base: contenidoCompra(c.existente), accion: 'combinar',
             existentes: c.existente.materiales.map((_, i) => i), entrantes: [],
-            proveedor: 'existente', fecha: 'existente',
+            proveedor: 'existente', fecha: 'existente', iva: 'existente',
           })))
           // Hay que decidir qué hacer con las que cambiaron: se queda en la pantalla
           registro.terminar(false)

@@ -120,6 +120,19 @@ function guardarFicha(db, nombre, ficha) {
     .run(fichaVacia(ficha) ? '' : JSON.stringify(ficha), nombre)
 }
 
+/**
+ * ¿La última compra de cada proveedor llevó IVA? (la de fecha más reciente y, a igual
+ * fecha, la registrada después). Claves en minúsculas, armadas aquí y no con COLLATE
+ * NOCASE, que solo ignora mayúsculas ASCII. Una compra sin IVA o anterior a él da false.
+ */
+function leerIvaPorProveedor(db) {
+  const ultimo = {}
+  for (const f of db.prepare('SELECT proveedor, compra_iva FROM ingresos ORDER BY fecha ASC, id ASC').all()) {
+    ultimo[f.proveedor.trim().toLowerCase()] = f.compra_iva > 0
+  }
+  return ultimo
+}
+
 export function leerCatalogo(db) {
   const nombres = tipo => ordenar(db.prepare('SELECT nombre FROM catalogo WHERE tipo = ?').all(tipo).map(f => f.nombre))
   return {
@@ -131,6 +144,7 @@ export function leerCatalogo(db) {
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
     uso: leerUso(db),
     precios: leerPrecios(db),
+    ivaPorProveedor: leerIvaPorProveedor(db),
     fichas: leerFichas(db),
     proveedoresPorCategoria: leerProveedoresPorCategoria(db),
   }
@@ -266,18 +280,25 @@ function leerProveedores(cuerpo) {
   return cuerpo.proveedores.map(texto).filter(p => p && !vistos.has(p.toLowerCase()) && vistos.add(p.toLowerCase()))
 }
 
-/** Deja en la categoría exactamente esos proveedores (que deben existir) */
-function fijarProveedores(db, categoria, proveedores) {
+/**
+ * Deja en la categoría exactamente esos proveedores. Los que no existen se crean con la
+ * ficha vacía (en la misma transacción) si `puedeCrear`; si no, se rechaza el nombre.
+ */
+function fijarProveedores(db, categoria, proveedores, puedeCrear) {
   const registrados = proveedores.map(p => {
     const prov = buscar(db, 'proveedor', p)
-    if (!prov) throw Object.assign(fallo(400, `No existe un proveedor llamado «${p}»`), { campo: 'proveedores' })
-    return prov.nombre
+    if (prov) return prov.nombre
+    if (!puedeCrear) throw Object.assign(fallo(400, `No existe un proveedor llamado «${p}»`), { campo: 'proveedores' })
+    return registrarEnCatalogo(db, 'proveedor', p).nombre
   })
   db.prepare(
     "DELETE FROM proveedor_categoria WHERE categoria_id = (SELECT id FROM catalogo WHERE tipo = 'categoria' AND nombre = ?)"
   ).run(categoria)
   for (const proveedor of registrados) vincularProveedorCategoria(db, proveedor, categoria)
 }
+
+/** Crear un proveedor al guardar una categoría pide el mismo permiso que agregarlo en el Catálogo */
+const puedeCrearProveedor = req => cumple(req.usuario, { funciones: ['catalogo.agregar'] })
 
 /** Proveedores ya ligados a una categoría */
 const proveedoresDe = (db, categoria) => leerProveedoresPorCategoria(db)[categoria.toLowerCase()] ?? []
@@ -412,7 +433,7 @@ export function crearRutasCatalogo(getDb) {
       }
       if (tipo !== 'material') {
         const cambiados = materiales ? fijarMateriales(db, tipo, nombre, materiales) : 0
-        if (proveedores) fijarProveedores(db, nombre, proveedores)
+        if (proveedores) fijarProveedores(db, nombre, proveedores, puedeCrearProveedor(req))
         const extra = tipo === 'categoria' ? { proveedores: proveedoresDe(db, nombre) } : {}
         return { nombre, materiales: cambiados, ...extra, categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
       }
@@ -467,7 +488,7 @@ export function crearRutasCatalogo(getDb) {
         if (proveedor) vincularProveedorCategoria(db, proveedor, asignacion.categoria)
       }
       const cambiados = materiales ? fijarMateriales(db, tipo, nuevo, materiales) : 0
-      if (proveedores) fijarProveedores(db, nuevo, proveedores)
+      if (proveedores) fijarProveedores(db, nuevo, proveedores, puedeCrearProveedor(req))
       if (ficha) guardarFicha(db, nuevo, ficha)
       const guardado = buscar(db, tipo, nuevo)
       const extra = tipo === 'material'

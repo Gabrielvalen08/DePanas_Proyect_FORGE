@@ -18,12 +18,31 @@ const COMPRAS = [
 describe('exportar', () => {
   it('Excel: encabezados del Excel del negocio, una fila por artículo ordenada por fecha, cada dato en su columna', async () => {
     const filas = await readSheet(await comprasAXlsx(COMPRAS))
-    expect(filas[0]).toEqual(['Fecha', 'Proveedor', 'Artículo', 'Cantidad', 'Unidad', 'Monto', 'Categoría', 'Producto'])
+    expect(filas[0]).toEqual(['Fecha', 'Proveedor', 'Artículo', 'Cantidad', 'Unidad', 'Monto', 'IVA', 'Categoría', 'Producto'])
     expect(filas).toHaveLength(4)
     // Cantidad y monto son números (se pueden sumar en Excel); las comas y comillas del texto no parten la celda
-    expect(filas[1]).toEqual(['2026-08-04', 'Selectos', 'Tocino La Rioja', 1, 'lb', 2.69, 'Materia Prima', 'Cachitos'])
-    expect(filas[2]).toEqual(['2026-08-04', 'Selectos', 'Bolsa al Vacio 8*12, "grande"', 1, 'unidad', 17, 'Desechables', 'Tequeños'])
+    expect(filas[1]).toEqual(['2026-08-04', 'Selectos', 'Tocino La Rioja', 1, 'lb', 2.69, 0, 'Materia Prima', 'Cachitos'])
+    expect(filas[2]).toEqual(['2026-08-04', 'Selectos', 'Bolsa al Vacio 8*12, "grande"', 1, 'unidad', 17, null, 'Desechables', 'Tequeños'])
     expect(filas[3].slice(0, 3)).toEqual(['2026-08-27', 'Pepsi', 'Agua'])
+  })
+
+  it('Excel: el IVA va solo en la primera fila de cada compra, para que sumar la columna dé el IVA real', async () => {
+    const compra = (id, fecha, iva) => ({
+      id, proveedor: 'Selectos', fecha, categoria: '', iva,
+      materiales: [
+        { material: 'Arroz', cantidad: 1, unidad: 'lb', monto: 50, categoria: '', producto: '' },
+        { material: 'Sal', cantidad: 1, unidad: 'lb', monto: 50, categoria: '', producto: '' },
+      ],
+    })
+    const filas = await readSheet(await comprasAXlsx([compra('a', '2026-10-01', 13), compra('b', '2026-10-02', 6.5)]))
+    const columna = filas[0].indexOf('IVA')
+    expect(filas.slice(1).map(f => f[columna])).toEqual([13, null, 6.5, null])
+  })
+
+  it('JSON: lleva el IVA de cada compra', () => {
+    const datos = JSON.parse(comprasAJson([{ ...COMPRAS[0], iva: 13 }, COMPRAS[1]]))
+    expect(datos.find(c => c.id === COMPRAS[0].id).iva).toBe(13)
+    expect(datos.find(c => c.id === COMPRAS[1].id).iva).toBe(0)
   })
 
   it('JSON: compras completas sin campos internos, listas para importar', () => {

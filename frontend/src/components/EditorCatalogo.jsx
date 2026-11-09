@@ -208,7 +208,6 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
               titulo={PANTALLA_CATALOGO.etiquetaProveedores}
               nombre="proveedor"
               multiple
-              permitirNuevas={false}
               opciones={todosProveedores}
               valor={proveedores}
               ayuda={PANTALLA_CATALOGO.ayudaProveedores}

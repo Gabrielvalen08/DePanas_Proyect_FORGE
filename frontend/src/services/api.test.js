@@ -11,6 +11,8 @@ import {
   eliminarLista,
   fetchListas,
   asignarMaterial,
+  subtotalLista,
+  getIvaPorProveedor,
   importarCatalogo,
   eliminarDelCatalogo,
   editarEnCatalogo,
@@ -179,7 +181,7 @@ describe('api: modo servidor', () => {
     })
     await fetchCatalogo()
     expect(getMaterialesPorProveedor('pepsi')).toEqual(['Agua'])
-    expect(getMaterialesPorProveedor('Selectos')).toEqual(['Arroz', 'Agua']) // sin categorías: todos, Materia Prima primero
+    expect(getMaterialesPorProveedor('Selectos')).toEqual([]) // sin categorías: ninguno, se escribe a mano
 
     await asignarMaterial('Cafe', { categoria: 'Materia Prima', productos: ['Todos'], proveedor: 'Pepsi' })
     expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ categoria: 'Materia Prima', productos: ['Todos'], proveedor: 'Pepsi' })
@@ -190,7 +192,11 @@ describe('api: modo servidor', () => {
   it('sin modo detectado las sugerencias no traen datos locales; al detectar el servidor ya tienen su catálogo', async () => {
     simularServidor({
       'GET /catalogo': {
-        cuerpo: { proveedores: ['Pepsi'], categorias: ['Bebidas'], productos: ['Todos'], materiales: [{ nombre: 'Agua', categoria: 'Bebidas', producto: 'Todos' }] },
+        cuerpo: {
+          proveedores: ['Pepsi'], categorias: ['Bebidas'], productos: ['Todos'],
+          materiales: [{ nombre: 'Agua', categoria: 'Bebidas', producto: 'Todos' }],
+          proveedoresPorCategoria: { bebidas: ['Pepsi'] },
+        },
       },
     })
     // Tras recargar la página nada pidió datos todavía: no se cuelan los de ejemplo del modo local
@@ -254,6 +260,21 @@ describe('api: modo servidor', () => {
       filas: [{ nombre: 'La Pulpería', ubicacion: '', telefonos: ['7123-4567'], contactos: [] }],
     })
     expect(localStorage.getItem('depanas_catalogo')).toBeNull()
+  })
+
+  it('el IVA va al backend con la compra y getIvaPorProveedor lee lo que calculó', async () => {
+    const llamadas = simularServidor({
+      'POST /compras': { status: 201, cuerpo: { ...COMPRA, iva: 13 } },
+      'GET /catalogo': {
+        cuerpo: { proveedores: [], categorias: [], productos: [], materiales: [], ivaPorProveedor: { walmart: true, mmag: false } },
+      },
+    })
+    const guardada = await guardarLista({ proveedor: 'Walmart', fecha: '2026-10-01', categoria: '', iva: 13, materiales: COMPRA.materiales })
+    expect(llamadas.find(l => l.metodo === 'POST').cuerpo.iva).toBe(13)
+    expect(guardada.iva).toBe(13)
+    await vi.waitFor(() => expect(getIvaPorProveedor(' WALMART ')).toBe(true))
+    expect(getIvaPorProveedor('MMAG')).toBe(false)
+    expect(getIvaPorProveedor('Sin historial')).toBe(false)
   })
 
   it('si el backend rechaza el guardado, el error llega a la UI (no se guarda en local)', async () => {
@@ -383,7 +404,7 @@ describe('api: categoría y producto de cada material (modo local)', () => {
     expect(getCategoriasDeProveedor('Selectos')).toEqual(['Limpieza', 'Materia Prima', 'Material Común'])
   })
 
-  it('getMaterialesPorProveedor da solo los artículos de las categorías del proveedor; sin categorías, todos', async () => {
+  it('getMaterialesPorProveedor da solo los artículos de las categorías del proveedor; sin categorías, ninguno', async () => {
     await agregarAlCatalogo('categoria', { nombre: 'Lácteos', materiales: [], proveedores: [] })
     await agregarAlCatalogo('proveedor', { nombre: 'La Lechería' })
     await editarEnCatalogo('categoria', 'Lácteos', { proveedores: ['la lechería'] })
@@ -391,17 +412,38 @@ describe('api: categoría y producto de cada material (modo local)', () => {
     expect(getCategoriasDeProveedor('La Lechería')).toEqual(['Lácteos'])
     expect(getMaterialesPorProveedor('la lechería')).toEqual(['Queso'])
 
-    const todos = getMaterialesPorProveedor('Proveedor Inexistente')
-    expect(todos).toEqual(expect.arrayContaining(['Agua', 'Tocino La Rioja', 'Pepsi', 'Queso']))
+    expect(getMaterialesPorProveedor('Proveedor Inexistente')).toEqual([])
+    expect(getMaterialesPorProveedor('')).toEqual([])
+
     // Ordenados por categoría: Materia Prima primero
-    expect(todos.indexOf('Tocino La Rioja')).toBeLessThan(todos.indexOf('Agua'))
+    await editarEnCatalogo('categoria', 'Materia Prima', { proveedores: ['La Lechería'] })
+    await editarEnCatalogo('categoria', 'Bebidas', { proveedores: ['La Lechería'] })
+    const varios = getMaterialesPorProveedor('La Lechería')
+    expect(varios).toEqual(expect.arrayContaining(['Agua', 'Tocino La Rioja', 'Queso']))
+    expect(varios.indexOf('Tocino La Rioja')).toBeLessThan(varios.indexOf('Agua'))
   })
 
-  it('proveedores de una categoría: se validan, siguen al renombrar y salen al eliminar', async () => {
-    await expect(agregarAlCatalogo('categoria', { nombre: 'Lácteos', proveedores: ['Nadie'] }))
-      .rejects.toMatchObject({ campo: 'proveedores', message: 'No existe un proveedor llamado «Nadie»' })
-    expect(getCategorias()).not.toContain('Lácteos')
+  it('un proveedor que no existe se crea al guardar la categoría, sin duplicar por mayúsculas y con ficha vacía', async () => {
+    const creada = await agregarAlCatalogo('categoria', { nombre: 'Lácteos', proveedores: ['Distribuidora X, S.A.', 'mmag'] })
+    expect(creada.proveedores).toEqual(['Distribuidora X, S.A.', 'MMAG'])
+    let cat = await fetchCatalogo()
+    expect(cat.proveedores).toContain('Distribuidora X, S.A.')
+    expect(cat.proveedores.filter(p => p.toLowerCase() === 'mmag')).toHaveLength(1)
+    expect(cat.fichas['distribuidora x, s.a.']).toBeUndefined()
 
+    await editarEnCatalogo('categoria', 'Lácteos', { proveedores: ['Otro Nuevo'] })
+    cat = await fetchCatalogo()
+    expect(cat.proveedores).toContain('Otro Nuevo')
+    expect(cat.proveedoresPorCategoria['lácteos']).toEqual(['Otro Nuevo'])
+  })
+
+  it('una lista de proveedores inválida no deja la categoría a medias', async () => {
+    await expect(agregarAlCatalogo('categoria', { nombre: 'Lácteos', proveedores: 'MMAG' }))
+      .rejects.toMatchObject({ campo: 'proveedores' })
+    expect(getCategorias()).not.toContain('Lácteos')
+  })
+
+  it('proveedores de una categoría: siguen al renombrar y salen al eliminar', async () => {
     const r = await agregarAlCatalogo('categoria', { nombre: 'Lácteos', proveedores: ['MMAG', 'selectos'] })
     expect(r.proveedores).toEqual(['MMAG', 'Selectos'])
     await editarEnCatalogo('categoria', 'Lácteos', { nombre: 'Quesos' })
@@ -495,6 +537,55 @@ describe('api: cargar un respaldo de una sección del Catálogo (modo local)', (
   it('un respaldo de otra sección o con filas inválidas se rechaza sin cambiar nada', async () => {
     await expect(importarCatalogo('material', [{ nombre: 'Sal', categoria: 'Bebidas' }, { nombre: '' }])).rejects.toThrow('Fila 2: falta el nombre')
     expect(getAsignacion('Sal').existe).toBe(false)
+  })
+})
+
+describe('api: IVA de las compras (modo local)', () => {
+  beforeEach(() => localStorage.clear())
+
+  const fila = [{ material: 'Arroz', cantidad: 2, unidad: 'lb', monto: 100, categoria: 'Materia Prima', producto: 'Todos' }]
+  const comprar = (proveedor, fecha, iva) => guardarLista({ proveedor, fecha, categoria: '', iva, materiales: fila })
+
+  it('guarda el IVA y el total lo suma; sin IVA vale 0, también al recargar', async () => {
+    const con = await comprar('Tienda Uno', '2026-10-01', 13)
+    expect(con.iva).toBe(13)
+    expect(subtotalLista(con)).toBe(100)
+    expect(totalLista(con)).toBe(113)
+
+    const guardada = (await fetchListas({ proveedor: 'Tienda Uno' }))[0]
+    expect(guardada.iva).toBe(13)
+    expect(totalLista(guardada)).toBe(113)
+
+    const sin = await comprar('Tienda Dos', '2026-10-01', undefined)
+    expect(sin.iva).toBe(0)
+    expect(totalLista(sin)).toBe(100)
+  })
+
+  it('editar una compra cambia su IVA', async () => {
+    const creada = await comprar('Tienda Uno', '2026-10-01', 13)
+    const editada = await actualizarLista(creada.id, { proveedor: 'Tienda Uno', fecha: '2026-10-01', categoria: '', iva: 0, materiales: fila })
+    expect(editada.iva).toBe(0)
+    expect(totalLista(editada)).toBe(100)
+  })
+
+  it('getIvaPorProveedor sigue la última compra por fecha, a igual fecha la registrada después, y sin distinguir mayúsculas', async () => {
+    expect(getIvaPorProveedor('Tienda Uno')).toBe(false)
+    await comprar('Tienda Uno', '2026-10-05', 13)
+    expect(getIvaPorProveedor('  tienda UNO ')).toBe(true)
+
+    await comprar('Tienda Uno', '2026-09-01', 0) // más vieja: no cambia nada
+    expect(getIvaPorProveedor('Tienda Uno')).toBe(true)
+
+    await comprar('Tienda Uno', '2026-10-05', 0) // misma fecha, registrada después
+    expect(getIvaPorProveedor('Tienda Uno')).toBe(false)
+
+    await comprar('ÁNGEL', '2026-10-05', 13)
+    expect(getIvaPorProveedor('ángel')).toBe(true)
+    expect(getIvaPorProveedor('')).toBe(false)
+  })
+
+  it('las compras de antes del IVA cuentan como sin IVA', () => {
+    expect(getIvaPorProveedor('Súper Selectos')).toBe(false)
   })
 })
 

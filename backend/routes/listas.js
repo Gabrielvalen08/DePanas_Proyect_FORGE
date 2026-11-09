@@ -15,6 +15,7 @@ import { Router } from 'express'
 import { randomUUID } from 'crypto'
 import { enTransaccion, registrarCompra } from '../db.js'
 import { leerCatalogo } from './catalogo.js'
+import { ivaValido } from '../../shared/iva.js'
 
 const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/
 
@@ -29,6 +30,7 @@ export function agruparFilas(filas) {
         proveedor: f.proveedor,
         fecha: f.fecha,
         categoria: f.compra_categoria ?? f.categoria ?? '',
+        iva: f.compra_iva ?? 0,
         materiales: [],
       })
     }
@@ -57,6 +59,8 @@ export function validarCompra(cuerpo) {
   if (!proveedor) return { error: 'Falta el proveedor' }
   if (typeof fecha !== 'string' || !FECHA_ISO.test(fecha)) return { error: 'La fecha debe tener el formato AAAA-MM-DD' }
   if (!Array.isArray(materiales) || materiales.length === 0) return { error: 'La compra necesita al menos un artículo' }
+  const iva = cuerpo.iva ?? 0
+  if (!ivaValido(iva)) return { error: 'El IVA debe ser un número mayor o igual a 0' }
 
   const normalizados = []
   for (const [i, m] of materiales.entries()) {
@@ -82,22 +86,23 @@ export function validarCompra(cuerpo) {
       proveedor,
       fecha,
       categoria: typeof cuerpo.categoria === 'string' ? cuerpo.categoria.trim() : '',
+      iva,
       materiales: normalizados,
     },
   }
 }
 
-const COLUMNAS = 'id, origen_id, compra_categoria, compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto'
+const COLUMNAS = 'id, origen_id, compra_categoria, compra_iva, compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto'
 
 function insertarMateriales(db, compraId, compra, origenId = null) {
   const insertar = db.prepare(
-    'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto, origen_id, compra_categoria) ' +
-    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto, origen_id, compra_categoria, compra_iva) ' +
+    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   )
   registrarCompra(db, compra)
   for (const m of compra.materiales) {
     // La categoría es de cada material (como en el Excel); la de la compra queda como respaldo
-    insertar.run(compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, m.categoria || compra.categoria, m.producto, origenId, compra.categoria)
+    insertar.run(compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, m.categoria || compra.categoria, m.producto, origenId, compra.categoria, compra.iva)
   }
 }
 

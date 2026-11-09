@@ -42,11 +42,12 @@ test.describe('Compras', () => {
     const formulario = await llenarCompra(page, { proveedor: 'Selectos', material: 'Azucar', cantidad: 1, precio: 2.5 })
     await formulario.getByRole('button', { name: 'Agregar otra fila' }).click()
     await llenarFila(page, formulario, 2, { material: 'Anis', cantidad: 1, precio: 1.25 })
-    await expect(formulario.getByText('$3.75')).toBeVisible()
+    // Sin IVA, subtotal y total coinciden: se revisa el total, que va al final
+    await expect(formulario.getByText('$3.75').last()).toBeVisible()
 
     await formulario.getByRole('button', { name: 'Eliminar fila 2' }).click()
     await expect(formulario.getByRole('textbox', { name: 'Precio unitario, fila 2' })).toHaveCount(0)
-    await expect(formulario.getByText('$2.50')).toBeVisible()
+    await expect(formulario.getByText('$2.50').last()).toBeVisible()
   })
 
   test('al elegir un proveedor solo se sugieren los artículos de las categorías que surte', async ({ page }) => {
@@ -100,7 +101,7 @@ test.describe('Compras', () => {
     // Un .xlsx real: cada dato en su columna, el monto como número
     expect(descarga.suggestedFilename()).toMatch(/\.xlsx$/)
     const filas = await readSheet(await descarga.path())
-    expect(filas[0]).toEqual(['Fecha', 'Proveedor', 'Artículo', 'Cantidad', 'Unidad', 'Monto', 'Categoría', 'Producto'])
+    expect(filas[0]).toEqual(['Fecha', 'Proveedor', 'Artículo', 'Cantidad', 'Unidad', 'Monto', 'IVA', 'Categoría', 'Producto'])
     expect(filas).toContainEqual(expect.arrayContaining(['MMAG', 'Tocino La Rioja', 5.5]))
 
     // Ver el detalle y eliminar

@@ -187,6 +187,7 @@ function Formulario({ material, proveedor, alGuardar, alSalir, nombreRef, primer
               </div>
             </fieldset>
           )}
+          {(pideCategoria || pideProducto) && <p className={estilos.ayuda}>{ASIGNACION.ayudaBuscador}</p>}
           {pideCategoria && (
             <SelectorOpciones
               titulo="Categoría"
@@ -280,7 +281,7 @@ export function SelectorOpciones({
   const nuevas = elegidas.filter(e => !opciones.some(o => textoBusqueda(o) === textoBusqueda(e)))
   const puedeAgregar = permitirNuevas && Boolean(buscado) && !exacta && !elegidas.some(e => textoBusqueda(e) === buscado)
   // Con nombres de producto la coma separa la lista: no se puede agregar uno con coma
-  const conComa = multiple && busqueda.includes(',')
+  const conComa = multiple && nombre === 'producto' && busqueda.includes(',')
   // Lo escrito (o lo último agregado como nuevo) puede ser un error de dedo de una opción que ya existe
   const porRevisar = !permitirNuevas ? '' : puedeAgregar ? busqueda : nuevas[nuevas.length - 1] ?? ''
   const parecida = nombreParecido(porRevisar, opciones)
@@ -323,7 +324,7 @@ export function SelectorOpciones({
           etiquetaOculta
           placeholder={!permitirNuevas
             ? `Buscar ${nombre}…`
-            : nombre === 'categoría' ? 'Buscar o escribir categoría nueva…' : 'Buscar o escribir producto nuevo…'}
+            : nombre === 'categoría' ? 'Buscar o escribir categoría nueva…' : `Buscar o escribir ${nombre} nuevo…`}
           value={busqueda}
           autoComplete="off"
           aria-describedby={parecida ? `${id}-parecido` : undefined}
@@ -378,7 +379,7 @@ export function SelectorOpciones({
 
       {puedeAgregar && (
         <p className={estilos.aviso} aria-live="polite">
-          {conComa ? ASIGNACION.productoConComa : ASIGNACION.noExiste(busqueda.trim(), nombre === 'categoría')}
+          {conComa ? ASIGNACION.productoConComa : ASIGNACION.noExiste(busqueda.trim(), nombre === 'categoría', nombre === 'proveedor')}
         </p>
       )}
       {error && <p id={`${id}-error`} className={estilos.error} role="alert">{error}</p>}

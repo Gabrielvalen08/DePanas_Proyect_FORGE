@@ -24,8 +24,10 @@ No agregues caídas silenciosas a `localStorage` cuando el backend falla.
 | `fetchCatalogo()` | Catálogo completo recién leído, con `uso` (compras por proveedor/material, materiales por categoría/producto) |
 | `agregarAlCatalogo(tipo, datos)`, `editarEnCatalogo(tipo, nombre, datos)`, `eliminarDelCatalogo(tipo, nombre)` | Catálogo. `tipo`: `proveedor`, `categoria`, `material`, `producto`. Editar renombra también en las compras; eliminar no toca las compras |
 | `getProveedores()`, `getMateriales()`, `getCategorias()`, `getProductos()` | **Síncronas.** Opciones para los desplegables, desde el catálogo (que ya incluye lo de cada compra guardada), sin repetir y en orden alfabético |
+| `getIvaPorProveedor(proveedor)` | **Síncrona.** Si la última compra del proveedor llevó IVA (por fecha y, a igual fecha, la registrada después). Sin historial, `false` |
+| `totalLista(lista)`, `subtotalLista(lista)` | Total de la compra con IVA, y suma de sus montos sin IVA |
 | `getCategoriasDeProveedor(proveedor)` | **Síncrona.** Categorías que surte el proveedor (las que lo tienen en `proveedoresPorCategoria`) |
-| `getMaterialesPorProveedor(proveedor)` | **Síncrona.** Artículos para Agregar compra: solo los de las categorías del proveedor (si no surte ninguna, todos), con «Materia Prima» primero |
+| `getMaterialesPorProveedor(proveedor)` | **Síncrona.** Artículos para Agregar compra: solo los de las categorías del proveedor (si no surte ninguna, ninguno: se escriben a mano), con «Materia Prima» primero |
 | `getAsignacion(material)` | **Síncrona.** `{ existe, nombre, categoria, producto }` del material (`''` en lo que falte) |
 | `articuloIncompleto(material)` | **Síncrona.** `true` si al material le falta la categoría o el producto |
 | `getComprasDeMaterial(material)` | **Síncrona.** En cuántas compras guardadas está. Igual en los dos modos |

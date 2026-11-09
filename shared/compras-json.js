@@ -1,3 +1,5 @@
+import { ivaValido } from './iva.js'
+
 const recortar = v => (typeof v === 'string' ? v.trim() : v)
 
 /** Copia con los textos sin espacios al inicio ni al final (" MMAG " es "MMAG", como al guardar a mano) */
@@ -39,6 +41,8 @@ export function validarComprasJSON(entrada) {
     const fecha = new Date(`${c.fecha}T00:00:00Z`)
     if (!Number.isFinite(fecha.getTime()) || fecha.toISOString().slice(0, 10) !== c.fecha) fallo('fecha inválida')
     if (!texto(c.categoria)) fallo('categoría inválida')
+    // Los respaldos anteriores al IVA no lo traen: cuentan como sin IVA
+    if (c.iva !== undefined && !ivaValido(c.iva)) fallo('IVA inválido')
     if (!Array.isArray(c.materiales) || !c.materiales.length) fallo('la compra necesita artículos')
     for (const [j, m] of c.materiales.entries()) {
       if (!m || !texto(m.material) || !m.material.trim() || !positivo(m.cantidad) || !positivo(m.monto) ||

@@ -44,6 +44,7 @@ vi.mock('../services/api', () => {
   getProductos:         () => ['Cachitos', 'Arepas/Empanadas', 'Todos'],
   getAsignacion:        asignacion,
   getPrecioSugerido:    m => precios.get((m || '').trim().toLowerCase()) ?? null,
+  getIvaPorProveedor:   () => false,
   necesitaAsignacion:   m => Boolean((m || '').trim()) && (!asignacion(m).categoria || !asignacion(m).producto) && !comprasPorArticulo.get(m.trim().toLowerCase()),
   asignarMaterial:      vi.fn(async (nombre, { categoria, productos }) => {
     const previo = asignacion(nombre)
@@ -186,7 +187,7 @@ describe('AgregarCompra', () => {
     await usuario.type(screen.getByLabelText('Precio unitario, fila 2'), '125') // cajero: 1-2-5 → $1.25; 4 × $1.25 = $5.00
     expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('7.00')
     expect(screen.getByLabelText('Monto, fila 2')).toHaveValue('5.00')
-    expect(screen.getByText('$12.00')).toBeInTheDocument()
+    expect(screen.getAllByText('$12.00')).toHaveLength(2) // subtotal y total (sin IVA)
   })
 
   it('al escribir el monto calcula el precio unitario y guarda el monto exacto', async () => {
