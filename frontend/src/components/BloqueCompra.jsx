@@ -4,7 +4,9 @@ import { AlertCircle, Pencil, Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import AsignarMaterial from './AsignarMaterial'
 import { AvisoDestacado, Boton, Campo, CampoMoneda, ConfirmDialog, Selector } from './common'
-import { asignarMaterial, editarEnCatalogo, getAsignacion, getMaterialesPorProveedor, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
+import ResumenCompra from './ResumenCompra'
+import { asignarMaterial, editarEnCatalogo, getAsignacion, getIvaPorProveedor, getMaterialesPorProveedor, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
+import { aCentavos, calcularIva, ivaDe } from '../../../shared/iva.js'
 import { useToast } from '../context/ToastContext'
 import { useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
@@ -76,11 +78,12 @@ function estaVacia(fila) {
   return !fila.material.trim() && !fila.cantidad && !fila.precio && fila.montoOriginal === undefined
 }
 
-/** Lo que se guardaría, para saber si una compra cambió. El IVA (cuando exista) también va aquí */
-function firmaCompra(proveedor, fecha, filas) {
+/** Lo que se guardaría, para saber si una compra cambió. Llevar o no IVA también cuenta */
+function firmaCompra(proveedor, fecha, filas, conIva) {
   return JSON.stringify([
     proveedor.trim(),
     fecha,
+    Boolean(conIva),
     filas.filter(f => !estaVacia(f)).map(f => [f.material.trim(), Number(f.cantidad), f.unidad, montoDe(f)]),
   ])
 }
@@ -155,6 +158,8 @@ export default function BloqueCompra({
   const [proveedor, setProveedor] = useState(inicial?.proveedor ?? '')
   const [fecha, setFecha]         = useState(inicial?.fecha ?? fechaHoyISO())
   const [filas, setFilas]         = useState(() => filasDesde(inicial?.materiales || inicial?.productos))
+  const [conIva, setConIva]       = useState(() => ivaDe(inicial) > 0)
+  const ivaTocado = useRef(false) // en una compra nueva la casilla sigue al proveedor hasta que alguien la toque
   const [errores, setErrores]     = useState({})
   const [guardando, setGuardando] = useState(false)
   // Tras un error (datos inválidos o fallo al guardar) Guardar se apaga hasta que se cambie algo
@@ -175,9 +180,9 @@ export default function BloqueCompra({
 
   // Sin guardar: una compra nueva si tiene datos (solo la fecha de hoy no cuenta); una guardada, si cambió
   const [filasIniciales, setFilasIniciales] = useState(() => filasDesde(inicial?.materiales || inicial?.productos))
-  const firmaInicial = firmaCompra(inicial?.proveedor ?? '', inicial?.fecha ?? '', filasIniciales)
+  const firmaInicial = firmaCompra(inicial?.proveedor ?? '', inicial?.fecha ?? '', filasIniciales, ivaDe(inicial) > 0)
   const hayDatos = Boolean(proveedor.trim()) || filas.some(f => !estaVacia(f))
-  const sucio = inicial ? firmaCompra(proveedor, fecha, filas) !== firmaInicial : hayDatos
+  const sucio = inicial ? firmaCompra(proveedor, fecha, filas, conIva) !== firmaInicial : hayDatos
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
   const registro = useDatosSinGuardar({ sucio, registrar: registrarDesdeAviso, cierreRef })
 
@@ -237,8 +242,16 @@ export default function BloqueCompra({
     if (campo === 'proveedor') {
       setProveedor(valor)
       setProveedorRevisado(false)
+      // Compra nueva: toma el IVA de la última compra del proveedor. Al editar se respeta el guardado
+      if (!inicial && !ivaTocado.current) setConIva(getIvaPorProveedor(valor))
     } else if (campo === 'fecha') setFecha(valor)
     if (errores[campo]) fijarError(campo, validarEncabezado(campo, valor))
+  }
+
+  function cambiarIva(marcada) {
+    ivaTocado.current = true
+    setBloqueado(false)
+    setConIva(marcada)
   }
 
   function salirDeEncabezado(campo) {
@@ -481,6 +494,7 @@ export default function BloqueCompra({
       proveedor,
       fecha,
       categoria: '',
+      iva,
       materiales: filasConDatos.map(fila => {
         const { categoria, producto } = getAsignacion(fila.material)
         const monto = montoDe(fila)
@@ -532,7 +546,10 @@ export default function BloqueCompra({
   // No se abre una fila nueva mientras la última no tenga material, cantidad y precio
   const ultimaIncompleta = Object.keys(validarFila(filas[filas.length - 1])).length > 0
 
-  const total = filas.reduce((suma, f) => suma + montoDe(f), 0)
+  // Los montos van sin IVA: se suma encima
+  const subtotal = filas.reduce((suma, f) => suma + montoDe(f), 0)
+  const iva = conIva ? calcularIva(subtotal) : 0
+  const total = aCentavos(subtotal + iva)
 
   // Solo una sugerencia, al salir del campo: mientras se escribe, casi todo «se parece» a algo
   const proveedorParecido = proveedorRevisado ? nombreParecido(proveedor, getProveedores()) : null
@@ -750,10 +767,7 @@ export default function BloqueCompra({
                 <p id={`${id}-ayuda-fila`} className={estilos.ayudaFila}>{VALIDACION.filaIncompleta}</p>
               )}
             </div>
-            <p className={estilos.total}>
-              <span className={estilos.totalEtiqueta}>Total</span>
-              <span className={estilos.totalValor} aria-live="polite">{formatearPrecio(total)}</span>
-            </p>
+            <ResumenCompra subtotal={subtotal} conIva={conIva} iva={iva} total={total} onCambiarIva={cambiarIva} />
           </div>
         </section>
 

@@ -1,4 +1,5 @@
 import { validarComprasJSON } from './compras-json.js'
+import { ivaDe } from './iva.js'
 
 export const identidadCompra = c => String(c.origen_id ?? c.id)
 
@@ -16,6 +17,8 @@ export function contenidoCompra(c, ordenar = false) {
   })
   return JSON.stringify({
     proveedor: c.proveedor, fecha: c.fecha, categoria: c.categoria ?? '',
+    // Solo si hay IVA: así un respaldo anterior al IVA sigue saliendo como idéntico
+    ...(ivaDe(c) > 0 ? { iva: ivaDe(c) } : {}),
     materiales,
   })
 }
@@ -84,13 +87,14 @@ export function resolverCarga(compras, existentes, decisiones = []) {
       continue
     }
     if (d.accion === 'omitir') { resultado.descartadas++; continue }
-    if (d.accion !== 'combinar' || !['existente', 'entrante'].includes(d.proveedor) || !['existente', 'entrante'].includes(d.fecha)) {
+    const fuenteIva = d.iva ?? 'existente'
+    if (d.accion !== 'combinar' || ![d.proveedor, d.fecha, fuenteIva].every(lado => ['existente', 'entrante'].includes(lado))) {
       throw new Error('Elige los datos que quieres conservar en la comparación.')
     }
     const materiales = [...seleccionar(a.existente.materiales, d.existentes), ...seleccionar(a.entrante.materiales, d.entrantes)]
     const compra = {
       ...a.existente, origen_id: a.origen,
-      proveedor: a[d.proveedor].proveedor, fecha: a[d.fecha].fecha, materiales,
+      proveedor: a[d.proveedor].proveedor, fecha: a[d.fecha].fecha, iva: ivaDe(a[fuenteIva]), materiales,
     }
     validarComprasJSON([compra])
     if (contenidoCompra(compra, true) === contenidoCompra(a.existente, true)) resultado.descartadas++

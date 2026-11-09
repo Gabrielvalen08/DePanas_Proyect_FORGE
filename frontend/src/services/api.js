@@ -25,6 +25,7 @@ import { validarComprasJSON } from '../../../shared/compras-json.js'
 import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../../shared/productos.js'
+import { ivaDe } from '../../../shared/iva.js'
 import { fichaVacia, leerFicha, normalizarFicha } from '../../../shared/proveedores.js'
 import { CARGAR } from '../utils/mensajes'
 import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
@@ -250,7 +251,7 @@ function vincularLocal(cat, proveedor, categoria) {
   return true
 }
 
-/** Deja en la categoría exactamente esos proveedores (que deben existir), como el backend */
+/** Deja en la categoría exactamente esos proveedores (los que no existan se crean), como el backend */
 function fijarProveedoresLocal(cat, categoria, proveedores) {
   const registrados = resolverProveedores(cat, proveedores)
   const mapa = (cat.proveedoresPorCategoria ??= {})
@@ -258,17 +259,20 @@ function fijarProveedoresLocal(cat, categoria, proveedores) {
   else delete mapa[clave(categoria)]
 }
 
-/** Nombres registrados de los proveedores pedidos (sin repetir); lanza con `campo` si alguno no existe */
-function resolverProveedores(cat, proveedores) {
+function validarListaProveedores(proveedores) {
   if (!Array.isArray(proveedores) || proveedores.some(p => typeof p !== 'string')) {
     throw Object.assign(new Error('La lista de proveedores no es válida'), { campo: 'proveedores' })
   }
+}
+
+/** Nombres registrados de los proveedores pedidos (sin repetir); los que no existen se crean, con ficha vacía */
+function resolverProveedores(cat, proveedores) {
+  validarListaProveedores(proveedores)
   const registrados = []
   for (const p of proveedores) {
     if (!p.trim()) continue
-    const existente = cat.proveedores.find(n => clave(n) === clave(p))
-    if (!existente) throw Object.assign(new Error(noExiste('proveedor', p.trim())), { campo: 'proveedores' })
-    if (!registrados.includes(existente)) registrados.push(existente)
+    const { nombre } = registrarEn(cat, 'proveedor', p)
+    if (!registrados.includes(nombre)) registrados.push(nombre)
   }
   return registrados
 }
@@ -340,12 +344,14 @@ export function getCategoriasDeProveedor(proveedor) {
 /**
  * Artículos para el autocompletado de Agregar Compra, ordenados por categoría
  * («Materia Prima» primero). Solo los de las categorías que surte el proveedor;
- * si no surte ninguna (o es nuevo, o no se eligió), todos. Igual en los dos modos.
+ * si no surte ninguna (o es nuevo, o no se eligió), ninguno: el artículo se escribe
+ * a mano y, si es nuevo, el formulario lo liga al proveedor. Igual en los dos modos.
  */
 export function getMaterialesPorProveedor(proveedor) {
   const todos = catalogo().materiales
   const categorias = new Set(getCategoriasDeProveedor(proveedor).map(clave))
-  const lista = categorias.size ? todos.filter(m => categorias.has(clave(m.categoria))) : todos
+  if (!categorias.size) return []
+  const lista = todos.filter(m => categorias.has(clave(m.categoria)))
   // Orden estable: sinDuplicados reordenaría alfabéticamente
   const vistos = new Set()
   return ordenarMaterialesPorCategoria(lista).map(m => m.nombre)
@@ -400,6 +406,20 @@ export function getPrecioSugerido(material) {
     }
   }
   return sugerido
+}
+
+/**
+ * ¿La última compra del proveedor llevó IVA? (la de fecha más reciente y, a igual fecha,
+ * la registrada después; sin distinguir mayúsculas). Sin historial o con compras anteriores
+ * al IVA, false. En modo servidor lo calcula el backend (GET /api/catalogo).
+ */
+export function getIvaPorProveedor(proveedor) {
+  const k = clave(proveedor)
+  if (!k) return false
+  if (modoActual !== 'local') return catalogo().ivaPorProveedor?.[k] === true
+  const listas = getListas().map((l, i) => ({ l, i })).sort((a, b) => a.l.fecha.localeCompare(b.l.fecha) || a.i - b.i)
+  const ultima = listas.filter(({ l }) => clave(l.proveedor) === k).at(-1)
+  return ultima ? ivaDe(ultima.l) > 0 : false
 }
 
 /**
@@ -672,7 +692,7 @@ export async function agregarAlCatalogo(tipo, datos) {
   }
   if (tipo !== 'material') {
     // Se valida antes de tocar nada
-    if (tipo === 'categoria' && datos.proveedores !== undefined) resolverProveedores(cat, datos.proveedores)
+    if (tipo === 'categoria' && datos.proveedores !== undefined) validarListaProveedores(datos.proveedores)
     registrarEn(cat, tipo, nombre)
     const materiales = conMateriales(tipo) && datos.materiales !== undefined
       ? fijarMaterialesLocal(cat, tipo, nombre, datos.materiales)
@@ -722,7 +742,7 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
   }
   // Se valida antes de tocar nada, para no dejar el cambio a medias
   if (conMateriales(tipo) && datos.materiales !== undefined) resolverMateriales(cat, datos.materiales)
-  if (tipo === 'categoria' && datos.proveedores !== undefined) resolverProveedores(cat, datos.proveedores)
+  if (tipo === 'categoria' && datos.proveedores !== undefined) validarListaProveedores(datos.proveedores)
   const ficha = tipo === 'proveedor' && datos.ficha !== undefined ? normalizarFicha(datos.ficha) : undefined
 
   // Catálogo
@@ -1026,6 +1046,7 @@ function cuerpoCompra(lista) {
     proveedor: n.proveedor,
     fecha: n.fecha,
     categoria: lista.categoria ?? '',
+    iva: n.iva,
     materiales: n.materiales.map(({ material, cantidad, unidad, monto, categoria, producto }) => ({
       material, cantidad, unidad, monto, categoria, producto,
     })),
@@ -1129,6 +1150,7 @@ function enriquecerLista(lista) {
   return {
     ...lista,
     categoria:  lista.categoria ?? 'Materia Prima',
+    iva:        ivaDe(lista),
     materiales: mat,
     // compatibilidad para código/tests que lean productos:
     productos:  mat.map(m => ({ ...m, producto: m.material, precio: m.monto })),
@@ -1166,7 +1188,7 @@ function siguienteId(listas) {
   return listas.length ? Math.max(...listas.map(l => Number(l.id) || 0)) + 1 : 1
 }
 
-function normalizar({ proveedor, fecha, categoria, materiales, productos }) {
+function normalizar({ proveedor, fecha, categoria, iva, materiales, productos }) {
   const items = materiales || productos || []
   const mat = items.map(m => ({
     material:  (m.material ?? m.producto ?? '').trim(),
@@ -1183,17 +1205,24 @@ function normalizar({ proveedor, fecha, categoria, materiales, productos }) {
     fecha,
     // Sin categoría no se inventa: ligaría al proveedor con una que nadie eligió (artículo con «Ahora no»)
     categoria: (categoria ?? 'Materia Prima').trim(),
+    iva: ivaDe({ iva }),
     materiales: mat,
     productos: mat.map(m => ({ ...m, producto: m.material, precio: m.monto })),
   }
 }
 
 // ---------------------------------------------------------------------------
-// Cálculo de gasto total de una lista
+// Cálculo de gasto de una lista
 // ---------------------------------------------------------------------------
-export function totalLista(lista) {
+/** Suma de los montos de las filas, sin IVA */
+export function subtotalLista(lista) {
   const items = lista?.materiales || lista?.productos || []
   return items.reduce((suma, m) => suma + Number(m.monto !== undefined ? m.monto : m.precio || 0), 0)
+}
+
+/** Total de la compra: subtotal + IVA */
+export function totalLista(lista) {
+  return subtotalLista(lista) + ivaDe(lista)
 }
 
 // ---------------------------------------------------------------------------

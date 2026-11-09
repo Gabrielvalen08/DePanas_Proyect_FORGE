@@ -373,11 +373,6 @@ test('proveedores de una categoría: se fijan al agregar o editar, se validan y 
   assert.deepEqual((await pedir(url(base, 'categoria', 'Lácteos'), 'PUT', { proveedores: ['Pepsi'] })).cuerpo.proveedores, ['Pepsi'])
   assert.deepEqual((await pedir(url(base, 'categoria', 'Lácteos'), 'PUT', { nombre: 'Lácteos y quesos' })).cuerpo.proveedores, ['Pepsi'])
 
-  const inexistente = await pedir(url(base, 'categoria', 'Lácteos y quesos'), 'PUT', { proveedores: ['Nadie'] })
-  assert.equal(inexistente.status, 400)
-  assert.equal(inexistente.cuerpo.campo, 'proveedores')
-  assert.match(inexistente.cuerpo.error, /No existe un proveedor llamado «Nadie»/)
-
   // Renombrar el proveedor conserva la relación; eliminarlo la quita
   await pedir(url(base, 'proveedor', 'Pepsi'), 'PUT', { nombre: 'PepsiCo' })
   assert.deepEqual((await catalogo(base)).proveedoresPorCategoria['lácteos y quesos'], ['PepsiCo'])
@@ -555,4 +550,37 @@ test('cargar categorías suma sus proveedores; los que no existen se omiten', as
   assert.equal(res.status, 200)
   assert.equal(res.cuerpo.omitidos, 1)
   assert.ok((await catalogo(base)).proveedoresPorCategoria.bebidas.includes('Pepsi'))
+})
+
+test('un proveedor nuevo se crea al guardar la categoría, sin duplicar y solo con catalogo.agregar', async t => {
+  const base = await levantar(t)
+  const creada = await pedir(url(base, 'categoria'), 'POST', { nombre: 'Lácteos', proveedores: ['Distribuidora X, S.A.', 'mmag'] })
+  assert.equal(creada.status, 200)
+  assert.deepEqual(creada.cuerpo.proveedores, ['Distribuidora X, S.A.', 'MMAG'])
+  let cat = await catalogo(base)
+  assert.ok(cat.proveedores.includes('Distribuidora X, S.A.'))
+  assert.equal(cat.proveedores.filter(p => p.toLowerCase() === 'mmag').length, 1)
+  assert.equal(cat.fichas['distribuidora x, s.a.'], undefined)
+
+  // Al editar también, y con otra escritura no se duplica
+  await pedir(url(base, 'categoria', 'Lácteos'), 'PUT', { proveedores: ['DISTRIBUIDORA X, S.A.', 'Tienda Nueva'] })
+  cat = await catalogo(base)
+  assert.equal(cat.proveedores.filter(p => p.toLowerCase() === 'distribuidora x, s.a.').length, 1)
+  assert.deepEqual(cat.proveedoresPorCategoria['lácteos'], ['Distribuidora X, S.A.', 'Tienda Nueva'])
+
+  // Sin catalogo.agregar se rechaza el nombre desconocido y no se crea nada, pero sí se usan los existentes
+  const clave = 'Tequeño#1'
+  await pedir(`${base}/usuarios`, 'POST', {
+    usuario: 'Ana_04', nombre: 'Ana', contrasena: clave, rol: 'empleado', permisos: ['/catalogo'], funciones: ['catalogo.editar'],
+  })
+  await entrar(base, 'Ana_04', clave)
+  const rechazado = await pedir(url(base, 'categoria', 'Lácteos'), 'PUT', { proveedores: ['Nadie'] })
+  assert.equal(rechazado.status, 400)
+  assert.equal(rechazado.cuerpo.campo, 'proveedores')
+  assert.match(rechazado.cuerpo.error, /No existe un proveedor llamado «Nadie»/)
+  assert.equal((await pedir(url(base, 'categoria', 'Lácteos'), 'PUT', { proveedores: ['MMAG'] })).status, 200)
+  await entrar(base)
+  cat = await catalogo(base)
+  assert.ok(!cat.proveedores.includes('Nadie'))
+  assert.deepEqual(cat.proveedoresPorCategoria['lácteos'], ['MMAG'])
 })

@@ -97,7 +97,7 @@ it('compara ambas compras, conserva filas completas elegidas y permite elegir pr
   await usuario.click(screen.getByRole('button', { name: CARGAR.aplicar }))
   await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   expect(importarCompras).toHaveBeenCalledWith([entrante], [{
-    origen: '1', base: contenidoCompra(compra), accion: 'combinar', existentes: [1], entrantes: [0], proveedor: 'entrante', fecha: 'entrante',
+    origen: '1', base: contenidoCompra(compra), accion: 'combinar', existentes: [1], entrantes: [0], proveedor: 'entrante', fecha: 'entrante', iva: 'existente',
   }])
   expect(await within(screen.getByRole('main')).findByRole('status')).toHaveTextContent(CARGAR.resultado({ actualizadas: 1 }))
 })

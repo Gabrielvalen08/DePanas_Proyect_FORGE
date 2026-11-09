@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import PantallaMaestra from './PantallaMaestra'
-import { COMPRA, LISTA_COMPRAS } from '../utils/mensajes'
+import { COMPRA, LISTA_COMPRAS, IVA } from '../utils/mensajes'
 
 function renderizar(props = {}) {
   return render(
@@ -64,7 +64,11 @@ describe('PantallaMaestra', () => {
     const detalle = screen.getByRole('dialog', { name: 'Compra en Súper Selectos' })
     expect(within(detalle).getByText('Arroz')).toBeInTheDocument()
     expect(within(detalle).getByText('Queso duro blando')).toBeInTheDocument()
-    expect(within(detalle).getByText('$8.95')).toBeInTheDocument()
+    // Subtotal y total coinciden en una compra sin IVA
+    expect(within(detalle).getAllByText('$8.95')).toHaveLength(2)
+    expect(within(detalle).getByRole('rowheader', { name: IVA.subtotal })).toBeInTheDocument()
+    expect(within(detalle).getByRole('rowheader', { name: IVA.titulo })).toBeInTheDocument()
+    expect(within(detalle).getByRole('rowheader', { name: IVA.total })).toBeInTheDocument()
   })
 
   it('edita una lista desde el detalle y la tabla se actualiza', async () => {

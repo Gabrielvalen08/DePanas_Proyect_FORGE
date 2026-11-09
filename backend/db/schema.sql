@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS ingresos (
     categoria  TEXT DEFAULT '',             -- Categoría (definida en DB, aún no en web)
     producto   TEXT DEFAULT '',             -- Producto destino
     origen_id TEXT,                         -- Identidad original al transferir entre equipos
-    compra_categoria TEXT                   -- Categoría de la compra, independiente de cada material
+    compra_categoria TEXT,                  -- Categoría de la compra, independiente de cada material
+    compra_iva REAL NOT NULL DEFAULT 0      -- IVA de la compra en dinero (se repite en cada fila de la compra)
 );
 
 -- Opciones de los desplegables (proveedor, categoría, material, producto).

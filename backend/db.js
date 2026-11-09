@@ -253,6 +253,8 @@ export function migrar(db) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_ingresos_compra ON ingresos(compra_id)')
   if (!columnas.includes('origen_id')) db.exec('ALTER TABLE ingresos ADD COLUMN origen_id TEXT')
   if (!columnas.includes('compra_categoria')) db.exec('ALTER TABLE ingresos ADD COLUMN compra_categoria TEXT')
+  // Las compras anteriores al IVA quedan sin IVA
+  if (!columnas.includes('compra_iva')) db.exec('ALTER TABLE ingresos ADD COLUMN compra_iva REAL NOT NULL DEFAULT 0')
 
   // Catálogos creados antes de que los materiales guardaran categoría y producto,
   // o de que los proveedores tuvieran su ficha

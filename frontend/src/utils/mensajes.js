@@ -183,6 +183,13 @@ export const VALIDACION = {
 // ---------------------------------------------------------------------------
 // Nombre parecido a otro ya registrado (posible error de dedo)
 // ---------------------------------------------------------------------------
+export const IVA = {
+  titulo: 'IVA',
+  subtotal: 'Subtotal',
+  total: 'Total',
+  etiqueta: tasa => `IVA (${Math.round(tasa * 100)} %)`,
+}
+
 export const NOMBRE_PARECIDO = {
   aviso: (escrito, parecido, tipo) => {
     const femenino = tipo === 'categoria'
@@ -212,8 +219,9 @@ export const ASIGNACION = {
   nombreArticulo: 'Nombre del artículo',
   faltaNombre: 'Escribe el nombre del artículo',
   yaExiste: nombre => `Ya existe un artículo llamado «${nombre}»`,
-  noExiste: (texto, esCategoria) =>
-    `«${texto}» todavía no existe. Pulsa Enter o «Agregar» para crear ${esCategoria ? 'una categoría nueva' : 'un producto nuevo'}.`,
+  noExiste: (texto, esCategoria, esProveedor = false) =>
+    `«${texto}» todavía no existe. Pulsa Enter o «Agregar» para crear ${esCategoria ? 'una categoría nueva' : esProveedor ? 'un proveedor nuevo' : 'un producto nuevo'}.`,
+  ayudaBuscador: '¿No aparece la categoría o el producto? Escríbelo en el buscador y lo agregamos.',
   faltaCategoria: 'Elige o escribe una categoría',
   faltaInformacion: (sinCategoria, sinProducto) =>
     sinCategoria && sinProducto
@@ -365,7 +373,7 @@ export const PANTALLA_CATALOGO = {
   columnaProveedores: 'Proveedores',
   etiquetaProveedores: 'Proveedores que la surten',
   ayudaProveedores:
-    'Al elegir uno de estos proveedores en una compra, solo salen los artículos de esta categoría. Si un proveedor no tiene categorías, salen todos.',
+    'Al elegir uno de estos proveedores en una compra, solo salen los artículos de esta categoría. Un proveedor sin categorías no sugiere artículos: se escriben a mano.',
   sinProveedores: 'Ninguno',
   // Exportar y Cargar de cada sección (menú ⋮ de su lista)
   archivo: {
