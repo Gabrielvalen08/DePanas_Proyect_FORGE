@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { FUNCIONES_POR_PANTALLA, RUTAS_ASIGNABLES } from '../utils/permisos'
 import { revisarContrasena } from '../../../shared/usuarios.js'
-import { USUARIOS, fraseDelDia } from '../utils/mensajes'
+import { USUARIOS } from '../utils/mensajes'
 import estilos from './PantallaUsuarios.module.css'
 
 /**
@@ -81,7 +81,7 @@ export default function PantallaUsuarios() {
 
   return (
     <>
-      <Header title="Gestor de usuarios" frase={fraseDelDia('/usuarios')} />
+      <Header title="Gestor de usuarios" />
 
       <main id="contenido" tabIndex={-1}>
         <Tarjeta

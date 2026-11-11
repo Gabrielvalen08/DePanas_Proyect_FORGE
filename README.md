@@ -32,7 +32,7 @@ Aplicación web local para que **De Panas**, un negocio de comida venezolana, re
 - **Base de datos SQLite** (backend Node.js + Express). Sin servidor, la app funciona igual guardando en el navegador (modo local); los dos modos nunca se mezclan.
 - **Exportar datos** (pantalla propia): eliges un rango de fechas (o este mes, mes pasado, este año, todo) y el formato, Excel (`.xlsx`, se abre directo en columnas) o respaldo (`.json`), y ves cuántas compras y cuánto dinero entran antes de descargar.
 - **Cargar datos** (pantalla propia): se elige un respaldo `.json` de Exportar y qué compras traer. Las que ya están se omiten; las que llegan con cambios se comparan lado a lado, con las diferencias marcadas en rojo, y se elige qué materiales, proveedor y fecha quedan.
-- **Interfaz con la marca De Panas**: collage de las ilustraciones del brandbook sobre el fondo crema, la arepa del logo en el menú, mensajes con la voz de marca ("¡Listo, pana!", "Hoy toca arepita…"), adaptable a escritorio y móvil, con contraste WCAG AA.
+- **Interfaz con la marca De Panas**: collage de las ilustraciones del brandbook sobre el fondo crema, la arepa del logo en el menú, mensajes con la voz de marca ("¡Épale, pana!", "¡Listo, pana!"), adaptable a escritorio y móvil, con contraste WCAG AA.
 
 **Pendiente** (según el documento de requerimientos):
 
@@ -154,9 +154,9 @@ Los comandos se probaron en Windows 11.
 La identidad visual nació del **Brandbook DE PANAS (mayo 2026)** y hoy se documenta tal como vive en el sitio en [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md). Lo esencial:
 
 - **Colores:** Naranja Sazón `#EF7D05` y Crema y Trigo `#FEEECC` son los protagonistas. El texto va en Verde Ávila `#144428`.
-- **Tipografía:** Josefin Sans para títulos e interfaz; Cardo para textos largos y las frases de marca.
+- **Tipografía:** Josefin Sans para títulos e interfaz; Cardo para textos largos.
 - **Elementos gráficos:** las ilustraciones de la pág. 10 forman un collage al 10 % de opacidad sobre el fondo crema. En el menú, la arepa del logo acompaña al nombre.
-- **Voz de marca** (diapositiva 10): cercana, venezolana y vibrante en confirmaciones y encabezados; clara y sin modismos en errores.
+- **Voz de marca** (diapositiva 10): cercana, venezolana y vibrante en el acceso, las confirmaciones y las pantallas vacías; clara y sin modismos en errores.
 - **Accesibilidad:** contraste WCAG AA verificado, también sobre los trazos del collage. El texto sobre naranja usa un tono más oscuro del verde (`#0F331E`).
 - **Movimiento:** respuesta inmediata al presionar, animaciones interrumpibles y respeto por "reducir movimiento".
 - **Datos:** tablas sobrias, con montos alineados a la derecha.

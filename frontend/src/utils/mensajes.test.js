@@ -1,21 +1,6 @@
-import { ASIGNACION, CARGAR, COMPRA, PANTALLA_CATALOGO, EXPORTAR, FRASES_ENCABEZADO, FRASES_MARCA, fraseDelDia } from './mensajes'
+import { ASIGNACION, CARGAR, COMPRA, PANTALLA_CATALOGO, EXPORTAR } from './mensajes'
 
 describe('mensajes (voz de marca)', () => {
-  it('la frase del encabezado es la misma todo el día y cambia al día siguiente', () => {
-    const manana = fraseDelDia('/', new Date(2026, 9, 5, 8, 0))
-    expect(fraseDelDia('/', new Date(2026, 9, 5, 22, 30))).toBe(manana)
-    expect(fraseDelDia('/', new Date(2026, 9, 6, 8, 0))).not.toBe(manana)
-    expect(FRASES_ENCABEZADO['/compras']).toContain(fraseDelDia('/compras', new Date(2026, 9, 5)))
-  })
-
-  it('las frases del brandbook están presentes en los encabezados', () => {
-    const todas = Object.values(FRASES_ENCABEZADO).flat().join(' ')
-    expect(todas).toMatch(/Hoy toca arepita/)
-    expect(todas).toMatch(/Aquí se viene a comer rico/)
-    expect(todas).toMatch(/Tu antojo venezolano en El Salvador/)
-    expect(FRASES_MARCA).toHaveLength(4)
-  })
-
   it('confirma con singular y plural correctos', () => {
     expect(COMPRA.guardada).toBe('¡Listo, pana! Compra guardada.')
     const textoDe = partes => partes.map(p => p.texto).join('')

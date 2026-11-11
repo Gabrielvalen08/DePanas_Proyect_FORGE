@@ -7,7 +7,7 @@ import { Boton } from '../components/common'
 import { guardarLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { springSuave } from '../styles/movimiento'
-import { COMPRA, fraseDelDia } from '../utils/mensajes'
+import { COMPRA } from '../utils/mensajes'
 import estilos from './AgregarCompra.module.css'
 
 /**
@@ -47,7 +47,7 @@ export default function AgregarCompra({ puedeEditarArticulo = true }) {
 
   return (
     <>
-      <Header title="Agregar compra" frase={fraseDelDia('/')} />
+      <Header title="Agregar compra" />
 
       <main id="contenido" tabIndex={-1} className={estilos.contenido}>
         {/* popLayout: la compra que sale no empuja a la que entra */}

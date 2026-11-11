@@ -20,7 +20,7 @@ Cada ruta pide su permiso (`protegida` en `App.jsx`, reglas en `utils/permisos.j
 
 `PantallaApagado` tampoco es una ruta: en la versión .zip (`desktop/`), tras «Apagar De Panas SV» (`apagarSistema` de `services/api.js`, solo si `puedeApagar()`), `App.jsx` la muestra en lugar de todo lo demás, porque el servidor ya no responde.
 
-Cada página pasa a `<Header>` su `frase` del día: `fraseDelDia('/')` o `fraseDelDia('/compras')`.
+Cada página pasa a `<Header>` solo su título (y `alRegresar` si se abre desde otra pantalla); los encabezados no llevan frase.
 
 ## Convenciones
 - Los datos solo se piden a `services/api.js`. Nunca `fetch` ni `localStorage` desde una página.

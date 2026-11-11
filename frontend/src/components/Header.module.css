@@ -66,19 +66,6 @@
   min-width: 0;
 }
 
-/* Frase de la voz de marca: Cardo itálica, como los "Mensajes" del brandbook */
-.frase {
-  overflow: hidden;
-  font-family: var(--fuente-texto);
-  font-size: 0.9375rem;
-  font-style: italic;
-  line-height: 1.3;
-  /* Va sobre el collage: el atenuado bajaba a 3.91:1 en los trazos; Ávila da 8.18:1 */
-  color: var(--color-text);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
 .titulo {
   padding-top: 0.15em;
   white-space: nowrap;
@@ -140,10 +127,6 @@
   /* El título de página compite con el logo: se reduce para no truncarse */
   .titulo {
     font-size: 1.25rem;
-  }
-
-  .frase {
-    font-size: 0.875rem;
   }
 }
 

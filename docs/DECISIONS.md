@@ -220,7 +220,7 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 
 - Todo texto que el sistema le dice al usuario vive en `frontend/src/utils/mensajes.js`, agrupado por tema (`ACCESO`, `COMPRA`, `LISTA_COMPRAS`, `VALIDACION`, `ASIGNACION`, `ESTADOS`, `PANTALLA_CATALOGO`, `USUARIOS`, `EXPORTAR`, `CARGAR`, `CONFIRMAR`). Los mensajes con datos son funciones (`COMPRA.confirmarGuardar.mensaje(proveedor, n, total)`).
 - Los tests importan los textos de ahí: cambiar una frase no rompe pruebas.
-- La frase del encabezado cambia una vez al día (`fraseDelDia`, por día del año), no en cada recarga, para que la interfaz no "salte".
+- Los encabezados llevan solo el título: las frases del día (`fraseDelDia`) se quitaron porque recargaban las pantallas de trabajo.
 
 ## Pendientes
 - **Bundle:** el JS pasó de ~193 kB a ~339 kB (sin gzip), sobre todo por `motion`. Si importa, se puede cargar Motion de forma diferida.

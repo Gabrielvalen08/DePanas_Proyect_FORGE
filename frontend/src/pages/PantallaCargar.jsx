@@ -9,7 +9,7 @@ import { leerComprasJSON, analizarCompras, importarCompras, totalLista } from '.
 import { useToast } from '../context/ToastContext'
 import { useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { formatearFecha, formatearPrecio } from '../utils/formato'
-import { CARGAR, CONFIRMAR, fraseDelDia } from '../utils/mensajes'
+import { CARGAR, CONFIRMAR } from '../utils/mensajes'
 import estilos from './PantallaCargar.module.css'
 
 // Cada estado del análisis con su tono de insignia
@@ -125,7 +125,7 @@ export default function PantallaCargar() {
 
   return (
     <>
-      <Header title="Cargar datos" frase={fraseDelDia('/cargar')} alRegresar={regresar} />
+      <Header title="Cargar datos" alRegresar={regresar} />
 
       <main id="contenido" tabIndex={-1}>
 

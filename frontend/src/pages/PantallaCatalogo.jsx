@@ -10,7 +10,7 @@ import {
 } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { textoBusqueda } from '../utils/formato'
-import { PANTALLA_CATALOGO, fraseDelDia } from '../utils/mensajes'
+import { PANTALLA_CATALOGO } from '../utils/mensajes'
 import estilos from './PantallaCatalogo.module.css'
 import { tieneProducto } from '../../../shared/productos.js'
 import { filasDelCatalogo, ordenarFilas } from '../../../shared/catalogo-json.js'
@@ -70,7 +70,7 @@ export default function PantallaCatalogo({ acciones = TODAS_LAS_ACCIONES }) {
 
   return (
     <>
-      <Header title="Catálogo" frase={fraseDelDia('/catalogo')} />
+      <Header title="Catálogo" />
 
       <main id="contenido" tabIndex={-1}>
         <nav aria-label="Secciones del catálogo">

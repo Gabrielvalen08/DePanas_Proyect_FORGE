@@ -9,73 +9,17 @@
  *            "Hoy toca arepita", "Naguará, qué rico".
  *
  * Reglas para mantenerla útil:
- *  - El sabor venezolano va en confirmaciones, encabezados y pantallas vacías.
+ *  - El sabor venezolano va en el acceso, las confirmaciones y las pantallas vacías (los encabezados llevan solo el título).
  *  - Los errores van claros primero: qué pasó y qué hacer. Nunca culpan al usuario.
  *  - Los mensajes de validación son cortos: se leen junto al campo.
  *  - Nada de jerga que confunda: "pana", "chévere", "naguará" y "épale" bastan.
  */
-
-/** Las frases del brandbook, tal cual */
-export const FRASES_MARCA = [
-  'Tu antojo venezolano en El Salvador',
-  'Aquí se viene a comer rico',
-  'Hoy toca arepita',
-  'Naguará, qué rico',
-]
 
 const plural = (n, singular, pluralTexto = `${singular}es`) => (n === 1 ? singular : pluralTexto)
 // En toda la interfaz los materiales se llaman «artículos» (en el código y los datos siguen como `material`)
 const articulos = n => plural(n, 'artículo', 'artículos')
 /** Nombre del formato de un archivo para el usuario: Excel o JSON */
 const nombreFormato = formato => (formato === 'json' ? 'JSON' : 'Excel')
-
-// ---------------------------------------------------------------------------
-// Encabezados: una frase por página que cambia cada día (no en cada recarga)
-// ---------------------------------------------------------------------------
-export const FRASES_ENCABEZADO = {
-  '/': [
-    'Hoy toca arepita: anota lo que llegó a la cocina',
-    'Aquí se viene a comer rico… y a llevar las cuentas claras',
-    '¿Qué trajimos hoy para la cocina, pana?',
-    'Cada insumo cuenta para la sazón',
-    'Del mercado a la plancha, todo queda anotado',
-  ],
-  '/compras': [
-    'Naguará, mira todo lo que ha entrado a la cocina',
-    'Cuentas claras, arepas bien rellenas',
-    'Todo lo que compramos, en un solo lugar',
-    'Tu antojo venezolano en El Salvador empieza aquí',
-  ],
-  '/catalogo': [
-    'Cada cosa en su sitio, como en la cocina de la abuela',
-    'Ordena tus proveedores, artículos y productos',
-    'Un catálogo bien hecho, una sazón bien medida',
-  ],
-  '/exportar': [
-    'Llévate tus cuentas a donde quieras',
-    'Las compras, listas para el Excel',
-  ],
-  '/cargar': [
-    'Trae tus compras completas desde otro equipo',
-    'Que no se pierda ni una compra, pana',
-  ],
-  '/usuarios': [
-    'Cada pana con su clave y su lugar en la cocina',
-    'Quién entra y a dónde, aquí lo decides tú',
-    'Un equipo bien organizado cocina mejor',
-  ],
-}
-
-/** Día del año (1–366): la frase cambia a medianoche y es la misma en toda la jornada */
-function diaDelAno(fecha) {
-  const inicio = new Date(fecha.getFullYear(), 0, 0)
-  return Math.floor((fecha - inicio) / 86_400_000)
-}
-
-export function fraseDelDia(ruta, fecha = new Date()) {
-  const frases = FRASES_ENCABEZADO[ruta] ?? FRASES_ENCABEZADO['/']
-  return frases[diaDelAno(fecha) % frases.length]
-}
 
 // ---------------------------------------------------------------------------
 // Acceso

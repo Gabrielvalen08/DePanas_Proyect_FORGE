@@ -8,7 +8,7 @@ import { fetchListas, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
 import { formatearFecha, formatearPrecio } from '../utils/formato'
-import { COMPRA, ESTADOS, LISTA_COMPRAS, fraseDelDia } from '../utils/mensajes'
+import { COMPRA, ESTADOS, LISTA_COMPRAS } from '../utils/mensajes'
 import estilos from './PantallaMaestra.module.css'
 
 /**
@@ -126,7 +126,7 @@ export default function PantallaMaestra({
 
   return (
     <>
-      <Header title="Lista de compras" frase={fraseDelDia('/compras')} />
+      <Header title="Lista de compras" />
 
       <main id="contenido" tabIndex={-1}>
         <Tarjeta
