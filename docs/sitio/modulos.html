@@ -51,6 +51,7 @@
       <dl class="ficha">
         <dt>Quién</dt><dd>Todos</dd>
         <dt>Código</dt><dd><code>PantallaContrasena</code>, <code>AuthContext</code>, <code>backend/sesiones.js</code></dd>
+        <dt>Cómo se usa</dt><dd><a href="../manual/index.html#abrir">Abrir, entrar y apagar</a> · <a href="../SEGURIDAD.md">Seguridad</a></dd>
       </dl>
       <ul class="lista">
         <li>Se entra con <b>usuario y contraseña</b>. La sesión dura hasta cerrar la pestaña o 8 horas sin uso.</li>
@@ -66,6 +67,7 @@
         <dt>Ruta</dt><dd><code>/</code> (pantalla principal)</dd>
         <dt>Quién</dt><dd>Quien tenga la pantalla Agregar compra</dd>
         <dt>Código</dt><dd><code>AgregarCompra</code>, <code>BloqueCompra</code>, <code>AsignarMaterial</code>, <code>ResumenCompra</code></dd>
+        <dt>Cómo se usa</dt><dd><a href="../manual/index.html#registrar">Registrar una compra</a> · <a href="../manual/index.html#articulo">Un artículo nuevo</a> · <a href="../MODELO_DATOS.md">Modelo de datos</a></dd>
       </dl>
       <h3>Por pasos</h3>
       <ol class="lista">
@@ -91,6 +93,7 @@
         <dt>Ruta</dt><dd><code>/compras</code></dd>
         <dt>Quién</dt><dd>Quien tenga la pantalla. Editar y eliminar son funciones aparte.</dd>
         <dt>Código</dt><dd><code>PantallaMaestra</code>, <code>DetalleLista</code>, <code>FiltrosEnLinea</code></dd>
+        <dt>Cómo se usa</dt><dd><a href="../manual/index.html#lista">Lista de compras</a> · <a href="../MODELO_DATOS.md">Modelo de datos</a></dd>
       </dl>
       <ul class="lista">
         <li>Las compras <b>activas</b>, la más reciente arriba. Tocar una fila abre su detalle para ver, editar o eliminar.</li>
@@ -110,6 +113,7 @@
         <dt>Ruta</dt><dd><code>/catalogo/proveedores</code>, <code>/categorias</code>, <code>/articulos</code>, <code>/productos</code></dd>
         <dt>Quién</dt><dd>Quien tenga la pantalla; agregar, editar, eliminar, exportar y cargar son funciones aparte</dd>
         <dt>Código</dt><dd><code>PantallaCatalogo</code>, <code>EditorCatalogo</code>, <code>FichaProveedor</code>, <code>SeleccionCatalogo</code></dd>
+        <dt>Cómo se usa</dt><dd><a href="../manual/index.html#catalogo">Catálogo</a></dd>
       </dl>
       <ul class="lista">
         <li>Es la <b>única fuente de las opciones</b> de los buscadores. Cada compra guardada registra en él lo nuevo.</li>
@@ -125,6 +129,7 @@
       <dl class="ficha">
         <dt>Ruta</dt><dd><code>/exportar</code> (desde el ⋮ de Lista de compras)</dd>
         <dt>Código</dt><dd><code>PantallaExportar</code>, <code>utils/exportar.js</code>, <code>shared/gastos.js</code></dd>
+        <dt>Cómo se usa</dt><dd><a href="../manual/index.html#exportar">Exportar y respaldos</a></dd>
       </dl>
       <ul class="lista">
         <li>Rango de fechas (este mes, mes pasado, este año, todo o a mano). Antes de descargar se ve cuántas compras y cuánto dinero entran.</li>
@@ -138,6 +143,7 @@
       <dl class="ficha">
         <dt>Ruta</dt><dd><code>/cargar</code> (desde el ⋮ de Lista de compras)</dd>
         <dt>Código</dt><dd><code>PantallaCargar</code>, <code>CompararCompra</code>, <code>shared/carga-compras.js</code></dd>
+        <dt>Cómo se usa</dt><dd><a href="../manual/index.html#exportar">Exportar y respaldos</a></dd>
       </dl>
       <ul class="lista">
         <li>Se elige un respaldo .json y qué compras traer.</li>
@@ -152,6 +158,7 @@
         <dt>Ruta</dt><dd><code>/usuarios</code></dd>
         <dt>Quién</dt><dd>Solo el administrador</dd>
         <dt>Código</dt><dd><code>PantallaUsuarios</code>, <code>EditorUsuario</code>, <code>EditorRequisitos</code>, <code>shared/usuarios.js</code></dd>
+        <dt>Cómo se usa</dt><dd><a href="../manual/index.html#usuarios">Usuarios y contraseñas</a> · <a href="../SEGURIDAD.md">Seguridad</a></dd>
       </dl>
       <div class="tabla-scroll">
         <table>
@@ -175,6 +182,7 @@
       <dl class="ficha">
         <dt>Código</dt><dd><code>desktop/</code> (<code>preparar.mjs</code>, <code>iniciar.mjs</code>, <code>servidor.mjs</code>)</dd>
         <dt>Guía</dt><dd><a href="../INSTALACION_CLIENTE.md">Instalación en la computadora del cliente</a></dd>
+        <dt>Cómo se usa</dt><dd><a href="../manual/index.html#abrir">Abrir, entrar y apagar</a></dd>
       </dl>
       <ul class="lista">
         <li><b>Abrir De Panas SV</b> levanta el sistema y lo abre en el navegador como sitio web local (<code>http://localhost:4510</code>), sin internet. Lleva el Node.js oficial firmado para que Windows lo deje abrir.</li>

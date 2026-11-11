@@ -172,3 +172,7 @@ Cada migración tiene su prueba en `backend/test/`.
 | Base completa `.db` | Exportar usa `VACUUM INTO`, una copia consistente aunque haya cambios en el WAL. Importar valida que el archivo sea una base de De Panas y guarda `depanas.respaldo.db` antes de reemplazar |
 | Compras en JSON o Excel | Exportar por rango de fechas; Cargar compara cada compra (nueva, duplicada o modificada) y es todo o nada |
 | Catálogo por sección | Exportar y cargar proveedores, categorías, artículos o productos; cargar nunca borra |
+
+---
+
+**Ver también:** [Seguridad](SEGURIDAD.md) (cómo se protegen estos datos) · [Arquitectura](sitio/arquitectura.html) (capas y flujo de datos) · [Índice de la documentación](README.md)

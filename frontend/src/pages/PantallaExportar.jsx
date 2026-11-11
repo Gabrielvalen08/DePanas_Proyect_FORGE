@@ -145,6 +145,9 @@ export default function PantallaExportar() {
                   <><Loader2 size={16} aria-hidden="true" className={estilos.girando} /> {EXPORTAR.calculando}</>
                 ) : n === 0 ? EXPORTAR.sinCompras : EXPORTAR.resumen(n, formatearPrecio(total))}
               </p>
+              {listo && n === 0 && rangoActivo !== 'todo' && (
+                <Boton variante="fantasma" onClick={() => elegirRango('todo')}>{EXPORTAR.verTodo}</Boton>
+              )}
               <Boton
                 variante="primario"
                 sombra

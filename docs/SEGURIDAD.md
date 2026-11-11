@@ -37,3 +37,7 @@ npm test
 - **Cada persona usa su propio usuario.** Al dejar la computadora, se cierra el navegador; en la versión .zip, eso también apaga el sistema.
 - **La contraseña inicial se cambia en el Gestor de usuarios.**
 - **Modo local** (sin servidor): los permisos son solo una barrera de la interfaz. La versión para el cliente siempre trabaja con servidor.
+
+---
+
+**Ver también:** [Modelo de datos](MODELO_DATOS.md) (tablas y validaciones) · [Calidad](sitio/calidad.html) (todas las pruebas) · [Índice de la documentación](README.md)

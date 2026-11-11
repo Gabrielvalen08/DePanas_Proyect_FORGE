@@ -28,6 +28,11 @@
   background: var(--tinte-aviso);
 }
 
+/* Después de cargar: ir a ver las compras */
+.verLista {
+  margin-top: var(--space-3);
+}
+
 /* ---------- Selección: tabla sobria, como la de Compras ---------- */
 .acciones {
   display: flex;

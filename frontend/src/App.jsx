@@ -151,7 +151,7 @@ function AppContenido() {
             <Route path="/configuracion" element={<RedirigirACatalogo />} />
             <Route path="/configuracion/:seccion" element={<RedirigirACatalogo />} />
             <Route path="/exportar" element={protegida('/exportar', <PantallaExportar />)} />
-            <Route path="/cargar" element={protegida('/cargar', <PantallaCargar />)} />
+            <Route path="/cargar" element={protegida('/cargar', <PantallaCargar puedeVerLista={tienePermiso('/compras')} />)} />
             <Route path="/usuarios" element={protegida('/usuarios', <PantallaUsuarios />)} />
             <Route path="/agregar-compra" element={<Navigate to="/" replace />} />
             {/* Una ruta que no existe: lo dice y ofrece volver al inicio del usuario */}

@@ -17,9 +17,10 @@ const TONO_ESTADO = { nueva: 'exito', identica: 'neutro', conflicto: 'aviso' }
 
 /**
  * Cargar datos (/cargar): lee un JSON de Exportar, muestra sus compras para
- * elegir cuáles traer y, si alguna ya existe con cambios, abre la comparación.
+ * elegir cuáles traer y, si alguna ya existe con cambios, abre la comparación. Al terminar ofrece
+ * ir a la Lista de compras (puedeVerLista: si el usuario la tiene).
  */
-export default function PantallaCargar() {
+export default function PantallaCargar({ puedeVerLista = true }) {
   // Se llega desde el ⋮ de Lista de compras: ahí vuelve si no hay pantalla anterior
   const regresar = useRegresar('/compras')
   const { addToast } = useToast()
@@ -145,6 +146,9 @@ export default function PantallaCargar() {
             />
             {error && <p className={estilos.error} role="alert">{error}</p>}
             {resultado && <p className={estilos.exito} role="status">{resultado}</p>}
+            {resultado && puedeVerLista && (
+              <Boton variante="secundario" icono={<ListChecks />} a="/compras" className={estilos.verLista}>{CARGAR.verLista}</Boton>
+            )}
             {compras?.length === 0 && <p className={estilos.aviso} role="status">{CARGAR.vacio}</p>}
           </div>
         </Tarjeta>

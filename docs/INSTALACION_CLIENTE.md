@@ -109,3 +109,7 @@ Los datos se conservan, y el acceso directo del escritorio se actualiza solo la 
 - **«El puerto 4510 lo está usando otro programa»:** cierra ese programa o reinicia la computadora y vuelve a abrir De Panas SV.
 - **Olvidaste la contraseña de un usuario:** el administrador la cambia desde el Gestor de usuarios.
 - **Olvidaste la del administrador:** contacta al equipo de desarrollo.
+
+---
+
+**Ver también:** [Manual de uso](manual/index.html) (va dentro del .zip) · [Versión .zip en detalle](../desktop/README.md) · [Índice de la documentación](README.md)

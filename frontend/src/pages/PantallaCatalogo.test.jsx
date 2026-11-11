@@ -354,6 +354,30 @@ describe('PantallaCatalogo', () => {
     expect(await screen.findByRole('rowheader', { name: 'Distribuidora X, S.A.' })).toBeInTheDocument()
   })
 
+  it('sin resultados ofrece limpiar la búsqueda, y una sección vacía ofrece agregar', async () => {
+    const usuario = userEvent.setup()
+    renderizar('/catalogo/proveedores')
+    await usuario.type(await screen.findByLabelText('Buscar proveedor'), 'zzzz')
+    expect(screen.getByText(PANTALLA_CATALOGO.sinResultados)).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: PANTALLA_CATALOGO.limpiarBusqueda }))
+    expect(screen.getByLabelText('Buscar proveedor')).toHaveValue('')
+    expect(screen.getAllByRole('rowheader').length).toBeGreaterThan(0)
+  })
+
+  it('una sección vacía ofrece agregar el primero (si el usuario puede agregar)', async () => {
+    const usuario = userEvent.setup()
+    localStorage.setItem('depanas_catalogo', JSON.stringify({
+      version: 2, proveedores: [], categorias: [], materiales: [], productos: [], proveedoresPorCategoria: {}, fichas: {},
+    }))
+    renderizar('/catalogo/productos')
+    expect(await screen.findByText(PANTALLA_CATALOGO.vacio('producto'))).toBeInTheDocument()
+    // Está arriba (encabezado) y también en el estado vacío, que va después
+    const botones = screen.getAllByRole('button', { name: PANTALLA_CATALOGO.agregar('producto') })
+    expect(botones).toHaveLength(2)
+    await usuario.click(botones[1])
+    expect(await screen.findByRole('dialog', { name: PANTALLA_CATALOGO.tituloNuevo('producto') })).toBeInTheDocument()
+  })
+
   it('el buscador filtra sin distinguir tildes', async () => {
     const usuario = userEvent.setup()
     renderizar('/catalogo/articulos')

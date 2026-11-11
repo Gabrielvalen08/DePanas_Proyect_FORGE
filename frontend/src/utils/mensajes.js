@@ -446,6 +446,7 @@ export const PANTALLA_CATALOGO = {
     quitar: nombre => `Quitar ${nombre}`,
   },
   sinResultados: 'Nada por aquí con ese nombre',
+  limpiarBusqueda: 'Limpiar búsqueda',
   vacio: tipo => `Todavía no hay ${SECCIONES[tipo].titulo.toLowerCase()}.`,
   uso: (tipo, n) =>
     usaCompras(tipo)
@@ -622,6 +623,7 @@ export const EXPORTAR = {
   calculando: 'Contando las compras del rango…',
   resumen: (n, total) => `${n} ${plural(n, 'compra', 'compras')} en el rango · ${total} en total`,
   sinCompras: 'No hay compras en ese rango. Prueba con otras fechas.',
+  verTodo: 'Ver todas las fechas',
   descargar: 'Descargar',
   descargado: n => `¡Listo! Descargamos ${n} ${plural(n, 'compra', 'compras')}. Guarda el archivo en un lugar seguro.`,
   error: detalle => `No pudimos exportar${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
@@ -680,6 +682,7 @@ export const CARGAR = {
     return `¡Listo, pana! ${unir(hechas)}.${extra}`
   },
   vacio: 'El archivo está bien, pero viene vacío: no trae compras.',
+  verLista: 'Ver la Lista de compras',
 }
 
 // ---------------------------------------------------------------------------
