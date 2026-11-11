@@ -608,13 +608,28 @@ export const USUARIOS = {
 // Exportar y cargar datos
 // ---------------------------------------------------------------------------
 export const EXPORTAR = {
+  /** Hoja «Resumen» del Excel: el reporte de gastos del rango exportado */
+  hojaResumen: {
+    hoja: 'Resumen',
+    titulo: 'Resumen de gastos',
+    desde: 'Desde',
+    hasta: 'Hasta',
+    compras: 'Compras',
+    articulos: 'Artículos',
+    subtotal: 'Subtotal',
+    iva: 'IVA',
+    total: 'Total',
+    porProveedor: 'Por proveedor',
+    porCategoria: 'Por categoría',
+    porMes: 'Por mes',
+  },
   rangoTitulo: 'Rango de fechas',
   rangos: { mes: 'Este mes', mesAnterior: 'Mes pasado', ano: 'Este año', todo: 'Todo' },
   desde: 'Desde',
   hasta: 'Hasta',
   formato: 'Formato',
   formatos: {
-    xlsx: { titulo: 'Excel (.xlsx)', descripcion: 'Una fila por artículo, se abre directo en columnas en Excel o Google Sheets' },
+    xlsx: { titulo: 'Excel (.xlsx)', descripcion: 'Una fila por artículo y una hoja con el resumen de gastos; se abre directo en Excel o Google Sheets' },
     json: { titulo: 'Respaldo (.json)', descripcion: 'Para pasar las compras a otro equipo' },
   },
   calculando: 'Contando las compras del rango…',
