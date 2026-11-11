@@ -119,7 +119,7 @@ test('entradas: usuario, catálogo y lotes también validan lo que llega', async
   assert.equal((await pedir(`${base}/usuarios`, { metodo: 'POST', cuerpo: { usuario: 'Ana_04', nombre: 'Ana', contrasena: '123' } })).cuerpo.campo, 'contrasena')
   assert.equal((await pedir(`${base}/catalogo/producto`, { metodo: 'POST', cuerpo: { nombre: 'Arepas, Empanadas' } })).status, 400)
   assert.equal((await pedir(`${base}/catalogo/inventado`, { metodo: 'POST', cuerpo: { nombre: 'X' } })).status, 404)
-  assert.equal((await pedir(`${base}/compras/archivar`, { metodo: 'POST', cuerpo: { ids: [{ $ne: 1 }], archivar: true } })).status, 400)
+  assert.equal((await pedir(`${base}/compras/eliminar`, { metodo: 'POST', cuerpo: { ids: [{ $ne: 1 }] } })).status, 400)
 })
 
 // ---------------------------------------------------------------------------

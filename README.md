@@ -26,8 +26,7 @@ El índice completo de `docs/` está en [docs/README.md](docs/README.md).
 ## Qué hace
 
 - **Agregar compra**, paso a paso: fecha y proveedor; luego los artículos (solo los que vende ese proveedor), con el precio de la última compra y el IVA de 13 %. Varias compras a la vez.
-- **Lista de compras** con filtros, detalle para editar o eliminar y **casillas como en el correo** para archivar o eliminar varias.
-- **Archivo de compras**: las de más de 3 meses pasan solas para que la lista cargue rápido; se pueden devolver.
+- **Lista de compras** con filtros, detalle para editar o eliminar, **casillas como en el correo** para eliminar varias y **páginas de 50** cuando las compras se acumulan.
 - **Catálogo** de proveedores (con su ficha), categorías (con quién las vende), artículos (con su categoría y productos) y productos. Renombrar actualiza las compras.
 - **Exportar** a Excel, con una hoja **Resumen** de gastos por proveedor, por categoría y por mes, o a un respaldo JSON. **Cargar datos** compara compra por compra.
 - **Usuarios** con roles (administrador, operador y empleado), pantallas y funciones por persona, y requisitos de contraseña.
@@ -38,7 +37,7 @@ El índice completo de `docs/` está en [docs/README.md](docs/README.md).
 
 | Agregar compra | Lista de compras |
 |---|---|
-| ![Agregar compra con una fila completa, subtotal, IVA y total](docs/manual/img/02-agregar-compra.png) | ![Lista de compras con dos compras elegidas y los íconos Eliminar y Archivar](docs/manual/img/03-lista-compras.png) |
+| ![Agregar compra con una fila completa, subtotal, IVA y total](docs/manual/img/02-agregar-compra.png) | ![Lista de compras con dos compras elegidas y el ícono Eliminar](docs/manual/img/03-lista-compras.png) |
 
 | Catálogo | Exportar datos |
 |---|---|
@@ -114,6 +113,6 @@ Los aportes de cada uno están en [docs/sitio/index.html](docs/sitio/index.html#
 
 ## Estado
 
-**Lista para que la usen César y Marta.** 581 pruebas automáticas: 134 del backend, 370 del frontend y 77 recorridos en navegador.
+**Lista para que la usen César y Marta.** 575 pruebas automáticas: 130 del backend, 368 del frontend y 77 recorridos en navegador.
 
 Para después: conversión automática de unidades (HU-02), un panel de costos y márgenes dentro de la app y el acceso desde la tablet por la red local.

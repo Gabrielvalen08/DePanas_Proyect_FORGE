@@ -252,7 +252,7 @@ Todos viven en `frontend/src/components/common/` y toda pantalla se arma con ell
 - Montos a la derecha, en negrita, con dos decimales y `$`.
 - Hover visible en filas que se pueden abrir.
 - **Elegir varias (como en el correo):** casilla a la izquierda de cada fila (Naranja Sazón con `accent-color`, zona táctil de 44 px) y «Elegir todas» en el encabezado, que queda a medias si hay una parte elegida. La fila elegida cambia a `--color-seleccion` (naranja al 13 % sobre blanco) con la franja naranja a la izquierda. En el teléfono, «Elegir todas» va como barra sobre las tarjetas.
-- **Acciones de una tabla:** íconos con borde de botón secundario (44 × 44 px, `aria-label` y `title`), como Filtrar; Eliminar y Archivar aparecen solo con algo elegido. La acción principal (p. ej. «Agregar compra») es la única con texto. La cuenta («12 compras», «2 de 12 elegidas») va junto al título.
+- **Acciones de una tabla:** íconos con borde de botón secundario (44 × 44 px, `aria-label` y `title`), como Filtrar; Eliminar aparece solo con algo elegido. La acción principal (p. ej. «Agregar compra») es la única con texto. La cuenta («12 compras», «2 de 12 elegidas») va junto al título.
 - En teléfono, cada fila se vuelve una tarjeta con etiqueta y valor.
 
 **Formularios (`Campo`, `Selector`, `AutocompleteInput`)**

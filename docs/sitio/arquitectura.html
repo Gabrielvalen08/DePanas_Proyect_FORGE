@@ -91,9 +91,9 @@
           <thead><tr><th scope="col">Ruta</th><th scope="col">Qué hace</th></tr></thead>
           <tbody>
             <tr><td><code>POST/DELETE /api/sesion</code></td><td>Entrar (devuelve el token) y salir</td></tr>
-            <tr><td><code>GET /api/compras</code></td><td>Compras con filtros; <code>archivo=activas|archivadas</code></td></tr>
+            <tr><td><code>GET /api/compras</code></td><td>Compras con filtros (proveedor, artículo, fechas)</td></tr>
             <tr><td><code>POST /api/compras</code>, <code>GET/PUT/DELETE /api/compras/:id</code></td><td>Crear, ver, editar y eliminar una compra</td></tr>
-            <tr><td><code>POST /api/compras/archivar</code>, <code>/eliminar</code></td><td>Varias compras a la vez (casillas)</td></tr>
+            <tr><td><code>POST /api/compras/eliminar</code></td><td>Varias compras a la vez (casillas)</td></tr>
             <tr><td><code>/api/catalogo</code> y <code>/api/catalogo/:tipo/…</code></td><td>Leer, agregar, renombrar, eliminar e importar el catálogo; asignar categoría y productos a un artículo</td></tr>
             <tr><td><code>/api/usuarios</code>, <code>/api/requisitos-contrasena</code></td><td>Gestor de usuarios (solo el administrador)</td></tr>
             <tr><td><code>/api/db/exportar(-json)</code>, <code>/api/db/importar(-json)</code></td><td>Respaldos: base completa y compras en JSON</td></tr>

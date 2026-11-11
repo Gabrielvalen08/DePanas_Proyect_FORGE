@@ -1,4 +1,4 @@
-/* ---------- Encabezado de la tabla: íconos (Eliminar, Archivar, Filtrar), Agregar compra y menú ⋮ ---------- */
+/* ---------- Encabezado de la tabla: páginas, íconos (Eliminar, Filtrar), Agregar compra y menú ⋮ ---------- */
 .acciones {
   display: flex;
   flex-wrap: wrap;
@@ -41,11 +41,35 @@
   letter-spacing: 0;
 }
 
-.nota {
+/* ---------- Páginas (como en el correo): «1–50 de 380» y las flechas ---------- */
+.paginas {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.rango {
+  margin-right: var(--space-1);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* Con la página entera elegida: ofrece elegir todas las de la lista */
+.avisoSeleccion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1) var(--space-2);
   max-width: none;
-  padding: var(--space-3) var(--tabla-celda-x) 0;
+  margin: 0;
+  padding: var(--space-2) var(--tabla-celda-x);
   font-size: 0.9375rem;
-  color: var(--color-text-muted);
+  color: var(--color-text);
+  background: var(--color-seleccion);
+  border-bottom: 1px solid var(--color-border);
 }
 
 /* ---------- Casillas (como en el correo) ---------- */

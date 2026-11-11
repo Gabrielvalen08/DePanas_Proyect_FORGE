@@ -142,17 +142,6 @@ function AppContenido() {
                 puedeCargar={tienePermiso('/cargar')}
                 puedeEditar={tieneFuncion('compras.editar')}
                 puedeEliminar={tieneFuncion('compras.eliminar')}
-                puedeArchivar={tieneFuncion('compras.archivar')}
-                puedeEditarArticulo={tieneFuncion('catalogo.editar')}
-              />
-            ))} />
-            {/* Archivo: las compras de más de 3 meses y las archivadas a mano. Mismo permiso que la lista */}
-            <Route path="/compras/archivo" element={protegida('/compras', (
-              <PantallaMaestra
-                vista="archivadas"
-                puedeEditar={tieneFuncion('compras.editar')}
-                puedeEliminar={tieneFuncion('compras.eliminar')}
-                puedeArchivar={tieneFuncion('compras.archivar')}
                 puedeEditarArticulo={tieneFuncion('catalogo.editar')}
               />
             ))} />

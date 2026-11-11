@@ -38,7 +38,6 @@
         <li><a href="#acceso">Acceso y sesión</a></li>
         <li><a href="#agregar">Agregar compra</a></li>
         <li><a href="#lista">Lista de compras</a></li>
-        <li><a href="#archivo">Archivo de compras</a></li>
         <li><a href="#catalogo">Catálogo</a></li>
         <li><a href="#exportar">Exportar datos</a></li>
         <li><a href="#cargar">Cargar datos</a></li>
@@ -89,35 +88,23 @@
       <h2 id="t-lista">3. Lista de compras</h2>
       <dl class="ficha">
         <dt>Ruta</dt><dd><code>/compras</code></dd>
-        <dt>Quién</dt><dd>Quien tenga la pantalla. Editar, eliminar y archivar son funciones aparte.</dd>
+        <dt>Quién</dt><dd>Quien tenga la pantalla. Editar y eliminar son funciones aparte.</dd>
         <dt>Código</dt><dd><code>PantallaMaestra</code>, <code>DetalleLista</code>, <code>FiltrosEnLinea</code></dd>
       </dl>
       <ul class="lista">
         <li>Las compras <b>activas</b>, la más reciente arriba. Tocar una fila abre su detalle para ver, editar o eliminar.</li>
         <li><b>Casillas como en el correo:</b> una por compra a la izquierda y otra arriba para elegir todas. La fila elegida cambia de color.</li>
-        <li>Con algo elegido aparecen los íconos <b>Eliminar</b> y <b>Archivar</b> junto a <b>Filtrar</b>. Solo «Agregar compra» lleva texto.</li>
+        <li>Con algo elegido aparece el ícono <b>Eliminar</b> junto a <b>Filtrar</b>. Solo «Agregar compra» lleva texto.</li>
+        <li>Con más de 50 compras la lista va <b>por páginas de 50</b>: «1–50 de 380» y las flechas, arriba, como en el correo. «Elegir todas» elige la página y un aviso ofrece elegir todas las de la lista.</li>
         <li><b>Filtrar</b> por proveedor, artículo y rango de fechas, en vivo.</li>
-        <li>El menú <b>⋮</b> lleva Ir al archivo, Exportar datos y Cargar datos.</li>
+        <li>El menú <b>⋮</b> lleva Exportar datos y Cargar datos.</li>
         <li>Toda acción se confirma; eliminar varias es todo o nada.</li>
       </ul>
     </section>
 
-    <section id="archivo" aria-labelledby="t-archivo">
-      <h2 id="t-archivo">4. Archivo de compras</h2>
-      <dl class="ficha">
-        <dt>Ruta</dt><dd><code>/compras/archivo</code></dd>
-        <dt>Quién</dt><dd>Quien tenga Lista de compras; archivar y devolver piden la función <b>compras.archivar</b> (operador sí, empleado no)</dd>
-        <dt>Código</dt><dd><code>PantallaMaestra vista="archivadas"</code>, <code>shared/archivo.js</code></dd>
-      </dl>
-      <ul class="lista">
-        <li>Para que la lista cargue rápido, <b>una compra pasa sola al Archivo al cumplir 3 meses</b> desde su fecha.</li>
-        <li>También se archiva a mano, y desde el Archivo se <b>devuelve a la lista</b>; una devuelta se queda en la lista aunque sea vieja.</li>
-        <li>Nada se borra al archivar. Exportar y Cargar siguen viendo todas las compras.</li>
-      </ul>
-    </section>
 
     <section id="catalogo" aria-labelledby="t-catalogo">
-      <h2 id="t-catalogo">5. Catálogo</h2>
+      <h2 id="t-catalogo">4. Catálogo</h2>
       <dl class="ficha">
         <dt>Ruta</dt><dd><code>/catalogo/proveedores</code>, <code>/categorias</code>, <code>/articulos</code>, <code>/productos</code></dd>
         <dt>Quién</dt><dd>Quien tenga la pantalla; agregar, editar, eliminar, exportar y cargar son funciones aparte</dd>
@@ -133,7 +120,7 @@
     </section>
 
     <section id="exportar" aria-labelledby="t-exportar">
-      <h2 id="t-exportar">6. Exportar datos</h2>
+      <h2 id="t-exportar">5. Exportar datos</h2>
       <dl class="ficha">
         <dt>Ruta</dt><dd><code>/exportar</code> (desde el ⋮ de Lista de compras)</dd>
         <dt>Código</dt><dd><code>PantallaExportar</code>, <code>utils/exportar.js</code>, <code>shared/gastos.js</code></dd>
@@ -146,7 +133,7 @@
     </section>
 
     <section id="cargar" aria-labelledby="t-cargar">
-      <h2 id="t-cargar">7. Cargar datos</h2>
+      <h2 id="t-cargar">6. Cargar datos</h2>
       <dl class="ficha">
         <dt>Ruta</dt><dd><code>/cargar</code> (desde el ⋮ de Lista de compras)</dd>
         <dt>Código</dt><dd><code>PantallaCargar</code>, <code>CompararCompra</code>, <code>shared/carga-compras.js</code></dd>
@@ -159,7 +146,7 @@
     </section>
 
     <section id="usuarios" aria-labelledby="t-usuarios">
-      <h2 id="t-usuarios">8. Gestor de usuarios</h2>
+      <h2 id="t-usuarios">7. Gestor de usuarios</h2>
       <dl class="ficha">
         <dt>Ruta</dt><dd><code>/usuarios</code></dd>
         <dt>Quién</dt><dd>Solo el administrador</dd>
@@ -170,7 +157,7 @@
           <thead><tr><th scope="col">Rol</th><th scope="col">Pantallas</th><th scope="col">Funciones</th></tr></thead>
           <tbody>
             <tr><td><span class="etiqueta marca">Administrador</span> (uno solo)</td><td>Todas, también las futuras</td><td>Todas. No se elimina ni cambia de rol.</td></tr>
-            <tr><td><span class="etiqueta">Operador</span></td><td>Todas menos el gestor</td><td>Todas (editar, eliminar y archivar compras; todo el catálogo)</td></tr>
+            <tr><td><span class="etiqueta">Operador</span></td><td>Todas menos el gestor</td><td>Todas (editar y eliminar compras; todo el catálogo)</td></tr>
             <tr><td><span class="etiqueta">Empleado</span></td><td>Agregar compra y Lista de compras</td><td>Editar compras</td></tr>
           </tbody>
         </table>
@@ -183,7 +170,7 @@
     </section>
 
     <section id="zip" aria-labelledby="t-zip">
-      <h2 id="t-zip">9. Versión .zip y demostración</h2>
+      <h2 id="t-zip">8. Versión .zip y demostración</h2>
       <dl class="ficha">
         <dt>Código</dt><dd><code>desktop/</code> (<code>preparar.mjs</code>, <code>iniciar.mjs</code>, <code>servidor.mjs</code>)</dd>
         <dt>Guía</dt><dd><a href="../INSTALACION_CLIENTE.md">Instalación en la computadora del cliente</a></dd>

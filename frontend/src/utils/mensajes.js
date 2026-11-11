@@ -105,48 +105,29 @@ export const LISTA_COMPRAS = {
   masAcciones: 'Más acciones de Lista de compras',
   exportar: 'Exportar datos',
   cargar: 'Cargar datos',
-  irArchivo: 'Ir al archivo',
   // Selección como en el correo: una casilla por compra y una para todas
   elegirTodas: 'Elegir todas las compras',
   todas: 'Elegir todas',
   elegirUna: (proveedor, fecha) => `Elegir la compra en ${proveedor} del ${fecha}`,
   elegidas: (n, total) => `${n} de ${total} ${plural(total, 'elegida', 'elegidas')}`,
-  archivarElegidas: n => `Archivar ${n} ${plural(n, 'compra', 'compras')}`,
   eliminarElegidas: n => `Eliminar ${n} ${plural(n, 'compra', 'compras')}`,
-  archivadas: n => `¡Listo! ${n} ${plural(n, 'compra pasó', 'compras pasaron')} al archivo.`,
   eliminadas: n => `${n} ${plural(n, 'compra eliminada', 'compras eliminadas')}. La lista quedó al día.`,
-  errorArchivar: detalle => `No pudimos archivar las compras: ${detalle}. Inténtalo de nuevo.`,
   errorEliminar: detalle => `No pudimos eliminar las compras: ${detalle}. Inténtalo de nuevo.`,
-  confirmarArchivar: {
-    titulo: n => `¿Archivamos ${n} ${plural(n, 'compra', 'compras')}?`,
-    mensaje: 'Saldrán de la Lista de compras y quedarán en el archivo. Puedes devolverlas cuando quieras.',
-    confirmar: 'Sí, archivar',
-  },
   confirmarEliminarVarias: {
     titulo: n => `¿Eliminamos ${n} ${plural(n, 'compra', 'compras')}?`,
     mensaje: 'Se borrarán con todos sus artículos. Esto no se puede deshacer.',
     confirmar: 'Sí, eliminar',
   },
-}
-
-// ---------------------------------------------------------------------------
-// Archivo de compras (/compras/archivo)
-// ---------------------------------------------------------------------------
-export const ARCHIVO = {
-  titulo: 'Compras archivadas',
-  nota: 'Las compras pasan aquí solas al cumplir 3 meses, para que la Lista de compras cargue rápido.',
-  devolverElegidas: n => `Devolver ${n} ${plural(n, 'compra', 'compras')} a la lista`,
-  devueltas: n => `¡Listo! ${n} ${plural(n, 'compra volvió', 'compras volvieron')} a la Lista de compras.`,
-  errorDevolver: detalle => `No pudimos devolver las compras: ${detalle}. Inténtalo de nuevo.`,
-  vacio: {
-    titulo: 'El archivo está vacío',
-    texto: 'Aquí llegan solas las compras de más de 3 meses y las que archives desde la lista.',
-  },
-  confirmarDevolver: {
-    titulo: n => `¿Devolvemos ${n} ${plural(n, 'compra', 'compras')} a la lista?`,
-    mensaje: 'Volverán a la Lista de compras y se quedarán ahí aunque tengan más de 3 meses.',
-    confirmar: 'Sí, devolver',
-  },
+  // Páginas de 50 compras, con flechas arriba como en el correo
+  paginacion: 'Páginas de la lista',
+  rango: (desde, hasta, total) => `${desde}–${hasta} de ${total}`,
+  anterior: 'Página anterior',
+  siguiente: 'Página siguiente',
+  // «Elegir todas» elige la página; un aviso ofrece elegir todas las de la lista
+  paginaElegida: n => `Elegiste las ${n} compras de esta página.`,
+  elegirTodasLista: total => `Elegir las ${total}`,
+  todasLaLista: total => `Elegiste las ${total} compras de la lista.`,
+  quitarSeleccion: 'Quitar la selección',
 }
 
 // ---------------------------------------------------------------------------
@@ -540,7 +521,6 @@ export const USUARIOS = {
   funciones: {
     'compras.editar': 'Editar compras',
     'compras.eliminar': 'Eliminar compras',
-    'compras.archivar': 'Archivar compras',
     'catalogo.agregar': 'Agregar',
     'catalogo.editar': 'Editar',
     'catalogo.eliminar': 'Eliminar',

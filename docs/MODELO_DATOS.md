@@ -67,7 +67,7 @@ En la interfaz se dice **artículo**; en el código, la API y la base, `material
 
 ### `ingresos`: las compras
 
-Una fila por artículo comprado. Las filas de una misma compra comparten `compra_id`. Los datos de la compra (`compra_categoria`, `compra_iva`, `compra_archivo`) se repiten en cada una de sus filas.
+Una fila por artículo comprado. Las filas de una misma compra comparten `compra_id`. Los datos de la compra (`compra_categoria`, `compra_iva`) se repiten en cada una de sus filas.
 
 | Columna | Tipo | Qué guarda |
 |---|---|---|
@@ -83,7 +83,6 @@ Una fila por artículo comprado. Las filas de una misma compra comparten `compra
 | `categoria`, `producto` | TEXT | Categoría y productos del artículo («Arepas, Empanadas») |
 | `compra_categoria` | TEXT | Categoría de la compra |
 | `compra_iva` | REAL | IVA de la compra en dinero (13 % del subtotal o 0) |
-| `compra_archivo` | TEXT | NULL = pasa sola al Archivo a los 3 meses; `'archivada'` = a mano; `'activa'` = devuelta a la lista |
 
 Índices: `compra_id`, `fecha` y `proveedor`.
 
@@ -110,11 +109,11 @@ Relación muchos a muchos por `id` (`proveedor_id`, `categoria_id`) con `ON DELE
 | `contrasena` | Hash PBKDF2-SHA256 `pbkdf2$600000$<sal>$<hash>`, nunca el texto |
 | `rol` | `admin` (uno solo), `operador` o `empleado` |
 | `permisos` | JSON con las pantallas (`["*"]` para el administrador) |
-| `funciones` | JSON con las acciones permitidas (editar, eliminar, archivar compras…) |
+| `funciones` | JSON con las acciones permitidas (editar o eliminar compras, agregar al catálogo…) |
 
 ### `ajustes`
 
-Clave → JSON. Guarda los requisitos de contraseña y las marcas de migraciones que corren una sola vez (contraseña de Marta, función de archivar).
+Clave → JSON. Guarda los requisitos de contraseña y las marcas de migraciones que corren una sola vez (contraseña de Marta).
 
 ## 4. Capa de acceso a datos (patrón DAO)
 
@@ -129,7 +128,7 @@ Petición HTTP ─► routes/*.js ─► dao/*.js ─► SQLite
 
 | DAO | Qué hace |
 |---|---|
-| `dao/compras.js` | Listar con filtros y vista de Archivo, obtener, crear, editar, eliminar, archivar o devolver varias, eliminar varias, respaldos JSON |
+| `dao/compras.js` | Listar con filtros, obtener, crear, editar, eliminar, eliminar varias, respaldos JSON |
 | `dao/ingresos.js` | Acceso fila por fila (`/api/ingresos`) |
 | `dao/catalogo.js` | Leer el catálogo (con uso, precios sugeridos, IVA por proveedor y fichas), asignar categoría y productos, agregar, renombrar (también en las compras), eliminar e importar respaldos |
 | `dao/usuarios.js` | Listar, crear, editar y eliminar usuarios, autenticar (y recalcular hashes viejos), requisitos de contraseña |
@@ -151,7 +150,7 @@ Petición HTTP ─► routes/*.js ─► dao/*.js ─► SQLite
 | Respaldo de compras | `shared/compras-json.js`, `shared/carga-compras.js` | Estructura y tipos; nueva, duplicada o modificada |
 | Catálogo | `dao/catalogo.js`, `shared/productos.js`, `shared/proveedores.js`, `shared/catalogo-json.js` | Nombre obligatorio y único; un producto sin comas; ficha del proveedor válida |
 | Usuario | `dao/usuarios.js`, `shared/usuarios.js` | Formato del usuario, nombre, rol, pantallas y funciones válidas, contraseña según los requisitos |
-| Lotes (Archivo) | `shared/archivo.js` (`validarIds`) | Lista no vacía de ids válidos |
+| Eliminar varias | `shared/lote.js` (`validarIds`) | Lista no vacía de ids válidos |
 
 Las reglas de `shared/` se usan **igual** en el backend y en el modo local del frontend. SQL siempre con **sentencias preparadas** (`?`), nunca con texto armado con datos del usuario.
 
@@ -159,9 +158,9 @@ Las reglas de `shared/` se usan **igual** en el backend y en el modo local del f
 
 Una base vieja del cliente debe abrir con el código nuevo sin perder nada. `db.js` revisa al abrir:
 
-- **Columnas nuevas** (`unidad`, `compra_id`, `origen_id`, `compra_categoria`, `compra_iva`, `compra_archivo`, `ficha`…): se agregan si faltan.
+- **Columnas nuevas** (`unidad`, `compra_id`, `origen_id`, `compra_categoria`, `compra_iva`, `ficha`…): se agregan si faltan.
 - **Datos que se completan una vez** (catálogo desde las compras, relación proveedor-categoría): `PRAGMA user_version`.
-- **Cambios de usuarios que corren una vez** (contraseña nueva de Marta si seguía en la anterior, función de archivar para operadores): una marca en `ajustes`.
+- **Cambios de usuarios que corren una vez** (contraseña nueva de Marta si seguía en la anterior): una marca en `ajustes`.
 - **Tabla de usuarios con el CHECK anterior**: se rehace copiando los usuarios.
 
 Cada migración tiene su prueba en `backend/test/`.

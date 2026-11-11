@@ -4,13 +4,11 @@
  * transacciones viven en dao/compras.js.
  *
  *   GET    /api/compras               → compras, con filtros proveedor/material/fechaDesde/fechaHasta
- *                                        y archivo=activas|archivadas (sin él, todas: Exportar, Cargar)
  *   GET    /api/compras/sugerencias   → { proveedores, categorias, materiales, productos } (catálogo)
  *   GET    /api/compras/:id           → una compra
  *   POST   /api/compras               → crea una compra
  *   PUT    /api/compras/:id           → reemplaza los artículos de una compra
  *   DELETE /api/compras/:id           → elimina la compra completa
- *   POST   /api/compras/archivar      → { ids, archivar } archiva varias compras o las devuelve a la lista
  *   POST   /api/compras/eliminar      → { ids } elimina varias compras de una vez
  */
 
@@ -25,8 +23,8 @@ export function crearRutasListas(getDb) {
   const dao = () => comprasDAO(getDb())
 
   router.get('/', (req, res) => {
-    const { proveedor, material, fechaDesde, fechaHasta, archivo } = req.query
-    responder(res, () => dao().listar({ proveedor, material, fechaDesde, fechaHasta, archivo }))
+    const { proveedor, material, fechaDesde, fechaHasta } = req.query
+    responder(res, () => dao().listar({ proveedor, material, fechaDesde, fechaHasta }))
   })
 
   router.get('/sugerencias', (_req, res) => responder(res, () => {
@@ -34,8 +32,7 @@ export function crearRutasListas(getDb) {
     return { proveedores, categorias, materiales: materiales.map(m => m.nombre), productos }
   }))
 
-  // Varias compras a la vez (casillas de la Lista de compras y del Archivo). Van antes de /:id
-  router.post('/archivar', (req, res) => responder(res, () => dao().archivar(req.body?.ids, req.body?.archivar)))
+  // Varias compras a la vez (casillas de la Lista de compras). Va antes de /:id
   router.post('/eliminar', (req, res) => responder(res, () => dao().eliminarVarias(req.body?.ids)))
 
   router.get('/:id', (req, res) => responder(res, () => dao().obtener(req.params.id)))

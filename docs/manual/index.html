@@ -162,7 +162,6 @@
         <li><a href="#registrar">Registrar una compra</a></li>
         <li><a href="#articulo">Un artículo nuevo</a></li>
         <li><a href="#lista">Lista de compras</a></li>
-        <li><a href="#archivo">Archivo de compras</a></li>
         <li><a href="#catalogo">Catálogo</a></li>
         <li><a href="#exportar">Exportar y respaldos</a></li>
         <li><a href="#usuarios">Usuarios y contraseñas</a></li>
@@ -218,20 +217,21 @@
 
     <section id="lista" aria-labelledby="t-lista">
       <h2 id="t-lista">4. Lista de compras</h2>
-      <p>Todas las compras de los últimos 3 meses, la más reciente arriba.</p>
+      <p>Todas las compras, la más reciente arriba. Cuando hay más de 50, se ven de 50 en 50.</p>
       <table>
         <thead><tr><th scope="col">Quiero…</th><th scope="col">Cómo</th></tr></thead>
         <tbody>
           <tr><td>Ver una compra</td><td>Toca su fila. Ahí también se <b>edita</b> o se <b>elimina</b>.</td></tr>
           <tr><td>Buscar compras</td><td>Ícono <b>Filtrar</b> (las rayitas): por proveedor, artículo o fechas.</td></tr>
-          <tr><td>Elegir varias</td><td>Marca sus <b>casillas</b>, como en el correo. La de arriba elige todas.</td></tr>
-          <tr><td>Archivar o eliminar las elegidas</td><td>Íconos <b>Archivar</b> (la caja) o <b>Eliminar</b> (la papelera), junto a Filtrar.</td></tr>
-          <tr><td>Ir al archivo, exportar o cargar</td><td>Menú <b>⋮</b> de la lista.</td></tr>
+          <tr><td>Elegir varias</td><td>Marca sus <b>casillas</b>, como en el correo. La de arriba elige las de la página; un aviso ofrece elegir todas.</td></tr>
+          <tr><td>Eliminar las elegidas</td><td>Ícono <b>Eliminar</b> (la papelera), junto a Filtrar. Pide confirmar.</td></tr>
+          <tr><td>Ver las siguientes 50</td><td>Flechas <b>‹ ›</b> arriba, junto a «1–50 de …», como en el correo.</td></tr>
+          <tr><td>Exportar o cargar</td><td>Menú <b>⋮</b> de la lista.</td></tr>
         </tbody>
       </table>
       <figure>
-        <img src="img/03-lista-compras.png" alt="Lista de compras con dos compras elegidas en color naranja suave y los íconos Eliminar, Archivar y Filtrar" loading="lazy">
-        <figcaption>Dos compras elegidas: aparecen los íconos Eliminar y Archivar.</figcaption>
+        <img src="img/03-lista-compras.png" alt="Lista de compras con dos compras elegidas en color naranja suave y los íconos Eliminar y Filtrar" loading="lazy">
+        <figcaption>Dos compras elegidas: aparece el ícono Eliminar.</figcaption>
       </figure>
       <figure>
         <img src="img/04-detalle-compra.png" alt="Ventana con el detalle de una compra en Selectos: fecha, artículos, cantidades y montos" loading="lazy">
@@ -240,23 +240,9 @@
       <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
     </section>
 
-    <section id="archivo" aria-labelledby="t-archivo">
-      <h2 id="t-archivo">5. Archivo de compras</h2>
-      <p>Para que la lista cargue rápido, las compras <b>pasan solas al Archivo al cumplir 3 meses</b>. Nada se borra.</p>
-      <ul class="lista">
-        <li>Ábrelo desde el menú <b>⋮ → Ir al archivo</b>.</li>
-        <li>Para traer una compra de vuelta: marca su casilla y toca <b>Devolver a la lista</b>.</li>
-        <li>Exportar siempre incluye también las compras archivadas.</li>
-      </ul>
-      <figure>
-        <img src="img/07-archivo.png" alt="Pantalla Archivo de compras con su nota explicativa y el botón Regresar" loading="lazy">
-        <figcaption>El Archivo de compras.</figcaption>
-      </figure>
-      <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
-    </section>
 
     <section id="catalogo" aria-labelledby="t-catalogo">
-      <h2 id="t-catalogo">6. Catálogo</h2>
+      <h2 id="t-catalogo">5. Catálogo</h2>
       <p>Las opciones de los buscadores, en cuatro secciones: <b>Proveedores</b>, <b>Categorías</b>, <b>Artículos</b> y <b>Productos</b>.</p>
       <ul class="lista">
         <li><b>Agregar</b>: el botón naranja de cada sección.</li>
@@ -272,7 +258,7 @@
     </section>
 
     <section id="exportar" aria-labelledby="t-exportar">
-      <h2 id="t-exportar">7. Exportar y respaldos</h2>
+      <h2 id="t-exportar">6. Exportar y respaldos</h2>
       <ol class="pasos">
         <li>En la lista: <b>⋮ → Exportar datos</b>.</li>
         <li>Elige el rango (<b>Este mes</b>, <b>Mes pasado</b>…) o las fechas.</li>
@@ -294,7 +280,7 @@
     </section>
 
     <section id="usuarios" aria-labelledby="t-usuarios">
-      <h2 id="t-usuarios">8. Usuarios y contraseñas</h2>
+      <h2 id="t-usuarios">7. Usuarios y contraseñas</h2>
       <p>Solo el administrador ve el <b>Gestor de usuarios</b>, al pie del menú.</p>
       <ul class="lista">
         <li><b>Agregar usuario</b>: nombre, usuario, contraseña y rol. El <b>operador</b> puede todo menos el gestor; el <b>empleado</b>, registrar, ver y corregir compras.</li>
@@ -306,18 +292,18 @@
     </section>
 
     <section id="preguntas" aria-labelledby="t-preguntas">
-      <h2 id="t-preguntas">9. Preguntas frecuentes</h2>
+      <h2 id="t-preguntas">8. Preguntas frecuentes</h2>
       <details>
         <summary>¿Necesito internet?</summary>
         <p>No. Todo funciona y se guarda en esta computadora.</p>
       </details>
       <details>
         <summary>Me equivoqué al guardar una compra. ¿Cómo la corrijo?</summary>
-        <p>En la Lista de compras toca su fila y luego <b>Editar</b>. Si tiene más de 3 meses, búscala en el Archivo.</p>
+        <p>En la Lista de compras toca su fila y luego <b>Editar</b>.</p>
       </details>
       <details>
         <summary>No encuentro una compra vieja.</summary>
-        <p>Pasó al Archivo: <b>⋮ → Ir al archivo</b>. Para tenerla otra vez en la lista, márcala y toca <b>Devolver a la lista</b>.</p>
+        <p>Usa <b>Filtrar</b> con su proveedor o sus fechas, o avanza con las flechas <b>‹ ›</b> de arriba: la lista va de 50 en 50.</p>
       </details>
       <details>
         <summary>El artículo no aparece al escribirlo.</summary>

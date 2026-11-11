@@ -7,16 +7,16 @@
  * (dao/errores.js) cuando algo no se puede.
  *
  *   const dao = comprasDAO(db)
- *   dao.listar({ proveedor, material, fechaDesde, fechaHasta, archivo })
+ *   dao.listar({ proveedor, material, fechaDesde, fechaHasta })
  *   dao.obtener(id) · dao.crear(cuerpo) · dao.actualizar(id, cuerpo) · dao.eliminar(id)
- *   dao.archivar(ids, archivar) · dao.eliminarVarias(ids)
+ *   dao.eliminarVarias(ids)
  *   dao.todas() · dao.cargarRespaldo(compras, decisiones)
  */
 
 import { randomUUID } from 'crypto'
 import { enTransaccion, registrarCompra } from '../db.js'
 import { ivaValido } from '../../shared/iva.js'
-import { ACTIVA, ARCHIVADA, ESTADOS_ARCHIVO, VISTAS_ARCHIVO, estaArchivada, fechaLimiteArchivo, hoyLocalISO, validarIds } from '../../shared/archivo.js'
+import { validarIds } from '../../shared/lote.js'
 import { resolverCarga } from '../../shared/carga-compras.js'
 import { ErrorDatos, noEncontrado, noValido } from './errores.js'
 
@@ -32,14 +32,14 @@ function fechaValida(fecha) {
   return d.getUTCFullYear() === anio && d.getUTCMonth() === mes - 1 && d.getUTCDate() === dia
 }
 
-const COLUMNAS = 'id, origen_id, compra_categoria, compra_iva, compra_archivo, compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto'
+const COLUMNAS = 'id, origen_id, compra_categoria, compra_iva, compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto'
 
 const INSERTAR =
-  'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto, origen_id, compra_categoria, compra_iva, compra_archivo) ' +
-  'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto, origen_id, compra_categoria, compra_iva) ' +
+  'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 
 /** Agrupa filas planas de `ingresos` en compras, conservando el orden de llegada */
-export function agruparFilas(filas, hoy = hoyLocalISO()) {
+export function agruparFilas(filas) {
   const compras = new Map()
   for (const f of filas) {
     if (!compras.has(f.compra_id)) {
@@ -50,8 +50,6 @@ export function agruparFilas(filas, hoy = hoyLocalISO()) {
         fecha: f.fecha,
         categoria: f.compra_categoria ?? f.categoria ?? '',
         iva: f.compra_iva ?? 0,
-        archivo: f.compra_archivo ?? null,
-        archivada: estaArchivada({ fecha: f.fecha, archivo: f.compra_archivo ?? null }, hoy),
         materiales: [],
       })
     }
@@ -132,12 +130,12 @@ function idsValidos(ids) {
 
 export function comprasDAO(db) {
   /** Escribe las filas de una compra (y registra en el catálogo lo nuevo). Dentro de una transacción */
-  function insertarMateriales(compraId, compra, origenId = null, archivo = null) {
+  function insertarMateriales(compraId, compra, origenId = null) {
     const insertar = db.prepare(INSERTAR)
     registrarCompra(db, compra)
     for (const m of compra.materiales) {
       // La categoría es de cada material (como en el Excel); la de la compra queda como respaldo
-      insertar.run(compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, m.categoria || compra.categoria, m.producto, origenId, compra.categoria, compra.iva, archivo)
+      insertar.run(compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, m.categoria || compra.categoria, m.producto, origenId, compra.categoria, compra.iva)
     }
   }
 
@@ -156,10 +154,8 @@ export function comprasDAO(db) {
     /**
      * Compras con filtros; las más recientes primero y, dentro de cada una, los artículos en
      * el orden en que se ingresaron. Con `material`, las compras que contienen ese artículo.
-     * archivo: 'activas' (Lista de compras), 'archivadas' (Archivo) o nada (todas).
      */
-    listar({ proveedor, material, fechaDesde, fechaHasta, archivo } = {}) {
-      if (archivo !== undefined && !VISTAS_ARCHIVO.includes(archivo)) throw noValido('archivo debe ser activas o archivadas')
+    listar({ proveedor, material, fechaDesde, fechaHasta } = {}) {
       // Los filtros eligen compras; luego se traen todas sus filas
       let subconsulta = 'SELECT compra_id FROM ingresos WHERE 1=1'
       const params = []
@@ -167,18 +163,11 @@ export function comprasDAO(db) {
       if (material) { subconsulta += ' AND material LIKE ?'; params.push(`%${material}%`) }
       if (fechaDesde) { subconsulta += ' AND fecha >= ?'; params.push(fechaDesde) }
       if (fechaHasta) { subconsulta += ' AND fecha <= ?'; params.push(fechaHasta) }
-      // Archivo: misma regla que estaArchivada (shared/archivo.js), en SQL para no traer lo que no se muestra.
-      // IFNULL: con NULL, NOT (NULL = 'archivada' ...) daría NULL y la compra no saldría en ninguna vista
-      const hoy = hoyLocalISO()
-      const archivadaSQL = "(IFNULL(compra_archivo, '') = 'archivada' OR (compra_archivo IS NULL AND fecha < ?))"
-      if (archivo === 'archivadas') { subconsulta += ` AND ${archivadaSQL}`; params.push(fechaLimiteArchivo(hoy)) }
-      if (archivo === 'activas') { subconsulta += ` AND NOT ${archivadaSQL}`; params.push(fechaLimiteArchivo(hoy)) }
-
       const filas = db.prepare(
         `SELECT ${COLUMNAS}, (SELECT MAX(j.id) FROM ingresos j WHERE j.compra_id = i.compra_id) AS orden_compra ` +
         `FROM ingresos i WHERE compra_id IN (${subconsulta}) ORDER BY fecha DESC, orden_compra DESC, id ASC`
       ).all(...params)
-      return agruparFilas(filas, hoy)
+      return agruparFilas(filas)
     },
 
     obtener(compraId) {
@@ -195,14 +184,14 @@ export function comprasDAO(db) {
       return obtener(compraId)
     },
 
-    /** Reemplaza los artículos de una compra. No la saca ni la mete al Archivo */
+    /** Reemplaza los artículos de una compra */
     actualizar(compraId, cuerpo) {
       const compra = compraValida(cuerpo)
       const existe = obtener(compraId)
       if (!existe) throw noEncontrado('Compra no encontrada')
       enTransaccion(db, () => {
         db.prepare('DELETE FROM ingresos WHERE compra_id = ?').run(compraId)
-        insertarMateriales(compraId, compra, existe.origen_id ?? null, existe.archivo ?? null)
+        insertarMateriales(compraId, compra, existe.origen_id ?? null)
       })
       return obtener(compraId)
     },
@@ -210,20 +199,6 @@ export function comprasDAO(db) {
     eliminar(compraId) {
       const info = db.prepare('DELETE FROM ingresos WHERE compra_id = ?').run(compraId)
       if (Number(info.changes) === 0) throw noEncontrado('Compra no encontrada')
-    },
-
-    /** archivar: true las manda al Archivo; false las devuelve a la lista. Todo o nada */
-    archivar(ids, archivar) {
-      const claves = idsValidos(ids)
-      if (typeof archivar !== 'boolean') throw noValido('Falta decir si se archivan o se devuelven')
-      const marcas = claves.map(() => '?').join(', ')
-      const cambiadas = enTransaccion(db, () => {
-        const n = contar(claves)
-        db.prepare(`UPDATE ingresos SET compra_archivo = ? WHERE compra_id IN (${marcas})`).run(archivar ? ARCHIVADA : ACTIVA, ...claves)
-        return n
-      })
-      if (cambiadas === 0) throw noEncontrado('No se encontraron las compras elegidas')
-      return { cambiadas, archivar }
     },
 
     /** Elimina varias compras con todos sus artículos. Todo o nada */
@@ -262,12 +237,10 @@ export function comprasDAO(db) {
         for (const { compra: c, nueva } of plan.escrituras) {
           const id = nueva ? randomUUID() : c.id
           if (!nueva) db.prepare('DELETE FROM ingresos WHERE compra_id = ?').run(id)
-          // Una compra que ya estaba conserva su lugar (lista o Archivo); una nueva queda en automático
-          const archivo = !nueva && ESTADOS_ARCHIVO.includes(c.archivo) ? c.archivo : null
           registrarCompra(db, c)
           const insertar = db.prepare(INSERTAR)
           for (const m of c.materiales) {
-            insertar.run(id, c.fecha, m.material, m.cantidad, m.unidad, m.monto, c.proveedor, m.categoria, m.producto, c.origen_id, c.categoria, c.iva ?? 0, archivo)
+            insertar.run(id, c.fecha, m.material, m.cantidad, m.unidad, m.monto, c.proveedor, m.categoria, m.producto, c.origen_id, c.categoria, c.iva ?? 0)
           }
         }
         return plan.resultado

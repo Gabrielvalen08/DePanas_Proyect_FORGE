@@ -22,7 +22,7 @@ npm test
 | **Contraseñas con hash** | PBKDF2-SHA256 con 600 000 iteraciones y sal propia; un hash viejo se recalcula al entrar | `seguridad.test.js`: hash · `seguridad-datos.test.js`: la base exportada solo guarda hashes |
 | **Bloqueo por intentos fallidos** | 5 contraseñas malas seguidas bloquean a ese usuario 5 minutos (429), también si el usuario no existe, para no revelar cuáles existen; entrar bien reinicia la cuenta | `seguridad.test.js`: intentos |
 | **Sesión** | Token en cada petición; vence tras 8 h sin uso; salir lo invalida en el servidor | `seguridad.test.js`: sesión, 401 |
-| **Permisos** | Cada ruta exige su pantalla o función (`permisos.js`), y el usuario se vuelve a leer en cada petición: quitarle algo se aplica en el acto | `seguridad.test.js`: permisos · `archivo.test.js`: archivar |
+| **Permisos** | Cada ruta exige su pantalla o función (`permisos.js`), y el usuario se vuelve a leer en cada petición: quitarle algo se aplica en el acto | `seguridad.test.js`: permisos · `lote.test.js`: eliminar varias |
 | **Validación de entradas** | El servidor valida todo aunque la interfaz ya lo haga: fechas reales, montos y cantidades mayores a 0, largos máximos, usuario y contraseña según las reglas, listas de ids | `seguridad-datos.test.js`: entradas |
 | **Inyección SQL** | SQL siempre con parámetros (`?`): lo que escribe el usuario es texto, nunca código | `seguridad-datos.test.js`: inyección en filtros |
 | **Errores sin detalles** | Un error inesperado se registra en el servidor; el usuario ve un mensaje genérico, sin SQL ni rutas. Un cuerpo mal formado responde 400 en JSON. Sin cabecera `X-Powered-By` | `seguridad-datos.test.js`: errores |

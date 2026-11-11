@@ -23,7 +23,7 @@ export const RUTA_USUARIOS = '/usuarios'
 
 /** Funciones de cada pantalla, en el orden en que se muestran */
 export const FUNCIONES_POR_PANTALLA = {
-  '/compras': ['compras.editar', 'compras.eliminar', 'compras.archivar'],
+  '/compras': ['compras.editar', 'compras.eliminar'],
   '/catalogo': ['catalogo.agregar', 'catalogo.editar', 'catalogo.eliminar', 'catalogo.exportar', 'catalogo.cargar'],
 }
 

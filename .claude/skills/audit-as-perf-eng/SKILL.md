@@ -26,7 +26,7 @@ La app corre en la computadora del restaurante (Windows, navegador, Node local) 
 ## Trampas conocidas
 
 1. **Filtrar en el cliente**: funciona con 50 compras y se arrastra con 2000.
-2. **Lo archivado vuelve a cargarse**: si la lista principal sigue trayendo todo y oculta en el cliente, el archivo no sirve.
+2. **La lista crece sin tope**: la Lista de compras pagina de 50 en el cliente, pero la API devuelve todas las compras filtradas; con miles de compras, medir antes de agregar más trabajo por compra.
 3. **Escuchas que no se limpian**: con la app abierta 8 horas se acumulan.
 4. **Importar fila por fila sin transacción**: lento y no es todo o nada.
 

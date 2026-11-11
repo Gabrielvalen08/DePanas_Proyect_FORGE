@@ -1,58 +1,57 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Archive, ArchiveRestore, ChevronRight, Download, Loader2, Plus, ShoppingCart, SlidersHorizontal, Trash2, Upload,
+  ChevronLeft, ChevronRight, Download, Loader2, Plus, ShoppingCart, SlidersHorizontal, Trash2, Upload,
 } from 'lucide-react'
 import Header from '../components/Header'
 import FiltrosEnLinea, { FILTROS_VACIOS, contarFiltrosActivos } from '../components/FiltrosEnLinea'
 import DetalleLista from '../components/DetalleLista'
 import { Boton, ConfirmDialog, EstadoVacio, Insignia, MenuAcciones, Tarjeta } from '../components/common'
-import { archivarListas, eliminarListas, fetchListas, totalLista } from '../services/api'
+import { eliminarListas, fetchListas, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
-import { useRegresar } from '../hooks/useRegresar'
 import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
 import { formatearFecha, formatearPrecio } from '../utils/formato'
-import { ARCHIVO, COMPRA, ESTADOS, LISTA_COMPRAS } from '../utils/mensajes'
+import { COMPRA, ESTADOS, LISTA_COMPRAS } from '../utils/mensajes'
 import estilos from './PantallaMaestra.module.css'
 
+/** Compras por página: con más, la lista avanza por bloques con las flechas de arriba */
+export const TAM_PAGINA = 50
+
 /**
- * Lista de compras (/compras) y Archivo (/compras/archivo, vista="archivadas").
+ * Lista de compras (/compras).
  *
- * La lista muestra solo las compras activas; las de más de 3 meses pasan solas al Archivo
- * (shared/archivo.js) para que siempre cargue rápido. Como en el correo, cada compra tiene una
- * casilla a la izquierda y la del encabezado elige todas; la fila elegida cambia de color. Con
- * algo elegido aparecen los íconos Eliminar y Archivar (en el Archivo, Devolver a la lista),
- * junto a Filtrar. Solo «Agregar compra» lleva texto. El ⋮ lleva Ir al archivo, Exportar y
- * Cargar. Un clic en la fila abre el detalle (DetalleLista).
+ * Como en el correo, cada compra tiene una casilla a la izquierda y la del encabezado elige las
+ * de la página (un aviso ofrece elegir todas las de la lista); la fila elegida cambia de color.
+ * Con algo elegido aparece el ícono Eliminar junto a Filtrar. Solo «Agregar compra» lleva
+ * texto. El ⋮ lleva Exportar y Cargar. Con más de TAM_PAGINA compras, la lista va por páginas
+ * («1–50 de 380» con flechas, arriba). Un clic en la fila abre el detalle (DetalleLista).
  *
- * Props: vista ('activas' | 'archivadas'), puedeAgregar, puedeExportar, puedeCargar, puedeEditar,
- * puedeEliminar, puedeArchivar, puedeEditarArticulo (según los permisos y funciones del usuario)
+ * Props: puedeAgregar, puedeExportar, puedeCargar, puedeEditar, puedeEliminar,
+ * puedeEditarArticulo (según los permisos y funciones del usuario)
  */
 export default function PantallaMaestra({
-  vista = 'activas',
   puedeAgregar = true, puedeExportar = true, puedeCargar = true, puedeEditar = true, puedeEliminar = true,
-  puedeArchivar = true, puedeEditarArticulo = true,
+  puedeEditarArticulo = true,
 }) {
   const { addToast } = useToast()
-  const regresar = useRegresar('/compras')
-  const enArchivo = vista === 'archivadas'
 
   const [listas, setListas] = useState(null) // null = primera carga
   const [filters, setFilters] = useState(FILTROS_VACIOS)
-  const [version, setVersion] = useState(0) // sube para recargar tras editar, archivar o eliminar
+  const [version, setVersion] = useState(0) // sube para recargar tras editar o eliminar
+  const [pagina, setPagina] = useState(0)
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
   const [listaAbierta, setListaAbierta] = useState(null)
   const [elegidas, setElegidas] = useState(() => new Set())
-  const [porConfirmar, setPorConfirmar] = useState(null) // 'archivar' | 'devolver' | 'eliminar'
+  const [porConfirmar, setPorConfirmar] = useState(false) // pide confirmar Eliminar las elegidas
   const todasRef = useRef(null)
 
   // Filtra en vivo: mientras llega la respuesta se sigue mostrando la tabla anterior
   useEffect(() => {
     let vigente = true
-    fetchListas({ ...filters, archivo: vista })
+    fetchListas(filters)
       .then(data => {
         if (!vigente) return
         setListas(data)
-        // Lo elegido que ya no está en la lista (filtrada, archivada o eliminada) se suelta
+        // Lo elegido que ya no está en la lista (filtrada o eliminada) se suelta
         const presentes = new Set(data.map(l => String(l.id)))
         setElegidas(prev => {
           const quedan = [...prev].filter(id => presentes.has(id))
@@ -61,7 +60,7 @@ export default function PantallaMaestra({
       })
       .catch(() => { if (vigente) addToast(COMPRA.errorCargar, 'error') })
     return () => { vigente = false } // descarta respuestas viejas si cambian los filtros
-  }, [filters, version, vista, addToast])
+  }, [filters, version, addToast])
 
   // Un artículo renombrado al editar una compra: la tabla y la compra abierta ya no muestran el nombre viejo
   useEffect(() => {
@@ -78,15 +77,31 @@ export default function PantallaMaestra({
 
   const filtrosActivos = contarFiltrosActivos(filters)
   const hayFiltros = filtrosActivos > 0
-  const conCasillas = puedeEliminar || puedeArchivar
+  const conCasillas = puedeEliminar
   const total = listas?.length ?? 0
   const nElegidas = elegidas.size
-  const todasElegidas = total > 0 && nElegidas === total
 
-  // La casilla de «todas» queda a medias con una parte elegida (propiedad del DOM, no un atributo)
+  // La más reciente arriba; a igual fecha se respeta el orden en que llegaron
+  const ordenadas = listas ? [...listas].sort((a, b) => b.fecha.localeCompare(a.fecha)) : []
+  const paginas = Math.max(1, Math.ceil(total / TAM_PAGINA))
+  const paginaActual = Math.min(pagina, paginas - 1) // tras eliminar, la última página puede desaparecer
+  const desde = paginaActual * TAM_PAGINA
+  const visibles = ordenadas.slice(desde, desde + TAM_PAGINA)
+  const idsPagina = visibles.map(l => String(l.id))
+  const elegidasPagina = idsPagina.filter(id => elegidas.has(id)).length
+  const paginaElegida = idsPagina.length > 0 && elegidasPagina === idsPagina.length
+  const conPaginas = total > TAM_PAGINA
+
+  // La casilla de «todas» queda a medias con una parte de la página elegida (propiedad del DOM)
   useEffect(() => {
-    if (todasRef.current) todasRef.current.indeterminate = nElegidas > 0 && !todasElegidas
-  }, [nElegidas, todasElegidas])
+    if (todasRef.current) todasRef.current.indeterminate = elegidasPagina > 0 && !paginaElegida
+  }, [elegidasPagina, paginaElegida])
+
+  // Filtrar cambia la lista: se vuelve a la primera página
+  function cambiarFiltros(nuevos) {
+    setFilters(nuevos)
+    setPagina(0)
+  }
 
   function alternar(id) {
     setElegidas(prev => {
@@ -97,36 +112,47 @@ export default function PantallaMaestra({
     })
   }
 
+  /** La casilla del encabezado elige (o suelta) las compras de la página, como en el correo */
   function alternarTodas() {
-    setElegidas(todasElegidas ? new Set() : new Set((listas ?? []).map(l => String(l.id))))
+    setElegidas(prev => {
+      const next = new Set(prev)
+      for (const id of idsPagina) {
+        if (paginaElegida) next.delete(id)
+        else next.add(id)
+      }
+      return next
+    })
   }
 
-  async function aplicarLote() {
-    const accion = porConfirmar
+  async function eliminarElegidas() {
     // Los ids vuelven a su tipo original (número en modo local, texto con servidor)
     const ids = (listas ?? []).filter(l => elegidas.has(String(l.id))).map(l => l.id)
     try {
-      if (accion === 'eliminar') {
-        const { eliminadas } = await eliminarListas(ids)
-        addToast(LISTA_COMPRAS.eliminadas(eliminadas))
-      } else {
-        const { cambiadas } = await archivarListas(ids, accion === 'archivar')
-        addToast(accion === 'archivar' ? LISTA_COMPRAS.archivadas(cambiadas) : ARCHIVO.devueltas(cambiadas))
-      }
+      const { eliminadas } = await eliminarListas(ids)
+      addToast(LISTA_COMPRAS.eliminadas(eliminadas))
       setElegidas(new Set())
       setVersion(v => v + 1)
     } catch (error) {
-      const mensaje = accion === 'eliminar' ? LISTA_COMPRAS.errorEliminar
-        : accion === 'archivar' ? LISTA_COMPRAS.errorArchivar : ARCHIVO.errorDevolver
-      addToast(mensaje(error.message), 'error')
+      addToast(LISTA_COMPRAS.errorEliminar(error.message), 'error')
     }
   }
 
-  const confirmacion = {
-    archivar: { ...LISTA_COMPRAS.confirmarArchivar, danger: false },
-    devolver: { ...ARCHIVO.confirmarDevolver, danger: false },
-    eliminar: { ...LISTA_COMPRAS.confirmarEliminarVarias, danger: true },
-  }[porConfirmar]
+  /** Con varias páginas y la página entera elegida, ofrece elegir todas las de la lista o soltarlas */
+  function avisoSeleccion() {
+    if (!conPaginas || !paginaElegida) return null
+    const todas = nElegidas === total
+    return (
+      <p className={estilos.avisoSeleccion} role="status">
+        {todas ? LISTA_COMPRAS.todasLaLista(total) : LISTA_COMPRAS.paginaElegida(idsPagina.length)}
+        <Boton
+          variante="fantasma"
+          onClick={() => setElegidas(todas ? new Set() : new Set(ordenadas.map(l => String(l.id))))}
+        >
+          {todas ? LISTA_COMPRAS.quitarSeleccion : LISTA_COMPRAS.elegirTodasLista(total)}
+        </Boton>
+      </p>
+    )
+  }
 
   function contenidoTabla() {
     if (listas === null) {
@@ -138,12 +164,9 @@ export default function PantallaMaestra({
           icono={<SlidersHorizontal />}
           titulo={ESTADOS.sinResultados.titulo}
           texto={ESTADOS.sinResultados.texto}
-          accion={<Boton variante="fantasma" onClick={() => setFilters(FILTROS_VACIOS)}>{ESTADOS.sinResultados.accion}</Boton>}
+          accion={<Boton variante="fantasma" onClick={() => cambiarFiltros(FILTROS_VACIOS)}>{ESTADOS.sinResultados.accion}</Boton>}
         />
       )
-    }
-    if (listas.length === 0 && enArchivo) {
-      return <EstadoVacio icono={<Archive />} titulo={ARCHIVO.vacio.titulo} texto={ARCHIVO.vacio.texto} />
     }
     if (listas.length === 0) {
       return (
@@ -155,11 +178,9 @@ export default function PantallaMaestra({
         />
       )
     }
-    // La más reciente arriba; a igual fecha se respeta el orden en que llegaron
-    const ordenadas = [...listas].sort((a, b) => b.fecha.localeCompare(a.fecha))
     return (
       <table className={estilos.tabla}>
-        <caption className="solo-lector">{enArchivo ? ARCHIVO.titulo : LISTA_COMPRAS.titulo}. Abre una fila para ver sus artículos.</caption>
+        <caption className="solo-lector">{LISTA_COMPRAS.titulo}. Abre una fila para ver sus artículos.</caption>
         <thead>
           <tr>
             {conCasillas && (
@@ -168,7 +189,7 @@ export default function PantallaMaestra({
                   ref={todasRef}
                   type="checkbox"
                   className={estilos.casilla}
-                  checked={todasElegidas}
+                  checked={paginaElegida}
                   onChange={alternarTodas}
                   aria-label={LISTA_COMPRAS.elegirTodas}
                 />
@@ -183,7 +204,7 @@ export default function PantallaMaestra({
           </tr>
         </thead>
         <tbody>
-          {ordenadas.map(lista => {
+          {visibles.map(lista => {
             const n = lista.materiales.length
             const id = String(lista.id)
             const elegida = elegidas.has(id)
@@ -233,37 +254,49 @@ export default function PantallaMaestra({
 
   return (
     <>
-      <Header
-        title={enArchivo ? 'Archivo de compras' : 'Lista de compras'}
-        alRegresar={enArchivo ? regresar : undefined}
-      />
+      <Header title="Lista de compras" />
 
       <main id="contenido" tabIndex={-1}>
         <Tarjeta
-          titulo={enArchivo ? ARCHIVO.titulo : LISTA_COMPRAS.titulo}
-          icono={enArchivo ? <Archive /> : <ShoppingCart />}
+          titulo={LISTA_COMPRAS.titulo}
+          icono={<ShoppingCart />}
           detalle={detalle}
           accion={
-            // Íconos (como el de Filtrar) a la izquierda; solo Agregar compra lleva texto
+            // Páginas e íconos (como el de Filtrar) a la izquierda; solo Agregar compra lleva texto
             <div className={estilos.acciones}>
+              {conPaginas && (
+                <nav className={estilos.paginas} aria-label={LISTA_COMPRAS.paginacion}>
+                  <span className={estilos.rango}>
+                    {LISTA_COMPRAS.rango(desde + 1, desde + visibles.length, total)}
+                  </span>
+                  <Boton
+                    variante="fantasma"
+                    className={estilos.botonIcono}
+                    icono={<ChevronLeft />}
+                    onClick={() => setPagina(paginaActual - 1)}
+                    disabled={paginaActual === 0}
+                    aria-label={LISTA_COMPRAS.anterior}
+                    title={LISTA_COMPRAS.anterior}
+                  />
+                  <Boton
+                    variante="fantasma"
+                    className={estilos.botonIcono}
+                    icono={<ChevronRight />}
+                    onClick={() => setPagina(paginaActual + 1)}
+                    disabled={paginaActual >= paginas - 1}
+                    aria-label={LISTA_COMPRAS.siguiente}
+                    title={LISTA_COMPRAS.siguiente}
+                  />
+                </nav>
+              )}
               {nElegidas > 0 && puedeEliminar && (
                 <Boton
                   variante="secundario"
                   className={`${estilos.botonIcono} ${estilos.botonEliminar}`}
                   icono={<Trash2 />}
-                  onClick={() => setPorConfirmar('eliminar')}
+                  onClick={() => setPorConfirmar(true)}
                   aria-label={LISTA_COMPRAS.eliminarElegidas(nElegidas)}
                   title={LISTA_COMPRAS.eliminarElegidas(nElegidas)}
-                />
-              )}
-              {nElegidas > 0 && puedeArchivar && (
-                <Boton
-                  variante="secundario"
-                  className={estilos.botonIcono}
-                  icono={enArchivo ? <ArchiveRestore /> : <Archive />}
-                  onClick={() => setPorConfirmar(enArchivo ? 'devolver' : 'archivar')}
-                  aria-label={enArchivo ? ARCHIVO.devolverElegidas(nElegidas) : LISTA_COMPRAS.archivarElegidas(nElegidas)}
-                  title={enArchivo ? ARCHIVO.devolverElegidas(nElegidas) : LISTA_COMPRAS.archivarElegidas(nElegidas)}
                 />
               )}
               <Boton
@@ -279,28 +312,25 @@ export default function PantallaMaestra({
               >
                 {hayFiltros && <Insignia tono="marca" className={estilos.contador}>{filtrosActivos}</Insignia>}
               </Boton>
-              {!enArchivo && puedeAgregar && (
+              {puedeAgregar && (
                 <Boton id="go-agregar-compra-btn" variante="primario" icono={<Plus />} a="/">
                   {LISTA_COMPRAS.agregar}
                 </Boton>
               )}
-              {!enArchivo && (
-                <MenuAcciones
-                  etiqueta={LISTA_COMPRAS.masAcciones}
-                  opciones={[
-                    { etiqueta: LISTA_COMPRAS.irArchivo, icono: <Archive />, a: '/compras/archivo' },
-                    { etiqueta: LISTA_COMPRAS.exportar, icono: <Download />, a: puedeExportar ? '/exportar' : undefined },
-                    { etiqueta: LISTA_COMPRAS.cargar, icono: <Upload />, a: puedeCargar ? '/cargar' : undefined },
-                  ]}
-                />
-              )}
+              <MenuAcciones
+                etiqueta={LISTA_COMPRAS.masAcciones}
+                opciones={[
+                  { etiqueta: LISTA_COMPRAS.exportar, icono: <Download />, a: puedeExportar ? '/exportar' : undefined },
+                  { etiqueta: LISTA_COMPRAS.cargar, icono: <Upload />, a: puedeCargar ? '/cargar' : undefined },
+                ]}
+              />
             </div>
           }
         >
           <div className={estilos.panelFiltros}>
-            <FiltrosEnLinea id="panel-filtros" abierto={filtrosAbiertos} filtros={filters} alCambiar={setFilters} />
+            <FiltrosEnLinea id="panel-filtros" abierto={filtrosAbiertos} filtros={filters} alCambiar={cambiarFiltros} />
           </div>
-          {enArchivo && <p className={estilos.nota}>{ARCHIVO.nota}</p>}
+          {avisoSeleccion()}
           {contenidoTabla()}
         </Tarjeta>
       </main>
@@ -315,13 +345,13 @@ export default function PantallaMaestra({
       />
 
       <ConfirmDialog
-        isOpen={porConfirmar !== null}
-        onClose={() => setPorConfirmar(null)}
-        onConfirm={aplicarLote}
-        title={confirmacion?.titulo(nElegidas)}
-        message={confirmacion?.mensaje}
-        confirmLabel={confirmacion?.confirmar}
-        danger={confirmacion?.danger}
+        isOpen={porConfirmar}
+        onClose={() => setPorConfirmar(false)}
+        onConfirm={eliminarElegidas}
+        title={LISTA_COMPRAS.confirmarEliminarVarias.titulo(nElegidas)}
+        message={LISTA_COMPRAS.confirmarEliminarVarias.mensaje}
+        confirmLabel={LISTA_COMPRAS.confirmarEliminarVarias.confirmar}
+        danger
       />
     </>
   )

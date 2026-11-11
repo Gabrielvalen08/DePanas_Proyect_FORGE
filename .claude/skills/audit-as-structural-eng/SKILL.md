@@ -29,7 +29,7 @@ Reglas:
 - ¿La función nueva duplica una regla que ya existe en `shared/` o en `db.js`?
 - ¿Una pantalla llama a otra capa saltándose `api.js`?
 - ¿Un cambio en el modelo de datos toca los dos modos, el backend, los respaldos JSON (`shared/compras-json.js`, `catalogo-json.js`) y la exportación?
-- ¿Un concepto nuevo (p. ej. "archivada") queda en un solo lugar de verdad, o se calcula distinto en el backend y en el modo local?
+- ¿Un concepto nuevo (p. ej. "compra duplicada") queda en un solo lugar de verdad, o se calcula distinto en el backend y en el modo local?
 - ¿Los respaldos viejos siguen cargando? ¿Las bases viejas siguen abriendo?
 - ¿La pieza nueva sigue la forma de las vecinas (fábrica `crearRutasX(getDb)`, página + componentes + `module.css`)?
 

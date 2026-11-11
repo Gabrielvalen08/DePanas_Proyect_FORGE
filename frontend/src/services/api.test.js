@@ -10,7 +10,6 @@ import {
   actualizarLista,
   eliminarLista,
   eliminarListas,
-  archivarListas,
   fetchListas,
   asignarMaterial,
   subtotalLista,
@@ -119,17 +118,10 @@ describe('api: modo servidor', () => {
     await expect(iniciarSesion('Cesar_01', 'mala')).rejects.toMatchObject({ status: 429, minutos: 5 })
   })
 
-  it('Archivo: pide la vista al backend y archiva, devuelve o elimina varias de una vez', async () => {
+  it('elimina varias compras de una vez en el backend', async () => {
     const llamadas = simularServidor({
-      'GET /compras': { cuerpo: [{ ...COMPRA, archivada: true, archivo: 'archivada' }] },
-      'POST /compras/archivar': { cuerpo: { cambiadas: 2, archivar: true } },
       'POST /compras/eliminar': { cuerpo: { eliminadas: 1 } },
     })
-    const [compra] = await fetchListas({ archivo: 'archivadas' })
-    expect(compra.archivada).toBe(true)
-    expect(llamadas.find(l => l.ruta === '/compras').url).toContain('archivo=archivadas')
-    expect(await archivarListas(['c-1', 'c-2'], true)).toEqual({ cambiadas: 2, archivar: true })
-    expect(llamadas.find(l => l.ruta === '/compras/archivar').cuerpo).toEqual({ ids: ['c-1', 'c-2'], archivar: true })
     expect(await eliminarListas(['c-1'])).toEqual({ eliminadas: 1 })
     expect(llamadas.find(l => l.ruta === '/compras/eliminar').cuerpo).toEqual({ ids: ['c-1'] })
     expect(localStorage.getItem('depanas_listas')).toBeNull()
@@ -344,25 +336,13 @@ describe('api: listas de compra (modo local)', () => {
     expect(await fetchListas({ proveedor: 'walmart' })).toHaveLength(0)
   })
 
-  it('Archivo: una compra de más de 3 meses pasa sola; se archiva y se devuelve a mano', async () => {
+  it('las compras viejas siguen en la lista y los campos del antiguo Archivo no salen', async () => {
     const vieja = await guardarLista({ proveedor: 'Pepsi', fecha: '2020-01-15', productos: [{ producto: 'Agua', cantidad: 1, unidad: 'caja', precio: 5 }] })
-    const activas = await fetchListas({ archivo: 'activas' })
-    const archivadas = await fetchListas({ archivo: 'archivadas' })
-    expect(activas).toHaveLength(5)
-    expect(archivadas.map(l => l.id)).toEqual([vieja.id])
-    expect(archivadas[0]).toMatchObject({ archivada: true, archivo: null })
-    expect(await fetchListas()).toHaveLength(6) // sin vista: todas (Exportar, Cargar)
-
-    // A mano: dos recientes al Archivo, y la vieja de vuelta a la lista (ahí se queda)
-    expect(await archivarListas([1, 2], true)).toEqual({ cambiadas: 2, archivar: true })
-    await archivarListas([vieja.id], false)
-    expect((await fetchListas({ archivo: 'archivadas' })).map(l => l.id).sort()).toEqual([1, 2])
-    expect((await fetchListas({ archivo: 'activas' })).map(l => l.id)).toContain(vieja.id)
-
-    // Editar no la saca del Archivo
-    await actualizarLista(1, { proveedor: 'Súper Selectos', fecha: '2026-09-30', productos: [{ producto: 'Arroz', cantidad: 1, unidad: 'lb', precio: 1 }] })
-    expect((await fetchListas({ archivo: 'archivadas' })).map(l => l.id)).toContain(1)
-    await expect(archivarListas([], true)).rejects.toThrow('Elige al menos una compra')
+    localStorage.setItem('depanas_listas', JSON.stringify(JSON.parse(localStorage.getItem('depanas_listas')).map(l => ({ ...l, archivo: 'archivada' }))))
+    const listas = await fetchListas()
+    expect(listas.map(l => l.id)).toContain(vieja.id)
+    expect(listas.every(l => !('archivo' in l) && !('archivada' in l))).toBe(true)
+    await expect(eliminarListas([])).rejects.toThrow('Elige al menos una compra')
   })
 
   it('elimina varias compras de una vez', async () => {
@@ -746,21 +726,10 @@ describe('api: usuarios (modo local)', () => {
     expect(await iniciarSesion('Cesar_01', 'DePanas#2026')).toMatchObject({ usuario: 'Cesar_01' })
   })
 
-  it('los operadores guardados con su lista de funciones reciben archivar una sola vez', async () => {
-    localStorage.setItem('depanas_usuarios', JSON.stringify([
-      { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'], funciones: null, contrasena: 'x' },
-      { usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', permisos: ['/compras'], funciones: ['compras.editar'], contrasena: 'x' },
-    ]))
-    expect((await fetchUsuarios()).find(u => u.usuario === 'Marta_02').funciones).toEqual(['compras.editar', 'compras.archivar'])
-    // Si el administrador se la quita, no vuelve
-    await editarUsuario('Marta_02', { funciones: ['compras.editar'] })
-    expect((await fetchUsuarios()).find(u => u.usuario === 'Marta_02').funciones).toEqual(['compras.editar'])
-  })
-
   it('crea un usuario con el rol que se pide (nunca administrador) y guarda solo el hash de su contraseña', async () => {
     await expect(crearUsuario({ ...NUEVO, rol: 'admin' })).rejects.toMatchObject({ campo: 'rol' })
     expect(await crearUsuario(NUEVO)).toEqual({
-      usuario: 'Luis_03', nombre: 'Luis', rol: 'operador', permisos: ['/', '/compras'], funciones: ['compras.editar', 'compras.eliminar', 'compras.archivar'],
+      usuario: 'Luis_03', nombre: 'Luis', rol: 'operador', permisos: ['/', '/compras'], funciones: ['compras.editar', 'compras.eliminar'],
     })
     const guardado = localStorage.getItem('depanas_usuarios')
     expect(guardado).not.toContain('Arepa#99')

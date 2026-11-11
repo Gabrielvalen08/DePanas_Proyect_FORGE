@@ -153,6 +153,9 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
     })
   }
 
+  // Una ruta de la API que no existe responde JSON, no la página HTML de Express
+  app.use('/api', (_req, res) => res.status(404).json({ error: 'Esta ruta de la API no existe' }))
+
   // App de escritorio: el frontend compilado sale de este mismo servidor; cualquier
   // ruta que no sea de la API devuelve index.html para que la resuelva React Router
   if (estaticos) {

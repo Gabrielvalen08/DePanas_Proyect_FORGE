@@ -168,7 +168,7 @@ Solo Lucide (`lucide-react`), de línea; 1rem en botones con texto, 1.125rem sol
 |---|---|
 | Primario | Naranja con texto Ávila profundo, píldora, MAYÚSCULAS; con sombra vinotinto en la acción principal |
 | Secundario | Blanco con borde de 2 px Verde Ávila |
-| Ícono | Secundario de 44 × 44 px (Filtrar, Eliminar, Archivar) |
+| Ícono | Secundario de 44 × 44 px (Filtrar, Eliminar, páginas) |
 | Peligro | Vinotinto con texto blanco, siempre con confirmación |
 
 ### Spacing Scale

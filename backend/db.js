@@ -109,7 +109,6 @@ export function prepararUsuarios(db) {
   const nuevoCesar = USUARIOS_INICIALES.find(u => u.usuario === 'Cesar_01').contrasena
   db.prepare("UPDATE usuarios SET contrasena = ? WHERE usuario = 'Cesar_01' AND contrasena = ?").run(nuevoCesar, HASH_CESAR_ANTERIOR)
   migrarContrasenaMarta(db)
-  darFuncionArchivar(db)
   if (db.prepare('SELECT COUNT(*) AS n FROM usuarios').get().n > 0) return
   const insertar = db.prepare('INSERT INTO usuarios (usuario, nombre, contrasena, rol, permisos, funciones) VALUES (?, ?, ?, ?, ?, ?)')
   enTransaccion(db, () => {
@@ -132,30 +131,6 @@ function migrarContrasenaMarta(db) {
     db.prepare("UPDATE usuarios SET contrasena = ? WHERE usuario = 'Marta_02'").run(nueva)
   }
   db.prepare('INSERT INTO ajustes (clave, valor) VALUES (?, ?)').run(AJUSTE_MIGRACION_MARTA, 'true')
-}
-
-/**
- * Archivo de compras: la función nueva compras.archivar la trae el rol operador. Los operadores
- * que ya tenían su lista de funciones la reciben una sola vez (ajuste 'funcionComprasArchivar');
- * después el administrador decide. Los usuarios sin lista (NULL) ya tienen todas.
- */
-const AJUSTE_FUNCION_ARCHIVAR = 'funcionComprasArchivar'
-function darFuncionArchivar(db) {
-  if (db.prepare('SELECT 1 FROM ajustes WHERE clave = ?').get(AJUSTE_FUNCION_ARCHIVAR)) return
-  enTransaccion(db, () => {
-    const operadores = db.prepare("SELECT id, funciones FROM usuarios WHERE rol = 'operador' AND funciones IS NOT NULL").all()
-    const actualizar = db.prepare('UPDATE usuarios SET funciones = ? WHERE id = ?')
-    for (const { id, funciones } of operadores) {
-      let lista
-      try {
-        lista = JSON.parse(funciones)
-      } catch {
-        continue
-      }
-      if (Array.isArray(lista) && !lista.includes('compras.archivar')) actualizar.run(JSON.stringify([...lista, 'compras.archivar']), id)
-    }
-    db.prepare('INSERT INTO ajustes (clave, valor) VALUES (?, ?)').run(AJUSTE_FUNCION_ARCHIVAR, 'true')
-  })
 }
 
 /**
@@ -297,8 +272,6 @@ export function migrar(db) {
   if (!columnas.includes('compra_categoria')) db.exec('ALTER TABLE ingresos ADD COLUMN compra_categoria TEXT')
   // Las compras anteriores al IVA quedan sin IVA
   if (!columnas.includes('compra_iva')) db.exec('ALTER TABLE ingresos ADD COLUMN compra_iva REAL NOT NULL DEFAULT 0')
-  // Archivo de compras: las de antes quedan en automático (pasan al Archivo a los 3 meses)
-  if (!columnas.includes('compra_archivo')) db.exec('ALTER TABLE ingresos ADD COLUMN compra_archivo TEXT')
   db.exec('CREATE INDEX IF NOT EXISTS idx_ingresos_fecha ON ingresos(fecha)')
 
   // Catálogos creados antes de que los materiales guardaran categoría y producto,
