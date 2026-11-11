@@ -102,6 +102,9 @@ function validarFila(fila) {
   return errores
 }
 
+/** La fila tiene todo lo que hace falta para guardarla: artículo, cantidad, unidad y monto */
+const filaCompleta = fila => Object.keys(validarFila(fila)).length === 0
+
 function validarEncabezado(campo, valor) {
   if (campo === 'proveedor' && !valor.trim()) return VALIDACION.proveedor
   if (campo === 'fecha' && !valor) return VALIDACION.fecha
@@ -129,6 +132,13 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
  * está registrado (crea uno nuevo); lápiz si ya está registrado (edita su nombre,
  * categoría y productos en el catálogo y en sus compras).
  *
+ * Compra nueva, por pasos (solo se ve lo que toca llenar, nada apagado en gris):
+ *  1. Fecha y proveedor.
+ *  2. Con proveedor, la primera fila.
+ *  3. Con una fila completa: la fila «Agregar otro artículo» (solo si la última está
+ *     completa), subtotal, IVA, total, Guardar y Cancelar.
+ * Al editar una compra guardada (inicial) se ve todo de una vez.
+ *
  * Props:
  *  - titulo: texto del encabezado (por defecto "Detalle de compra")
  *  - inicial: { proveedor, fecha, materiales } para editar
@@ -140,6 +150,7 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
  *  - cierreRef: dentro de una ventana, para que su X, Esc y clic fuera pasen por el aviso
  *    de datos sin guardar (ver context/DatosSinGuardarContext.jsx)
  *  - puedeEditarArticulo: el usuario tiene catalogo.editar; sin él, el lápiz sale apagado
+ *  - alCambiarProgreso(listo): avisa cuándo la compra nueva llega (o deja de llegar) al paso 3
  */
 export default function BloqueCompra({
   titulo = 'Detalle de compra',
@@ -153,6 +164,7 @@ export default function BloqueCompra({
   cancelarVacio = false,
   cierreRef,
   puedeEditarArticulo = false,
+  alCambiarProgreso,
 }) {
   const id = useId().replace(/:/g, '')
   const [proveedor, setProveedor] = useState(inicial?.proveedor ?? '')
@@ -543,8 +555,17 @@ export default function BloqueCompra({
     else alCancelar?.()
   }
 
-  // No se abre una fila nueva mientras la última no tenga material, cantidad y precio
-  const ultimaIncompleta = Object.keys(validarFila(filas[filas.length - 1])).length > 0
+  // No se abre una fila nueva mientras la última no tenga material, cantidad, unidad y precio
+  const ultimaIncompleta = !filaCompleta(filas[filas.length - 1])
+
+  // Por pasos (solo en una compra nueva): con proveedor, las filas; con una fila completa, el resto
+  const porPasos = !inicial
+  const verFilas = !porPasos || Boolean(proveedor.trim()) || filas.some(f => !estaVacia(f))
+  const verResto = !porPasos || filas.length > 1 || filas.some(filaCompleta)
+
+  useEffect(() => {
+    alCambiarProgreso?.(verResto)
+  }, [verResto, alCambiarProgreso])
 
   // Los montos van sin IVA: se suma encima
   const subtotal = filas.reduce((suma, f) => suma + montoDe(f), 0)
@@ -601,6 +622,16 @@ export default function BloqueCompra({
             </div>
           </header>
 
+          <AnimatePresence initial={false}>
+          {verFilas && (
+          <motion.div
+            key="filas"
+            className={estilos.zonaFilas}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={springSuave}
+          >
           <table className={estilos.tabla}>
             <caption className="solo-lector">Artículos de la compra</caption>
             <thead>
@@ -749,45 +780,62 @@ export default function BloqueCompra({
                 })}
               </AnimatePresence>
             </tbody>
+            {/* Fila fantasma al final: aparece cuando la última fila está completa */}
+            {verResto && !ultimaIncompleta && (
+              <tfoot className={estilos.pieFilas}>
+                <tr>
+                  <td colSpan={6}>
+                    <button type="button" className={estilos.filaFantasma} onClick={agregarFila}>
+                      <Plus size={16} aria-hidden="true" />
+                      <span>{COMPRA.agregarFila}</span>
+                    </button>
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
+          </motion.div>
+          )}
+          </AnimatePresence>
 
-          <div className={estilos.pieTabla}>
-            <div className={estilos.agregarFila}>
-              <Boton
-                variante="secundario"
-                icono={<Plus />}
-                onClick={agregarFila}
-                disabled={ultimaIncompleta}
-                aria-describedby={ultimaIncompleta ? `${id}-ayuda-fila` : undefined}
-                className={estilos.botonPunteado}
+          <AnimatePresence initial={false}>
+            {verResto && (
+              <motion.div
+                key="resumen"
+                className={estilos.pieTabla}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={springSuave}
               >
-                Agregar otra fila
-              </Boton>
-              {ultimaIncompleta && (
-                <p id={`${id}-ayuda-fila`} className={estilos.ayudaFila}>{VALIDACION.filaIncompleta}</p>
-              )}
-            </div>
-            <ResumenCompra subtotal={subtotal} conIva={conIva} iva={iva} total={total} onCambiarIva={cambiarIva} />
-          </div>
+                <ResumenCompra subtotal={subtotal} conIva={conIva} iva={iva} total={total} onCambiarIva={cambiarIva} />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
 
-        <div className={estilos.acciones}>
-          {bloqueado && <p id={`${id}-ayuda-guardar`} className={estilos.ayudaGuardar}>{COMPRA.cambiaParaReintentar}</p>}
-          <Boton variante="fantasma" onClick={pedirCancelar} disabled={!hayDatos && !cancelarVacio}>
-            Cancelar
-          </Boton>
-          <Boton
-            type="submit"
-            variante="primario"
-            sombra
-            icono={<Save />}
-            cargando={guardando}
-            disabled={!hayDatos || bloqueado}
-            aria-describedby={bloqueado ? `${id}-ayuda-guardar` : undefined}
-          >
-            {guardando ? 'Guardando…' : textoGuardar}
-          </Boton>
-        </div>
+        {/* Guardar y Cancelar aparecen con una fila completa; una compra extra vacía se puede quitar desde el inicio */}
+        {(verResto || cancelarVacio) && (
+          <div className={estilos.acciones}>
+            {bloqueado && <p id={`${id}-ayuda-guardar`} className={estilos.ayudaGuardar}>{COMPRA.cambiaParaReintentar}</p>}
+            <Boton variante="fantasma" onClick={pedirCancelar} disabled={!hayDatos && !cancelarVacio}>
+              Cancelar
+            </Boton>
+            {verResto && (
+              <Boton
+                type="submit"
+                variante="primario"
+                sombra
+                icono={<Save />}
+                cargando={guardando}
+                disabled={!hayDatos || bloqueado}
+                aria-describedby={bloqueado ? `${id}-ayuda-guardar` : undefined}
+              >
+                {guardando ? 'Guardando…' : textoGuardar}
+              </Boton>
+            )}
+          </div>
+        )}
       </form>
 
       {/* Fuera del <form>: los eventos del portal no deben llegar a su onSubmit */}

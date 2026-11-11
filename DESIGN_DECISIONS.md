@@ -258,6 +258,8 @@ Todos viven en `frontend/src/components/common/` y toda pantalla se arma con ell
 - Errores debajo del campo en Vinotinto con ícono, unidos con `aria-describedby`. Aparecen al intentar guardar y luego se revalidan en vivo.
 - Artículo al que le falta información: fila marcada en rojo con «!».
 - Nombres parecidos: aviso destacado en amarillo (`AvisoDestacado`) que nunca impide guardar.
+- **Por pasos (Agregar compra):** solo se ve lo que toca llenar; lo siguiente aparece con un fundido cuando lo anterior está completo. Lo que todavía no se puede usar **no se muestra**, en vez de mostrarse apagado en gris.
+- **Agregar otra fila:** fila fantasma punteada al final de la tabla, alineada a la izquierda («+ Agregar otro artículo»), no un botón centrado.
 
 **Ventanas (`Modal`, `ConfirmDialog`)**: blancas, radio de 24 px, sombra de modal y scrim. En teléfono, hoja desde abajo. La X y Esc solo cierran; si hay datos sin guardar, primero avisan.
 

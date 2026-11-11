@@ -84,6 +84,7 @@ export const COMPRA = {
     confirmar: 'Sí, cancelar',
     volver: 'Seguir editando',
   },
+  agregarFila: 'Agregar otro artículo',
   agregarArticulo: material => `Agregar artículo nuevo${material ? `: ${material}` : ''}`,
   editarArticulo: material => `Editar artículo: ${material}`,
   asignarArticulo: material => `Asignar categoría y producto${material ? ` a ${material}` : ''}`,
@@ -117,7 +118,6 @@ export const VALIDACION = {
   cantidad: 'Debe ser mayor a 0',
   unidad: 'Elige la unidad',
   precio: 'Debe ser mayor a 0',
-  filaIncompleta: 'Completa la fila anterior para agregar otra',
   rangoFechas: 'La fecha final debe ser igual o posterior a la inicial',
 }
 

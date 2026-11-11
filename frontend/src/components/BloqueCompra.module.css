@@ -28,8 +28,7 @@
     height: var(--tabla-alto-fila);
   }
 
-  .eliminar,
-  .botonPunteado {
+  .eliminar {
     --alto-control: var(--campo-alto);
   }
 }
@@ -122,20 +121,62 @@
   padding: var(--space-2) var(--space-6);
 }
 
-.botonPunteado {
-  border-style: dashed;
+/* Por pasos, lo último de la tarjeta no lleva divisor abajo: chocaría con el borde redondeado */
+.encabezado:last-child,
+.zonaFilas:last-child .tabla tbody tr:last-child td {
+  border-bottom: none;
 }
 
-/* El aviso va al lado del botón: no agrega otra línea */
-.agregarFila {
+/* Lo que aparece por pasos (filas, resumen) se recorta mientras crece */
+.zonaFilas,
+.pieTabla {
+  overflow: hidden;
+}
+
+/* ---------- Fila fantasma: «Agregar otro artículo» al final de la tabla ---------- */
+.pieFilas td {
+  padding: var(--tabla-celda-y) var(--space-4) var(--tabla-celda-y) var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.filaFantasma {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--alto-control);
+  padding: 0 var(--space-4);
+  border: 2px dashed var(--color-border-input);
+  border-radius: var(--radio-input);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--fuente-titulos);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, transform 100ms ease-out;
 }
 
-.ayudaFila {
-  font-size: 0.8125rem;
-  color: var(--color-text-muted);
+.filaFantasma span {
+  padding-top: 0.15em;
+}
+
+.filaFantasma:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-soft);
+}
+
+.filaFantasma:active {
+  transform: scale(0.99);
+}
+
+@media (min-width: 1100px) {
+  .filaFantasma {
+    min-height: var(--tabla-alto-control);
+  }
 }
 
 .total {
@@ -264,10 +305,16 @@
     padding: var(--space-3);
   }
 
-  .agregarFila {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-1);
+  .tabla .pieFilas,
+  .tabla .pieFilas tr,
+  .tabla .pieFilas td {
+    display: block;
+    width: 100%;
+    padding: 0;
+  }
+
+  .tabla .pieFilas td {
+    padding: var(--space-3);
   }
 
   .total {

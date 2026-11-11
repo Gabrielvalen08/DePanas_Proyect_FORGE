@@ -26,21 +26,28 @@ test.describe('Compras', () => {
     await entrar(page, CESAR)
   })
 
-  test('una compra vacía no se puede guardar; una incompleta dice qué falta', async ({ page }) => {
+  test('por pasos: Guardar aparece con una fila completa; una fila a medias dice qué falta', async ({ page }) => {
     const guardar = page.getByRole('button', { name: 'Guardar compra' })
-    await expect(guardar).toBeDisabled()
-
     const formulario = page.getByRole('form', { name: 'Detalle de compra' }).first()
+    await expect(guardar).toHaveCount(0)
+    await expect(formulario.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveCount(0)
+
     await formulario.getByRole('combobox', { name: 'Proveedor' }).fill('Selectos')
     await page.keyboard.press('Escape')
+    await expect(formulario.getByRole('combobox', { name: 'Artículo, fila 1' })).toBeVisible()
+    await expect(guardar).toHaveCount(0)
+
+    await llenarFila(page, formulario, 1, { material: 'Azucar', cantidad: 1, precio: 2.5 })
+    await formulario.getByRole('button', { name: COMPRA.agregarFila }).click()
+    await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 2' }).fill('1')
     await guardar.click()
     await expect(formulario.getByText(VALIDACION.material).first()).toBeVisible()
     await expect(page.getByRole('alertdialog')).toHaveCount(0)
   })
 
-  test('el total suma las filas, y "Agregar otra fila" y "Eliminar fila" funcionan', async ({ page }) => {
+  test('el total suma las filas, y "Agregar otro artículo" y "Eliminar fila" funcionan', async ({ page }) => {
     const formulario = await llenarCompra(page, { proveedor: 'Selectos', material: 'Azucar', cantidad: 1, precio: 2.5 })
-    await formulario.getByRole('button', { name: 'Agregar otra fila' }).click()
+    await formulario.getByRole('button', { name: COMPRA.agregarFila }).click()
     await llenarFila(page, formulario, 2, { material: 'Anis', cantidad: 1, precio: 1.25 })
     // Sin IVA, subtotal y total coinciden: se revisa el total, que va al final
     await expect(formulario.getByText('$3.75').last()).toBeVisible()
@@ -73,9 +80,11 @@ test.describe('Compras', () => {
     await expect(sugerencias.getByRole('option', { name: 'Azucar' })).toHaveCount(0)
   })
 
-  test('"Nueva compra" agrega otro bloque para registrar otra compra', async ({ page }) => {
+  test('"Nueva compra" aparece con una fila completa y agrega otro bloque para registrar otra compra', async ({ page }) => {
+    await expect(page.getByRole('button', { name: 'Nueva compra' })).toHaveCount(0)
+    await llenarCompra(page, { proveedor: 'Selectos', material: 'Azucar', cantidad: 1, precio: 2.5 })
     await page.getByRole('button', { name: 'Nueva compra' }).click()
-    await expect(page.getByRole('form', { name: 'Detalle de compra' })).toHaveCount(2)
+    await expect(page.getByRole('form', { name: /Detalle de compra/ })).toHaveCount(2)
   })
 
   test('registra una compra, aparece en Compras, se exporta y se elimina', async ({ page }) => {

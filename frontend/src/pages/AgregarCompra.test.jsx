@@ -98,6 +98,12 @@ async function llenarFila(usuario, n, { material = 'Tocino La Rioja', cantidad =
   await usuario.type(screen.getByLabelText(`Precio unitario, fila ${n}`), monto)
 }
 
+/** Fila 1 completa y una fila 2 vacía, para probar lo que pasa con una fila a medias */
+async function llenarFilaYAgregarOtra(usuario) {
+  await llenarFila(usuario, 1)
+  await usuario.click(screen.getByRole('button', { name: COMPRA.agregarFila }))
+}
+
 async function llenarCompraValida(usuario, bloque = document.body) {
   const en = within(bloque)
   await usuario.type(en.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
@@ -119,8 +125,10 @@ describe('AgregarCompra', () => {
     ASIGNACIONES_INICIALES.forEach(([clave, valor]) => asignaciones.set(clave, valor))
   })
 
-  it('proveedor y fecha van en el encabezado; la fecha arranca en hoy y lo demás en blanco', () => {
+  it('proveedor y fecha van en el encabezado; la fecha arranca en hoy y lo demás en blanco', async () => {
+    const usuario = userEvent.setup()
     renderizar()
+    await elegirProveedor(usuario)
     expect(screen.getByLabelText('Unidad, fila 1')).toHaveValue('')
     expect(screen.getByLabelText('Precio unitario, fila 1')).not.toHaveAttribute('placeholder')
     expect(screen.getByLabelText('Monto, fila 1')).not.toHaveAttribute('placeholder')
@@ -133,7 +141,7 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await llenarFila(usuario, 1)
-    await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
+    await usuario.click(screen.getByRole('button', { name: COMPRA.agregarFila }))
     await usuario.click(screen.getByRole('combobox', { name: 'Artículo, fila 2' }))
     await usuario.tab()
 
@@ -144,9 +152,10 @@ describe('AgregarCompra', () => {
   it('tras intentar guardar, el error queda enlazado al campo y desaparece al corregirlo', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
+    await llenarFilaYAgregarOtra(usuario)
+    await usuario.type(screen.getByLabelText('Cantidad, fila 2'), '2')
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
-    const precio = screen.getByLabelText('Precio unitario, fila 1')
+    const precio = screen.getByLabelText('Precio unitario, fila 2')
     expect(precio).toHaveAccessibleDescription(VALIDACION.precio)
     await usuario.type(precio, '5')
     expect(precio).not.toHaveAttribute('aria-invalid')
@@ -156,7 +165,7 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await llenarCompraValida(usuario)
-    await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
+    await usuario.click(screen.getByRole('button', { name: COMPRA.agregarFila }))
     await guardarYConfirmar(usuario)
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
@@ -166,7 +175,9 @@ describe('AgregarCompra', () => {
   it('guardar con errores no muestra un cuadro: marca en rojo cada campo con su mensaje, enfoca el primero y no guarda', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    await usuario.type(screen.getByLabelText('Precio unitario, fila 1'), '5')
+    await llenarFilaYAgregarOtra(usuario)
+    await usuario.type(screen.getByLabelText('Precio unitario, fila 2'), '5')
+    await usuario.clear(screen.getByRole('combobox', { name: 'Proveedor' }))
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
 
     expect(screen.queryByText(/revisa estos campos/i)).not.toBeInTheDocument()
@@ -174,7 +185,7 @@ describe('AgregarCompra', () => {
     await waitFor(() => expect(proveedor).toHaveFocus())
     expect(proveedor).toHaveAttribute('aria-invalid', 'true')
     expect(proveedor).toHaveAccessibleDescription(VALIDACION.proveedor)
-    expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveAccessibleDescription(VALIDACION.material)
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 2' })).toHaveAccessibleDescription(VALIDACION.material)
     expect(guardarLista).not.toHaveBeenCalled()
   })
 
@@ -182,7 +193,7 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await llenarFila(usuario, 1) // 2 × $3.50 = $7.00
-    await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
+    await usuario.click(screen.getByRole('button', { name: COMPRA.agregarFila }))
     await usuario.type(screen.getByLabelText('Cantidad, fila 2'), '4')
     await usuario.type(screen.getByLabelText('Precio unitario, fila 2'), '125') // cajero: 1-2-5 → $1.25; 4 × $1.25 = $5.00
     expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('7.00')
@@ -210,6 +221,7 @@ describe('AgregarCompra', () => {
   it('al cambiar la cantidad se mantiene el último escrito: el monto o el precio', async () => {
     const usuario = userEvent.setup()
     renderizar()
+    await elegirProveedor(usuario)
     const cantidad = screen.getByLabelText('Cantidad, fila 1')
     const precio = screen.getByLabelText('Precio unitario, fila 1')
     const monto = screen.getByLabelText('Monto, fila 1')
@@ -234,6 +246,7 @@ describe('AgregarCompra', () => {
   it('un monto escrito antes de la cantidad se conserva y el precio sale al poner la cantidad', async () => {
     const usuario = userEvent.setup()
     renderizar()
+    await elegirProveedor(usuario)
     const precio = screen.getByLabelText('Precio unitario, fila 1')
     await usuario.type(screen.getByLabelText('Monto, fila 1'), '800')
     expect(screen.getByLabelText('Monto, fila 1')).toHaveValue('8.00')
@@ -247,6 +260,7 @@ describe('AgregarCompra', () => {
   it('borrar un monto escrito limpia también el precio', async () => {
     const usuario = userEvent.setup()
     renderizar()
+    await elegirProveedor(usuario)
     await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
     await usuario.type(screen.getByLabelText('Monto, fila 1'), '800')
     await usuario.clear(screen.getByLabelText('Monto, fila 1'))
@@ -258,13 +272,13 @@ describe('AgregarCompra', () => {
   it('el error de precio se quita al escribir un monto válido', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
-    await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
+    await llenarFilaYAgregarOtra(usuario)
+    await usuario.type(screen.getByLabelText('Cantidad, fila 2'), '2')
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
-    const precio = screen.getByLabelText('Precio unitario, fila 1')
+    const precio = screen.getByLabelText('Precio unitario, fila 2')
     expect(precio).toHaveAccessibleDescription(VALIDACION.precio)
 
-    await usuario.type(screen.getByLabelText('Monto, fila 1'), '800')
+    await usuario.type(screen.getByLabelText('Monto, fila 2'), '800')
     expect(precio).not.toHaveAttribute('aria-invalid')
   })
 
@@ -323,13 +337,25 @@ describe('AgregarCompra', () => {
     await waitFor(() => expect(screen.getByRole('combobox', { name: 'Proveedor' })).toHaveValue(''))
   })
 
-  it('sin proveedor ni filas con datos, Guardar y Cancelar están deshabilitados', async () => {
+  it('por pasos: primero fecha y proveedor; con proveedor, la fila; con la fila completa, el resto (nada apagado en gris)', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    expect(screen.getByRole('button', { name: /guardar compra/i })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled()
+    const resto = () => [
+      screen.queryByRole('button', { name: /guardar compra/i }),
+      screen.queryByRole('button', { name: 'Cancelar' }),
+      screen.queryByRole('button', { name: COMPRA.agregarFila }),
+      screen.queryByRole('button', { name: /nueva compra/i }),
+      screen.queryByText('Total'),
+    ]
+    expect(screen.queryByRole('combobox', { name: 'Artículo, fila 1' })).not.toBeInTheDocument()
+    resto().forEach(e => expect(e).not.toBeInTheDocument())
 
     await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'W')
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toBeInTheDocument()
+    resto().forEach(e => expect(e).not.toBeInTheDocument())
+
+    await llenarFila(usuario, 1)
+    resto().forEach(e => expect(e).toBeInTheDocument())
     expect(screen.getByRole('button', { name: /guardar compra/i })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeEnabled()
   })
@@ -337,14 +363,15 @@ describe('AgregarCompra', () => {
   it('tras un error de datos, Guardar se apaga hasta que se cambie algo', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
+    await llenarFilaYAgregarOtra(usuario)
+    await usuario.type(screen.getByLabelText('Cantidad, fila 2'), '1')
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
 
     const guardar = screen.getByRole('button', { name: /guardar compra/i })
     expect(guardar).toBeDisabled()
     expect(guardar).toHaveAccessibleDescription(COMPRA.cambiaParaReintentar)
 
-    await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
+    await usuario.type(screen.getByLabelText('Cantidad, fila 2'), '2')
     expect(screen.getByRole('button', { name: /guardar compra/i })).toBeEnabled()
   })
 
@@ -384,7 +411,7 @@ describe('AgregarCompra', () => {
   it('con datos, Cancelar pide confirmar; "Seguir editando" conserva todo y "Sí, cancelar" vacía el formulario', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
+    await llenarFila(usuario, 1)
     await usuario.click(screen.getByRole('button', { name: 'Cancelar' }))
 
     const confirmacion = await screen.findByRole('alertdialog', { name: COMPRA.confirmarCancelar.titulo })
@@ -399,11 +426,13 @@ describe('AgregarCompra', () => {
   it('"Nueva compra" agrega otro bloque con su propio guardar; cancelar lo quita', async () => {
     const usuario = userEvent.setup()
     renderizar()
+    await llenarFila(usuario, 1)
     await usuario.click(screen.getByRole('button', { name: /nueva compra/i }))
 
     const segundo = await screen.findByRole('form', { name: 'Detalle de compra 2' })
     expect(within(segundo).getByRole('combobox', { name: 'Proveedor' })).toHaveFocus()
-    expect(screen.getAllByRole('button', { name: /guardar compra/i })).toHaveLength(2)
+    // La compra nueva aún no tiene Guardar (va por pasos), pero sí Cancelar para quitarla
+    expect(within(segundo).queryByRole('button', { name: /guardar compra/i })).not.toBeInTheDocument()
 
     await usuario.click(within(segundo).getByRole('button', { name: 'Cancelar' }))
     await waitFor(() => expect(screen.queryByRole('form', { name: 'Detalle de compra 2' })).not.toBeInTheDocument())
@@ -477,44 +506,48 @@ describe('AgregarCompra', () => {
   it('sin proveedor, escribir un material avisa que primero se elige el proveedor y lo enfoca', async () => {
     const usuario = userEvent.setup()
     renderizar()
-    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'T') // el foco pasa al proveedor
-
+    await llenarFilaYAgregarOtra(usuario)
     const proveedor = screen.getByRole('combobox', { name: 'Proveedor' })
+    await usuario.clear(proveedor)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 2' }), 'T') // el foco pasa al proveedor
+
     expect(proveedor).toHaveFocus()
     expect(proveedor).toHaveAccessibleDescription(VALIDACION.proveedorPrimero)
-    expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveValue('')
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 2' })).toHaveValue('')
 
     await usuario.type(proveedor, 'Walmart')
     expect(proveedor).not.toHaveAttribute('aria-invalid')
-    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'T')
-    expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveValue('T')
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 2' }), 'T')
+    expect(screen.getByRole('combobox', { name: 'Artículo, fila 2' })).toHaveValue('T')
   })
 
-  it('no deja agregar otra fila mientras la última esté incompleta, y explica por qué', async () => {
+  it('la fila «Agregar otro artículo» solo aparece cuando la última fila está completa', async () => {
     const usuario = userEvent.setup()
     renderizar()
     await elegirProveedor(usuario)
-    const agregar = screen.getByRole('button', { name: /agregar otra fila/i })
-    expect(agregar).toBeDisabled()
-    expect(agregar).toHaveAccessibleDescription(VALIDACION.filaIncompleta)
+    const agregar = () => screen.queryByRole('button', { name: COMPRA.agregarFila })
+    expect(agregar()).not.toBeInTheDocument()
 
     await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
     await usuario.selectOptions(screen.getByLabelText('Unidad, fila 1'), 'kg')
-    expect(agregar).toBeDisabled()
+    expect(agregar()).not.toBeInTheDocument()
 
     await usuario.type(screen.getByLabelText('Precio unitario, fila 1'), '350')
-    expect(agregar).toBeEnabled()
-    await usuario.click(agregar)
-    expect(screen.getByRole('button', { name: /agregar otra fila/i })).toBeDisabled()
+    expect(agregar()).toBeEnabled()
+    // Va dentro de la tabla, al final, como una fila más
+    expect(agregar().closest('tfoot')).toBeInTheDocument()
+    await usuario.click(agregar())
+    expect(agregar()).not.toBeInTheDocument()
   })
 
   it('agregar fila lleva el foco a su Material; nunca quedan menos de 1', async () => {
     const usuario = userEvent.setup()
     renderizar()
+    await elegirProveedor(usuario)
     expect(screen.getByRole('button', { name: 'Eliminar fila 1' })).toBeDisabled()
     await llenarFila(usuario, 1)
-    await usuario.click(screen.getByRole('button', { name: /agregar otra fila/i }))
+    await usuario.click(screen.getByRole('button', { name: COMPRA.agregarFila }))
     expect(screen.getByRole('combobox', { name: 'Artículo, fila 2' })).toHaveFocus()
   })
 
@@ -912,6 +945,8 @@ describe('AgregarCompra', () => {
   it('el «+» con el campo vacío y sin proveedor pide el proveedor primero', async () => {
     const usuario = userEvent.setup()
     renderizar()
+    await llenarFilaYAgregarOtra(usuario)
+    await usuario.clear(screen.getByRole('combobox', { name: 'Proveedor' }))
     const boton = screen.getByRole('button', { name: COMPRA.agregarArticulo('') })
     expect(boton).toBeEnabled()
     await usuario.click(boton)
@@ -1043,6 +1078,7 @@ describe('AgregarCompra', () => {
   it('al renombrar un artículo, las otras compras abiertas con ese artículo también cambian', async () => {
     const usuario = userEvent.setup()
     renderizar()
+    await llenarFila(usuario, 1, { material: 'Pechugas de Pollo' })
     await usuario.click(screen.getByRole('button', { name: /nueva compra/i }))
     const combos = screen.getAllByRole('combobox', { name: 'Proveedor' })
     await usuario.type(combos[1], 'Walmart')
