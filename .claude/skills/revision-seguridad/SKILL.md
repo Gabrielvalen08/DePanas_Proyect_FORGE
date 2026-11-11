@@ -5,7 +5,7 @@ description: Revisión de seguridad de De Panas (sesiones con token, bloqueo por
 
 # Revisión de seguridad (De Panas)
 
-Reporta solo problemas reales y explotables, con archivo:línea, cómo se explota y la corrección. Escribe el resultado en `docs/revisiones/seguridad.md`.
+Reporta solo problemas reales y explotables, con archivo:línea, cómo se explota y la corrección. Escribe el resultado en `docs/revisiones/seguridad.md`. El resumen para el equipo y el cliente está en `docs/SEGURIDAD.md`: actualízalo si cambia un control.
 
 ## Modelo de amenazas
 
@@ -25,7 +25,10 @@ Reporta solo problemas reales y explotables, con archivo:línea, cómo se explot
 | Requisitos de contraseña configurables | `shared/usuarios.js` (`faltaEnContrasena`) | `test/usuarios.test.js` |
 | Hosts permitidos (frena DNS rebinding) en el .zip | `app.js` (`hostsPermitidos`) | `desktop/pruebas` |
 | Validación de compras, catálogo y respaldos | `shared/compras-json.js`, `catalogo-json.js`, `proveedores.js` | `test/api.test.js`, `test/carga.test.js` |
-| Importar `.db`: valida el archivo y guarda respaldo antes | `routes/db_export.js`, `db.js` (`esBaseDePanas`) | `test/api.test.js` |
+| Importar `.db`: valida el archivo y guarda respaldo antes | `routes/db_export.js`, `app.js` (`reemplazarDB`), `db.js` (`esBaseDePanas`) | `test/api.test.js`, `test/seguridad-datos.test.js` |
+| Fechas reales, largos máximos y tipos en las compras | `dao/compras.js` (`validarCompra`) | `test/seguridad-datos.test.js` |
+| Errores sin detalles internos (500 genérico, JSON mal formado 400, sin `X-Powered-By`) | `routes/responder.js`, `app.js` | `test/seguridad-datos.test.js` |
+| Exportar solo con la pantalla Exportar; JSON sin usuarios; `.db` solo con hashes | `permisos.js`, `dao/compras.js` | `test/seguridad-datos.test.js` |
 
 ## Lista de comprobación
 

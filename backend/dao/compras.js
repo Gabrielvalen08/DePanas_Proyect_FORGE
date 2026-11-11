@@ -21,6 +21,16 @@ import { resolverCarga } from '../../shared/carga-compras.js'
 import { ErrorDatos, noEncontrado, noValido } from './errores.js'
 
 const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/
+/** Largo máximo de los textos de una compra: frena cuerpos absurdos sin limitar nombres reales */
+const MAX_TEXTO = 120
+
+/** La fecha tiene el formato AAAA-MM-DD y además existe (no 2026-13-45 ni 2026-02-30) */
+function fechaValida(fecha) {
+  if (typeof fecha !== 'string' || !FECHA_ISO.test(fecha)) return false
+  const [anio, mes, dia] = fecha.split('-').map(Number)
+  const d = new Date(Date.UTC(anio, mes - 1, dia))
+  return d.getUTCFullYear() === anio && d.getUTCMonth() === mes - 1 && d.getUTCDate() === dia
+}
 
 const COLUMNAS = 'id, origen_id, compra_categoria, compra_iva, compra_archivo, compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto'
 
@@ -68,7 +78,9 @@ export function validarCompra(cuerpo) {
   const materiales = cuerpo?.materiales
 
   if (!proveedor) return { error: 'Falta el proveedor' }
+  if (proveedor.length > MAX_TEXTO) return { error: `El proveedor es muy largo (máximo ${MAX_TEXTO} caracteres)` }
   if (typeof fecha !== 'string' || !FECHA_ISO.test(fecha)) return { error: 'La fecha debe tener el formato AAAA-MM-DD' }
+  if (!fechaValida(fecha)) return { error: 'La fecha no existe' }
   if (!Array.isArray(materiales) || materiales.length === 0) return { error: 'La compra necesita al menos un artículo' }
   const iva = cuerpo.iva ?? 0
   if (!ivaValido(iva)) return { error: 'El IVA debe ser un número mayor o igual a 0' }
@@ -79,6 +91,7 @@ export function validarCompra(cuerpo) {
     const cantidad = Number(m?.cantidad)
     const monto = Number(m?.monto)
     if (!material) return { error: `Fila ${i + 1}: falta el artículo` }
+    if (material.length > MAX_TEXTO) return { error: `Fila ${i + 1}: el artículo es muy largo (máximo ${MAX_TEXTO} caracteres)` }
     if (!Number.isFinite(cantidad) || cantidad <= 0) return { error: `Fila ${i + 1}: la cantidad debe ser mayor a 0` }
     if (!Number.isFinite(monto) || monto <= 0) return { error: `Fila ${i + 1}: el monto debe ser mayor a 0` }
     normalizados.push({
