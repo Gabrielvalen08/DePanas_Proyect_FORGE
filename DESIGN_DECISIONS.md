@@ -247,6 +247,7 @@ Todos viven en `frontend/src/components/common/` y toda pantalla se arma con ell
 
 **Tablas**
 - Fondo blanco dentro de una tarjeta; encabezado en `--color-surface-soft`, Josefin 600 en MAYÚSCULAS a 0.875rem; divisores de 1 px.
+- **Un solo alto de fila en todos los módulos** (escritorio): al menos 52 px (`--tabla-alto-fila`), celdas con 8 px arriba y abajo (`--tabla-celda-y`) y 16 px a los lados (`--tabla-celda-x`), encabezado de ~39 px. Los controles dentro de una fila (campos de Agregar compra, lápiz y papelera) bajan a 36 px (`--tabla-alto-control`) para caber. Es el punto medio entre ver muchas filas y que no se sientan apretadas como en Excel.
 - Montos a la derecha, en negrita, con dos decimales y `$`.
 - Hover visible en filas que se pueden abrir; fila elegida con la franja naranja.
 - En teléfono, cada fila se vuelve una tarjeta con etiqueta y valor.

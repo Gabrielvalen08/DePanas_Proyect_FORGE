@@ -21,7 +21,11 @@
 /* Con ratón, controles más bajos: caben más filas. Con pantalla táctil siguen en 44 px */
 @media (min-width: 1100px) {
   .tarjeta {
-    --campo-alto: 2.25rem;
+    --campo-alto: var(--tabla-alto-control);
+  }
+
+  .tabla tbody td {
+    height: var(--tabla-alto-fila);
   }
 
   .eliminar,
@@ -71,7 +75,7 @@
 }
 
 .tabla th {
-  padding: var(--space-1) var(--space-2);
+  padding: var(--tabla-encabezado-y) var(--space-2);
   background: var(--color-surface-soft);
   border-bottom: 1px solid var(--color-border);
   font-size: 0.875rem;
@@ -93,7 +97,7 @@
 }
 
 .tabla td {
-  padding: var(--space-1) var(--space-2);
+  padding: var(--tabla-celda-y) var(--space-2);
   border-bottom: 1px solid var(--color-border);
   vertical-align: top;
 }
@@ -203,6 +207,11 @@
   .tabla tbody,
   .tabla td {
     display: block;
+  }
+
+  /* Como tarjetas, cada celda mide lo que su contenido (no el alto de fila de la tabla) */
+  .tabla tbody td {
+    height: auto;
   }
 
   /* Cantidad con Unidad y Precio con Monto, de a dos. Arriba: un error debajo de un campo no mueve al de al lado */
