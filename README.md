@@ -112,6 +112,6 @@ Los aportes de cada uno están en [docs/sitio/index.html](docs/sitio/index.html#
 
 ## Estado
 
-**Lista para que la usen César y Marta.** 575 pruebas automáticas: 130 del backend, 368 del frontend y 77 recorridos en navegador.
+**Lista para que la usen César y Marta.** 594 pruebas automáticas: 131 del backend, 373 del frontend y 90 recorridos en navegador.
 
 Para después: conversión automática de unidades (HU-02), un panel de costos y márgenes dentro de la app y el acceso desde la tablet por la red local.
