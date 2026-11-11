@@ -71,7 +71,7 @@ Sin negro puro: nunca se usa el negro.
 --font-body: 'Cardo', Georgia, serif;
 ```
 
-En el código se llaman `--fuente-titulos` y `--fuente-texto` (`tokens.css`). Se cargan de Google Fonts: Josefin Sans 400/600/700 y Cardo 400, 400 itálica y 700.
+En el código se llaman `--fuente-titulos` y `--fuente-texto` (`tokens.css`). Van dentro de la app (`@fontsource`, sin internet): Josefin Sans 400/600/700 y Cardo 400, 400 itálica y 700.
 
 ### Type Scale
 

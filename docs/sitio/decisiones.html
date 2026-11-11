@@ -4,9 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Decisiones · De Panas SV</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../manual/fuentes/fuentes.css">
   <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
@@ -117,6 +115,25 @@
         <p class="meta">Cierre del proyecto</p>
         <p>La referencia de diseño pasó a ser el sitio actual, con las diferencias con el brandbook documentadas. Los encabezados quedaron sin frase. <b>Por qué:</b> el sitio ya había resuelto lo que el brandbook no cubre (texto sobre naranja, logo a tamaño de menú) y las frases recargaban las pantallas de trabajo.</p>
       </div>
+    </section>
+
+    <section aria-labelledby="t-no-aplica">
+      <h2 id="t-no-aplica">Lo que evaluamos y no aplica</h2>
+      <p>Al cerrar revisamos prácticas comunes de los sitios web públicos. La app es un sitio local, sin internet y para dos personas, así que estas no le sirven:</p>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Práctica</th><th scope="col">Por qué no</th></tr></thead>
+          <tbody>
+            <tr><td>Google Analytics</td><td>Necesita internet y mandaría a Google datos del negocio. Va contra «todo en la computadora del local».</td></tr>
+            <tr><td>Schema local (LocalBusiness)</td><td>Sirve para que Google muestre un negocio en sus resultados. La app no es pública; serviría en un sitio público del restaurante.</td></tr>
+            <tr><td>robots.txt</td><td>Ningún buscador llega a <code>localhost</code>.</td></tr>
+            <tr><td>Breadcrumbs</td><td>La app tiene pocos niveles; Exportar, Cargar y las secciones del Catálogo ya tienen Regresar o pestañas.</td></tr>
+            <tr><td>Promesa de tiempo de respuesta</td><td>El equipo decidió no comprometer un tiempo de soporte ni de rendimiento.</td></tr>
+            <tr><td>Títulos únicos por página</td><td>Ya estaba: cada pantalla y cada página de la documentación tiene el suyo.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Sí tomamos tres: la pantalla <b>No encontrada</b> para direcciones que no existen, que la <b>acción principal</b> de cada pantalla se vea sin bajar, y <b>enlaces internos</b> en los estados vacíos y entre el manual y esta documentación.</p>
     </section>
   </main>
 

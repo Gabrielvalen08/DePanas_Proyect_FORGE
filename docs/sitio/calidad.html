@@ -4,9 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Calidad · De Panas SV</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../manual/fuentes/fuentes.css">
   <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
@@ -86,6 +84,24 @@ npm run test:escritorio</code></pre>
     <section aria-labelledby="t-seg">
       <h2 id="t-seg">Seguridad</h2>
       <p>Cada control tiene su prueba: contraseñas con hash, bloqueo por intentos fallidos, sesión que vence, permisos en cada petición, validación de entradas, SQL con parámetros, errores sin detalles internos, exportar solo con permiso y respaldo antes de reemplazar la base. La tabla completa está en <a href="../SEGURIDAD.md">docs/SEGURIDAD.md</a>.</p>
+    </section>
+
+    <section aria-labelledby="t-privacidad">
+      <h2 id="t-privacidad">Privacidad y datos</h2>
+      <p>La app maneja datos del negocio y algunos datos personales: los teléfonos y contactos de los proveedores y los nombres de los usuarios. Todo se queda en la computadora del local.</p>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Qué</th><th scope="col">Cómo</th><th scope="col">Dónde se comprueba</th></tr></thead>
+          <tbody>
+            <tr><td>Datos en un solo lugar</td><td>Una base SQLite en <code>%APPDATA%\De Panas SV\depanas.db</code>; la demostración, aparte en <code>demo</code></td><td><a href="../MODELO_DATOS.md">Modelo de datos</a></td></tr>
+            <tr><td>Nada sale de la computadora</td><td>El servidor escucha solo en <code>127.0.0.1</code> y <code>::1</code>; sin analítica ni servicios externos; las fuentes de la marca van dentro de la app (antes se pedían a Google Fonts)</td><td><code>navegacion.spec.js</code>: ningún pedido fuera de la computadora</td></tr>
+            <tr><td>Contraseñas</td><td>PBKDF2-SHA256 con 600 000 iteraciones; nunca salen del backend y no se comparan con las de otros usuarios</td><td><a href="../SEGURIDAD.md">Seguridad</a></td></tr>
+            <tr><td>Quién ve qué</td><td>Roles y permisos por pantalla y función, revisados en cada petición</td><td><code>seguridad.test.js</code></td></tr>
+            <tr><td>Respaldos</td><td>Exportar descarga un archivo con las compras completas: se avisa al usuario que lo guarde en un lugar seguro</td><td><code>seguridad-datos.test.js</code></td></tr>
+            <tr><td>Borrar</td><td>Eliminar una compra o un dato del catálogo; borrar todo es borrar la carpeta de datos con la app apagada</td><td><a href="../manual/index.html#privacidad">Manual de uso</a></td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section aria-labelledby="t-usuario">

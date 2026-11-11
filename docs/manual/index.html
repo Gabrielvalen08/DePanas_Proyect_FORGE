@@ -4,9 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Manual de uso · De Panas SV</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="fuentes/fuentes.css">
   <style>
     /* Marca De Panas (DESIGN_DECISIONS.md): crema y naranja protagonistas, texto Verde Ávila */
     :root {
@@ -165,6 +163,7 @@
         <li><a href="#catalogo">Catálogo</a></li>
         <li><a href="#exportar">Exportar y respaldos</a></li>
         <li><a href="#usuarios">Usuarios y contraseñas</a></li>
+        <li><a href="#privacidad">Tus datos y su privacidad</a></li>
         <li><a href="#preguntas">Preguntas frecuentes</a></li>
       </ol>
     </nav>
@@ -291,8 +290,25 @@
       <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
     </section>
 
+    <section id="privacidad" aria-labelledby="t-privacidad">
+      <h2 id="t-privacidad">8. Tus datos y su privacidad</h2>
+      <table>
+        <thead><tr><th scope="col">Pregunta</th><th scope="col">Respuesta</th></tr></thead>
+        <tbody>
+          <tr><td>¿Qué guarda?</td><td>Las compras (proveedor, fecha, artículos, cantidades y montos), el catálogo con la ficha de cada proveedor (ubicación, teléfonos y contactos) y los usuarios (nombre, usuario y rol).</td></tr>
+          <tr><td>¿Dónde?</td><td>Solo en esta computadora, en la carpeta <code>%APPDATA%\De Panas SV</code>. La demostración usa otra carpeta aparte (<code>demo</code>).</td></tr>
+          <tr><td>¿Sale algo a internet?</td><td>No. No necesita internet, no manda datos a ningún lado y no usa publicidad ni estadísticas. Nadie más en la red puede abrirla.</td></tr>
+          <tr><td>¿Y las contraseñas?</td><td>No se guardan tal cual: se guarda una huella cifrada que no se puede revertir. Ni el administrador puede ver la contraseña de otro.</td></tr>
+          <tr><td>¿Quién ve qué?</td><td>Cada persona ve solo las pantallas que le dio el administrador (ver <a href="#usuarios">Usuarios y contraseñas</a>).</td></tr>
+          <tr><td>¿Cómo los respaldo?</td><td>Con <a href="#exportar">Exportar</a>. Guarda el archivo en un lugar seguro: trae tus compras completas.</td></tr>
+          <tr><td>¿Cómo los borro?</td><td>Una compra o un dato del catálogo, con <b>Eliminar</b>. Todo: apaga De Panas SV y borra la carpeta <code>%APPDATA%\De Panas SV</code> (no se puede deshacer; respalda antes).</td></tr>
+        </tbody>
+      </table>
+      <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
+    </section>
+
     <section id="preguntas" aria-labelledby="t-preguntas">
-      <h2 id="t-preguntas">8. Preguntas frecuentes</h2>
+      <h2 id="t-preguntas">9. Preguntas frecuentes</h2>
       <details>
         <summary>¿Necesito internet?</summary>
         <p>No. Todo funciona y se guarda en esta computadora.</p>

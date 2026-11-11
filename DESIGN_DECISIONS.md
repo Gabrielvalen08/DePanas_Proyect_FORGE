@@ -110,7 +110,7 @@ Los componentes usan solo estos roles. Los tintes (`--tinte-*`) y el Vinotinto d
 | Interfaz y titulares | **Josefin Sans** | 400, 600, 700 | Títulos (en MAYÚSCULAS), botones, etiquetas, menús, tablas, cifras |
 | Textos extensos | **Cardo** | 400, 400 itálica, 700 | Párrafos, descripciones, ayudas, estados vacíos |
 
-Se cargan desde Google Fonts en `frontend/index.html` con `display=swap`. Tokens: `--fuente-titulos` (Josefin Sans, `system-ui`) y `--fuente-texto` (Cardo, Georgia). El `body` va en Cardo; `h1–h3`, `button`, `input`, `select`, `label`, `th` y `nav` en Josefin Sans.
+Van **dentro de la app**, sin internet: paquetes `@fontsource/josefin-sans` y `@fontsource/cardo` (solo el subconjunto latino, que cubre el español), importados en `frontend/src/main.jsx`; la documentación (`docs/manual/`, `docs/sitio/`) usa las mismas en `docs/manual/fuentes/` (licencia SIL OFL). Nunca se piden a Google Fonts: la app no hace pedidos fuera de la computadora. Tokens: `--fuente-titulos` (Josefin Sans, `system-ui`) y `--fuente-texto` (Cardo, Georgia). El `body` va en Cardo; `h1–h3`, `button`, `input`, `select`, `label`, `th` y `nav` en Josefin Sans.
 
 | Elemento | Familia | Peso | Tamaño (escritorio / teléfono) | Interlineado | Tracking |
 |---|---|---|---|---|---|

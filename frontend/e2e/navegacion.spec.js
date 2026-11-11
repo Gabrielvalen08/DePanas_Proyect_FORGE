@@ -55,6 +55,23 @@ test.describe('Navegación', () => {
     await expect(page).toHaveURL(/\/catalogo\/articulos$/)
   })
 
+  test('la app no pide nada fuera de esta computadora y las fuentes de la marca cargan sin internet', async ({ page }) => {
+    const externas = []
+    page.on('request', pedido => {
+      const { hostname } = new URL(pedido.url())
+      if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname) && !pedido.url().startsWith('data:')) externas.push(pedido.url())
+    })
+    await page.reload()
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await menu(page).getByRole('link', { name: 'Lista de compras' }).click()
+    await expect(page.getByRole('heading', { name: 'Lista de compras', level: 1 })).toBeVisible()
+    await page.evaluate(() => document.fonts.ready)
+    // check() da true también sin ninguna @font-face: se revisa que de verdad haya caras cargadas
+    const cargadas = await page.evaluate(() => [...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/["']/g, '')))
+    expect(cargadas).toEqual(expect.arrayContaining(['Josefin Sans', 'Cardo']))
+    expect(externas, 'ningún pedido fuera de la computadora (ni Google Fonts)').toEqual([])
+  })
+
   test('cada sección del Catálogo abre su lista', async ({ page }) => {
     await page.goto('/catalogo')
     const secciones = page.getByRole('navigation', { name: 'Secciones del catálogo' })
