@@ -14,7 +14,7 @@ import { pbkdf2Sync, randomBytes } from 'crypto'
 import { createServer } from 'net'
 import { request as httpRequest } from 'http'
 import { DatabaseSync } from 'node:sqlite'
-import { CLAVE_CESAR } from './ayudantes.js'
+import { CLAVE_CESAR, CLAVE_MARTA } from './ayudantes.js'
 import { crearApp } from '../app.js'
 import { ITERACIONES } from '../contrasenas.js'
 import { BLOQUEO_MS, DURACION_SESION_MS, MAX_INTENTOS, crearSesiones } from '../sesiones.js'
@@ -136,7 +136,7 @@ test('permisos: sin catalogo.editar se crean artículos y se completa lo que fal
 
 test('permisos: un operador tiene todo menos el Gestor de usuarios y los requisitos de contraseña', async t => {
   const { base } = await levantar(t)
-  const marta = await tokenDe(base, 'Marta_02', '5678')
+  const marta = await tokenDe(base, 'Marta_02', CLAVE_MARTA)
   assert.equal((await pedir(`${base}/db/exportar`, { token: marta })).status, 200)
   assert.equal((await pedir(`${base}/catalogo/proveedor`, { metodo: 'POST', token: marta, cuerpo: { nombre: 'La Colonia' } })).status, 200)
   assert.equal((await pedir(`${base}/usuarios`, { token: marta })).status, 403)
@@ -146,7 +146,7 @@ test('permisos: un operador tiene todo menos el Gestor de usuarios y los requisi
 test('permisos: quitarle una pantalla a un usuario se aplica en el acto, sin que vuelva a entrar', async t => {
   const { base } = await levantar(t)
   const admin = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
-  const marta = await tokenDe(base, 'Marta_02', '5678')
+  const marta = await tokenDe(base, 'Marta_02', CLAVE_MARTA)
   assert.equal((await pedir(`${base}/db/exportar`, { token: marta })).status, 200)
   await pedir(`${base}/usuarios/Marta_02`, { metodo: 'PUT', token: admin, cuerpo: { permisos: ['/', '/compras'] } })
   assert.equal((await pedir(`${base}/db/exportar`, { token: marta })).status, 403)
@@ -166,7 +166,7 @@ test(`intentos: tras ${MAX_INTENTOS} contraseñas malas el usuario espera; uno q
   assert.equal(bloqueado.status, 429)
   assert.equal(bloqueado.cuerpo.minutos, 5)
   // Otro usuario no queda bloqueado
-  assert.equal((await entrar(base, 'Marta_02', '5678')).status, 200)
+  assert.equal((await entrar(base, 'Marta_02', CLAVE_MARTA)).status, 200)
 
   reloj.ahora += BLOQUEO_MS + 1
   assert.equal((await entrar(base, 'Cesar_01', CLAVE_CESAR)).status, 200)
@@ -178,14 +178,14 @@ test(`intentos: tras ${MAX_INTENTOS} contraseñas malas el usuario espera; uno q
 test('intentos: entrar bien reinicia la cuenta de fallos', async t => {
   const { base } = await levantar(t)
   for (let i = 0; i < MAX_INTENTOS - 1; i++) await entrar(base, 'Marta_02', 'mala')
-  assert.equal((await entrar(base, 'Marta_02', '5678')).status, 200)
+  assert.equal((await entrar(base, 'Marta_02', CLAVE_MARTA)).status, 200)
   for (let i = 0; i < MAX_INTENTOS - 1; i++) await entrar(base, 'Marta_02', 'mala')
-  assert.equal((await entrar(base, 'Marta_02', '5678')).status, 200)
+  assert.equal((await entrar(base, 'Marta_02', CLAVE_MARTA)).status, 200)
 })
 
 test('sesión: vence tras 8 horas sin uso, cada petición la renueva y cerrar sesión la invalida', async t => {
   const { base, reloj } = await levantar(t)
-  const token = await tokenDe(base, 'Marta_02', '5678')
+  const token = await tokenDe(base, 'Marta_02', CLAVE_MARTA)
   reloj.ahora += DURACION_SESION_MS - 1000
   assert.equal((await pedir(`${base}/compras`, { token })).status, 200, 'casi 8 h: sigue y se renueva')
   reloj.ahora += DURACION_SESION_MS - 1000
@@ -193,7 +193,7 @@ test('sesión: vence tras 8 horas sin uso, cada petición la renueva y cerrar se
   reloj.ahora += DURACION_SESION_MS + 1
   assert.equal((await pedir(`${base}/compras`, { token })).status, 401, 'más de 8 h sin uso: vencida')
 
-  const otro = await tokenDe(base, 'Marta_02', '5678')
+  const otro = await tokenDe(base, 'Marta_02', CLAVE_MARTA)
   assert.equal((await pedir(`${base}/sesion`, { metodo: 'DELETE', token: otro })).status, 204)
   assert.equal((await pedir(`${base}/compras`, { token: otro })).status, 401)
 })
@@ -201,17 +201,17 @@ test('sesión: vence tras 8 horas sin uso, cada petición la renueva y cerrar se
 test('hash: una contraseña guardada con menos iteraciones se recalcula al entrar', async t => {
   const { base, dbPath } = await levantar(t)
   const sal = randomBytes(16)
-  const viejo = `pbkdf2$500$${sal.toString('hex')}$${pbkdf2Sync('5678', sal, 500, 32, 'sha256').toString('hex')}`
+  const viejo = `pbkdf2$500$${sal.toString('hex')}$${pbkdf2Sync(CLAVE_MARTA, sal, 500, 32, 'sha256').toString('hex')}`
   const db = new DatabaseSync(dbPath)
   db.prepare("UPDATE usuarios SET contrasena = ? WHERE usuario = 'Marta_02'").run(viejo)
   db.close()
 
-  assert.equal((await entrar(base, 'Marta_02', '5678')).status, 200)
+  assert.equal((await entrar(base, 'Marta_02', CLAVE_MARTA)).status, 200)
   const lectura = new DatabaseSync(dbPath)
   const guardado = lectura.prepare("SELECT contrasena FROM usuarios WHERE usuario = 'Marta_02'").get().contrasena
   lectura.close()
   assert.ok(guardado.startsWith(`pbkdf2$${ITERACIONES}$`), guardado)
-  assert.equal((await entrar(base, 'Marta_02', '5678')).status, 200, 'sigue entrando con el hash nuevo')
+  assert.equal((await entrar(base, 'Marta_02', CLAVE_MARTA)).status, 200, 'sigue entrando con el hash nuevo')
 })
 
 test('la API nunca devuelve el hash de una contraseña', async t => {
@@ -219,7 +219,7 @@ test('la API nunca devuelve el hash de una contraseña', async t => {
   const admin = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
   const usuarios = await pedir(`${base}/usuarios`, { token: admin })
   assert.ok(!JSON.stringify(usuarios.cuerpo).includes('pbkdf2'))
-  assert.ok(!JSON.stringify((await entrar(base, 'Marta_02', '5678')).cuerpo).includes('pbkdf2'))
+  assert.ok(!JSON.stringify((await entrar(base, 'Marta_02', CLAVE_MARTA)).cuerpo).includes('pbkdf2'))
 })
 
 /** Un puerto libre de esta computadora */
@@ -276,7 +276,7 @@ test('apagar (versión del .zip): health dice que se puede, exige sesión y llam
   assert.equal((await pedir(`${base}/apagar`, { metodo: 'POST' })).status, 401)
   assert.equal(apagado, false)
 
-  const marta = await tokenDe(base, 'Marta_02', '5678')
+  const marta = await tokenDe(base, 'Marta_02', CLAVE_MARTA)
   assert.equal((await pedir(`${base}/apagar`, { metodo: 'POST', token: marta })).status, 200)
   await new Promise(resolve => setTimeout(resolve, 300))
   assert.equal(apagado, true)
@@ -338,7 +338,7 @@ test('pestañas: recargar (GET /api/health al volver la página) cancela el apag
 test('pestañas: con varias abiertas, solo se apaga al cerrarse la última', async t => {
   const { base, estado } = await levantarApagable(t)
   const cesar = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
-  const marta = await tokenDe(base, 'Marta_02', '5678')
+  const marta = await tokenDe(base, 'Marta_02', CLAVE_MARTA)
   await registrar(base, cesar, 'a')
   await registrar(base, marta, 'b')
 
@@ -354,7 +354,7 @@ test('pestañas: con varias abiertas, solo se apaga al cerrarse la última', asy
 test('pestañas: una con la sesión vencida ya no cuenta (quedó en la pantalla de contraseña)', async t => {
   const reloj = { ahora: 1_000_000 }
   const { base, estado } = await levantarApagable(t, crearSesiones({ ahora: () => reloj.ahora }))
-  const vieja = await tokenDe(base, 'Marta_02', '5678')
+  const vieja = await tokenDe(base, 'Marta_02', CLAVE_MARTA)
   await registrar(base, vieja, 'vieja')
   reloj.ahora += DURACION_SESION_MS + 1
   const nueva = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)

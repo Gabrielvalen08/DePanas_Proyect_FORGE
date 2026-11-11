@@ -19,7 +19,7 @@ No hace falta tener `npm run dev` ni el backend abiertos: `playwright.config.js`
 
 ## Base de datos
 
-`servidor-pruebas.js` arranca el backend de siempre con `DEPANAS_DB` apuntando a `e2e/.tmp/e2e.db`, que se borra al empezar cada corrida. Cada corrida parte de los datos iniciales (catálogo del Excel, `Cesar_01` / `DePanas#2026` y `Marta_02` / `5678`) y **nunca toca `backend/db/depanas.db`**. Como todas las pruebas comparten esa base, corren una a la vez y cada una deja los datos como los encontró (lo que crea, lo elimina).
+`servidor-pruebas.js` arranca el backend de siempre con `DEPANAS_DB` apuntando a `e2e/.tmp/e2e.db`, que se borra al empezar cada corrida. Cada corrida parte de los datos iniciales (catálogo del Excel, `Cesar_01` / `DePanas#2026` y `Marta_02` / `DePanas#2026`) y **nunca toca `backend/db/depanas.db`**. Como todas las pruebas comparten esa base, corren una a la vez y cada una deja los datos como los encontró (lo que crea, lo elimina).
 
 ## Archivos
 

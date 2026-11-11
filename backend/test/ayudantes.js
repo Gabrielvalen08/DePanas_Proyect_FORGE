@@ -9,6 +9,7 @@
 process.env.DEPANAS_ITERACIONES_HASH ??= '1000'
 
 export const CLAVE_CESAR = 'DePanas#2026'
+export const CLAVE_MARTA = 'DePanas#2026'
 
 // Un token por servidor: algunas pruebas levantan dos a la vez
 const tokens = new Map()

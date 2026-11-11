@@ -145,7 +145,7 @@ npx playwright show-report        # reporte con capturas y video de lo que fall√
 
 Detalle en [`frontend/e2e/README.md`](frontend/e2e/README.md).
 
-Sin el backend encendido, el frontend trabaja en modo local con datos de ejemplo. Usuarios de prueba: `Cesar_01` / `DePanas#2026` (administrador, entra a todo) y `Marta_02` / `5678` (operadora: todo menos el Gestor de usuarios; su contrase√±a no cumple los requisitos nuevos y conviene cambiarla desde el gestor). Se siembran en la base al crearla (`backend/db/usuarios.js`) y, en modo local, en `depanas_usuarios`.
+Sin el backend encendido, el frontend trabaja en modo local con datos de ejemplo. Usuarios de prueba: `Cesar_01` / `DePanas#2026` (administrador, entra a todo) y `Marta_02` / `DePanas#2026` (operadora: todo menos el Gestor de usuarios). Se siembran en la base al crearla (`backend/db/usuarios.js`) y, en modo local, en `depanas_usuarios`.
 
 Los comandos se probaron en Windows 11.
 

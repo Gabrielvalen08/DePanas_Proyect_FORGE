@@ -38,7 +38,7 @@ vi.mock('./services/api', () => ({
   fetchCatalogo: () => Promise.resolve({ proveedores: ['Selectos'], categorias: [], productos: [], materiales: [], uso: {}, fichas: {} }),
   iniciarSesion: async (usuario, contrasena) => {
     if (usuario === 'Cesar_01' && contrasena === 'DePanas#2026') return CESAR
-    if (usuario === 'Marta_02' && contrasena === '5678') return MARTA
+    if (usuario === 'Marta_02' && contrasena === 'DePanas#2026') return MARTA
     throw new Error('Usuario o contraseña incorrectos')
   },
   fetchUsuarios: () => Promise.resolve([CESAR, MARTA]),

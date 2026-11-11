@@ -10,7 +10,7 @@ import { tmpdir } from 'os'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { DatabaseSync } from 'node:sqlite'
-import { CLAVE_CESAR, cabeceras, entrar } from './ayudantes.js'
+import { CLAVE_CESAR, CLAVE_MARTA, cabeceras, entrar } from './ayudantes.js'
 import { crearApp } from '../app.js'
 import { abrirDB } from '../db.js'
 import { hashear, verificar } from '../contrasenas.js'
@@ -87,7 +87,7 @@ test('sesión: César entra con su contraseña nueva (ya no con 1234) y Marta co
   assert.deepEqual(usuario, { usuario: 'Cesar_01', nombre: 'César', rol: 'admin', permisos: ['*'], funciones: ['*'] })
   assert.match(token, /^[\w-]{40,}$/, 'entrar devuelve el token de la sesión')
   assert.equal(await entra(base, 'Cesar_01', '1234'), 401)
-  assert.equal(await entra(base, 'Marta_02', '5678'), 200)
+  assert.equal(await entra(base, 'Marta_02', CLAVE_MARTA), 200)
   assert.equal(await entra(base, 'Nadie', '1234'), 401)
   assert.equal((await pedir(`${base}/sesion`, 'POST', { usuario: 'Marta_02' })).status, 401)
 })
@@ -212,7 +212,7 @@ test('editar: la contraseña nueva cumple los requisitos; no se puede dar el ges
   assert.equal((await pedir(`${base}/usuarios/Marta_02`, 'PUT', { rol: 'admin' })).status, 403)
   assert.equal((await pedir(`${base}/usuarios/Nadie`, 'PUT', { nombre: 'X' })).status, 404)
   // Marta sigue entrando con su contraseña de antes
-  assert.equal(await entra(base, 'Marta_02', '5678'), 200)
+  assert.equal(await entra(base, 'Marta_02', CLAVE_MARTA), 200)
 })
 
 test('administrador: siempre conserva su rol, todas las pantallas y funciones, y no se puede eliminar', async t => {
@@ -227,7 +227,7 @@ test('eliminar: el usuario deja de existir y ya no inicia sesión', async t => {
   const { base } = await levantar(t)
   const r = await pedir(`${base}/usuarios/marta_02`, 'DELETE')
   assert.deepEqual(r.cuerpo, { usuario: 'Marta_02' })
-  assert.equal(await entra(base, 'Marta_02', '5678'), 401)
+  assert.equal(await entra(base, 'Marta_02', CLAVE_MARTA), 401)
   assert.equal((await pedir(`${base}/usuarios/Marta_02`, 'DELETE')).status, 404)
 })
 
@@ -302,4 +302,35 @@ test('si César ya cambió su contraseña, abrir la base no la toca', t => {
   const { contrasena } = db.prepare("SELECT contrasena FROM usuarios WHERE usuario = 'Cesar_01'").get()
   db.close()
   assert.equal(verificar('Propia#123', contrasena), true)
+})
+
+test('Marta pasa de 5678 a la contraseña nueva al abrir la base, aunque su hash se haya recalculado', t => {
+  const dbPath = baseTemporal(t)
+  let db = abrirDB(dbPath, SCHEMA)
+  // Base de antes del cambio: Marta con 5678 (hash recalculado al entrar) y sin la marca de migración
+  db.prepare("UPDATE usuarios SET contrasena = ? WHERE usuario = 'Marta_02'").run(hashear('5678'))
+  db.prepare("DELETE FROM ajustes WHERE clave = 'migracionContrasenaMarta'").run()
+  db.close()
+  db = abrirDB(dbPath, SCHEMA)
+  const { contrasena } = db.prepare("SELECT contrasena FROM usuarios WHERE usuario = 'Marta_02'").get()
+  db.close()
+  assert.equal(verificar(CLAVE_MARTA, contrasena), true)
+  assert.equal(verificar('5678', contrasena), false)
+})
+
+test('si Marta ya cambió su contraseña, abrir la base no la toca; y la migración corre una sola vez', t => {
+  const dbPath = baseTemporal(t)
+  let db = abrirDB(dbPath, SCHEMA)
+  db.prepare("UPDATE usuarios SET contrasena = ? WHERE usuario = 'Marta_02'").run(hashear('Propia#123'))
+  db.prepare("DELETE FROM ajustes WHERE clave = 'migracionContrasenaMarta'").run()
+  db.close()
+  db = abrirDB(dbPath, SCHEMA)
+  assert.equal(verificar('Propia#123', db.prepare("SELECT contrasena FROM usuarios WHERE usuario = 'Marta_02'").get().contrasena), true)
+  // Ya migrada: si después el administrador le pone 5678 a mano, no se vuelve a cambiar
+  db.prepare("UPDATE usuarios SET contrasena = ? WHERE usuario = 'Marta_02'").run(hashear('5678'))
+  db.close()
+  db = abrirDB(dbPath, SCHEMA)
+  const { contrasena } = db.prepare("SELECT contrasena FROM usuarios WHERE usuario = 'Marta_02'").get()
+  db.close()
+  assert.equal(verificar('5678', contrasena), true)
 })

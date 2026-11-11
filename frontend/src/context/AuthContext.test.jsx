@@ -16,7 +16,7 @@ function ComponentePrueba() {
       <span data-testid="permiso-usuarios">{tienePermiso('/usuarios') ? 'si' : 'no'}</span>
       <span data-testid="eliminar-compras">{tieneFuncion('compras.eliminar') ? 'si' : 'no'}</span>
       <button onClick={() => ingresar('Cesar_01', 'DePanas#2026')}>Ingresar Cesar</button>
-      <button onClick={() => ingresar('Marta_02', '5678')}>Ingresar Marta</button>
+      <button onClick={() => ingresar('Marta_02', 'DePanas#2026')}>Ingresar Marta</button>
       <button onClick={() => ingresar('Cesar_01', '0000')}>Ingresar Cesar Incorrecto</button>
       <button onClick={() => ingresar('Cesar_01', '1234')}>Ingresar Cesar contraseña anterior</button>
       <button onClick={() => ingresar('Usuario_Invalido', '1234')}>Ingresar Invalido</button>

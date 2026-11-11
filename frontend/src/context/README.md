@@ -36,7 +36,7 @@ const pedirSalida = usePedirSalida() // Cerrar sesión y Apagar: pedirSalida(() 
 
 ```jsx
 const { autenticado, usuario, sesion, esAdmin, tienePermiso, ingresar, salir } = useAuth()
-await ingresar('Marta_02', '5678') // { ok: true, usuario } o { ok: false, error } (ACCESO.incorrecta o ACCESO.demasiadosIntentos)
+await ingresar('Marta_02', 'DePanas#2026') // { ok: true, usuario } o { ok: false, error } (ACCESO.incorrecta o ACCESO.demasiadosIntentos)
 tienePermiso('/catalogo')     // según utils/permisos.js
 ```
 

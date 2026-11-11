@@ -230,7 +230,7 @@ describe('PantallaUsuarios', () => {
     const sesion = await iniciarSesion('Marta_02', 'Cachito#7')
     expect(sesion.funciones).not.toContain('compras.eliminar')
     expect(sesion.funciones).toContain('compras.editar')
-    await expect(iniciarSesion('Marta_02', '5678')).rejects.toThrow()
+    await expect(iniciarSesion('Marta_02', 'DePanas#2026')).rejects.toThrow()
   })
 
   it('al editar al administrador no se eligen rol, pantallas ni funciones: entra a todo', async () => {
@@ -272,6 +272,6 @@ describe('PantallaUsuarios', () => {
 
     expect(await screen.findByText(USUARIOS.eliminado('Marta_02'))).toBeInTheDocument()
     expect(screen.queryByRole('rowheader', { name: /Marta_02/ })).not.toBeInTheDocument()
-    await expect(iniciarSesion('Marta_02', '5678')).rejects.toThrow()
+    await expect(iniciarSesion('Marta_02', 'DePanas#2026')).rejects.toThrow()
   })
 })

@@ -48,7 +48,7 @@ La primera pantalla pide usuario y contraseña:
 | Usuario | Contraseña | Qué puede hacer |
 |---|---|---|
 | `Cesar_01` | `DePanas#2026` | Administrador: todo, incluido el Gestor de usuarios |
-| `Marta_02` | `5678` | Operadora: todo menos el Gestor de usuarios |
+| `Marta_02` | `DePanas#2026` | Operadora: todo menos el Gestor de usuarios |
 
 - **Cambia estas contraseñas** desde **Gestor de usuarios** (solo el administrador).
 - Tras **5 contraseñas incorrectas seguidas**, ese usuario debe esperar **5 minutos** antes de volver a intentar.
