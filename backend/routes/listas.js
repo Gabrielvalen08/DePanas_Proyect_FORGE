@@ -9,6 +9,11 @@
  *   POST   /api/compras               → crea una compra (todas sus filas en una transacción)
  *   PUT    /api/compras/:id           → reemplaza los materiales de una compra
  *   DELETE /api/compras/:id           → elimina la compra completa
+ *   POST   /api/compras/archivar      → { ids, archivar } archiva varias compras o las devuelve a la lista
+ *   POST   /api/compras/eliminar      → { ids } elimina varias compras de una vez
+ *
+ * GET /api/compras acepta archivo=activas (Lista de compras) o archivo=archivadas (Archivo);
+ * sin él devuelve todas (Exportar, Cargar). Ver shared/archivo.js.
  */
 
 import { Router } from 'express'
@@ -16,11 +21,12 @@ import { randomUUID } from 'crypto'
 import { enTransaccion, registrarCompra } from '../db.js'
 import { leerCatalogo } from './catalogo.js'
 import { ivaValido } from '../../shared/iva.js'
+import { ACTIVA, ARCHIVADA, VISTAS_ARCHIVO, estaArchivada, fechaLimiteArchivo, hoyLocalISO, validarIds } from '../../shared/archivo.js'
 
 const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/
 
 /** Agrupa filas planas de `ingresos` en compras, conservando el orden de llegada */
-export function agruparFilas(filas) {
+export function agruparFilas(filas, hoy = hoyLocalISO()) {
   const compras = new Map()
   for (const f of filas) {
     if (!compras.has(f.compra_id)) {
@@ -31,6 +37,8 @@ export function agruparFilas(filas) {
         fecha: f.fecha,
         categoria: f.compra_categoria ?? f.categoria ?? '',
         iva: f.compra_iva ?? 0,
+        archivo: f.compra_archivo ?? null,
+        archivada: estaArchivada({ fecha: f.fecha, archivo: f.compra_archivo ?? null }, hoy),
         materiales: [],
       })
     }
@@ -92,17 +100,17 @@ export function validarCompra(cuerpo) {
   }
 }
 
-const COLUMNAS = 'id, origen_id, compra_categoria, compra_iva, compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto'
+const COLUMNAS = 'id, origen_id, compra_categoria, compra_iva, compra_archivo, compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto'
 
-function insertarMateriales(db, compraId, compra, origenId = null) {
+function insertarMateriales(db, compraId, compra, origenId = null, archivo = null) {
   const insertar = db.prepare(
-    'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto, origen_id, compra_categoria, compra_iva) ' +
-    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto, origen_id, compra_categoria, compra_iva, compra_archivo) ' +
+    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   )
   registrarCompra(db, compra)
   for (const m of compra.materiales) {
     // La categoría es de cada material (como en el Excel); la de la compra queda como respaldo
-    insertar.run(compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, m.categoria || compra.categoria, m.producto, origenId, compra.categoria, compra.iva)
+    insertar.run(compraId, compra.fecha, m.material, m.cantidad, m.unidad, m.monto, compra.proveedor, m.categoria || compra.categoria, m.producto, origenId, compra.categoria, compra.iva, archivo)
   }
 }
 
@@ -116,7 +124,10 @@ export function crearRutasListas(getDb) {
   const router = Router()
 
   router.get('/', (req, res) => {
-    const { proveedor, material, fechaDesde, fechaHasta } = req.query
+    const { proveedor, material, fechaDesde, fechaHasta, archivo } = req.query
+    if (archivo !== undefined && !VISTAS_ARCHIVO.includes(archivo)) {
+      return res.status(400).json({ error: 'archivo debe ser activas o archivadas' })
+    }
     // Los filtros eligen compras; luego se traen todas sus filas.
     // Con `material`, se devuelven las compras que contienen ese material.
     let subconsulta = 'SELECT compra_id FROM ingresos WHERE 1=1'
@@ -125,6 +136,12 @@ export function crearRutasListas(getDb) {
     if (material) { subconsulta += ' AND material LIKE ?'; params.push(`%${material}%`) }
     if (fechaDesde) { subconsulta += ' AND fecha >= ?'; params.push(fechaDesde) }
     if (fechaHasta) { subconsulta += ' AND fecha <= ?'; params.push(fechaHasta) }
+    // Archivo: misma regla que estaArchivada (shared/archivo.js), en SQL para no traer lo que no se muestra
+    const hoy = hoyLocalISO()
+    // IFNULL: con NULL, NOT (NULL = 'archivada' ...) daría NULL y la compra no saldría en ninguna vista
+    const archivadaSQL = "(IFNULL(compra_archivo, '') = 'archivada' OR (compra_archivo IS NULL AND fecha < ?))"
+    if (archivo === 'archivadas') { subconsulta += ` AND ${archivadaSQL}`; params.push(fechaLimiteArchivo(hoy)) }
+    if (archivo === 'activas') { subconsulta += ` AND NOT ${archivadaSQL}`; params.push(fechaLimiteArchivo(hoy)) }
 
     try {
       // Compras más recientes primero; dentro de cada compra, los materiales en el orden en que se ingresaron
@@ -134,7 +151,7 @@ export function crearRutasListas(getDb) {
           `FROM ingresos i WHERE compra_id IN (${subconsulta}) ORDER BY fecha DESC, orden_compra DESC, id ASC`
         )
         .all(...params)
-      res.json(agruparFilas(filas))
+      res.json(agruparFilas(filas, hoy))
     } catch (err) {
       res.status(500).json({ error: err.message })
     }
@@ -144,6 +161,47 @@ export function crearRutasListas(getDb) {
     try {
       const { proveedores, categorias, materiales, productos } = leerCatalogo(getDb())
       res.json({ proveedores, categorias, materiales: materiales.map(m => m.nombre), productos })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  // Varias compras a la vez (casillas de la Lista de compras y del Archivo). Van antes de /:id
+  router.post('/archivar', (req, res) => {
+    const { ids, archivar } = req.body ?? {}
+    const error = validarIds(ids) ?? (typeof archivar !== 'boolean' ? 'Falta decir si se archivan o se devuelven' : null)
+    if (error) return res.status(400).json({ error })
+    const db = getDb()
+    const claves = ids.map(String)
+    const marcas = claves.map(() => '?').join(', ')
+    try {
+      const cambiadas = enTransaccion(db, () => {
+        const n = db.prepare(`SELECT COUNT(DISTINCT compra_id) AS n FROM ingresos WHERE compra_id IN (${marcas})`).get(...claves).n
+        db.prepare(`UPDATE ingresos SET compra_archivo = ? WHERE compra_id IN (${marcas})`).run(archivar ? ARCHIVADA : ACTIVA, ...claves)
+        return n
+      })
+      if (cambiadas === 0) return res.status(404).json({ error: 'No se encontraron las compras elegidas' })
+      res.json({ cambiadas, archivar })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  router.post('/eliminar', (req, res) => {
+    const { ids } = req.body ?? {}
+    const error = validarIds(ids)
+    if (error) return res.status(400).json({ error })
+    const db = getDb()
+    const claves = ids.map(String)
+    const marcas = claves.map(() => '?').join(', ')
+    try {
+      const eliminadas = enTransaccion(db, () => {
+        const n = db.prepare(`SELECT COUNT(DISTINCT compra_id) AS n FROM ingresos WHERE compra_id IN (${marcas})`).get(...claves).n
+        db.prepare(`DELETE FROM ingresos WHERE compra_id IN (${marcas})`).run(...claves)
+        return n
+      })
+      if (eliminadas === 0) return res.status(404).json({ error: 'No se encontraron las compras elegidas' })
+      res.json({ eliminadas })
     } catch (err) {
       res.status(500).json({ error: err.message })
     }
@@ -179,7 +237,8 @@ export function crearRutasListas(getDb) {
       // Reemplazo completo: se borran las filas de la compra y se insertan las nuevas
       enTransaccion(db, () => {
         db.prepare('DELETE FROM ingresos WHERE compra_id = ?').run(compraId)
-        insertarMateriales(db, compraId, compra, existe.origen_id ?? null)
+        // Editar no la saca ni la mete al Archivo
+        insertarMateriales(db, compraId, compra, existe.origen_id ?? null, existe.archivo ?? null)
       })
       res.json(leerCompra(db, compraId))
     } catch (err) {

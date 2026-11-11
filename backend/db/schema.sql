@@ -22,7 +22,9 @@ CREATE TABLE IF NOT EXISTS ingresos (
     producto   TEXT DEFAULT '',             -- Producto destino
     origen_id TEXT,                         -- Identidad original al transferir entre equipos
     compra_categoria TEXT,                  -- Categoría de la compra, independiente de cada material
-    compra_iva REAL NOT NULL DEFAULT 0      -- IVA de la compra en dinero (se repite en cada fila de la compra)
+    compra_iva REAL NOT NULL DEFAULT 0,     -- IVA de la compra en dinero (se repite en cada fila de la compra)
+    compra_archivo TEXT                     -- Archivo (shared/archivo.js): NULL = automático a los 3 meses,
+                                            -- 'archivada' = archivada a mano, 'activa' = devuelta a la lista
 );
 
 -- Opciones de los desplegables (proveedor, categoría, material, producto).

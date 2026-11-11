@@ -26,6 +26,7 @@ import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../../shared/productos.js'
 import { ivaDe } from '../../../shared/iva.js'
+import { ACTIVA, ARCHIVADA, estaArchivada, hoyLocalISO, validarIds } from '../../../shared/archivo.js'
 import { fichaVacia, leerFicha, normalizarFicha } from '../../../shared/proveedores.js'
 import { CARGAR } from '../utils/mensajes'
 import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
@@ -1229,12 +1230,17 @@ export function totalLista(lista) {
 // CRUD de listas de compra
 // ---------------------------------------------------------------------------
 
-/** filters: { proveedor, material (o producto), fechaDesde, fechaHasta } */
+/**
+ * filters: { proveedor, material (o producto), fechaDesde, fechaHasta, archivo? }
+ * archivo: 'activas' (Lista de compras), 'archivadas' (Archivo) o nada (todas: Exportar, Cargar).
+ * Cada compra trae `archivada` (shared/archivo.js: a los 3 meses pasa sola al Archivo).
+ */
 export async function fetchListas(filters = {}) {
   const material = filters.material || filters.producto
 
   if ((await detectarModo()) === 'servidor') {
     const params = new URLSearchParams()
+    if (filters.archivo) params.set('archivo', filters.archivo)
     if (filters.proveedor) params.set('proveedor', filters.proveedor)
     if (material) params.set('material', material)
     if (filters.fechaDesde) params.set('fechaDesde', filters.fechaDesde)
@@ -1243,7 +1249,10 @@ export async function fetchListas(filters = {}) {
   }
 
   await delay(200)
-  let listas = getListas()
+  const hoy = hoyLocalISO()
+  let listas = getListas().map(l => ({ ...l, archivo: l.archivo ?? null, archivada: estaArchivada({ fecha: l.fecha, archivo: l.archivo ?? null }, hoy) }))
+  if (filters.archivo === 'activas') listas = listas.filter(l => !l.archivada)
+  if (filters.archivo === 'archivadas') listas = listas.filter(l => l.archivada)
   const contiene = (texto, busqueda) => (texto || '').toLowerCase().includes(busqueda.toLowerCase())
   if (filters.proveedor) listas = listas.filter(l => contiene(l.proveedor, filters.proveedor))
   if (material) listas = listas.filter(l => (l.materiales || []).some(m => contiene(m.material, material)))
@@ -1292,6 +1301,47 @@ export async function eliminarLista(id) {
 
   await delay(150)
   setListas(getListas().filter(l => l.id !== id))
+}
+
+/**
+ * Varias compras a la vez (casillas de la Lista de compras y del Archivo).
+ * archivar: true las manda al Archivo; false las devuelve a la lista (y ahí se quedan aunque
+ * tengan más de tres meses). Devuelve { cambiadas }.
+ */
+export async function archivarListas(ids, archivar) {
+  if ((await detectarModo()) === 'servidor') return pedirJSON('/compras/archivar', 'POST', { ids, archivar })
+
+  const error = validarIds(ids)
+  if (error) throw new Error(error)
+  await delay(150)
+  const elegidas = new Set(ids.map(String))
+  let cambiadas = 0
+  setListas(getListas().map(l => {
+    if (!elegidas.has(String(l.id))) return l
+    cambiadas++
+    return { ...l, archivo: archivar ? ARCHIVADA : ACTIVA }
+  }))
+  if (cambiadas === 0) throw new Error('No se encontraron las compras elegidas')
+  return { cambiadas, archivar }
+}
+
+/** Elimina varias compras de una vez (todo o nada). Devuelve { eliminadas } */
+export async function eliminarListas(ids) {
+  if ((await detectarModo()) === 'servidor') {
+    const resultado = await pedirJSON('/compras/eliminar', 'POST', { ids })
+    refrescarCache()
+    return resultado
+  }
+
+  const error = validarIds(ids)
+  if (error) throw new Error(error)
+  await delay(150)
+  const elegidas = new Set(ids.map(String))
+  const listas = getListas()
+  const quedan = listas.filter(l => !elegidas.has(String(l.id)))
+  if (quedan.length === listas.length) throw new Error('No se encontraron las compras elegidas')
+  setListas(quedan)
+  return { eliminadas: listas.length - quedan.length }
 }
 
 // ---------------------------------------------------------------------------
@@ -1526,6 +1576,8 @@ export async function importarCatalogo(tipo, filas) {
  */
 const CONTRASENA_MARTA_ANTERIOR = '5678'
 const CLAVE_MIGRACION_MARTA = 'depanas_migracion_marta'
+/** Archivo de compras: los operadores guardados con su lista de funciones reciben compras.archivar una vez */
+const CLAVE_FUNCION_ARCHIVAR = 'depanas_funcion_archivar'
 
 /** Hash de la contraseña anterior de Cesar_01 (1234): se cambia por la nueva al leer los usuarios */
 const HASH_CESAR_ANTERIOR =
@@ -1581,6 +1633,13 @@ function getUsuariosLocal() {
   try {
     const datos = JSON.parse(localStorage.getItem(CLAVE_USUARIOS) || 'null')
     if (Array.isArray(datos) && datos.length > 0) {
+      if (!localStorage.getItem(CLAVE_FUNCION_ARCHIVAR)) {
+        for (const u of datos) {
+          if (u.rol === 'operador' && Array.isArray(u.funciones) && !u.funciones.includes('compras.archivar')) u.funciones.push('compras.archivar')
+        }
+        localStorage.setItem(CLAVE_USUARIOS, JSON.stringify(datos))
+        localStorage.setItem(CLAVE_FUNCION_ARCHIVAR, '1')
+      }
       return datos.map(u => ({
         ...u,
         permisos: migrarPermisos(u.permisos),
