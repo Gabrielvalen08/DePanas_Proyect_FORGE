@@ -1,5 +1,5 @@
 import { test, expect, entrar, menu, CESAR } from './ayudantes.js'
-import { LISTA_COMPRAS } from '../src/utils/mensajes.js'
+import { LISTA_COMPRAS, NO_ENCONTRADA } from '../src/utils/mensajes.js'
 
 // Cada botón del menú abre su pantalla, con su título y sin errores
 const PANTALLAS = [
@@ -43,8 +43,10 @@ test.describe('Navegación', () => {
     await respuesta
   })
 
-  test('una ruta que no existe lleva al inicio, y las viejas /configuracion y /catalogo/materiales a su nuevo lugar', async ({ page }) => {
+  test('una ruta que no existe dice «Pantalla no encontrada», y las viejas /configuracion y /catalogo/materiales van a su nuevo lugar', async ({ page }) => {
     await page.goto('/no-existe')
+    await expect(page.getByRole('heading', { name: NO_ENCONTRADA.titulo, level: 1 })).toBeVisible()
+    await page.getByRole('link', { name: NO_ENCONTRADA.accion }).click()
     await expect(page.getByRole('heading', { name: 'Agregar compra', level: 1 })).toBeVisible()
 
     await page.goto('/configuracion/proveedores')

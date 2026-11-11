@@ -244,6 +244,13 @@ export const AVISO_SALIDA = {
 // ---------------------------------------------------------------------------
 // Apagar el sistema (versión del .zip: el servidor corre oculto en la computadora)
 // ---------------------------------------------------------------------------
+// Una dirección que no existe (/compras/xyz)
+export const NO_ENCONTRADA = {
+  titulo: 'Pantalla no encontrada',
+  texto: 'Esta dirección no lleva a ninguna pantalla de De Panas. Puede que esté mal escrita o que la pantalla haya cambiado de lugar.',
+  accion: 'Volver al inicio',
+}
+
 export const APAGADO = {
   boton: 'Apagar De Panas SV',
   titulo: 'De Panas SV está apagado',

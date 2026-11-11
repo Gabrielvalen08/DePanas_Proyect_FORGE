@@ -10,6 +10,7 @@ Una página por ruta (definidas en `App.jsx`). Cada página renderiza `<Header>`
 | `/exportar` | `PantallaExportar` | Rango de fechas (o rápido: este mes, mes pasado, este año, todo), formato Excel (.xlsx) o JSON y resumen en vivo de compras y total antes de descargar |
 | `/cargar` | `PantallaCargar` | Elige compras de un JSON de Exportar: las nuevas se cargan, las duplicadas se omiten y las modificadas se comparan (`CompararCompra`) antes de guardar |
 | `/usuarios` | `PantallaUsuarios` | Gestor de usuarios (solo el administrador). Tabla con usuario, rol, nombre, pantallas y cuántas funciones tiene bloqueadas; crea y edita con `EditorUsuario` (nombre, usuario para ingresar, contraseña con confirmación y requisitos en vivo, rol que trae sus permisos, pantallas y funciones de cada una) y elimina con `ConfirmDialog`. Debajo, la tarjeta de **requisitos de contraseña**, que se editan con `EditorRequisitos`. Un usuario o una contraseña repetidos, o una contraseña que no cumple, se marcan en su campo |
+| `*` (cualquier otra) | `PantallaNoEncontrada` | «Pantalla no encontrada» con la marca y «Volver al inicio» (la ruta de inicio del usuario). Una pantalla que existe pero sin permiso no llega aquí: `protegida` lleva al inicio |
 
 `/agregar-compra` redirige a `/` (ruta antigua).
 
