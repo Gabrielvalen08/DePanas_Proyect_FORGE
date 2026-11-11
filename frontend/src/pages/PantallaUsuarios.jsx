@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, KeyRound, Loader2, Pencil, Trash2, UserPlus, UsersRound } from 'lucide-react'
+import { KeyRound, Loader2, Pencil, Trash2, UserPlus, UsersRound } from 'lucide-react'
 import Header from '../components/Header'
 import EditorUsuario from '../components/EditorUsuario'
 import EditorRequisitos from '../components/EditorRequisitos'
@@ -11,7 +11,6 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { FUNCIONES_POR_PANTALLA, RUTAS_ASIGNABLES } from '../utils/permisos'
-import { revisarContrasena } from '../../../shared/usuarios.js'
 import { USUARIOS } from '../utils/mensajes'
 import estilos from './PantallaUsuarios.module.css'
 
@@ -19,8 +18,8 @@ import estilos from './PantallaUsuarios.module.css'
  * Gestor de usuarios (/usuarios). Solo entra el administrador (App.jsx).
  * Lista los usuarios con su rol, sus pantallas y cuántas funciones tienen bloqueadas;
  * permite crear uno nuevo (con un rol que trae sus permisos), cambiar nombre, contraseña,
- * rol, pantallas y funciones, y eliminar a los que no son administrador. Arriba, los
- * requisitos que debe cumplir toda contraseña nueva.
+ * rol, pantallas y funciones, y eliminar a los que no son administrador. Abajo, el botón para
+ * editar los requisitos de contraseña (se ven en su ventana y al crear o editar un usuario).
  */
 export default function PantallaUsuarios() {
   const { usuario: actual } = useAuth()
@@ -156,21 +155,7 @@ export default function PantallaUsuarios() {
               {USUARIOS.requisitos.editar}
             </Boton>
           }
-        >
-          <div className={estilos.requisitos}>
-            <p>{USUARIOS.requisitos.intro}</p>
-            {requisitos && (
-              <ul className={estilos.requisitosLista}>
-                {revisarContrasena('', requisitos).map(r => (
-                  <li key={r.clave}>
-                    <Check size={16} aria-hidden="true" />
-                    {r.texto}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </Tarjeta>
+        />
       </main>
 
       <EditorUsuario

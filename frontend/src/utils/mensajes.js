@@ -540,7 +540,6 @@ export const USUARIOS = {
   /** Requisitos de las contraseñas (solo el administrador los cambia) */
   requisitos: {
     titulo: 'Requisitos de contraseña',
-    intro: 'Toda contraseña nueva o cambiada debe cumplirlos. Las que ya existen siguen sirviendo hasta que se cambien.',
     editar: 'Editar requisitos',
     tituloEditor: 'Requisitos de contraseña',
     minimo: 'Mínimo de caracteres',

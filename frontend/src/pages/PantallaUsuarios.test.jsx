@@ -65,12 +65,11 @@ describe('PantallaUsuarios', () => {
     expect(within(marta).getByRole('button', { name: USUARIOS.eliminar('Marta_02') })).toBeInTheDocument()
   })
 
-  it('muestra los requisitos de contraseña vigentes', async () => {
+  it('los requisitos de contraseña son solo un encabezado con su botón Editar requisitos', async () => {
     renderizar()
     const tarjeta = (await screen.findByRole('heading', { name: USUARIOS.requisitos.titulo })).closest('section')
-    expect(await within(tarjeta).findByText('Al menos 8 caracteres')).toBeInTheDocument()
-    expect(within(tarjeta).getByText('Una letra mayúscula')).toBeInTheDocument()
-    expect(within(tarjeta).getByText('Un carácter especial (! @ # $ % & * …)')).toBeInTheDocument()
+    expect(await within(tarjeta).findByRole('button', { name: USUARIOS.requisitos.editar })).toBeEnabled()
+    expect(within(tarjeta).queryByText('Al menos 8 caracteres')).not.toBeInTheDocument()
   })
 
   it('un usuario nuevo es empleado por defecto: Agregar compra y Lista de compras, sin eliminar compras', async () => {
@@ -261,7 +260,9 @@ describe('PantallaUsuarios', () => {
 
     expect(await screen.findByText(USUARIOS.requisitos.guardado)).toBeInTheDocument()
     expect(await fetchRequisitosContrasena()).toEqual({ minimo: 10, mayuscula: true, minuscula: true, numero: true, especial: false })
-    expect(await screen.findByText('Al menos 10 caracteres')).toBeInTheDocument()
+    // Se ven al crear un usuario
+    await usuario.click(await boton(USUARIOS.agregar))
+    expect(await within(screen.getByRole('dialog', { name: USUARIOS.tituloNuevo })).findByText('Al menos 10 caracteres')).toBeInTheDocument()
   })
 
   it('elimina un usuario después de confirmar', async () => {

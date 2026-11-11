@@ -55,6 +55,11 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Tarjeta solo con encabezado (p. ej. Requisitos de contraseña): sin divisor abajo */
+.encabezado:last-child {
+  border-bottom: none;
+}
+
 .tituloGrupo {
   display: flex;
   align-items: center;
