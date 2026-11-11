@@ -15,20 +15,22 @@ description: Guía para escribir y cambiar el backend de De Panas (Node ≥ 22.1
 ## Capas (patrón DAO)
 
 ```
-routes/<recurso>.js   HTTP: lee req, valida con shared/, llama al acceso a datos, responde con código y JSON
-db.js (+ funciones de acceso en cada ruta)   SQL con sentencias preparadas; transacciones con enTransaccion
-shared/*.js           reglas de negocio puras (validar compra, IVA, productos, usuarios), sin SQL ni HTTP
+routes/<recurso>.js   HTTP: lee req, llama al DAO con responder() (routes/responder.js); sin SQL
+dao/<entidad>.js      DAO: valida (con shared/), SQL con sentencias preparadas, transacciones, lanza ErrorDatos
+db.js                 conexión, esquema, migraciones y funciones de bajo nivel (enTransaccion, registrarCompra…)
+shared/*.js           reglas de negocio puras (validar compra, IVA, productos, usuarios, archivo), sin SQL ni HTTP
 ```
 
-- Cada archivo de rutas exporta una **fábrica** `crearRutasX(getDb)` que recibe la conexión; así las pruebas usan una base temporal.
+- Cada archivo de rutas exporta una **fábrica** `crearRutasX(getDb)`; cada DAO, una fábrica `xDAO(db)` (p. ej. `comprasDAO(getDb())` en cada petición, porque la conexión cambia al importar un `.db`). Así las pruebas usan una base temporal.
+- Detalle del modelo y del motor: `docs/MODELO_DATOS.md`.
 - El SQL va siempre con **parámetros** (`db.prepare('… WHERE id = ?').get(id)`); nunca se arma texto con datos del usuario. La única excepción es `VACUUM INTO`, que escapa la ruta.
 - Una operación que escribe más de una fila va dentro de **`enTransaccion(db, () => …)`**: si algo lanza, se deshace todo.
-- Los errores esperados se lanzan con un mensaje en español y, si es de un campo, con `campo`; la ruta los convierte en 400/404/409. Un 500 es un bug.
+- Los errores esperados se lanzan como **`ErrorDatos`** (`dao/errores.js`: `noValido`, `prohibido`, `noEncontrado`, `conflicto`) con un mensaje en español y, si es de un campo, `campo`. `responder()` los convierte en 400/403/404/409; cualquier otro error es un 500 genérico (se registra en el servidor, el usuario no ve detalles). Un 500 es un bug.
 
 ## Receta: ruta nueva
 
 1. Regla de negocio en `shared/` si el modo local de `frontend/src/services/api.js` también la necesita.
-2. Ruta en `routes/<recurso>.js` dentro de su fábrica; móntala en `app.js` si es un recurso nuevo.
+2. Método en el DAO de su entidad (`dao/<entidad>.js`) con el SQL, la validación y la transacción; la ruta en `routes/<recurso>.js` solo lo llama con `responder()`. Móntala en `app.js` si es un recurso nuevo.
 3. **Permiso** en `permisos.js` (`permisoRequerido(metodo, ruta)`). Lo que no está ahí es solo del administrador.
 4. El mismo cambio en el **modo local** de `api.js` y su prueba en `frontend/src/services/api.test.js`.
 5. Pruebas en `backend/test/`: feliz, 400 de validación, 401 sin sesión, 403 sin permiso.
