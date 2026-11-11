@@ -76,7 +76,7 @@ React 18 + Vite 5 + react-router-dom 6, en JavaScript (JSX) sin TypeScript. Íco
 - **Vista de teléfono por debajo de 1100 px** (`@media (max-width: 1099px)`; lo solo de escritorio, `(min-width: 1100px)`; `ToastContext` usa la misma consulta): barra inferior en vez de menú lateral y tablas como tarjetas. Va en 1100 y no en 768 porque con el menú lateral las tablas se cortaban antes (lo primero, Categorías del Catálogo a ~1024 px); ver el comentario en `styles/base.css`. Ningún botón puede quedar cortado a ningún ancho: lo vigila `e2e/navegacion.spec.js` (de 1280 a 320 px). Una acción que no cabe baja de línea (`Tarjeta` deja que su `accion` se acomode en varias líneas).
 - Textos para el usuario: siempre desde `src/utils/mensajes.js` (voz de marca de la diapositiva 10; errores y validaciones sin modismos).
 
-Las skills ejecutan scripts desde la raíz del repo, p. ej. `python .claude/skills/ui-ux-pro-max/scripts/search.py "<consulta>" --domain ux`.
+Las skills del proyecto (diseño, frontend, backend y base de datos, pruebas, seguridad y las lentes de auditoría con `full-audit`) están listadas en `.claude/skills/README.md`; antes de tocar el backend usa `backend-sqlite` y ante cambios de sesión, permisos o archivos, `revision-seguridad`. Los reportes de auditoría van en `docs/revisiones/`. Las skills ejecutan scripts desde la raíz del repo, p. ej. `python .claude/skills/ui-ux-pro-max/scripts/search.py "<consulta>" --domain ux`.
 
 ## Convenciones
 
