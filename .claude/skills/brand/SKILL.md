@@ -22,6 +22,7 @@ metadata:
 | Textos con la voz de marca | `frontend/src/utils/mensajes.js` |
 | Logos, arepa, collage, íconos de app | `frontend/public/brand/` |
 | Animaciones | `frontend/src/styles/movimiento.js` |
+| Resumen para los scripts de esta skill | `docs/brand-guidelines.md` |
 
 ## Identidad en 30 segundos
 
@@ -76,4 +77,15 @@ Las guías de `references/` son la plantilla general de la skill (voz, identidad
 | Voz | `references/voice-framework.md` |
 | Aprobación | `references/approval-checklist.md` |
 
-**No uses `scripts/sync-brand-to-tokens.cjs`:** escribe `assets/design-tokens.*`, y aquí los tokens viven en `frontend/src/styles/tokens.css`. `scripts/extract-colors.cjs <imagen>` sí sirve para ver los colores dominantes de una imagen y compararlos a mano con la paleta.
+## Scripts
+
+Leen `docs/brand-guidelines.md`, el resumen de la marca en el formato que esperan (encabezados en inglés). Se corren desde la raíz del repo:
+
+```bash
+node .claude/skills/brand/scripts/inject-brand-context.cjs          # contexto de marca para un prompt (--json también)
+node .claude/skills/brand/scripts/extract-colors.cjs --palette      # la paleta
+node .claude/skills/brand/scripts/extract-colors.cjs <imagen>       # colores de una imagen comparados con la paleta
+node .claude/skills/brand/scripts/validate-asset.cjs <archivo>      # nombre, tamaño y formato de un asset
+```
+
+Si cambia la marca, se actualizan `DESIGN_DECISIONS.md` (manda) y `docs/brand-guidelines.md` juntos. **No uses `scripts/sync-brand-to-tokens.cjs`:** escribe `assets/design-tokens.*`, y aquí los tokens viven en `frontend/src/styles/tokens.css`.
