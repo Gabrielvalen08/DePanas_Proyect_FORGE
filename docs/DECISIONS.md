@@ -2,7 +2,7 @@
 
 Resumen técnico de lo aplicado en el refactor ([plan](PLAN_REFACTOR_FRONTEND.md)) y en los cambios posteriores (catálogo, categoría y producto por material, collage y voz de marca). Las decisiones de **marca** (paleta, tipografía, logotipo, tono, movimiento) están en [`DESIGN_DECISIONS.md`](../DESIGN_DECISIONS.md); este documento no las repite.
 
-**Precedencia:** Brandbook > skills de `.claude/skills/` > `DESIGN_DECISIONS.md` > este documento.
+**Precedencia:** `DESIGN_DECISIONS.md` (la marca como vive hoy en el sitio) > Brandbook > skills de `.claude/skills/` > este documento.
 
 ## Tokens semánticos aplicados
 

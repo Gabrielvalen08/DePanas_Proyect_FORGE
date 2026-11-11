@@ -64,7 +64,7 @@ React 18 + Vite 5 + react-router-dom 6, en JavaScript (JSX) sin TypeScript. Íco
 
 ## Diseño (obligatorio)
 
-`DESIGN_DECISIONS.md` (raíz) define la marca para la web a partir del *Brandbook DE PANAS (mayo 2026)* y **toda pantalla nueva debe seguirlo**. Precedencia: **brandbook > skills de `.claude/skills/` > `DESIGN_DECISIONS.md`**. `apple-design` guía proporciones, interacción, animaciones y materiales; `ui-ux-pro-max`, `brand` y `design-system` guían tokens, accesibilidad y UX. Lo esencial:
+`DESIGN_DECISIONS.md` (raíz) describe la marca **tal como vive hoy en el sitio** (nació del *Brandbook DE PANAS, mayo 2026*; lo que se aparta está en su sección «Diferencias con el brandbook») y **toda pantalla nueva debe seguirlo**. Precedencia: **`DESIGN_DECISIONS.md` (sitio actual) > brandbook > skills de `.claude/skills/`**; la skill `brand` es su resumen operativo. `apple-design` guía proporciones, interacción, animaciones y materiales; `ui-ux-pro-max`, `brand` y `design-system` guían tokens, accesibilidad y UX. Lo esencial:
 
 - Paleta: Rojo Vinotinto `#911C0D`, Naranja Sazón `#EF7D05`, Amarillo Criollo `#F8A914`, Verde Fresco `#6DAD28`, Verde Ávila `#144428`, Crema y Trigo `#FEEECC`. Sin negro puro. Naranja y crema son los protagonistas (sidebar, barra inferior y botón primario en naranja). Texto sobre naranja: siempre `--color-on-primary` (Ávila profundo `#0F331E`, 5.03:1); nunca texto blanco o crema sobre naranja, amarillo o verde fresco (el logotipo tipográfico está exento).
 - Tipografía: Josefin Sans para titulares e interfaz (titulares en mayúsculas) y Cardo para textos extensos.

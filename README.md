@@ -151,7 +151,7 @@ Los comandos se probaron en Windows 11.
 
 ## Decisiones de diseño
 
-La identidad visual sale del **Brandbook DE PANAS (mayo 2026)**. Lo esencial:
+La identidad visual nació del **Brandbook DE PANAS (mayo 2026)** y hoy se documenta tal como vive en el sitio en [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md). Lo esencial:
 
 - **Colores:** Naranja Sazón `#EF7D05` y Crema y Trigo `#FEEECC` son los protagonistas. El texto va en Verde Ávila `#144428`.
 - **Tipografía:** Josefin Sans para títulos e interfaz; Cardo para textos largos y las frases de marca.
