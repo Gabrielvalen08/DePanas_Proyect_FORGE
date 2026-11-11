@@ -7,6 +7,30 @@ Programa para registrar las compras de la cocina y administrar el catálogo (pro
 - Funciona en **Windows 10 u 11 de 64 bits**.
 - **No se instala:** se entrega en un archivo **`De Panas SV 1.2.0.zip`**.
 
+## Lista para el día de la instalación
+
+Para quien instala, en la computadora del local. Marca cada paso.
+
+**Antes de ir**
+- [ ] Armar el .zip con la versión final (`desktop/`: `npm run preparar`, `npm run test:escritorio` y `npm run dist`).
+- [ ] Copiarlo a una memoria USB (así no hace falta «Desbloquear»).
+- [ ] Llevar anotadas las contraseñas iniciales de César y Marta para cambiarlas allá.
+
+**En la computadora del local**
+- [ ] Windows 10 u 11 de 64 bits y un navegador (Chrome o Edge).
+- [ ] Extraer el .zip en `Documentos` (paso 1).
+- [ ] Abrir **«Abrir De Panas SV»**: se abre el navegador y aparece el acceso directo en el escritorio (paso 2).
+- [ ] Entrar como César y cambiar su contraseña en el Gestor de usuarios; luego Marta cambia la suya (paso 3).
+- [ ] Registrar una compra de prueba, verla en la Lista de compras y eliminarla.
+- [ ] Exportar a Excel y abrir el archivo (hojas «Compras» y «Resumen»).
+- [ ] Hacer el primer respaldo (paso 5) y mostrar dónde guardarlo.
+- [ ] Apagar con **«Apagar De Panas SV»** y volver a abrir desde el acceso directo: lo registrado sigue ahí.
+- [ ] Abrir la **demostración** para practicar sin tocar los datos reales, y mostrar el **Manual de uso**.
+
+**Al irse**
+- [ ] César y Marta saben abrir, entrar, registrar, buscar, exportar y apagar.
+- [ ] Queda acordado cada cuánto se hace el respaldo y dónde se guarda.
+
 ## 1. Preparar (una sola vez)
 
 1. **Si el .zip llegó por correo, WhatsApp, Drive o una descarga:**
@@ -19,10 +43,12 @@ Programa para registrar las compras de la cocina y administrar el catálogo (pro
 
    ```
    De Panas SV/
-     Abrir De Panas SV.cmd   ← este se abre
+     Abrir De Panas SV.cmd          ← este se abre
+     Abrir De Panas SV (demo).cmd   (versión de demostración, aparte)
+     Manual de uso/                 (abrir index.html)
      LEEME.txt
-     node/                   (no tocar)
-     app/                    (no tocar)
+     node/                          (no tocar)
+     app/                           (no tocar)
    ```
 
 ## 2. Abrir y apagar
