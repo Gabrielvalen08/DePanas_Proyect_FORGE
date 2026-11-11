@@ -78,6 +78,21 @@ test.describe('Compras', () => {
     const sugerencias = page.getByRole('listbox', { name: 'Artículo, fila 1' })
     await expect(sugerencias.getByRole('option', { name: 'Agua' })).toBeVisible()
     await expect(sugerencias.getByRole('option', { name: 'Azucar' })).toHaveCount(0)
+    // El cuadro de sugerencias se ve completo (nada lo recorta): se puede tocar una opción
+    await sugerencias.getByRole('option', { name: 'Agua' }).click()
+    await expect(formulario.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveValue('Agua')
+  })
+
+  test('al escribir, la sugerencia que más coincide queda marcada y Enter la completa', async ({ page }) => {
+    const formulario = page.getByRole('form', { name: 'Detalle de compra' }).first()
+    await formulario.getByRole('combobox', { name: 'Proveedor' }).fill('Selec')
+    await page.keyboard.press('Enter')
+    await expect(formulario.getByRole('combobox', { name: 'Proveedor' })).toHaveValue('Selectos')
+    const articulo = formulario.getByRole('combobox', { name: 'Artículo, fila 1' })
+    await articulo.fill('azu')
+    await expect(page.getByRole('listbox', { name: 'Artículo, fila 1' }).getByRole('option').first()).toHaveAttribute('aria-selected', 'true')
+    await page.keyboard.press('Enter')
+    await expect(articulo).toHaveValue('Azucar')
   })
 
   test('"Nueva compra" aparece con una fila completa y agrega otro bloque para registrar otra compra', async ({ page }) => {

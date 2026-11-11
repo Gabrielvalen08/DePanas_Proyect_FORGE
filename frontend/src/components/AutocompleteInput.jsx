@@ -11,6 +11,8 @@ import estilos from './AutocompleteInput.module.css'
  * Combobox con lista (WAI-ARIA APG) que funciona como el desplegable de Excel:
  * al hacer clic (o con la flecha) muestra todas las opciones, al escribir las
  * filtra y se elige una con clic o flechas + Enter. También acepta texto nuevo.
+ * Al escribir, la opción que más coincide sube primero y queda marcada: Enter la
+ * completa (igual que el autocompletar del navegador). Esc cierra sin elegir.
  * getSuggestions(texto) es síncrona; con texto vacío devuelve todas.
  * Props: id, value, onChange, onBlur, placeholder, getSuggestions,
  *        etiqueta, etiquetaOculta, error, ayuda, ayudaOculta, marcado,
@@ -45,10 +47,11 @@ export default function AutocompleteInput({
   }, [abierto, resaltada, id])
 
   function mostrar(texto) {
-    const lista = getSuggestions(texto)
+    const lista = ordenarPorCoincidencia(getSuggestions(texto), texto)
     setSugerencias(lista)
     setAbierto(lista.length > 0)
-    setResaltada(-1)
+    // La que más coincide queda marcada, lista para Enter
+    setResaltada(lista.length > 0 ? 0 : -1)
   }
 
   /** Lista completa, como al abrir el desplegable de Excel; resalta el valor actual */
@@ -183,6 +186,28 @@ export default function AutocompleteInput({
       </span>
     </Campo>
   )
+}
+
+/**
+ * Qué tanto coincide una opción con lo escrito (sin tildes ni mayúsculas): 0 igual, 1 empieza
+ * igual, 2 una de sus palabras empieza igual, 3 lo contiene en otra parte.
+ */
+function nivelCoincidencia(opcion, buscado) {
+  const texto = textoBusqueda(opcion)
+  if (texto === buscado) return 0
+  if (texto.startsWith(buscado)) return 1
+  if (texto.split(/\s+/).some(palabra => palabra.startsWith(buscado))) return 2
+  return 3
+}
+
+/** Las opciones que más coinciden primero; a igual coincidencia, el orden de siempre */
+export function ordenarPorCoincidencia(lista, texto) {
+  const buscado = textoBusqueda(texto.trim())
+  if (!buscado) return lista
+  return lista
+    .map((opcion, i) => ({ opcion, i, nivel: nivelCoincidencia(opcion, buscado) }))
+    .sort((a, b) => a.nivel - b.nivel || a.i - b.i)
+    .map(x => x.opcion)
 }
 
 /** Marca en negrita la parte que coincide con lo escrito (sin distinguir tildes) */

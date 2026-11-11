@@ -627,9 +627,9 @@ export default function BloqueCompra({
           <motion.div
             key="filas"
             className={estilos.zonaFilas}
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
             transition={springSuave}
           >
           <table className={estilos.tabla}>
@@ -803,9 +803,9 @@ export default function BloqueCompra({
               <motion.div
                 key="resumen"
                 className={estilos.pieTabla}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
                 transition={springSuave}
               >
                 <ResumenCompra subtotal={subtotal} conIva={conIva} iva={iva} total={total} onCambiarIva={cambiarIva} />

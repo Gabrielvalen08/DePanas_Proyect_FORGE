@@ -127,12 +127,8 @@
   border-bottom: none;
 }
 
-/* Lo que aparece por pasos (filas, resumen) se recorta mientras crece */
-.zonaFilas,
-.pieTabla {
-  overflow: hidden;
-}
-
+/* Lo que aparece por pasos entra con un fundido, sin recortar nada: un overflow: hidden aquí
+   escondía el cuadro de sugerencias de los artículos */
 /* ---------- Fila fantasma: «Agregar otro artículo» al final de la tabla ---------- */
 .pieFilas td {
   padding: var(--tabla-celda-y) var(--space-4) var(--tabla-celda-y) var(--space-6);

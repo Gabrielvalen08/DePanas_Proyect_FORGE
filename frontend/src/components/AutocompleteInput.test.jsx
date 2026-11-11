@@ -36,6 +36,35 @@ describe('AutocompleteInput', () => {
     expect(combo).toHaveAttribute('aria-expanded', 'false')
   })
 
+  it('al escribir, la opción que más coincide sube primero y queda marcada: Enter la completa', async () => {
+    const usuario = userEvent.setup()
+    render(<Prueba />)
+    const combo = screen.getByRole('combobox', { name: 'Proveedor' })
+
+    await usuario.type(combo, 'l')
+    const opciones = screen.getAllByRole('option').map(o => o.textContent)
+    // «La Colonia» empieza con l; las demás solo la contienen
+    expect(opciones[0]).toBe('La Colonia')
+    expect(screen.getByRole('option', { name: 'La Colonia' })).toHaveAttribute('aria-selected', 'true')
+    expect(combo).toHaveAttribute('aria-activedescendant', 'proveedor-op-0')
+
+    await usuario.keyboard('{Enter}')
+    expect(combo).toHaveValue('La Colonia')
+    expect(combo).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('una palabra que empieza igual va antes que una coincidencia en medio', async () => {
+    const usuario = userEvent.setup()
+    render(<Prueba />)
+    const combo = screen.getByRole('combobox', { name: 'Proveedor' })
+    await usuario.type(combo, 'sel')
+    expect(screen.getAllByRole('option').map(o => o.textContent)).toEqual(['Súper Selectos'])
+    await usuario.clear(combo)
+    await usuario.type(combo, 'or')
+    // «Distribuidora Flores» lo contiene en medio; nada empieza con «or»: queda marcada igual la primera
+    expect(screen.getByRole('option', { name: 'Distribuidora Flores' })).toHaveAttribute('aria-selected', 'true')
+  })
+
   it('Escape cierra la lista sin borrar lo escrito', async () => {
     const usuario = userEvent.setup()
     render(<Prueba />)
