@@ -26,3 +26,6 @@ frontend/playwright/.cache/
 desktop/salida/
 desktop/test-results/
 desktop/playwright-report/
+
+# Materiales del equipo fuera del repo (presentaciones, fuentes)
+Claude outputs/

@@ -109,7 +109,6 @@ Los aportes de cada uno están en [docs/sitio/index.html](docs/sitio/index.html#
 - Una rama por cambio y Pull Request hacia `main`.
 - Commits en español con prefijo y área: `feat(compras): …`, `fix(agregar-compra): …`, `docs: …`, `test: …`.
 - Antes de un PR: `npm run lint`, `npm run test:run`, `npm run test:e2e` y `npm run build` en `frontend/`, y `npm test` en `backend/`.
-- Comandos básicos de git: [docs/GUIA_GIT.md](docs/GUIA_GIT.md).
 
 ## Estado
 

@@ -1,6 +1,6 @@
 # Decisiones técnicas
 
-Resumen técnico de lo aplicado en el refactor ([plan](historial/PLAN_REFACTOR_FRONTEND.md)) y en los cambios posteriores (catálogo, categoría y producto por material, collage y voz de marca). Las decisiones de **marca** (paleta, tipografía, logotipo, tono, movimiento) están en [`DESIGN_DECISIONS.md`](../DESIGN_DECISIONS.md); este documento no las repite.
+Resumen técnico de lo aplicado en el refactor del frontend y en los cambios posteriores (catálogo, categoría y producto por material, collage y voz de marca). Las decisiones de **marca** (paleta, tipografía, logotipo, tono, movimiento) están en [`DESIGN_DECISIONS.md`](../DESIGN_DECISIONS.md); este documento no las repite.
 
 **Precedencia:** `DESIGN_DECISIONS.md` (la marca como vive hoy en el sitio) > Brandbook > skills de `.claude/skills/` > este documento.
 
@@ -82,7 +82,7 @@ Por la fila marcada con ✗, el texto que va **directo sobre el collage** (frase
 
 ## Listas de compra (cambio de funcionalidad)
 
-Ver [historial/PLAN_LISTAS_COMPRA.md](historial/PLAN_LISTAS_COMPRA.md).
+Una compra agrupa un proveedor, una fecha y sus artículos: en la base, sus filas de `ingresos` comparten `compra_id`. El modelo completo está en [MODELO_DATOS.md](MODELO_DATOS.md).
 
 | Tema | Decisión |
 | ---- | -------- |

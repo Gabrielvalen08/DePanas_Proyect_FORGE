@@ -9,7 +9,5 @@
 | [SEGURIDAD.md](SEGURIDAD.md) | Desarrollo y cliente | Cada control de seguridad y su prueba |
 | [DECISIONS.md](DECISIONS.md) | Desarrollo | Decisiones técnicas en detalle |
 | [PRUEBAS_USUARIO.md](PRUEBAS_USUARIO.md) | Equipo | Lo que se decidió en las sesiones con el cliente |
+| [revisiones/](revisiones/) | Equipo | Auditoría completa y revisión de seguridad del cierre |
 | [brand-guidelines.md](brand-guidelines.md) | La skill `brand` | Resumen de la marca para sus scripts (manda [DESIGN_DECISIONS.md](../DESIGN_DECISIONS.md)) |
-| [GUIA_GIT.md](GUIA_GIT.md) | Equipo | Comandos básicos de git |
-| [historial/](historial/) | Consulta | Planes de trabajo ya ejecutados; se conservan como registro |
-| [capturas/](capturas/), [img/](img/) | Consulta | Capturas de antes y después del rediseño |
