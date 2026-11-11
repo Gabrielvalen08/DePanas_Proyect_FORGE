@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulos · De Panas SV</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="contenedor">
+      <a class="logo" href="index.html"><img src="../manual/img/arepa.png" alt=""><span>DE PANAS</span></a>
+      <nav class="menu" aria-label="Documentación">
+        <ul>
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="modulos.html" aria-current="page">Módulos</a></li>
+          <li><a href="arquitectura.html">Arquitectura</a></li>
+          <li><a href="decisiones.html">Decisiones</a></li>
+          <li><a href="calidad.html">Calidad</a></li>
+          <li><a href="../manual/index.html">Manual de uso</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <div class="titular">
+      <h1>Módulos</h1>
+      <p>Qué hace cada pantalla, quién la usa y las reglas que sigue. Cómo usarlas paso a paso está en el <a href="../manual/index.html">manual de uso</a>.</p>
+    </div>
+
+    <nav class="tarjeta" aria-labelledby="t-indice">
+      <h2 id="t-indice" class="etiqueta marca">En esta página</h2>
+      <ol class="indice-pagina">
+        <li><a href="#acceso">Acceso y sesión</a></li>
+        <li><a href="#agregar">Agregar compra</a></li>
+        <li><a href="#lista">Lista de compras</a></li>
+        <li><a href="#archivo">Archivo de compras</a></li>
+        <li><a href="#catalogo">Catálogo</a></li>
+        <li><a href="#exportar">Exportar datos</a></li>
+        <li><a href="#cargar">Cargar datos</a></li>
+        <li><a href="#usuarios">Gestor de usuarios</a></li>
+        <li><a href="#zip">Versión .zip y demostración</a></li>
+      </ol>
+    </nav>
+
+    <section id="acceso" aria-labelledby="t-acceso">
+      <h2 id="t-acceso">1. Acceso y sesión</h2>
+      <dl class="ficha">
+        <dt>Quién</dt><dd>Todos</dd>
+        <dt>Código</dt><dd><code>PantallaContrasena</code>, <code>AuthContext</code>, <code>backend/sesiones.js</code></dd>
+      </dl>
+      <ul class="lista">
+        <li>Se entra con <b>usuario y contraseña</b>. La sesión dura hasta cerrar la pestaña o 8 horas sin uso.</li>
+        <li>Cinco contraseñas malas seguidas bloquean a ese usuario 5 minutos, también si el usuario no existe, para no revelar cuáles existen.</li>
+        <li>Antes de salir, cambiar de pantalla o cerrar la pestaña con datos sin guardar, la app avisa y ofrece <b>Registrar</b> o <b>Salir sin guardar</b>.</li>
+      </ul>
+    </section>
+
+    <section id="agregar" aria-labelledby="t-agregar">
+      <h2 id="t-agregar">2. Agregar compra</h2>
+      <dl class="ficha">
+        <dt>Ruta</dt><dd><code>/</code> (pantalla principal)</dd>
+        <dt>Quién</dt><dd>Quien tenga la pantalla Agregar compra</dd>
+        <dt>Código</dt><dd><code>AgregarCompra</code>, <code>BloqueCompra</code>, <code>AsignarMaterial</code>, <code>ResumenCompra</code></dd>
+      </dl>
+      <h3>Por pasos</h3>
+      <ol class="lista">
+        <li>Al entrar solo se ven la fecha y el proveedor.</li>
+        <li>Con el proveedor aparece la primera fila.</li>
+        <li>Con una fila completa (artículo, cantidad, unidad y monto) aparecen la fila punteada <b>+ Agregar otro artículo</b>, el subtotal, el IVA, el total, Guardar, Cancelar y Nueva compra.</li>
+      </ol>
+      <p>Lo que todavía no se puede usar no se muestra: no hay botones apagados en gris. Al editar una compra guardada se ve todo de una vez.</p>
+      <h3>Reglas</h3>
+      <ul class="lista">
+        <li>Al escribir el proveedor o el artículo, la opción que más coincide queda marcada y <kbd>Enter</kbd> la completa.</li>
+        <li>Solo se sugieren los artículos de las categorías que vende ese proveedor.</li>
+        <li>El precio de la última compra se pone solo. Se escribe el monto o el precio unitario y el otro se calcula; el último que se escribió manda.</li>
+        <li>El <b>IVA (13 %)</b> se suma encima del subtotal. Una compra nueva toma lo que se hizo en la última compra a ese proveedor.</li>
+        <li>Un artículo nuevo abre un formulario para su categoría y sus productos. <b>Ahora no</b> deja guardar y marca la fila con un «!».</li>
+        <li>Guardar pide confirmar con un resumen. Varias compras se registran a la vez con <b>Nueva compra</b>.</li>
+      </ul>
+    </section>
+
+    <section id="lista" aria-labelledby="t-lista">
+      <h2 id="t-lista">3. Lista de compras</h2>
+      <dl class="ficha">
+        <dt>Ruta</dt><dd><code>/compras</code></dd>
+        <dt>Quién</dt><dd>Quien tenga la pantalla. Editar, eliminar y archivar son funciones aparte.</dd>
+        <dt>Código</dt><dd><code>PantallaMaestra</code>, <code>DetalleLista</code>, <code>FiltrosEnLinea</code></dd>
+      </dl>
+      <ul class="lista">
+        <li>Las compras <b>activas</b>, la más reciente arriba. Tocar una fila abre su detalle para ver, editar o eliminar.</li>
+        <li><b>Casillas como en el correo:</b> una por compra a la izquierda y otra arriba para elegir todas. La fila elegida cambia de color.</li>
+        <li>Con algo elegido aparecen los íconos <b>Eliminar</b> y <b>Archivar</b> junto a <b>Filtrar</b>. Solo «Agregar compra» lleva texto.</li>
+        <li><b>Filtrar</b> por proveedor, artículo y rango de fechas, en vivo.</li>
+        <li>El menú <b>⋮</b> lleva Ir al archivo, Exportar datos y Cargar datos.</li>
+        <li>Toda acción se confirma; eliminar varias es todo o nada.</li>
+      </ul>
+    </section>
+
+    <section id="archivo" aria-labelledby="t-archivo">
+      <h2 id="t-archivo">4. Archivo de compras</h2>
+      <dl class="ficha">
+        <dt>Ruta</dt><dd><code>/compras/archivo</code></dd>
+        <dt>Quién</dt><dd>Quien tenga Lista de compras; archivar y devolver piden la función <b>compras.archivar</b> (operador sí, empleado no)</dd>
+        <dt>Código</dt><dd><code>PantallaMaestra vista="archivadas"</code>, <code>shared/archivo.js</code></dd>
+      </dl>
+      <ul class="lista">
+        <li>Para que la lista cargue rápido, <b>una compra pasa sola al Archivo al cumplir 3 meses</b> desde su fecha.</li>
+        <li>También se archiva a mano, y desde el Archivo se <b>devuelve a la lista</b>; una devuelta se queda en la lista aunque sea vieja.</li>
+        <li>Nada se borra al archivar. Exportar y Cargar siguen viendo todas las compras.</li>
+      </ul>
+    </section>
+
+    <section id="catalogo" aria-labelledby="t-catalogo">
+      <h2 id="t-catalogo">5. Catálogo</h2>
+      <dl class="ficha">
+        <dt>Ruta</dt><dd><code>/catalogo/proveedores</code>, <code>/categorias</code>, <code>/articulos</code>, <code>/productos</code></dd>
+        <dt>Quién</dt><dd>Quien tenga la pantalla; agregar, editar, eliminar, exportar y cargar son funciones aparte</dd>
+        <dt>Código</dt><dd><code>PantallaCatalogo</code>, <code>EditorCatalogo</code>, <code>FichaProveedor</code>, <code>SeleccionCatalogo</code></dd>
+      </dl>
+      <ul class="lista">
+        <li>Es la <b>única fuente de las opciones</b> de los buscadores. Cada compra guardada registra en él lo nuevo.</li>
+        <li><b>Proveedor</b>: con su ficha (ubicación, teléfonos y contactos). <b>Categoría</b>: con los proveedores que la venden. <b>Artículo</b>: con una categoría y ninguno, uno o varios productos. <b>Producto</b>: lo que vende De Panas.</li>
+        <li>Renombrar cambia el nombre también en todas las compras; eliminar deja a las compras con su texto.</li>
+        <li>Un nombre parecido a otro (por ejemplo «Azucar» y «Azúcar») muestra un aviso, sin impedir guardar.</li>
+        <li>Cada sección se exporta (Excel o respaldo) y se carga desde su ⋮, eligiendo qué entra. Cargar nunca borra.</li>
+      </ul>
+    </section>
+
+    <section id="exportar" aria-labelledby="t-exportar">
+      <h2 id="t-exportar">6. Exportar datos</h2>
+      <dl class="ficha">
+        <dt>Ruta</dt><dd><code>/exportar</code> (desde el ⋮ de Lista de compras)</dd>
+        <dt>Código</dt><dd><code>PantallaExportar</code>, <code>utils/exportar.js</code>, <code>shared/gastos.js</code></dd>
+      </dl>
+      <ul class="lista">
+        <li>Rango de fechas (este mes, mes pasado, este año, todo o a mano). Antes de descargar se ve cuántas compras y cuánto dinero entran.</li>
+        <li><b>Excel (.xlsx)</b>: hoja <b>Compras</b> (una fila por artículo, como el Excel del negocio) y hoja <b>Resumen</b>, el reporte de gastos del rango: total, IVA y gasto por proveedor, por categoría y por mes.</li>
+        <li><b>Respaldo (.json)</b>: las compras completas, para Cargar datos en otro equipo.</li>
+      </ul>
+    </section>
+
+    <section id="cargar" aria-labelledby="t-cargar">
+      <h2 id="t-cargar">7. Cargar datos</h2>
+      <dl class="ficha">
+        <dt>Ruta</dt><dd><code>/cargar</code> (desde el ⋮ de Lista de compras)</dd>
+        <dt>Código</dt><dd><code>PantallaCargar</code>, <code>CompararCompra</code>, <code>shared/carga-compras.js</code></dd>
+      </dl>
+      <ul class="lista">
+        <li>Se elige un respaldo .json y qué compras traer.</li>
+        <li>Cada compra es <b>nueva</b>, <b>duplicada</b> (se omite) o <b>modificada</b>: esta se compara lado a lado con la guardada y se elige qué se queda.</li>
+        <li>Es todo o nada. Si la compra guardada cambió mientras se decidía, se avisa y no se pisa.</li>
+      </ul>
+    </section>
+
+    <section id="usuarios" aria-labelledby="t-usuarios">
+      <h2 id="t-usuarios">8. Gestor de usuarios</h2>
+      <dl class="ficha">
+        <dt>Ruta</dt><dd><code>/usuarios</code></dd>
+        <dt>Quién</dt><dd>Solo el administrador</dd>
+        <dt>Código</dt><dd><code>PantallaUsuarios</code>, <code>EditorUsuario</code>, <code>EditorRequisitos</code>, <code>shared/usuarios.js</code></dd>
+      </dl>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Rol</th><th scope="col">Pantallas</th><th scope="col">Funciones</th></tr></thead>
+          <tbody>
+            <tr><td><span class="etiqueta marca">Administrador</span> (uno solo)</td><td>Todas, también las futuras</td><td>Todas. No se elimina ni cambia de rol.</td></tr>
+            <tr><td><span class="etiqueta">Operador</span></td><td>Todas menos el gestor</td><td>Todas (editar, eliminar y archivar compras; todo el catálogo)</td></tr>
+            <tr><td><span class="etiqueta">Empleado</span></td><td>Agregar compra y Lista de compras</td><td>Editar compras</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="lista">
+        <li>El rol trae sus pantallas y funciones; después se ajustan persona por persona.</li>
+        <li>El administrador define los <b>requisitos de contraseña</b> (mínimo de caracteres, mayúscula, minúscula, número y carácter especial), que se revisan en vivo.</li>
+        <li>No se repite el usuario. Las contraseñas se guardan con hash y nunca se comparan con las de otros.</li>
+      </ul>
+    </section>
+
+    <section id="zip" aria-labelledby="t-zip">
+      <h2 id="t-zip">9. Versión .zip y demostración</h2>
+      <dl class="ficha">
+        <dt>Código</dt><dd><code>desktop/</code> (<code>preparar.mjs</code>, <code>iniciar.mjs</code>, <code>servidor.mjs</code>)</dd>
+        <dt>Guía</dt><dd><a href="../INSTALACION_CLIENTE.md">Instalación en la computadora del cliente</a></dd>
+      </dl>
+      <ul class="lista">
+        <li><b>Abrir De Panas SV</b> levanta el sistema y lo abre en el navegador como sitio web local (<code>http://localhost:4510</code>), sin internet. Lleva el Node.js oficial firmado para que Windows lo deje abrir.</li>
+        <li>Los datos quedan en <code>%APPDATA%\De Panas SV</code>: borrar o actualizar la carpeta del programa no los toca.</li>
+        <li>Se apaga desde el menú o al cerrar la última pestaña.</li>
+        <li><b>Abrir De Panas SV (demo)</b> abre aparte (puerto 4511) una copia con dos meses de compras de ejemplo, en su propia carpeta. Nunca toca los datos reales.</li>
+        <li>El .zip trae el manual de uso.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>De Panas SV · Equipo FORGE · noviembre de 2026</footer>
+</body>
+</html>

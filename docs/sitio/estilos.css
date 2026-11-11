@@ -1,0 +1,176 @@
+/* Documentación de De Panas SV: marca De Panas (DESIGN_DECISIONS.md). Crema y naranja
+   protagonistas, texto Verde Ávila, Josefin Sans para títulos y Cardo para leer. */
+:root {
+  --naranja: #EF7D05;
+  --crema: #FEEECC;
+  --crema-claro: #FFF8EB;
+  --avila: #144428;
+  --avila-profundo: #0F331E;
+  --avila-75: #4F735E;
+  --vinotinto: #911C0D;
+  --amarillo: #F8A914;
+  --verde-fresco: #6DAD28;
+  --tinte-aviso: #FDE5B8;
+  --tinte-exito: #E2EFD4;
+  --borde: #C4C4A3;
+  --blanco: #FFFFFF;
+  --titulos: 'Josefin Sans', system-ui, sans-serif;
+  --texto: 'Cardo', Georgia, serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  background: var(--crema);
+  color: var(--avila);
+  font-family: var(--texto);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+
+a { color: var(--avila); text-underline-offset: 3px; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--vinotinto); outline-offset: 2px; }
+h1, h2, h3, h4, nav, th, .etiqueta, .ficha dt, code { font-family: var(--titulos); }
+h1, h2 { text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.15; }
+b, strong { font-family: var(--titulos); font-weight: 600; }
+code {
+  font-size: 0.88em;
+  background: var(--crema-claro);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  padding: 0 0.3em;
+  overflow-wrap: anywhere;
+}
+pre {
+  background: var(--avila-profundo);
+  color: var(--crema);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0.75rem 0;
+}
+pre code { background: none; border: none; color: inherit; padding: 0; }
+
+/* ---------- Encabezado y menú ---------- */
+.cabecera { background: var(--naranja); color: var(--avila-profundo); }
+.cabecera .contenedor { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; padding: 1rem; }
+.logo { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; }
+.logo img { width: 40px; height: 40px; filter: drop-shadow(2px 2px 0 var(--vinotinto)); }
+.logo span {
+  font-family: var(--titulos);
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.06em;
+  color: var(--crema);
+  text-shadow: 2px 2px 0 var(--vinotinto);
+}
+.menu ul { display: flex; flex-wrap: wrap; gap: 0.25rem; list-style: none; }
+.menu a {
+  display: inline-block;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  color: var(--avila-profundo);
+  font-weight: 600;
+  text-decoration: none;
+}
+.menu a:hover { background: rgb(254 238 204 / 0.3); }
+.menu a[aria-current='page'] { background: var(--crema); color: var(--avila); box-shadow: 0 2px 8px rgb(145 28 13 / 0.2); }
+
+.contenedor { max-width: 1040px; margin: 0 auto; }
+main { padding: 2rem 1rem 3rem; }
+
+.titular { margin-bottom: 1.5rem; }
+.titular h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); }
+.titular p { font-size: 1.15rem; max-width: 62ch; margin-top: 0.4rem; }
+
+/* ---------- Tarjetas y secciones ---------- */
+section, .tarjeta {
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  scroll-margin-top: 1rem;
+}
+section { border-top: 6px solid var(--naranja); }
+section h2 { font-size: 1.3rem; margin-bottom: 0.75rem; }
+section h3 { font-size: 1.05rem; margin: 1.1rem 0 0.4rem; }
+section p, section li { max-width: 78ch; }
+section p { margin-bottom: 0.6rem; }
+ul.lista, ol.lista { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+ul.lista li, ol.lista li { margin-bottom: 0.3rem; }
+
+.rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin: 0.5rem 0 1rem; }
+.rejilla .tarjeta { margin: 0; padding: 1.1rem 1.25rem; }
+.tarjeta h3 { margin-top: 0; font-size: 1.05rem; }
+a.tarjeta { display: block; text-decoration: none; transition: transform 150ms ease-out, box-shadow 150ms ease-out; }
+a.tarjeta:hover { transform: translateY(-2px); box-shadow: 3px 4px 0 var(--vinotinto); }
+@media (prefers-reduced-motion: reduce) { a.tarjeta { transition: none; } a.tarjeta:hover { transform: none; } }
+
+.cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 1rem; margin: 0.75rem 0 1rem; }
+.cifra { background: var(--crema-claro); border: 1px solid var(--borde); border-radius: 16px; padding: 0.9rem 1rem; }
+.cifra strong { display: block; font-size: 2rem; font-weight: 700; line-height: 1.1; }
+.cifra span { font-family: var(--titulos); font-size: 0.9rem; color: var(--avila-75); }
+
+.indice-pagina { columns: 2 15rem; column-gap: 2rem; padding-left: 1.3rem; font-family: var(--titulos); }
+.indice-pagina li { margin-bottom: 0.3rem; break-inside: avoid; }
+
+/* ---------- Tablas ---------- */
+.tabla-scroll { overflow-x: auto; margin: 0.5rem 0 1rem; }
+table { border-collapse: collapse; width: 100%; font-size: 0.97rem; }
+th, td { text-align: left; padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
+th { background: var(--crema-claro); font-weight: 600; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.04em; white-space: nowrap; }
+td.numero { text-align: right; font-family: var(--titulos); white-space: nowrap; }
+
+/* ---------- Avisos, insignias y fichas ---------- */
+.nota { background: var(--tinte-aviso); border-left: 4px solid var(--amarillo); border-radius: 8px; padding: 0.6rem 0.9rem; margin: 0.75rem 0; }
+.ok { background: var(--tinte-exito); border-left: 4px solid var(--verde-fresco); border-radius: 8px; padding: 0.6rem 0.9rem; margin: 0.75rem 0; }
+.etiqueta {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--crema-claro);
+  border: 1px solid var(--borde);
+  white-space: nowrap;
+}
+.etiqueta.marca { background: var(--amarillo); border-color: var(--amarillo); }
+.ficha { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0.5rem 0 0.75rem; }
+.ficha dt { font-weight: 600; }
+
+/* Decisiones */
+.decision { border-left: 4px solid var(--naranja); padding: 0.1rem 0 0.1rem 1rem; margin: 1rem 0 1.25rem; }
+.decision h3 { margin-top: 0; }
+.decision .meta { font-family: var(--titulos); font-size: 0.85rem; color: var(--avila-75); margin-bottom: 0.3rem; }
+
+/* Diagrama de capas */
+.capas { display: grid; gap: 0.5rem; margin: 0.75rem 0 1rem; }
+.capa { border: 1px solid var(--borde); border-radius: 12px; padding: 0.6rem 0.9rem; background: var(--crema-claro); }
+.capa strong { display: block; }
+.capa.marca { background: var(--naranja); border-color: var(--naranja); color: var(--avila-profundo); }
+.flecha { text-align: center; font-family: var(--titulos); color: var(--avila-75); line-height: 1; }
+
+figure { margin: 0.75rem 0; }
+figure img { display: block; width: 100%; height: auto; border: 1px solid var(--borde); border-radius: 12px; }
+figcaption { font-size: 0.93rem; color: var(--avila-75); margin-top: 0.3rem; }
+
+footer { text-align: center; padding: 1.5rem 1rem 2.5rem; font-size: 0.95rem; }
+
+@media (max-width: 640px) {
+  section, .tarjeta { padding: 1.1rem; }
+  .ficha { grid-template-columns: 1fr; }
+}
+
+@media print {
+  body { background: var(--blanco); }
+  .cabecera { background: var(--blanco); border-bottom: 4px solid var(--naranja); }
+  .logo span { color: var(--naranja); }
+  .menu { display: none; }
+  section { break-inside: avoid-page; }
+  pre { background: var(--crema-claro); color: var(--avila); }
+}

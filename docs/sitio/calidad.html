@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calidad · De Panas SV</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="contenedor">
+      <a class="logo" href="index.html"><img src="../manual/img/arepa.png" alt=""><span>DE PANAS</span></a>
+      <nav class="menu" aria-label="Documentación">
+        <ul>
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="modulos.html">Módulos</a></li>
+          <li><a href="arquitectura.html">Arquitectura</a></li>
+          <li><a href="decisiones.html">Decisiones</a></li>
+          <li><a href="calidad.html" aria-current="page">Calidad</a></li>
+          <li><a href="../manual/index.html">Manual de uso</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <div class="titular">
+      <h1>Calidad</h1>
+      <p>Cómo comprobamos que la app funciona: pruebas automáticas, pruebas de seguridad, sesiones con el cliente y el flujo de trabajo del equipo.</p>
+    </div>
+
+    <div class="cifras" role="list" aria-label="Pruebas automáticas">
+      <div class="cifra" role="listitem"><strong>134</strong><span>pruebas del backend</span></div>
+      <div class="cifra" role="listitem"><strong>370</strong><span>pruebas del frontend</span></div>
+      <div class="cifra" role="listitem"><strong>77</strong><span>recorridos en navegador</span></div>
+      <div class="cifra" role="listitem"><strong>30</strong><span>pruebas de seguridad</span></div>
+    </div>
+
+    <section aria-labelledby="t-auto">
+      <h2 id="t-auto">Pruebas automáticas</h2>
+      <p>El proyecto es JavaScript, así que en lugar de JUnit (de Java) usa sus equivalentes: el runner nativo de Node (<code>node:test</code>) en el backend, Vitest en el frontend y Playwright para recorrer la app en un navegador real. Cada prueba usa una base temporal: nunca toca los datos reales.</p>
+      <h3>Backend (<code>backend/test/</code>)</h3>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Archivo</th><th scope="col">Qué comprueba</th><th scope="col">Pruebas</th></tr></thead>
+          <tbody>
+            <tr><td><code>calculos.test.js</code></td><td>IVA y redondeo a centavos, subtotal y total, reporte de gastos y filtros por proveedor, artículo y fechas</td><td class="numero">12</td></tr>
+            <tr><td><code>api.test.js</code></td><td>Compras completas, validación, exportar e importar la base y los respaldos JSON</td><td class="numero">18</td></tr>
+            <tr><td><code>archivo.test.js</code></td><td>Archivo automático a los 3 meses, archivar y devolver, eliminar varias, permisos y migración</td><td class="numero">8</td></tr>
+            <tr><td><code>catalogo.test.js</code></td><td>Agregar, renombrar (también en las compras), eliminar, fichas, proveedores por categoría, respaldos</td><td class="numero">26</td></tr>
+            <tr><td><code>usuarios.test.js</code></td><td>Gestor de usuarios, roles, requisitos de contraseña y migraciones de usuarios</td><td class="numero">20</td></tr>
+            <tr><td><code>seguridad.test.js</code></td><td>Sesión, permisos, bloqueo por intentos, hash, hosts permitidos y apagado del .zip</td><td class="numero">19</td></tr>
+            <tr><td><code>seguridad-datos.test.js</code></td><td>Validación de entradas, inyección SQL, errores sin detalles, exportados y respaldo</td><td class="numero">11</td></tr>
+            <tr><td><code>iva.test.js</code>, <code>carga.test.js</code>, <code>sqlite.test.js</code>, <code>demo.test.js</code></td><td>IVA de cada compra, carga de respaldos, conexión SQLite y datos de demostración</td><td class="numero">20</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Frontend (<code>frontend/src/**/*.test.jsx</code>, Vitest)</h3>
+      <p>Cada pantalla y componente con Testing Library: el formulario por pasos de Agregar compra, la Lista de compras con casillas y Archivo, el Catálogo, los usuarios, el aviso antes de perder datos, el Excel con su hoja Resumen y <code>api.js</code> en sus dos modos (servidor con <code>fetch</code> simulado, y local).</p>
+      <h3>De punta a punta (<code>frontend/e2e/</code>, Playwright)</h3>
+      <p>Un navegador real usa la app completa con su propio backend, en escritorio y en teléfono (Pixel 7): acceso, compras, artículos, Archivo, Catálogo, usuarios, aviso de salida, navegación (ningún botón cortado de 1280 a 320 px) y vista móvil. Una prueba falla si la página lanza un error o el servidor responde 5xx.</p>
+      <h3>Versión del cliente (<code>desktop/pruebas/</code>)</h3>
+      <p>Abre el <code>.cmd</code> de la carpeta armada y comprueba que se abre, guarda, exporta, se apaga y conserva los datos.</p>
+    </section>
+
+    <section aria-labelledby="t-correr">
+      <h2 id="t-correr">Cómo correrlas</h2>
+<pre><code># backend/
+npm test
+
+# frontend/
+npm run lint
+npm run test:run
+npm run test:e2e        # la primera vez: npx playwright install chromium
+npm run build
+
+# desktop/ (Windows)
+npm run preparar
+npm run test:escritorio</code></pre>
+      <p>Antes de abrir un Pull Request se corren todas. Si el puerto 3100 o 5174 está ocupado, <code>E2E_PUERTO_BACKEND</code> y <code>E2E_PUERTO_FRONTEND</code> los cambian.</p>
+    </section>
+
+    <section aria-labelledby="t-seg">
+      <h2 id="t-seg">Seguridad</h2>
+      <p>Cada control tiene su prueba: contraseñas con hash, bloqueo por intentos fallidos, sesión que vence, permisos en cada petición, validación de entradas, SQL con parámetros, errores sin detalles internos, exportar solo con permiso y respaldo antes de reemplazar la base. La tabla completa está en <a href="../SEGURIDAD.md">docs/SEGURIDAD.md</a>.</p>
+    </section>
+
+    <section aria-labelledby="t-usuario">
+      <h2 id="t-usuario">Pruebas con el cliente</h2>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Fecha</th><th scope="col">Con</th><th scope="col">Qué salió</th></tr></thead>
+          <tbody>
+            <tr><td>25/09/2026</td><td>César</td><td>Validamos los requisitos en una llamada</td></tr>
+            <tr><td>13/10/2026</td><td>César</td><td>Le mostramos el programa: cambios de funcionamiento, de apariencia y de nombres («artículo», Catálogo)</td></tr>
+            <tr><td>29/10/2026</td><td>César y Marta</td><td>César registró una factura real de Pepsi: así descubrimos que faltaba el IVA, y salieron el aviso antes de perder datos y la versión .zip</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Las decisiones de cada sesión están en <a href="../PRUEBAS_USUARIO.md">docs/PRUEBAS_USUARIO.md</a>.</p>
+    </section>
+
+    <section aria-labelledby="t-flujo">
+      <h2 id="t-flujo">Flujo de trabajo</h2>
+      <ul class="lista">
+        <li>Una rama por cambio y Pull Request hacia <code>main</code>, revisado por otro integrante.</li>
+        <li>Commits pequeños, en español, con prefijo y área: <code>feat(compras): …</code>, <code>fix(agregar-compra): …</code>, <code>docs: …</code>, <code>test: …</code>.</li>
+        <li>Revisiones con las skills del proyecto (<code>.claude/skills/</code>): marca, accesibilidad, frontend, backend, seguridad y auditoría completa (<code>full-audit</code>).</li>
+        <li>Reglas del código en <code>CLAUDE.md</code> y en el <code>README.md</code> de cada carpeta.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>De Panas SV · Equipo FORGE · noviembre de 2026</footer>
+</body>
+</html>
