@@ -26,8 +26,16 @@ export default function Header({ title, badge, alRegresar }) {
         </div>
         <div className={estilos.derecha}>
           {alRegresar && (
-            <Boton variante="secundario" icono={<ArrowLeft size={16} />} onClick={alRegresar}>
-              {NAVEGACION.regresar}
+            // En un teléfono angosto queda solo la flecha: así el título de la pantalla no se corta
+            <Boton
+              variante="secundario"
+              className={estilos.regresar}
+              icono={<ArrowLeft size={16} />}
+              onClick={alRegresar}
+              aria-label={NAVEGACION.regresar}
+              title={NAVEGACION.regresar}
+            >
+              <span className={estilos.textoRegresar}>{NAVEGACION.regresar}</span>
             </Boton>
           )}
           <p className={estilos.fecha}>

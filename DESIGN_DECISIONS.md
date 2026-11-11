@@ -190,7 +190,7 @@ La app **no usa fotografías**: las pantallas son de trabajo y una foto competir
 - **Proximidad:** dentro de un grupo `--space-2`/`--space-3`; entre grupos `--space-6`; entre secciones `--space-8`.
 - **Controles:** `--alto-control` 2.75rem (44 px). El tamaño `sm` se ve de 2.25rem pero mantiene 44 px de zona táctil.
 - **Layout:** menú lateral `--ancho-sidebar` 15rem; encabezado `--alto-header` 4rem; barra inferior `--alto-barra-inferior` 4rem; márgenes laterales `--space-8` en escritorio y `--space-4` en teléfono.
-- **Vista de teléfono por debajo de 1100 px** (`@media (max-width: 1099px)`): barra inferior en vez de menú lateral, tablas como tarjetas, títulos más pequeños. Ningún botón puede quedar cortado entre 1280 y 320 px.
+- **Vista de teléfono por debajo de 1100 px** (`@media (max-width: 1099px)`): barra inferior en vez de menú lateral, tablas como tarjetas, títulos más pequeños. Ningún botón puede quedar cortado entre 1280 y 320 px. La acción principal de cada pantalla (Agregar compra, Agregar proveedor, Descargar, Elegir archivo, Agregar usuario…) se ve al abrirla, sin bajar, en una laptop (1280 × 720) y en un teléfono (390 × 844); si un formulario es largo en el teléfono, su pie de acción queda fijo sobre la barra inferior (como en Exportar). Bajo 480 px, Regresar queda solo con la flecha (con su nombre en `aria-label`) para que el título no se corte.
 
 ---
 

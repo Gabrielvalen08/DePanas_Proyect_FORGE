@@ -135,6 +135,17 @@
   .insignia {
     display: none;
   }
+
+  /* Regresar queda solo con la flecha (su nombre sigue en aria-label y title) */
+  .regresar {
+    flex-shrink: 0;
+    width: var(--alto-control);
+    padding: 0;
+  }
+
+  .textoRegresar {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-transparency: reduce) {
