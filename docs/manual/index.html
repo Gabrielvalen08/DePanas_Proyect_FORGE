@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manual de uso · De Panas SV</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Marca De Panas (DESIGN_DECISIONS.md): crema y naranja protagonistas, texto Verde Ávila */
+    :root {
+      --naranja: #EF7D05;
+      --crema: #FEEECC;
+      --crema-claro: #FFF8EB;
+      --avila: #144428;
+      --avila-profundo: #0F331E;
+      --avila-75: #4F735E;
+      --vinotinto: #911C0D;
+      --amarillo: #F8A914;
+      --tinte-aviso: #FDE5B8;
+      --borde: #C4C4A3;
+      --blanco: #FFFFFF;
+      --titulos: 'Josefin Sans', system-ui, sans-serif;
+      --texto: 'Cardo', Georgia, serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    body {
+      background: var(--crema);
+      color: var(--avila);
+      font-family: var(--texto);
+      font-size: 1.0625rem;
+      line-height: 1.6;
+    }
+    a { color: var(--avila); text-underline-offset: 3px; }
+    a:focus-visible { outline: 2px solid var(--vinotinto); outline-offset: 2px; }
+    h1, h2, h3, nav, .etiqueta, th, kbd { font-family: var(--titulos); }
+    h1, h2 { text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.15; }
+
+    /* Portada */
+    .portada {
+      background: var(--naranja);
+      color: var(--avila-profundo);
+      padding: 2.5rem 1rem 2rem;
+    }
+    .portada .contenedor { display: flex; align-items: center; gap: 1.25rem; }
+    .portada img { width: 72px; height: 72px; filter: drop-shadow(2px 2px 0 var(--vinotinto)); flex-shrink: 0; }
+    .marca {
+      display: inline-block;
+      font-family: var(--titulos);
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 0.06em;
+      color: var(--crema);
+      text-shadow: 2px 2px 0 var(--vinotinto);
+    }
+    .portada h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 0.2rem 0; }
+    .portada p { font-size: 1.05rem; max-width: 46ch; }
+
+    .contenedor { max-width: 960px; margin: 0 auto; }
+    main { padding: 2rem 1rem 3rem; }
+
+    /* Índice */
+    .indice {
+      background: var(--blanco);
+      border: 1px solid var(--borde);
+      border-radius: 20px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .indice h2 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+    .indice ol { columns: 2 16rem; column-gap: 2rem; padding-left: 1.4rem; font-family: var(--titulos); }
+    .indice li { margin-bottom: 0.35rem; break-inside: avoid; }
+
+    /* Secciones */
+    section {
+      background: var(--blanco);
+      border: 1px solid var(--borde);
+      border-top: 6px solid var(--naranja);
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      scroll-margin-top: 1rem;
+    }
+    section h2 { font-size: 1.35rem; margin-bottom: 0.75rem; }
+    section h3 { font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+    section p { max-width: 70ch; margin-bottom: 0.6rem; }
+    ol.pasos, ul.lista { padding-left: 1.4rem; margin-bottom: 0.75rem; max-width: 72ch; }
+    ol.pasos li, ul.lista li { margin-bottom: 0.35rem; }
+    ol.pasos li::marker { font-family: var(--titulos); font-weight: 700; color: var(--naranja); }
+    b, strong { font-family: var(--titulos); font-weight: 600; }
+
+    figure { margin: 1rem 0 0.5rem; }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--borde);
+      border-radius: 12px;
+    }
+    figcaption { font-size: 0.95rem; color: var(--avila-75); margin-top: 0.35rem; }
+
+    .nota {
+      background: var(--tinte-aviso);
+      border-left: 4px solid var(--amarillo);
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      margin: 0.75rem 0;
+      max-width: 72ch;
+    }
+    kbd {
+      font-size: 0.85em;
+      border: 1px solid var(--borde);
+      border-radius: 6px;
+      padding: 0 0.35em;
+      background: var(--crema-claro);
+    }
+
+    table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 0.75rem; font-size: 0.98rem; }
+    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
+    th { background: var(--crema-claro); font-weight: 600; text-transform: uppercase; font-size: 0.82rem; letter-spacing: 0.04em; }
+
+    /* Preguntas frecuentes */
+    details { border-bottom: 1px solid var(--borde); padding: 0.6rem 0; }
+    details:last-child { border-bottom: none; }
+    summary { font-family: var(--titulos); font-weight: 600; cursor: pointer; }
+    summary:focus-visible { outline: 2px solid var(--vinotinto); outline-offset: 2px; }
+    details p { margin: 0.4rem 0 0; }
+
+    .volver { display: inline-block; margin-top: 0.5rem; font-family: var(--titulos); font-size: 0.9rem; }
+    footer { text-align: center; padding: 1.5rem 1rem 2.5rem; font-size: 0.95rem; }
+
+    @media print {
+      body { background: var(--blanco); }
+      .portada { background: var(--blanco); border-bottom: 4px solid var(--naranja); }
+      .marca { color: var(--naranja); }
+      section { break-inside: avoid-page; }
+      .volver { display: none; }
+      details { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <header class="portada">
+    <div class="contenedor">
+      <img src="img/arepa.png" alt="">
+      <div>
+        <span class="marca">DE PANAS</span>
+        <h1>Manual de uso</h1>
+        <p>Registro de compras y catálogo de la cocina. Lo esencial para usarlo en el día a día.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <nav class="indice" aria-labelledby="titulo-indice">
+      <h2 id="titulo-indice">Índice</h2>
+      <ol>
+        <li><a href="#abrir">Abrir, entrar y apagar</a></li>
+        <li><a href="#registrar">Registrar una compra</a></li>
+        <li><a href="#articulo">Un artículo nuevo</a></li>
+        <li><a href="#lista">Lista de compras</a></li>
+        <li><a href="#archivo">Archivo de compras</a></li>
+        <li><a href="#catalogo">Catálogo</a></li>
+        <li><a href="#exportar">Exportar y respaldos</a></li>
+        <li><a href="#usuarios">Usuarios y contraseñas</a></li>
+        <li><a href="#preguntas">Preguntas frecuentes</a></li>
+      </ol>
+    </nav>
+
+    <section id="abrir" aria-labelledby="t-abrir">
+      <h2 id="t-abrir">1. Abrir, entrar y apagar</h2>
+      <ol class="pasos">
+        <li>Doble clic en el acceso <b>De Panas SV</b> del escritorio. Se abre el navegador solo.</li>
+        <li>Escribe tu <b>usuario</b> y tu <b>contraseña</b> y toca <b>Ingresar</b>.</li>
+        <li>Al terminar el día, en el menú: <b>Apagar De Panas SV</b>. Cerrar la pestaña del navegador también apaga.</li>
+      </ol>
+      <figure>
+        <img src="img/01-acceso.png" alt="Pantalla de acceso con los campos Usuario y Contraseña y el botón Ingresar" loading="lazy">
+        <figcaption>La pantalla de acceso.</figcaption>
+      </figure>
+      <p class="nota">Para practicar sin tocar los datos reales, abre <b>Abrir De Panas SV (demo)</b>: trae dos meses de compras de ejemplo y guarda todo aparte.</p>
+      <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
+    </section>
+
+    <section id="registrar" aria-labelledby="t-registrar">
+      <h2 id="t-registrar">2. Registrar una compra</h2>
+      <p>Es la pantalla principal, <b>Agregar compra</b>. Lo siguiente aparece a medida que llenas lo anterior.</p>
+      <ol class="pasos">
+        <li>Revisa la <b>fecha</b> (empieza en hoy) y escribe el <b>proveedor</b>. Al escribir, la opción que más coincide queda marcada: <kbd>Enter</kbd> la completa.</li>
+        <li>En la primera fila escribe el <b>artículo</b>. Solo salen los que vende ese proveedor.</li>
+        <li>Pon la <b>cantidad</b> y la <b>unidad</b>. El precio de la última compra se pone solo; escribe el <b>monto</b> o el <b>precio unitario</b> y el otro se calcula.</li>
+        <li>Para otro artículo, toca <b>+ Agregar otro artículo</b>.</li>
+        <li>Si la factura trae IVA, marca <b>IVA (13 %)</b>. Revisa el <b>total</b>.</li>
+        <li>Toca <b>Guardar compra</b> y confirma.</li>
+      </ol>
+      <figure>
+        <img src="img/02-agregar-compra.png" alt="Formulario de Agregar compra con proveedor Selectos, una fila de Harina PAN, subtotal, IVA, total y el botón Guardar compra" loading="lazy">
+        <figcaption>Una compra lista para guardar.</figcaption>
+      </figure>
+      <p><b>Nueva compra</b> abre otra compra debajo, por ejemplo de otro proveedor. Cada una se guarda por separado.</p>
+      <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
+    </section>
+
+    <section id="articulo" aria-labelledby="t-articulo">
+      <h2 id="t-articulo">3. Un artículo nuevo</h2>
+      <p>Si escribes un artículo que no está en el catálogo, se abre un formulario corto:</p>
+      <ol class="pasos">
+        <li>Elige su <b>categoría</b> (por ejemplo, Materia Prima).</li>
+        <li>Elige en qué <b>productos</b> se usa (Arepas, Tequeños…). Es opcional.</li>
+        <li>Toca <b>Guardar</b> y confirma. Desde ahora sale en el buscador.</li>
+      </ol>
+      <p>Con <b>Ahora no</b> la compra se guarda igual y la fila queda marcada en rojo con un «!», para completarlo después. El botón <b>+</b> junto a la fila crea un artículo; el <b>lápiz</b> edita uno que ya existe.</p>
+      <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
+    </section>
+
+    <section id="lista" aria-labelledby="t-lista">
+      <h2 id="t-lista">4. Lista de compras</h2>
+      <p>Todas las compras de los últimos 3 meses, la más reciente arriba.</p>
+      <table>
+        <thead><tr><th scope="col">Quiero…</th><th scope="col">Cómo</th></tr></thead>
+        <tbody>
+          <tr><td>Ver una compra</td><td>Toca su fila. Ahí también se <b>edita</b> o se <b>elimina</b>.</td></tr>
+          <tr><td>Buscar compras</td><td>Ícono <b>Filtrar</b> (las rayitas): por proveedor, artículo o fechas.</td></tr>
+          <tr><td>Elegir varias</td><td>Marca sus <b>casillas</b>, como en el correo. La de arriba elige todas.</td></tr>
+          <tr><td>Archivar o eliminar las elegidas</td><td>Íconos <b>Archivar</b> (la caja) o <b>Eliminar</b> (la papelera), junto a Filtrar.</td></tr>
+          <tr><td>Ir al archivo, exportar o cargar</td><td>Menú <b>⋮</b> de la lista.</td></tr>
+        </tbody>
+      </table>
+      <figure>
+        <img src="img/03-lista-compras.png" alt="Lista de compras con dos compras elegidas en color naranja suave y los íconos Eliminar, Archivar y Filtrar" loading="lazy">
+        <figcaption>Dos compras elegidas: aparecen los íconos Eliminar y Archivar.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/04-detalle-compra.png" alt="Ventana con el detalle de una compra en Selectos: fecha, artículos, cantidades y montos" loading="lazy">
+        <figcaption>El detalle de una compra.</figcaption>
+      </figure>
+      <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
+    </section>
+
+    <section id="archivo" aria-labelledby="t-archivo">
+      <h2 id="t-archivo">5. Archivo de compras</h2>
+      <p>Para que la lista cargue rápido, las compras <b>pasan solas al Archivo al cumplir 3 meses</b>. Nada se borra.</p>
+      <ul class="lista">
+        <li>Ábrelo desde el menú <b>⋮ → Ir al archivo</b>.</li>
+        <li>Para traer una compra de vuelta: marca su casilla y toca <b>Devolver a la lista</b>.</li>
+        <li>Exportar siempre incluye también las compras archivadas.</li>
+      </ul>
+      <figure>
+        <img src="img/07-archivo.png" alt="Pantalla Archivo de compras con su nota explicativa y el botón Regresar" loading="lazy">
+        <figcaption>El Archivo de compras.</figcaption>
+      </figure>
+      <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
+    </section>
+
+    <section id="catalogo" aria-labelledby="t-catalogo">
+      <h2 id="t-catalogo">6. Catálogo</h2>
+      <p>Las opciones de los buscadores, en cuatro secciones: <b>Proveedores</b>, <b>Categorías</b>, <b>Artículos</b> y <b>Productos</b>.</p>
+      <ul class="lista">
+        <li><b>Agregar</b>: el botón naranja de cada sección.</li>
+        <li><b>Editar</b> (lápiz): cambiar un nombre lo cambia también en todas las compras.</li>
+        <li><b>Eliminar</b> (papelera): las compras guardadas conservan su texto.</li>
+        <li>En un proveedor se guardan su ubicación, teléfonos y contactos; en una categoría, qué proveedores la venden.</li>
+      </ul>
+      <figure>
+        <img src="img/05-catalogo.png" alt="Catálogo en la sección Artículos, con nombre, categoría, productos y cantidad de compras" loading="lazy">
+        <figcaption>La sección Artículos del Catálogo.</figcaption>
+      </figure>
+      <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
+    </section>
+
+    <section id="exportar" aria-labelledby="t-exportar">
+      <h2 id="t-exportar">7. Exportar y respaldos</h2>
+      <ol class="pasos">
+        <li>En la lista: <b>⋮ → Exportar datos</b>.</li>
+        <li>Elige el rango (<b>Este mes</b>, <b>Mes pasado</b>…) o las fechas.</li>
+        <li>Elige el formato y toca <b>Descargar</b>.</li>
+      </ol>
+      <table>
+        <thead><tr><th scope="col">Formato</th><th scope="col">Para qué</th></tr></thead>
+        <tbody>
+          <tr><td>Excel (.xlsx)</td><td>Revisar los gastos. Trae una hoja con cada artículo y una hoja <b>Resumen</b>: total, IVA y gasto por proveedor, por categoría y por mes.</td></tr>
+          <tr><td>Respaldo (.json)</td><td>Guardar una copia o pasar las compras a otra computadora con <b>⋮ → Cargar datos</b>.</td></tr>
+        </tbody>
+      </table>
+      <figure>
+        <img src="img/06-exportar.png" alt="Pantalla Exportar datos con el rango de fechas, los formatos Excel y Respaldo y el botón Descargar" loading="lazy">
+        <figcaption>Exportar datos.</figcaption>
+      </figure>
+      <p class="nota"><b>Haz un respaldo .json cada semana</b> y guárdalo en una memoria USB. No lo envíes por correo.</p>
+      <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
+    </section>
+
+    <section id="usuarios" aria-labelledby="t-usuarios">
+      <h2 id="t-usuarios">8. Usuarios y contraseñas</h2>
+      <p>Solo el administrador ve el <b>Gestor de usuarios</b>, al pie del menú.</p>
+      <ul class="lista">
+        <li><b>Agregar usuario</b>: nombre, usuario, contraseña y rol. El <b>operador</b> puede todo menos el gestor; el <b>empleado</b>, registrar, ver y corregir compras.</li>
+        <li>Con el <b>lápiz</b> se cambian la contraseña, las pantallas y lo que puede hacer cada persona.</li>
+        <li><b>Editar requisitos</b> define cómo deben ser las contraseñas nuevas.</li>
+      </ul>
+      <p class="nota">Cada persona entra con <b>su propio usuario</b>. Cambia las contraseñas iniciales la primera vez.</p>
+      <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
+    </section>
+
+    <section id="preguntas" aria-labelledby="t-preguntas">
+      <h2 id="t-preguntas">9. Preguntas frecuentes</h2>
+      <details>
+        <summary>¿Necesito internet?</summary>
+        <p>No. Todo funciona y se guarda en esta computadora.</p>
+      </details>
+      <details>
+        <summary>Me equivoqué al guardar una compra. ¿Cómo la corrijo?</summary>
+        <p>En la Lista de compras toca su fila y luego <b>Editar</b>. Si tiene más de 3 meses, búscala en el Archivo.</p>
+      </details>
+      <details>
+        <summary>No encuentro una compra vieja.</summary>
+        <p>Pasó al Archivo: <b>⋮ → Ir al archivo</b>. Para tenerla otra vez en la lista, márcala y toca <b>Devolver a la lista</b>.</p>
+      </details>
+      <details>
+        <summary>El artículo no aparece al escribirlo.</summary>
+        <p>Solo salen los artículos de las categorías que vende ese proveedor. Si es nuevo, sigue escribiendo y llena el formulario que se abre. Para que un proveedor venda una categoría, edítala en el Catálogo.</p>
+      </details>
+      <details>
+        <summary>Salió un aviso de que hay datos sin guardar.</summary>
+        <p>Tienes una compra a medias. <b>Registrar</b> la guarda; <b>Salir sin guardar</b> la descarta.</p>
+      </details>
+      <details>
+        <summary>Escribí mal la contraseña y no me deja entrar.</summary>
+        <p>Tras 5 intentos fallidos hay que esperar 5 minutos. Si la olvidaste, pide al administrador que te ponga una nueva.</p>
+      </details>
+      <details>
+        <summary>Cerré la pestaña sin querer.</summary>
+        <p>El sistema se apagó. Ábrelo otra vez desde el acceso del escritorio; lo guardado no se pierde.</p>
+      </details>
+      <details>
+        <summary>¿Cómo paso los datos a otra computadora?</summary>
+        <p>En la computadora vieja: Exportar → <b>Respaldo (.json)</b>, con el rango <b>Todo</b>. En la nueva: <b>⋮ → Cargar datos</b> y elige ese archivo.</p>
+      </details>
+      <details>
+        <summary>¿Dónde se guardan los datos?</summary>
+        <p>En la carpeta <code>%APPDATA%\De Panas SV</code>. Borrar o reemplazar la carpeta del programa no borra los datos.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer>De Panas SV · Aquí se viene a comer rico</footer>
+</body>
+</html>

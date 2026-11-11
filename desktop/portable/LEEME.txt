@@ -8,6 +8,9 @@ ANTES DE DESCOMPRIMIR (solo si el .zip llegó por correo, WhatsApp o internet)
   Clic derecho al .zip > Propiedades > marca "Desbloquear" > Aceptar.
   Sin ese paso, Windows (Smart App Control) puede no dejar abrir el sistema.
 
+MANUAL DE USO
+  Abre la carpeta "Manual de uso" y luego index.html (se ve en el navegador).
+
 ABRIR
   Doble clic en "Abrir De Panas SV". Se abre el navegador en http://localhost:4510
   La primera vez queda un acceso directo "De Panas SV" en el escritorio: desde ahí

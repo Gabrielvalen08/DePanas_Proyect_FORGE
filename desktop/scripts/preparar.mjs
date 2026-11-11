@@ -4,7 +4,9 @@
  *
  *   De Panas SV/
  *     Abrir De Panas SV.cmd   ← lo que se abre (portable/)
+ *     Abrir De Panas SV (demo).cmd  ← la versión de demostración, con datos de ejemplo (portable/)
  *     LEEME.txt               (portable/)
+ *     Manual de uso/          (docs/manual/: abrir index.html)
  *     node/node.exe           ← el Node.js oficial que corre este script, SIN modificar: su firma
  *                               de OpenJS Foundation es lo que deja pasar a Smart App Control
  *     app/  iniciar.mjs, servidor.mjs, package.json (portable/app/), icono.ico,
@@ -49,6 +51,7 @@ execSync('npm run build', { cwd: join(RAIZ, 'frontend'), stdio: 'inherit' })
 rmSync(join(ESCRITORIO, 'salida'), { recursive: true, force: true })
 mkdirSync(DESTINO, { recursive: true })
 cpSync(join(ESCRITORIO, 'portable'), DESTINO, { recursive: true })
+cpSync(join(RAIZ, 'docs', 'manual'), join(DESTINO, 'Manual de uso'), { recursive: true })
 
 // 3. node.exe tal cual (copiar no cambia la firma) y su licencia
 mkdirSync(join(DESTINO, 'node'))
