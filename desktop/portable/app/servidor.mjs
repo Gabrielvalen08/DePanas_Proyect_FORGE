@@ -6,6 +6,8 @@
  * %APPDATA%\De Panas SV\depanas.db, fuera de esta carpeta: reemplazarla o borrarla no toca
  * los datos. Se apaga con «Apagar De Panas SV» dentro del sistema (POST /api/apagar).
  * Los errores se anotan en %APPDATA%\De Panas SV\registro.log.
+ * Con DEPANAS_DEMO=1 (versión de demostración, ver iniciar.mjs) una base nueva arranca con dos
+ * meses de compras de ejemplo (backend/db/compras-demo.json).
  */
 
 import { appendFileSync, mkdirSync } from 'fs'
@@ -31,6 +33,19 @@ process.on('uncaughtException', error => {
 })
 
 const { crearApp } = await import('./backend/app.js')
+
+// Demostración: la base (en su propia carpeta) arranca con las compras de ejemplo si está vacía
+if (process.env.DEPANAS_DEMO === '1') {
+  const { abrirDB } = await import('./backend/db.js')
+  const { cargarDemo } = await import('./backend/db/demo.js')
+  const db = abrirDB(join(DATOS, 'depanas.db'), join(APP, 'backend', 'db', 'schema.sql'))
+  try {
+    const resultado = cargarDemo(db)
+    if (resultado) registrar(`Demostración: ${resultado.nuevas} compras de ejemplo cargadas`)
+  } finally {
+    db.close()
+  }
+}
 
 const servidores = []
 let apagando = false

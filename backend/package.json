@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "demo:generar": "node scripts/generar-demo.mjs",
+    "demo:base": "node scripts/crear-base-demo.mjs"
   },
   "engines": {
     "node": ">=22.13"

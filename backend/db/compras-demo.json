@@ -1,0 +1,2498 @@
+[
+  {
+    "id": "demo-2026-09-11-selectos",
+    "origen_id": "demo-2026-09-11-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-09-11",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 6,
+        "unidad": "unidad",
+        "monto": 9.02,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 14.03,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Cilantro",
+        "cantidad": 3,
+        "unidad": "unidad",
+        "monto": 1.25,
+        "categoria": "Materia Prima",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Pierna Mechada La Rioja",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 9.59,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Carne molida",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 12.21,
+        "categoria": "Materia Prima",
+        "producto": "Empanadas"
+      },
+      {
+        "material": "Anis",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 1.83,
+        "categoria": "Materia Prima",
+        "producto": "Golfeados"
+      },
+      {
+        "material": "Huevos",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 5.25,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Guayaba",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 4.61,
+        "categoria": "Materia Prima",
+        "producto": "Pan Guayaba"
+      },
+      {
+        "material": "Fosforos",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 0.97,
+        "categoria": "Material Común",
+        "producto": "Todos"
+      },
+      {
+        "material": "Lejía",
+        "cantidad": 1,
+        "unidad": "galon",
+        "monto": 2.42,
+        "categoria": "Limpieza",
+        "producto": ""
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-14-selectos",
+    "origen_id": "demo-2026-09-14-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-09-14",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 8,
+        "unidad": "unidad",
+        "monto": 12.2,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 15.44,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Mantequilla",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 4.57,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Aceite vegetal",
+        "cantidad": 1,
+        "unidad": "galon",
+        "monto": 9.25,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Empanadas"
+      },
+      {
+        "material": "Pierna Mechada La Rioja",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 9.6,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Sazón Completa",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 2.82,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Harina de trigo",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 2.73,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Cachitos, Panadería"
+      },
+      {
+        "material": "Levadura",
+        "cantidad": 3,
+        "unidad": "unidad",
+        "monto": 3.04,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-15-pepsi",
+    "origen_id": "demo-2026-09-15-pepsi",
+    "proveedor": "Pepsi",
+    "fecha": "2026-09-15",
+    "categoria": "",
+    "iva": 6.65,
+    "materiales": [
+      {
+        "material": "Agua",
+        "cantidad": 3,
+        "unidad": "caja",
+        "monto": 10.66,
+        "categoria": "Bebidas",
+        "producto": "Hidratantes"
+      },
+      {
+        "material": "Lipton",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 9.05,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      },
+      {
+        "material": "Gatorade",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 19.85,
+        "categoria": "Bebidas",
+        "producto": "Hidratantes"
+      },
+      {
+        "material": "Pepsi",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 11.6,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-16-selectos",
+    "origen_id": "demo-2026-09-16-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-09-16",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 7,
+        "unidad": "unidad",
+        "monto": 10.71,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5.5,
+        "unidad": "lb",
+        "monto": 16.09,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Jamon Picnic",
+        "cantidad": 1.5,
+        "unidad": "lb",
+        "monto": 6.6,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Pechugas de Pollo",
+        "cantidad": 10,
+        "unidad": "lb",
+        "monto": 28.45,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Jamón de Pavo",
+        "cantidad": 1,
+        "unidad": "lb",
+        "monto": 4.44,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Frijol Negro",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 2.68,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Ajo Chino",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.49,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Perejil",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.07,
+        "categoria": "Materia Prima",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Pierna Mechada La Rioja",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 4.68,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-18-selectos",
+    "origen_id": "demo-2026-09-18-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-09-18",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 7,
+        "unidad": "unidad",
+        "monto": 11.55,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 3.5,
+        "unidad": "lb",
+        "monto": 10.8,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Cilantro",
+        "cantidad": 3,
+        "unidad": "unidad",
+        "monto": 1.25,
+        "categoria": "Materia Prima",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Pierna Mechada La Rioja",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 4.63,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Cebolla",
+        "cantidad": 3,
+        "unidad": "lb",
+        "monto": 2.46,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-19-desechables-diver",
+    "origen_id": "demo-2026-09-19-desechables-diver",
+    "proveedor": "Desechables Diver.",
+    "fecha": "2026-09-19",
+    "categoria": "",
+    "iva": 3.35,
+    "materiales": [
+      {
+        "material": "Tapa Portion Cup Cuadrado",
+        "cantidad": 1,
+        "unidad": "bolsa",
+        "monto": 1.72,
+        "categoria": "Desechables",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Bandeja Bisagrada",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 16.55,
+        "categoria": "Desechables",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Tapadera Cristal",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 7.49,
+        "categoria": "Desechables",
+        "producto": "Todos"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-21-selectos",
+    "origen_id": "demo-2026-09-21-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-09-21",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 10,
+        "unidad": "unidad",
+        "monto": 14.95,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 6,
+        "unidad": "lb",
+        "monto": 18.52,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Carne molida",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 12.88,
+        "categoria": "Materia Prima",
+        "producto": "Empanadas"
+      },
+      {
+        "material": "Azucar",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 2.31,
+        "categoria": "Materia Prima",
+        "producto": "Todos"
+      },
+      {
+        "material": "Guayaba",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 5.29,
+        "categoria": "Materia Prima",
+        "producto": "Pan Guayaba"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-22-pepsi",
+    "origen_id": "demo-2026-09-22-pepsi",
+    "proveedor": "Pepsi",
+    "fecha": "2026-09-22",
+    "categoria": "",
+    "iva": 2.15,
+    "materiales": [
+      {
+        "material": "Agua",
+        "cantidad": 3,
+        "unidad": "caja",
+        "monto": 10.63,
+        "categoria": "Bebidas",
+        "producto": "Hidratantes"
+      },
+      {
+        "material": "Pepsi",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 5.87,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-23-selectos",
+    "origen_id": "demo-2026-09-23-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-09-23",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 12,
+        "unidad": "unidad",
+        "monto": 18.56,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 14.17,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Frijol Negro",
+        "cantidad": 3,
+        "unidad": "lb",
+        "monto": 4.03,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Chile verde",
+        "cantidad": 4,
+        "unidad": "unidad",
+        "monto": 1.34,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Pierna Mechada La Rioja",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 9.16,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Harina de trigo",
+        "cantidad": 9,
+        "unidad": "lb",
+        "monto": 4.91,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Cachitos, Panadería"
+      },
+      {
+        "material": "Pechugas de Pollo",
+        "cantidad": 10,
+        "unidad": "lb",
+        "monto": 27.3,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Jabón de platos",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 3.34,
+        "categoria": "Limpieza",
+        "producto": ""
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-24-mmag",
+    "origen_id": "demo-2026-09-24-mmag",
+    "proveedor": "MMAG",
+    "fecha": "2026-09-24",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Bolsa al Vacio 8*12",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 17.19,
+        "categoria": "Desechables",
+        "producto": "Tequeños"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-25-selectos",
+    "origen_id": "demo-2026-09-25-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-09-25",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 11,
+        "unidad": "unidad",
+        "monto": 16.59,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 14.52,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Manteca",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.59,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Cebolla",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 2.76,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Pechugas de Pollo",
+        "cantidad": 10,
+        "unidad": "lb",
+        "monto": 28.01,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-28-selectos",
+    "origen_id": "demo-2026-09-28-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-09-28",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 8,
+        "unidad": "unidad",
+        "monto": 12.22,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5.5,
+        "unidad": "lb",
+        "monto": 16.42,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Anis",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 1.8,
+        "categoria": "Materia Prima",
+        "producto": "Golfeados"
+      },
+      {
+        "material": "Guayaba",
+        "cantidad": 3,
+        "unidad": "lb",
+        "monto": 3.96,
+        "categoria": "Materia Prima",
+        "producto": "Pan Guayaba"
+      },
+      {
+        "material": "Jamon Picnic",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 8.61,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Aceite vegetal",
+        "cantidad": 1,
+        "unidad": "galon",
+        "monto": 9.04,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Empanadas"
+      },
+      {
+        "material": "Frijol Negro",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 2.87,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Pechugas de Pollo",
+        "cantidad": 8,
+        "unidad": "lb",
+        "monto": 22.75,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-29-pepsi",
+    "origen_id": "demo-2026-09-29-pepsi",
+    "proveedor": "Pepsi",
+    "fecha": "2026-09-29",
+    "categoria": "",
+    "iva": 3.95,
+    "materiales": [
+      {
+        "material": "Pepsi",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 11.52,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      },
+      {
+        "material": "Gatorade",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 9.84,
+        "categoria": "Bebidas",
+        "producto": "Hidratantes"
+      },
+      {
+        "material": "Lipton",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 9.05,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-09-30-selectos",
+    "origen_id": "demo-2026-09-30-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-09-30",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 8,
+        "unidad": "unidad",
+        "monto": 13.04,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 6,
+        "unidad": "lb",
+        "monto": 18.51,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Carne molida",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 14.87,
+        "categoria": "Materia Prima",
+        "producto": "Empanadas"
+      },
+      {
+        "material": "Jamon Picnic",
+        "cantidad": 1.5,
+        "unidad": "lb",
+        "monto": 6.14,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Huevos",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 5.36,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-02-selectos",
+    "origen_id": "demo-2026-10-02-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-02",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 11,
+        "unidad": "unidad",
+        "monto": 17.68,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 4.5,
+        "unidad": "lb",
+        "monto": 12.73,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Pechugas de Pollo",
+        "cantidad": 7,
+        "unidad": "lb",
+        "monto": 19.07,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Aceite vegetal",
+        "cantidad": 1,
+        "unidad": "galon",
+        "monto": 9.17,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Empanadas"
+      },
+      {
+        "material": "Jamon Picnic",
+        "cantidad": 1.5,
+        "unidad": "lb",
+        "monto": 6.28,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Guayaba",
+        "cantidad": 3,
+        "unidad": "lb",
+        "monto": 3.5,
+        "categoria": "Materia Prima",
+        "producto": "Pan Guayaba"
+      },
+      {
+        "material": "Alambrina ExtraFuerte",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 3.14,
+        "categoria": "Material Común",
+        "producto": "Todos"
+      },
+      {
+        "material": "Jabón de platos",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 1.78,
+        "categoria": "Limpieza",
+        "producto": ""
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-03-desechables-diver",
+    "origen_id": "demo-2026-10-03-desechables-diver",
+    "proveedor": "Desechables Diver.",
+    "fecha": "2026-10-03",
+    "categoria": "",
+    "iva": 2.69,
+    "materiales": [
+      {
+        "material": "Portion Cup Cuadrada",
+        "cantidad": 1,
+        "unidad": "bolsa",
+        "monto": 3.66,
+        "categoria": "Desechables",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Tapadera Cristal",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 7.45,
+        "categoria": "Desechables",
+        "producto": "Todos"
+      },
+      {
+        "material": "Bandeja Kraft",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 9.59,
+        "categoria": "Desechables",
+        "producto": "Tequeños"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-05-selectos",
+    "origen_id": "demo-2026-10-05-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-05",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 9,
+        "unidad": "unidad",
+        "monto": 14.21,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 11.6,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Plátanos",
+        "cantidad": 17,
+        "unidad": "unidad",
+        "monto": 5.24,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Huevos",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 5.29,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Mantequilla",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 2.29,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Anis",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 1.94,
+        "categoria": "Materia Prima",
+        "producto": "Golfeados"
+      },
+      {
+        "material": "Jamon Picnic",
+        "cantidad": 1.5,
+        "unidad": "lb",
+        "monto": 6.51,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Tocino La Rioja",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 5.85,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Pechugas de Pollo",
+        "cantidad": 10,
+        "unidad": "lb",
+        "monto": 28.4,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Fosforos",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.1,
+        "categoria": "Material Común",
+        "producto": "Todos"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-06-pepsi",
+    "origen_id": "demo-2026-10-06-pepsi",
+    "proveedor": "Pepsi",
+    "fecha": "2026-10-06",
+    "categoria": "",
+    "iva": 3.34,
+    "materiales": [
+      {
+        "material": "Pepsi",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 5.82,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      },
+      {
+        "material": "Gatorade",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 19.89,
+        "categoria": "Bebidas",
+        "producto": "Hidratantes"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-07-selectos",
+    "origen_id": "demo-2026-10-07-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-07",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 12,
+        "unidad": "unidad",
+        "monto": 18.94,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 4.5,
+        "unidad": "lb",
+        "monto": 12.41,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Manteca",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.28,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Jamon Picnic",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 8.98,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Aceite vegetal",
+        "cantidad": 1,
+        "unidad": "galon",
+        "monto": 8.96,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Empanadas"
+      },
+      {
+        "material": "Harina de trigo",
+        "cantidad": 9,
+        "unidad": "lb",
+        "monto": 5.21,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Cachitos, Panadería"
+      },
+      {
+        "material": "Jamón de Pavo",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 8.67,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Tocino La Rioja",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 5.49,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-08-mmag",
+    "origen_id": "demo-2026-10-08-mmag",
+    "proveedor": "MMAG",
+    "fecha": "2026-10-08",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Gabacha #3 Blanca",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 10.6,
+        "categoria": "Desechables",
+        "producto": "Todos"
+      },
+      {
+        "material": "Bolsa al Vacio 8*12",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 17.31,
+        "categoria": "Desechables",
+        "producto": "Tequeños"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-09-selectos",
+    "origen_id": "demo-2026-10-09-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-09",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 8,
+        "unidad": "unidad",
+        "monto": 12.42,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 4.5,
+        "unidad": "lb",
+        "monto": 12.77,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Ajo Chino",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.62,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Cebolla",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 2.9,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Harina de trigo",
+        "cantidad": 10,
+        "unidad": "lb",
+        "monto": 5.33,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Cachitos, Panadería"
+      },
+      {
+        "material": "Carne molida",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 12.89,
+        "categoria": "Materia Prima",
+        "producto": "Empanadas"
+      },
+      {
+        "material": "Jamón de Pavo",
+        "cantidad": 1.5,
+        "unidad": "lb",
+        "monto": 6.47,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Perejil",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.09,
+        "categoria": "Materia Prima",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Alambrina ExtraFuerte",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 3.15,
+        "categoria": "Material Común",
+        "producto": "Todos"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-12-selectos",
+    "origen_id": "demo-2026-10-12-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-12",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 10,
+        "unidad": "unidad",
+        "monto": 16.08,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 3,
+        "unidad": "lb",
+        "monto": 8.36,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Perejil",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.57,
+        "categoria": "Materia Prima",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Anis",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 1.8,
+        "categoria": "Materia Prima",
+        "producto": "Golfeados"
+      },
+      {
+        "material": "Jamón de Pavo",
+        "cantidad": 1,
+        "unidad": "lb",
+        "monto": 4.46,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Ajo Chino",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.87,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Pierna Mechada La Rioja",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 4.55,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Levadura",
+        "cantidad": 3,
+        "unidad": "unidad",
+        "monto": 2.88,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Mr Músculo Antigrasa",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 2.3,
+        "categoria": "Limpieza",
+        "producto": ""
+      },
+      {
+        "material": "Fosforos",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.49,
+        "categoria": "Material Común",
+        "producto": "Todos"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-13-pepsi",
+    "origen_id": "demo-2026-10-13-pepsi",
+    "proveedor": "Pepsi",
+    "fecha": "2026-10-13",
+    "categoria": "",
+    "iva": 4.23,
+    "materiales": [
+      {
+        "material": "Agua",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 7.11,
+        "categoria": "Bebidas",
+        "producto": "Hidratantes"
+      },
+      {
+        "material": "Pepsi",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 5.8,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      },
+      {
+        "material": "Gatorade",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 19.65,
+        "categoria": "Bebidas",
+        "producto": "Hidratantes"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-14-selectos",
+    "origen_id": "demo-2026-10-14-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-14",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 7,
+        "unidad": "unidad",
+        "monto": 11.42,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 14.83,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Jamón de Pavo",
+        "cantidad": 1,
+        "unidad": "lb",
+        "monto": 4.45,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Ajo Chino",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.69,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Anis",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 1.81,
+        "categoria": "Materia Prima",
+        "producto": "Golfeados"
+      },
+      {
+        "material": "Tocino La Rioja",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 4.27,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Levadura",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.85,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Manteca",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.34,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Carne molida",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 11.81,
+        "categoria": "Materia Prima",
+        "producto": "Empanadas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-16-selectos",
+    "origen_id": "demo-2026-10-16-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-16",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 9,
+        "unidad": "unidad",
+        "monto": 14.13,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 14.65,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Jamon Picnic",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 8.35,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Harina de trigo",
+        "cantidad": 7,
+        "unidad": "lb",
+        "monto": 3.77,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Cachitos, Panadería"
+      },
+      {
+        "material": "Cebolla",
+        "cantidad": 3,
+        "unidad": "lb",
+        "monto": 2.12,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Perejil",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.5,
+        "categoria": "Materia Prima",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Anis",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 1.86,
+        "categoria": "Materia Prima",
+        "producto": "Golfeados"
+      },
+      {
+        "material": "Guayaba",
+        "cantidad": 3,
+        "unidad": "lb",
+        "monto": 3.39,
+        "categoria": "Materia Prima",
+        "producto": "Pan Guayaba"
+      },
+      {
+        "material": "Fosforos",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.5,
+        "categoria": "Material Común",
+        "producto": "Todos"
+      },
+      {
+        "material": "Mr Músculo Antigrasa",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 2.27,
+        "categoria": "Limpieza",
+        "producto": ""
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-17-desechables-diver",
+    "origen_id": "demo-2026-10-17-desechables-diver",
+    "proveedor": "Desechables Diver.",
+    "fecha": "2026-10-17",
+    "categoria": "",
+    "iva": 5.35,
+    "materiales": [
+      {
+        "material": "Tapadera Cristal",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 7.47,
+        "categoria": "Desechables",
+        "producto": "Todos"
+      },
+      {
+        "material": "Bandeja Bisagrada",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 16.86,
+        "categoria": "Desechables",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Bandeja Kraft",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 9.57,
+        "categoria": "Desechables",
+        "producto": "Tequeños"
+      },
+      {
+        "material": "Tapa Portion Cup Cuadrado",
+        "cantidad": 2,
+        "unidad": "bolsa",
+        "monto": 3.53,
+        "categoria": "Desechables",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Portion Cup Cuadrada",
+        "cantidad": 1,
+        "unidad": "bolsa",
+        "monto": 3.73,
+        "categoria": "Desechables",
+        "producto": "Salsa"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-19-selectos",
+    "origen_id": "demo-2026-10-19-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-19",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 11,
+        "unidad": "unidad",
+        "monto": 17.03,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 4.5,
+        "unidad": "lb",
+        "monto": 13.2,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Jamon Picnic",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 8.84,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Sazón Completa",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 5.69,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Aceite vegetal",
+        "cantidad": 1,
+        "unidad": "galon",
+        "monto": 9.02,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Empanadas"
+      },
+      {
+        "material": "Pierna Mechada La Rioja",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 9.68,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Tocino La Rioja",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 5.87,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-20-pepsi",
+    "origen_id": "demo-2026-10-20-pepsi",
+    "proveedor": "Pepsi",
+    "fecha": "2026-10-20",
+    "categoria": "",
+    "iva": 1.93,
+    "materiales": [
+      {
+        "material": "Pepsi",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 5.82,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      },
+      {
+        "material": "Lipton",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 8.99,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-21-selectos",
+    "origen_id": "demo-2026-10-21-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-21",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 8,
+        "unidad": "unidad",
+        "monto": 12.27,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 11.89,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Sazón Completa",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 2.78,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Ajo Chino",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.58,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Tocino La Rioja",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 3.2,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Cilantro",
+        "cantidad": 3,
+        "unidad": "unidad",
+        "monto": 1.54,
+        "categoria": "Materia Prima",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Aceite vegetal",
+        "cantidad": 1,
+        "unidad": "galon",
+        "monto": 8.76,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Empanadas"
+      },
+      {
+        "material": "Guayaba",
+        "cantidad": 3,
+        "unidad": "lb",
+        "monto": 3.38,
+        "categoria": "Materia Prima",
+        "producto": "Pan Guayaba"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-22-mmag",
+    "origen_id": "demo-2026-10-22-mmag",
+    "proveedor": "MMAG",
+    "fecha": "2026-10-22",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Bolsa al Vacio 8*12",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 17.28,
+        "categoria": "Desechables",
+        "producto": "Tequeños"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-23-selectos",
+    "origen_id": "demo-2026-10-23-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-23",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 11,
+        "unidad": "unidad",
+        "monto": 17.98,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 14.34,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Pechugas de Pollo",
+        "cantidad": 10,
+        "unidad": "lb",
+        "monto": 27.58,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Huevos",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 5.18,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Jamon Picnic",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 8.59,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Jamón de Pavo",
+        "cantidad": 1.5,
+        "unidad": "lb",
+        "monto": 6.83,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Ajo Chino",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.31,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Plátanos",
+        "cantidad": 17,
+        "unidad": "unidad",
+        "monto": 5.85,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Perejil",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.18,
+        "categoria": "Materia Prima",
+        "producto": "Salsa"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-26-selectos",
+    "origen_id": "demo-2026-10-26-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-26",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 11,
+        "unidad": "unidad",
+        "monto": 17.89,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5.5,
+        "unidad": "lb",
+        "monto": 16.23,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Jamón de Pavo",
+        "cantidad": 1.5,
+        "unidad": "lb",
+        "monto": 6.52,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Pierna Mechada La Rioja",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 9.23,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Perejil",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.59,
+        "categoria": "Materia Prima",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Aceite vegetal",
+        "cantidad": 1,
+        "unidad": "galon",
+        "monto": 9.31,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Empanadas"
+      },
+      {
+        "material": "Carne molida",
+        "cantidad": 3,
+        "unidad": "lb",
+        "monto": 9.54,
+        "categoria": "Materia Prima",
+        "producto": "Empanadas"
+      },
+      {
+        "material": "Chile verde",
+        "cantidad": 4,
+        "unidad": "unidad",
+        "monto": 1.05,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-27-pepsi",
+    "origen_id": "demo-2026-10-27-pepsi",
+    "proveedor": "Pepsi",
+    "fecha": "2026-10-27",
+    "categoria": "",
+    "iva": 3.33,
+    "materiales": [
+      {
+        "material": "Pepsi",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 5.86,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      },
+      {
+        "material": "Agua",
+        "cantidad": 3,
+        "unidad": "caja",
+        "monto": 10.79,
+        "categoria": "Bebidas",
+        "producto": "Hidratantes"
+      },
+      {
+        "material": "Lipton",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 8.97,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-28-selectos",
+    "origen_id": "demo-2026-10-28-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-28",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 9,
+        "unidad": "unidad",
+        "monto": 14.75,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 14.82,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Mantequilla",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 2.25,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Chile verde",
+        "cantidad": 4,
+        "unidad": "unidad",
+        "monto": 1.37,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Azucar",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 4.55,
+        "categoria": "Materia Prima",
+        "producto": "Todos"
+      },
+      {
+        "material": "Frijol Negro",
+        "cantidad": 3,
+        "unidad": "lb",
+        "monto": 4.18,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Perejil",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.09,
+        "categoria": "Materia Prima",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Pechugas de Pollo",
+        "cantidad": 12,
+        "unidad": "lb",
+        "monto": 33.8,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Tocino La Rioja",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 3.33,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-30-selectos",
+    "origen_id": "demo-2026-10-30-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-10-30",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 8,
+        "unidad": "unidad",
+        "monto": 13.04,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 4.5,
+        "unidad": "lb",
+        "monto": 13.43,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Carne molida",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 12.19,
+        "categoria": "Materia Prima",
+        "producto": "Empanadas"
+      },
+      {
+        "material": "Manteca",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.65,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Anis",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 1.85,
+        "categoria": "Materia Prima",
+        "producto": "Golfeados"
+      },
+      {
+        "material": "Levadura",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.92,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Tocino La Rioja",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 5.52,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Ajo Chino",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.68,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Guayaba",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 2.56,
+        "categoria": "Materia Prima",
+        "producto": "Pan Guayaba"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-10-31-desechables-diver",
+    "origen_id": "demo-2026-10-31-desechables-diver",
+    "proveedor": "Desechables Diver.",
+    "fecha": "2026-10-31",
+    "categoria": "",
+    "iva": 5.84,
+    "materiales": [
+      {
+        "material": "Bandeja Kraft",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 9.76,
+        "categoria": "Desechables",
+        "producto": "Tequeños"
+      },
+      {
+        "material": "Portion Cup Cuadrada",
+        "cantidad": 2,
+        "unidad": "bolsa",
+        "monto": 7.4,
+        "categoria": "Desechables",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Tapadera Cristal",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 7.5,
+        "categoria": "Desechables",
+        "producto": "Todos"
+      },
+      {
+        "material": "Bandeja Bisagrada",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 16.72,
+        "categoria": "Desechables",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Tapa Portion Cup Cuadrado",
+        "cantidad": 2,
+        "unidad": "bolsa",
+        "monto": 3.54,
+        "categoria": "Desechables",
+        "producto": "Salsa"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-11-02-selectos",
+    "origen_id": "demo-2026-11-02-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-11-02",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 10,
+        "unidad": "unidad",
+        "monto": 16.03,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 14.56,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Sazón Completa",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 5.73,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Pierna Mechada La Rioja",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 9.4,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Pechugas de Pollo",
+        "cantidad": 10,
+        "unidad": "lb",
+        "monto": 27.34,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-11-03-pepsi",
+    "origen_id": "demo-2026-11-03-pepsi",
+    "proveedor": "Pepsi",
+    "fecha": "2026-11-03",
+    "categoria": "",
+    "iva": 2.45,
+    "materiales": [
+      {
+        "material": "Agua",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 7.18,
+        "categoria": "Bebidas",
+        "producto": "Hidratantes"
+      },
+      {
+        "material": "Pepsi",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 11.64,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-11-04-selectos",
+    "origen_id": "demo-2026-11-04-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-11-04",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 10,
+        "unidad": "unidad",
+        "monto": 16.02,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 5,
+        "unidad": "lb",
+        "monto": 14.46,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Pechugas de Pollo",
+        "cantidad": 6,
+        "unidad": "lb",
+        "monto": 16.97,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Pierna Mechada La Rioja",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 4.8,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Aceite vegetal",
+        "cantidad": 1,
+        "unidad": "galon",
+        "monto": 9.07,
+        "categoria": "Materia Prima",
+        "producto": "Tequeños, Empanadas"
+      },
+      {
+        "material": "Guayaba",
+        "cantidad": 3,
+        "unidad": "lb",
+        "monto": 3.79,
+        "categoria": "Materia Prima",
+        "producto": "Pan Guayaba"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-11-05-mmag",
+    "origen_id": "demo-2026-11-05-mmag",
+    "proveedor": "MMAG",
+    "fecha": "2026-11-05",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Bolsa al Vacio 8*12",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 17.43,
+        "categoria": "Desechables",
+        "producto": "Tequeños"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-11-06-selectos",
+    "origen_id": "demo-2026-11-06-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-11-06",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 8,
+        "unidad": "unidad",
+        "monto": 12.63,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 6,
+        "unidad": "lb",
+        "monto": 16.51,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Jamon Picnic",
+        "cantidad": 1,
+        "unidad": "lb",
+        "monto": 4.32,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Levadura",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 1.05,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Guayaba",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 2.35,
+        "categoria": "Materia Prima",
+        "producto": "Pan Guayaba"
+      },
+      {
+        "material": "Jabón de platos",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 3.69,
+        "categoria": "Limpieza",
+        "producto": ""
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-11-09-selectos",
+    "origen_id": "demo-2026-11-09-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-11-09",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 7,
+        "unidad": "unidad",
+        "monto": 11.38,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 4,
+        "unidad": "lb",
+        "monto": 12.03,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Plátanos",
+        "cantidad": 16,
+        "unidad": "unidad",
+        "monto": 4.78,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Anis",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 1.9,
+        "categoria": "Materia Prima",
+        "producto": "Golfeados"
+      },
+      {
+        "material": "Mantequilla",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 4.57,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Tocino La Rioja",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 2.76,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Ajo Chino",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 1.28,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Cebolla",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 1.68,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-11-10-pepsi",
+    "origen_id": "demo-2026-11-10-pepsi",
+    "proveedor": "Pepsi",
+    "fecha": "2026-11-10",
+    "categoria": "",
+    "iva": 6.21,
+    "materiales": [
+      {
+        "material": "Agua",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 7.19,
+        "categoria": "Bebidas",
+        "producto": "Hidratantes"
+      },
+      {
+        "material": "Gatorade",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 19.89,
+        "categoria": "Bebidas",
+        "producto": "Hidratantes"
+      },
+      {
+        "material": "Pepsi",
+        "cantidad": 2,
+        "unidad": "caja",
+        "monto": 11.74,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      },
+      {
+        "material": "Lipton",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 8.94,
+        "categoria": "Bebidas",
+        "producto": "Gaseosas"
+      }
+    ]
+  },
+  {
+    "id": "demo-2026-11-11-selectos",
+    "origen_id": "demo-2026-11-11-selectos",
+    "proveedor": "Selectos",
+    "fecha": "2026-11-11",
+    "categoria": "",
+    "iva": 0,
+    "materiales": [
+      {
+        "material": "Harina PAN",
+        "cantidad": 8,
+        "unidad": "unidad",
+        "monto": 12.51,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas"
+      },
+      {
+        "material": "Queso duro blando",
+        "cantidad": 4.5,
+        "unidad": "lb",
+        "monto": 12.95,
+        "categoria": "Materia Prima",
+        "producto": "Arepas, Empanadas, Tequeños"
+      },
+      {
+        "material": "Ajo Chino",
+        "cantidad": 1,
+        "unidad": "unidad",
+        "monto": 0.83,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Cilantro",
+        "cantidad": 3,
+        "unidad": "unidad",
+        "monto": 1.61,
+        "categoria": "Materia Prima",
+        "producto": "Salsa"
+      },
+      {
+        "material": "Tocino La Rioja",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 7.23,
+        "categoria": "Materia Prima",
+        "producto": "Cachitos"
+      },
+      {
+        "material": "Frijol Negro",
+        "cantidad": 2,
+        "unidad": "lb",
+        "monto": 2.7,
+        "categoria": "Materia Prima",
+        "producto": "Arepas/Empanadas"
+      },
+      {
+        "material": "Huevos",
+        "cantidad": 1,
+        "unidad": "caja",
+        "monto": 5.4,
+        "categoria": "Materia Prima",
+        "producto": "Panadería"
+      },
+      {
+        "material": "Lejía",
+        "cantidad": 1,
+        "unidad": "galon",
+        "monto": 2.45,
+        "categoria": "Limpieza",
+        "producto": ""
+      },
+      {
+        "material": "Alambrina ExtraFuerte",
+        "cantidad": 2,
+        "unidad": "unidad",
+        "monto": 3.25,
+        "categoria": "Material Común",
+        "producto": "Todos"
+      }
+    ]
+  }
+]

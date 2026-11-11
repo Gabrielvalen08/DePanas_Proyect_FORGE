@@ -55,6 +55,16 @@ La primera pantalla pide usuario y contraseña:
 - La sesión dura mientras la pestaña esté abierta (hasta 8 horas sin uso). **Cada pestaña nueva pide entrar.**
 - **Si vas a salir con datos sin guardar, el sistema avisa:** puedes elegir **«Registrar»** o **«Salir sin guardar»**.
 
+### Versión de demostración
+
+Para conocer el sistema sin tocar los datos reales, abre **«Abrir De Panas SV (demo)»**:
+
+- Se abre aparte, en http://localhost:4511.
+- Trae dos meses de compras de ejemplo, del 11 de septiembre al 11 de noviembre de 2026.
+- Guarda todo en su propia carpeta, `%APPDATA%\De Panas SV\demo`.
+
+Para empezar la demostración de cero, apágala y borra esa carpeta.
+
 ## 4. Dónde quedan los datos
 
 Todo se guarda en un solo archivo, **fuera** de la carpeta del `.zip`:

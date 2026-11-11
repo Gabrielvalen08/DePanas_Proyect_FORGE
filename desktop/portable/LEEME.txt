@@ -21,12 +21,18 @@ APAGAR
 
 USUARIOS INICIALES (cámbialos en el Gestor de usuarios)
   Cesar_01 / DePanas#2026   (administrador)
-  Marta_02 / 5678           (operadora)
+  Marta_02 / DePanas#2026   (operadora)
 
 DATOS
   Se guardan en  %APPDATA%\De Panas SV\depanas.db  (fuera de esta carpeta).
   Mover, reemplazar o borrar esta carpeta NO borra los datos.
   Respaldo: en Lista de compras, menú ... > Exportar datos > Respaldo (.json).
+
+DEMOSTRACIÓN
+  Doble clic en "Abrir De Panas SV (demo)". Se abre aparte, en http://localhost:4511,
+  con dos meses de compras de ejemplo para conocer el sistema. Usa su propia carpeta
+  (%APPDATA%\De Panas SV\demo): lo que hagas ahí NUNCA toca los datos reales.
+  Para empezar la demostración de cero, apágala y borra esa carpeta demo.
 
 VERSIÓN NUEVA
   Apaga el sistema, borra esta carpeta y descomprime la nueva en el mismo lugar.
