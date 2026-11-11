@@ -82,6 +82,15 @@
   padding-top: 0.15em;
 }
 
+.detalle {
+  padding-top: 0.15em;
+  font-family: var(--fuente-titulos);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
 .accion {
   /* Si no cabe junto al título baja de línea; si tampoco cabe ahí, sus botones se acomodan
      en varias líneas en vez de salirse de la tarjeta (que recorta lo que sobresale) */

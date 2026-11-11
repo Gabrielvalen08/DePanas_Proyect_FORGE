@@ -1,4 +1,4 @@
-import { BookOpen, Download, Upload, PlusCircle, ShoppingCart, UsersRound } from 'lucide-react'
+import { Archive, BookOpen, Download, Upload, PlusCircle, ShoppingCart, UsersRound } from 'lucide-react'
 
 // Lista única de navegación: la usan Sidebar, BarraInferior y App (títulos).
 // etiquetaCorta se usa en la barra inferior, donde el espacio es menor.
@@ -11,6 +11,8 @@ export const itemsNavegacion = [
   { a: '/catalogo', Icono: BookOpen, etiqueta: 'Catálogo', etiquetaCorta: 'Catálogo', titulo: 'Catálogo', enBarra: true },
   { a: '/exportar', Icono: Download, etiqueta: 'Exportar datos', etiquetaCorta: 'Exportar', titulo: 'Exportar datos', oculto: true },
   { a: '/cargar', Icono: Upload, etiqueta: 'Cargar datos', etiquetaCorta: 'Cargar', titulo: 'Cargar datos', oculto: true },
+  // Se abre desde el ⋮ de Lista de compras; su permiso es el de Lista de compras
+  { a: '/compras/archivo', Icono: Archive, etiqueta: 'Archivo de compras', etiquetaCorta: 'Archivo', titulo: 'Archivo de compras', oculto: true },
 ]
 
 // Va aparte, al pie del menú y justo arriba de "Cerrar sesión". Solo lo ve el administrador (ver utils/permisos.js)

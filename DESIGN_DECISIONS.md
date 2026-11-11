@@ -74,6 +74,7 @@ Transparencias en uso (siempre de colores de la paleta): sombra del header `rgb(
 | `--color-on-danger` | Blanco | Texto sobre vinotinto |
 | `--color-success` | Verde Fresco | Solo fondo, tinte o ícono; el texto va en Ávila |
 | `--color-focus` | Rojo Vinotinto | Anillo de foco de 2 px con 2 px de separación |
+| `--color-seleccion` | Naranja al 13 % sobre blanco | Fila elegida con su casilla |
 
 Los componentes usan solo estos roles. Los tintes (`--tinte-*`) y el Vinotinto de la sombra de marca son las únicas excepciones permitidas a la capa 1.
 
@@ -249,7 +250,9 @@ Todos viven en `frontend/src/components/common/` y toda pantalla se arma con ell
 - Fondo blanco dentro de una tarjeta; encabezado en `--color-surface-soft`, Josefin 600 en MAYÚSCULAS a 0.875rem; divisores de 1 px.
 - **Un solo alto de fila en todos los módulos** (escritorio): al menos 52 px (`--tabla-alto-fila`), celdas con 8 px arriba y abajo (`--tabla-celda-y`) y 16 px a los lados (`--tabla-celda-x`), encabezado de ~39 px. Los controles dentro de una fila (campos de Agregar compra, lápiz y papelera) bajan a 36 px (`--tabla-alto-control`) para caber. Es el punto medio entre ver muchas filas y que no se sientan apretadas como en Excel.
 - Montos a la derecha, en negrita, con dos decimales y `$`.
-- Hover visible en filas que se pueden abrir; fila elegida con la franja naranja.
+- Hover visible en filas que se pueden abrir.
+- **Elegir varias (como en el correo):** casilla a la izquierda de cada fila (Naranja Sazón con `accent-color`, zona táctil de 44 px) y «Elegir todas» en el encabezado, que queda a medias si hay una parte elegida. La fila elegida cambia a `--color-seleccion` (naranja al 13 % sobre blanco) con la franja naranja a la izquierda. En el teléfono, «Elegir todas» va como barra sobre las tarjetas.
+- **Acciones de una tabla:** íconos con borde de botón secundario (44 × 44 px, `aria-label` y `title`), como Filtrar; Eliminar y Archivar aparecen solo con algo elegido. La acción principal (p. ej. «Agregar compra») es la única con texto. La cuenta («12 compras», «2 de 12 elegidas») va junto al título.
 - En teléfono, cada fila se vuelve una tarjeta con etiqueta y valor.
 
 **Formularios (`Campo`, `Selector`, `AutocompleteInput`)**

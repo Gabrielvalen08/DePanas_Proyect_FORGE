@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import PantallaMaestra from './PantallaMaestra'
-import { COMPRA, LISTA_COMPRAS, IVA } from '../utils/mensajes'
+import { ARCHIVO, COMPRA, LISTA_COMPRAS, IVA } from '../utils/mensajes'
+import { fetchListas, guardarLista } from '../services/api'
 
 function renderizar(props = {}) {
   return render(
@@ -32,15 +33,17 @@ describe('PantallaMaestra', () => {
   it('la primera columna es la fecha, se dice «Costos» y las compras van de la más reciente a la más vieja', async () => {
     renderizar()
     const tabla = await screen.findByRole('table', { name: /listas de compra/i })
-    const encabezados = within(tabla).getAllByRole('columnheader').slice(0, 4).map(th => th.textContent)
+    // La primera columna es la casilla para elegir (como en el correo); después, la fecha
+    const encabezados = within(tabla).getAllByRole('columnheader').slice(1, 5).map(th => th.textContent)
     expect(encabezados).toEqual(['Fecha', 'Proveedor', 'Artículos', 'Costos'])
+    expect(within(tabla).getByRole('checkbox', { name: LISTA_COMPRAS.elegirTodas })).toBeInTheDocument()
 
-    const fechas = within(tabla).getAllByRole('row').slice(1).map(fila => within(fila).getAllByRole('cell')[0].textContent)
+    const fechas = within(tabla).getAllByRole('row').slice(1).map(fila => within(fila).getAllByRole('cell')[1].textContent)
     const iso = fechas.map(f => f.split('/').reverse().join('-'))
     expect(iso).toEqual([...iso].sort().reverse())
   })
 
-  it('Filtrar y Agregar compra van en el encabezado de la tabla, y el menú ⋮ abre Exportar y Cargar datos', async () => {
+  it('Filtrar (solo ícono) y Agregar compra (con texto) van en el encabezado; el ⋮ abre el archivo, archivar, Exportar y Cargar', async () => {
     const usuario = userEvent.setup()
     renderizar()
     const tarjeta = (await screen.findByRole('heading', { name: LISTA_COMPRAS.titulo })).closest('section')
@@ -51,9 +54,91 @@ describe('PantallaMaestra', () => {
     expect(menu).toHaveAttribute('aria-haspopup', 'menu')
     await usuario.click(menu)
     const opciones = screen.getAllByRole('menuitem')
-    expect(opciones.map(o => o.textContent)).toEqual([LISTA_COMPRAS.exportar, LISTA_COMPRAS.cargar])
-    expect(opciones[0]).toHaveAttribute('href', '/exportar')
-    expect(opciones[1]).toHaveAttribute('href', '/cargar')
+    expect(opciones.map(o => o.textContent)).toEqual([
+      LISTA_COMPRAS.irArchivo, LISTA_COMPRAS.archivarCompras, LISTA_COMPRAS.exportar, LISTA_COMPRAS.cargar,
+    ])
+    expect(opciones[0]).toHaveAttribute('href', '/compras/archivo')
+    expect(opciones[2]).toHaveAttribute('href', '/exportar')
+    expect(opciones[3]).toHaveAttribute('href', '/cargar')
+  })
+
+  it('como en el correo: se eligen compras con su casilla, la fila cambia de color y aparecen Eliminar y Archivar', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const tarjeta = (await screen.findByRole('heading', { name: LISTA_COMPRAS.titulo })).closest('section')
+    await within(tarjeta).findByText(LISTA_COMPRAS.cuenta(5))
+    expect(within(tarjeta).queryByRole('button', { name: LISTA_COMPRAS.archivarElegidas(1) })).not.toBeInTheDocument()
+
+    const casilla = screen.getByRole('checkbox', { name: /Elegir la compra en Súper Selectos del 29\/09\/2026/ })
+    await usuario.click(casilla)
+    expect(casilla.closest('tr').className).toMatch(/filaElegida/)
+    expect(within(tarjeta).getByText(LISTA_COMPRAS.elegidas(1, 5))).toBeInTheDocument()
+    expect(within(tarjeta).getByRole('button', { name: LISTA_COMPRAS.eliminarElegidas(1) })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument() // marcar no abre el detalle
+
+    // La de «todas» queda a medias, y al tocarla elige todas
+    const todas = screen.getByRole('checkbox', { name: LISTA_COMPRAS.elegirTodas })
+    expect(todas.indeterminate).toBe(true)
+    await usuario.click(todas)
+    expect(within(tarjeta).getByText(LISTA_COMPRAS.elegidas(5, 5))).toBeInTheDocument()
+    await usuario.click(todas)
+    expect(within(tarjeta).getByText(LISTA_COMPRAS.cuenta(5))).toBeInTheDocument()
+  })
+
+  it('archivar las elegidas pide confirmar, las saca de la lista y quedan en el Archivo', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await usuario.click(await screen.findByRole('checkbox', { name: /Elegir la compra en Súper Selectos del 29\/09\/2026/ }))
+    await usuario.click(screen.getByRole('button', { name: LISTA_COMPRAS.archivarElegidas(1) }))
+    await usuario.click(screen.getByRole('button', { name: LISTA_COMPRAS.confirmarArchivar.confirmar }))
+
+    expect(await screen.findByText(LISTA_COMPRAS.archivadas(1))).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('button', { name: LISTA_SELECTOS })).not.toBeInTheDocument())
+    expect((await fetchListas({ archivo: 'archivadas' })).map(l => l.proveedor)).toContain('Súper Selectos')
+  })
+
+  it('eliminar varias pide confirmar (acción peligrosa) y las borra', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await usuario.click(await screen.findByRole('checkbox', { name: LISTA_COMPRAS.elegirTodas }))
+    await usuario.click(screen.getByRole('button', { name: LISTA_COMPRAS.eliminarElegidas(5) }))
+    expect(screen.getByRole('alertdialog', { name: LISTA_COMPRAS.confirmarEliminarVarias.titulo(5) })).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: LISTA_COMPRAS.confirmarEliminarVarias.confirmar }))
+    expect(await screen.findByText(LISTA_COMPRAS.eliminadas(5))).toBeInTheDocument()
+    expect(await fetchListas()).toHaveLength(0)
+  })
+
+  it('«Archivar compras» del ⋮ sin nada elegido explica cómo elegir', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await usuario.click(await screen.findByRole('button', { name: LISTA_COMPRAS.masAcciones }))
+    await usuario.click(screen.getByRole('menuitem', { name: LISTA_COMPRAS.archivarCompras }))
+    expect(screen.getByText(LISTA_COMPRAS.elegirParaArchivar)).toBeInTheDocument()
+    await usuario.click(await screen.findByRole('checkbox', { name: /Elegir la compra en Súper Selectos del 29\/09\/2026/ }))
+    expect(screen.queryByText(LISTA_COMPRAS.elegirParaArchivar)).not.toBeInTheDocument()
+  })
+
+  it('sin permiso para eliminar ni archivar no hay casillas', async () => {
+    renderizar({ puedeEliminar: false, puedeArchivar: false })
+    await screen.findByRole('button', { name: LISTA_SELECTOS })
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  it('el Archivo muestra las compras de más de 3 meses y las devuelve a la lista', async () => {
+    await guardarLista({ proveedor: 'Pepsi', fecha: '2020-01-15', productos: [{ producto: 'Agua', cantidad: 1, unidad: 'caja', precio: 5 }] })
+    const usuario = userEvent.setup()
+    renderizar({ vista: 'archivadas' })
+    const tarjeta = (await screen.findByRole('heading', { name: ARCHIVO.titulo })).closest('section')
+    expect(screen.getByText(ARCHIVO.nota)).toBeInTheDocument()
+    expect(within(tarjeta).queryByRole('link', { name: LISTA_COMPRAS.agregar })).not.toBeInTheDocument()
+    await within(tarjeta).findByText(LISTA_COMPRAS.cuenta(1))
+
+    await usuario.click(screen.getByRole('checkbox', { name: /Elegir la compra en Pepsi/ }))
+    await usuario.click(screen.getByRole('button', { name: ARCHIVO.devolverElegidas(1) }))
+    await usuario.click(screen.getByRole('button', { name: ARCHIVO.confirmarDevolver.confirmar }))
+    expect(await screen.findByText(ARCHIVO.devueltas(1))).toBeInTheDocument()
+    expect(await screen.findByText(ARCHIVO.vacio.titulo)).toBeInTheDocument()
+    expect((await fetchListas({ archivo: 'activas' })).map(l => l.proveedor)).toContain('Pepsi')
   })
 
   it('al abrir una lista muestra sus productos y el total', async () => {
