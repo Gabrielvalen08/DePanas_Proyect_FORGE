@@ -48,10 +48,6 @@
   color: var(--color-text-muted);
 }
 
-.aviso:not(:empty) {
-  padding: var(--space-3) var(--tabla-celda-x) 0;
-}
-
 /* ---------- Casillas (como en el correo) ---------- */
 /* «Elegir todas» con texto solo en el teléfono (ahí no se ven los encabezados de columna) */
 .textoTodas {

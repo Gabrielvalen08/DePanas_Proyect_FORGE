@@ -43,7 +43,7 @@ describe('PantallaMaestra', () => {
     expect(iso).toEqual([...iso].sort().reverse())
   })
 
-  it('Filtrar (solo ícono) y Agregar compra (con texto) van en el encabezado; el ⋮ abre el archivo, archivar, Exportar y Cargar', async () => {
+  it('Filtrar (solo ícono) y Agregar compra (con texto) van en el encabezado; el ⋮ abre el archivo, Exportar y Cargar', async () => {
     const usuario = userEvent.setup()
     renderizar()
     const tarjeta = (await screen.findByRole('heading', { name: LISTA_COMPRAS.titulo })).closest('section')
@@ -54,12 +54,10 @@ describe('PantallaMaestra', () => {
     expect(menu).toHaveAttribute('aria-haspopup', 'menu')
     await usuario.click(menu)
     const opciones = screen.getAllByRole('menuitem')
-    expect(opciones.map(o => o.textContent)).toEqual([
-      LISTA_COMPRAS.irArchivo, LISTA_COMPRAS.archivarCompras, LISTA_COMPRAS.exportar, LISTA_COMPRAS.cargar,
-    ])
+    expect(opciones.map(o => o.textContent)).toEqual([LISTA_COMPRAS.irArchivo, LISTA_COMPRAS.exportar, LISTA_COMPRAS.cargar])
     expect(opciones[0]).toHaveAttribute('href', '/compras/archivo')
-    expect(opciones[2]).toHaveAttribute('href', '/exportar')
-    expect(opciones[3]).toHaveAttribute('href', '/cargar')
+    expect(opciones[1]).toHaveAttribute('href', '/exportar')
+    expect(opciones[2]).toHaveAttribute('href', '/cargar')
   })
 
   it('como en el correo: se eligen compras con su casilla, la fila cambia de color y aparecen Eliminar y Archivar', async () => {
@@ -106,16 +104,6 @@ describe('PantallaMaestra', () => {
     await usuario.click(screen.getByRole('button', { name: LISTA_COMPRAS.confirmarEliminarVarias.confirmar }))
     expect(await screen.findByText(LISTA_COMPRAS.eliminadas(5))).toBeInTheDocument()
     expect(await fetchListas()).toHaveLength(0)
-  })
-
-  it('«Archivar compras» del ⋮ sin nada elegido explica cómo elegir', async () => {
-    const usuario = userEvent.setup()
-    renderizar()
-    await usuario.click(await screen.findByRole('button', { name: LISTA_COMPRAS.masAcciones }))
-    await usuario.click(screen.getByRole('menuitem', { name: LISTA_COMPRAS.archivarCompras }))
-    expect(screen.getByText(LISTA_COMPRAS.elegirParaArchivar)).toBeInTheDocument()
-    await usuario.click(await screen.findByRole('checkbox', { name: /Elegir la compra en Súper Selectos del 29\/09\/2026/ }))
-    expect(screen.queryByText(LISTA_COMPRAS.elegirParaArchivar)).not.toBeInTheDocument()
   })
 
   it('sin permiso para eliminar ni archivar no hay casillas', async () => {

@@ -5,7 +5,7 @@ import {
 import Header from '../components/Header'
 import FiltrosEnLinea, { FILTROS_VACIOS, contarFiltrosActivos } from '../components/FiltrosEnLinea'
 import DetalleLista from '../components/DetalleLista'
-import { AvisoDestacado, Boton, ConfirmDialog, EstadoVacio, Insignia, MenuAcciones, Tarjeta } from '../components/common'
+import { Boton, ConfirmDialog, EstadoVacio, Insignia, MenuAcciones, Tarjeta } from '../components/common'
 import { archivarListas, eliminarListas, fetchListas, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { useRegresar } from '../hooks/useRegresar'
@@ -21,8 +21,8 @@ import estilos from './PantallaMaestra.module.css'
  * (shared/archivo.js) para que siempre cargue rápido. Como en el correo, cada compra tiene una
  * casilla a la izquierda y la del encabezado elige todas; la fila elegida cambia de color. Con
  * algo elegido aparecen los íconos Eliminar y Archivar (en el Archivo, Devolver a la lista),
- * junto a Filtrar. Solo «Agregar compra» lleva texto. El ⋮ lleva Ir al archivo, Archivar
- * compras, Exportar y Cargar. Un clic en la fila abre el detalle (DetalleLista).
+ * junto a Filtrar. Solo «Agregar compra» lleva texto. El ⋮ lleva Ir al archivo, Exportar y
+ * Cargar. Un clic en la fila abre el detalle (DetalleLista).
  *
  * Props: vista ('activas' | 'archivadas'), puedeAgregar, puedeExportar, puedeCargar, puedeEditar,
  * puedeEliminar, puedeArchivar, puedeEditarArticulo (según los permisos y funciones del usuario)
@@ -43,7 +43,6 @@ export default function PantallaMaestra({
   const [listaAbierta, setListaAbierta] = useState(null)
   const [elegidas, setElegidas] = useState(() => new Set())
   const [porConfirmar, setPorConfirmar] = useState(null) // 'archivar' | 'devolver' | 'eliminar'
-  const [pedirEleccion, setPedirEleccion] = useState(false) // «Archivar compras» del ⋮ sin nada elegido
   const todasRef = useRef(null)
 
   // Filtra en vivo: mientras llega la respuesta se sigue mostrando la tabla anterior
@@ -90,7 +89,6 @@ export default function PantallaMaestra({
   }, [nElegidas, todasElegidas])
 
   function alternar(id) {
-    setPedirEleccion(false)
     setElegidas(prev => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -100,18 +98,7 @@ export default function PantallaMaestra({
   }
 
   function alternarTodas() {
-    setPedirEleccion(false)
     setElegidas(todasElegidas ? new Set() : new Set((listas ?? []).map(l => String(l.id))))
-  }
-
-  /** «Archivar compras» del ⋮: con algo elegido pide confirmar; si no, explica cómo elegir */
-  function archivarDesdeMenu() {
-    if (nElegidas > 0) {
-      setPorConfirmar('archivar')
-      return
-    }
-    setPedirEleccion(true)
-    todasRef.current?.focus()
   }
 
   async function aplicarLote() {
@@ -302,7 +289,6 @@ export default function PantallaMaestra({
                   etiqueta={LISTA_COMPRAS.masAcciones}
                   opciones={[
                     { etiqueta: LISTA_COMPRAS.irArchivo, icono: <Archive />, a: '/compras/archivo' },
-                    { etiqueta: LISTA_COMPRAS.archivarCompras, icono: <Archive />, onClick: puedeArchivar ? archivarDesdeMenu : undefined },
                     { etiqueta: LISTA_COMPRAS.exportar, icono: <Download />, a: puedeExportar ? '/exportar' : undefined },
                     { etiqueta: LISTA_COMPRAS.cargar, icono: <Upload />, a: puedeCargar ? '/cargar' : undefined },
                   ]}
@@ -315,9 +301,6 @@ export default function PantallaMaestra({
             <FiltrosEnLinea id="panel-filtros" abierto={filtrosAbiertos} filtros={filters} alCambiar={setFilters} />
           </div>
           {enArchivo && <p className={estilos.nota}>{ARCHIVO.nota}</p>}
-          <div className={estilos.aviso}>
-            <AvisoDestacado texto={pedirEleccion && nElegidas === 0 ? LISTA_COMPRAS.elegirParaArchivar : undefined} />
-          </div>
           {contenidoTabla()}
         </Tarjeta>
       </main>

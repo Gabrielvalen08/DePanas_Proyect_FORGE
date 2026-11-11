@@ -106,8 +106,6 @@ export const LISTA_COMPRAS = {
   exportar: 'Exportar datos',
   cargar: 'Cargar datos',
   irArchivo: 'Ir al archivo',
-  archivarCompras: 'Archivar compras',
-  elegirParaArchivar: 'Marca las casillas de las compras que quieres archivar y toca Archivar.',
   // Selección como en el correo: una casilla por compra y una para todas
   elegirTodas: 'Elegir todas las compras',
   todas: 'Elegir todas',
