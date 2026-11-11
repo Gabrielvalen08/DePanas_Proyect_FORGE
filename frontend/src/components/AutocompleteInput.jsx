@@ -50,8 +50,11 @@ export default function AutocompleteInput({
     const lista = ordenarPorCoincidencia(getSuggestions(texto), texto)
     setSugerencias(lista)
     setAbierto(lista.length > 0)
-    // La que más coincide queda marcada, lista para Enter
-    setResaltada(lista.length > 0 ? 0 : -1)
+    // La que más coincide queda marcada, lista para Enter, solo si empieza igual (ella o una de sus
+    // palabras): así un nombre nuevo que solo es parte de otro («Selecto» con «Selectos») no se
+    // cambia por el existente al pulsar Enter
+    const buscado = textoBusqueda(texto.trim())
+    setResaltada(lista.length > 0 && buscado && nivelCoincidencia(lista[0], buscado) <= 2 ? 0 : -1)
   }
 
   /** Lista completa, como al abrir el desplegable de Excel; resalta el valor actual */

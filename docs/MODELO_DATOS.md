@@ -158,7 +158,7 @@ Las reglas de `shared/` se usan **igual** en el backend y en el modo local del f
 
 Una base vieja del cliente debe abrir con el código nuevo sin perder nada. `db.js` revisa al abrir:
 
-- **Columnas nuevas** (`unidad`, `compra_id`, `origen_id`, `compra_categoria`, `compra_iva`, `ficha`…): se agregan si faltan.
+- **Columnas nuevas** (`unidad`, `compra_id`, `origen_id`, `compra_categoria`, `compra_iva`, `ficha`…): se agregan si faltan. Las bases de desarrollo que llegaron a tener `compra_archivo` (el Archivo de compras, que se quitó) la conservan sin uso: las inserciones nombran sus columnas, así que no estorba.
 - **Datos que se completan una vez** (catálogo desde las compras, relación proveedor-categoría): `PRAGMA user_version`.
 - **Cambios de usuarios que corren una vez** (contraseña nueva de Marta si seguía en la anterior): una marca en `ajustes`.
 - **Tabla de usuarios con el CHECK anterior**: se rehace copiando los usuarios.

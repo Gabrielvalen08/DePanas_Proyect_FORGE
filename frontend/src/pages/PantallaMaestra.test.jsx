@@ -136,6 +136,14 @@ describe('PantallaMaestra', () => {
     expect(within(paginas).getByRole('button', { name: LISTA_COMPRAS.siguiente })).toBeDisabled()
     await usuario.click(within(paginas).getByRole('button', { name: LISTA_COMPRAS.anterior }))
     expect(within(paginas).getByText(LISTA_COMPRAS.rango(51, 100, 120))).toBeInTheDocument()
+    expect(within(paginas).getByText(LISTA_COMPRAS.rango(51, 100, 120))).toHaveAttribute('aria-live', 'polite')
+
+    // Elegidas en dos páginas: Eliminar avisa las que no se ven
+    await usuario.click(screen.getByRole('checkbox', { name: /Elegir la compra en Proveedor 51 / }))
+    await usuario.click(within(paginas).getByRole('button', { name: LISTA_COMPRAS.anterior }))
+    await usuario.click(screen.getByRole('checkbox', { name: /Elegir la compra en Proveedor 1 / }))
+    await usuario.click(screen.getByRole('button', { name: LISTA_COMPRAS.eliminarElegidas(2) }))
+    expect(screen.getByRole('alertdialog')).toHaveTextContent(LISTA_COMPRAS.confirmarEliminarVarias.otrasPaginas(1))
   })
 
   it('al abrir una lista muestra sus productos y el total', async () => {

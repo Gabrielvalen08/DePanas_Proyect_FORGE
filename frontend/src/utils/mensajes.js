@@ -116,6 +116,7 @@ export const LISTA_COMPRAS = {
   confirmarEliminarVarias: {
     titulo: n => `¿Eliminamos ${n} ${plural(n, 'compra', 'compras')}?`,
     mensaje: 'Se borrarán con todos sus artículos. Esto no se puede deshacer.',
+    otrasPaginas: n => `Incluye ${n} ${plural(n, 'compra elegida', 'compras elegidas')} en otras páginas.`,
     confirmar: 'Sí, eliminar',
   },
   // Páginas de 50 compras, con flechas arriba como en el correo

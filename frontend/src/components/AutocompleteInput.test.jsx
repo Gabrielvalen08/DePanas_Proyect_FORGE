@@ -61,8 +61,10 @@ describe('AutocompleteInput', () => {
     expect(screen.getAllByRole('option').map(o => o.textContent)).toEqual(['Súper Selectos'])
     await usuario.clear(combo)
     await usuario.type(combo, 'or')
-    // «Distribuidora Flores» lo contiene en medio; nada empieza con «or»: queda marcada igual la primera
-    expect(screen.getByRole('option', { name: 'Distribuidora Flores' })).toHaveAttribute('aria-selected', 'true')
+    // «Distribuidora Flores» lo contiene en medio; nada empieza con «or»: sale en la lista pero no
+    // queda marcada (Enter no cambiaría lo escrito por ella)
+    expect(screen.getByRole('option', { name: 'Distribuidora Flores' })).toHaveAttribute('aria-selected', 'false')
+    expect(combo).not.toHaveAttribute('aria-activedescendant')
   })
 
   it('Escape cierra la lista sin borrar lo escrito', async () => {
@@ -107,6 +109,16 @@ describe('AutocompleteInput', () => {
     expect(screen.getByRole('option', { name: 'La Colonia' })).toHaveAttribute('aria-selected', 'true')
     await usuario.click(flecha)
     expect(combo).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('si lo escrito solo aparece en medio de una opción, Enter no la elige: se queda lo escrito', async () => {
+    const usuario = userEvent.setup()
+    render(<Prueba />)
+    const combo = screen.getByRole('combobox', { name: 'Proveedor' })
+    await usuario.type(combo, 'olonia')
+    expect(combo).toHaveAttribute('aria-expanded', 'true')
+    await usuario.keyboard('{Enter}')
+    expect(combo).toHaveValue('olonia')
   })
 
   it('acepta un valor nuevo que no está en la lista', async () => {

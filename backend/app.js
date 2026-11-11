@@ -69,6 +69,18 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
   const app = express()
   // No anunciar qué servidor es (cabecera X-Powered-By: Express)
   app.disable('x-powered-by')
+  // Cabeceras de seguridad: la página solo carga lo suyo (nada de otros sitios), no se puede
+  // meter dentro de otra página y el navegador no adivina tipos de archivo.
+  // style-src admite 'unsafe-inline' porque las animaciones (Motion) ponen estilos en línea.
+  app.use((_req, res, next) => {
+    res.set({
+      'Content-Security-Policy': CSP,
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'no-referrer',
+    })
+    next()
+  })
   if (hostsPermitidos) {
     const permitidos = new Set(hostsPermitidos.map(h => h.toLowerCase()))
     app.use((req, res, next) => {
@@ -184,6 +196,20 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
   app.use(manejarError)
   return { app, cerrar, sesiones }
 }
+
+/** Política de contenido: todo sale de este mismo servidor */
+export const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ')
 
 /** Último recurso: un error que nadie atrapó se registra y responde sin detalles internos */
 // eslint-disable-next-line no-unused-vars

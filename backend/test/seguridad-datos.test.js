@@ -149,6 +149,18 @@ test('errores: el servidor no anuncia qué es (sin cabecera X-Powered-By)', asyn
   assert.equal(r.cabeceras.get('x-powered-by'), null)
 })
 
+test('cabeceras de seguridad: la página solo carga lo suyo, no se mete en otra y no se adivinan tipos', async t => {
+  const { base } = await levantar(t)
+  const r = await pedir(`${base}/health`)
+  const csp = r.cabeceras.get('content-security-policy')
+  assert.match(csp, /default-src 'self'/)
+  assert.match(csp, /script-src 'self'(;|$)/)
+  assert.match(csp, /frame-ancestors 'none'/)
+  assert.equal(r.cabeceras.get('x-content-type-options'), 'nosniff')
+  assert.equal(r.cabeceras.get('x-frame-options'), 'DENY')
+  assert.equal(r.cabeceras.get('referrer-policy'), 'no-referrer')
+})
+
 // ---------------------------------------------------------------------------
 // Archivos exportados
 // ---------------------------------------------------------------------------

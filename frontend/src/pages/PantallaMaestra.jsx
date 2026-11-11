@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronLeft, ChevronRight, Download, Loader2, Plus, ShoppingCart, SlidersHorizontal, Trash2, Upload,
 } from 'lucide-react'
@@ -82,7 +82,7 @@ export default function PantallaMaestra({
   const nElegidas = elegidas.size
 
   // La más reciente arriba; a igual fecha se respeta el orden en que llegaron
-  const ordenadas = listas ? [...listas].sort((a, b) => b.fecha.localeCompare(a.fecha)) : []
+  const ordenadas = useMemo(() => (listas ? [...listas].sort((a, b) => b.fecha.localeCompare(a.fecha)) : []), [listas])
   const paginas = Math.max(1, Math.ceil(total / TAM_PAGINA))
   const paginaActual = Math.min(pagina, paginas - 1) // tras eliminar, la última página puede desaparecer
   const desde = paginaActual * TAM_PAGINA
@@ -91,6 +91,8 @@ export default function PantallaMaestra({
   const elegidasPagina = idsPagina.filter(id => elegidas.has(id)).length
   const paginaElegida = idsPagina.length > 0 && elegidasPagina === idsPagina.length
   const conPaginas = total > TAM_PAGINA
+  // Elegidas que no se ven en esta página: la confirmación de Eliminar las menciona
+  const elegidasFuera = nElegidas - elegidasPagina
 
   // La casilla de «todas» queda a medias con una parte de la página elegida (propiedad del DOM)
   useEffect(() => {
@@ -266,7 +268,7 @@ export default function PantallaMaestra({
             <div className={estilos.acciones}>
               {conPaginas && (
                 <nav className={estilos.paginas} aria-label={LISTA_COMPRAS.paginacion}>
-                  <span className={estilos.rango}>
+                  <span className={estilos.rango} aria-live="polite">
                     {LISTA_COMPRAS.rango(desde + 1, desde + visibles.length, total)}
                   </span>
                   <Boton
@@ -349,7 +351,9 @@ export default function PantallaMaestra({
         onClose={() => setPorConfirmar(false)}
         onConfirm={eliminarElegidas}
         title={LISTA_COMPRAS.confirmarEliminarVarias.titulo(nElegidas)}
-        message={LISTA_COMPRAS.confirmarEliminarVarias.mensaje}
+        message={elegidasFuera > 0
+          ? `${LISTA_COMPRAS.confirmarEliminarVarias.mensaje} ${LISTA_COMPRAS.confirmarEliminarVarias.otrasPaginas(elegidasFuera)}`
+          : LISTA_COMPRAS.confirmarEliminarVarias.mensaje}
         confirmLabel={LISTA_COMPRAS.confirmarEliminarVarias.confirmar}
         danger
       />
