@@ -171,7 +171,6 @@ test.describe('Gestor de usuarios', () => {
     }
 
     await cambiarRequisitos(10, false)
-    await expect(page.getByText('Al menos 10 caracteres')).toBeVisible()
     const ventana = await abrirNuevo(page)
     const requisitos = ventana.locator('#editor-usuario-requisitos')
     await expect(requisitos).toContainText('Al menos 10 caracteres')
@@ -180,6 +179,8 @@ test.describe('Gestor de usuarios', () => {
 
     // Se dejan como estaban
     await cambiarRequisitos(8, true)
-    await expect(page.getByText('Al menos 8 caracteres')).toBeVisible()
+    const otra = await abrirNuevo(page)
+    await expect(otra.locator('#editor-usuario-requisitos')).toContainText('Al menos 8 caracteres')
+    await otra.getByRole('button', { name: USUARIOS.cancelar }).click()
   })
 })

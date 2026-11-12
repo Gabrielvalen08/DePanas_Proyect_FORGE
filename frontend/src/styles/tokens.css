@@ -20,6 +20,8 @@
   --tinte-exito:      #E2EFD4;
   --tinte-aviso:      #FDE5B8;
   --tinte-error:      #F4E8E7;
+  /* Fila elegida (casillas de la Lista de compras): naranja muy suave sobre blanco */
+  --tinte-seleccion:  color-mix(in srgb, var(--naranja-sazon) 13%, var(--blanco));
 
   /* Espaciado (base 4px, en rem) */
   --space-1: 0.25rem;
@@ -46,6 +48,16 @@
   --alto-header: 4rem;
   --alto-barra-inferior: 4rem;
   --alto-control: 2.75rem; /* 44px: área táctil mínima */
+
+  /* Tablas: un solo alto de fila en todos los módulos (punto medio entre ver muchas filas
+     y que no se sientan apretadas). En escritorio cada fila mide al menos 52px; los
+     controles dentro de una fila bajan a 36px para caber (con ratón; en el teléfono las
+     tablas son tarjetas y los controles vuelven a 44px). */
+  --tabla-alto-fila: 3.25rem;
+  --tabla-celda-y: var(--space-2);
+  --tabla-celda-x: var(--space-4);
+  --tabla-encabezado-y: var(--space-2);
+  --tabla-alto-control: 2.25rem;
 }
 
 /* =========================================================
@@ -69,6 +81,7 @@
   --color-warning:       var(--amarillo-criollo);
   --color-on-warning:    var(--avila-profundo); /* nunca blanco ni crema sobre el amarillo (brandbook) */
   --color-focus:         var(--rojo-vinotinto);
+  --color-seleccion:     var(--tinte-seleccion);
 
   /* Estados hover: mezclas de la paleta, sin colores nuevos */
   --color-primary-hover: color-mix(in srgb, var(--naranja-sazon) 85%, var(--blanco));

@@ -1,108 +1,91 @@
 ---
 name: brand
-description: Brand voice, visual identity, messaging frameworks, asset management, brand consistency. Activate for branded content, tone of voice, marketing assets, brand compliance, style guides.
-argument-hint: "[update|review|create] [args]"
+description: Marca DE PANAS (restaurante venezolano en El Salvador) aplicada a su app de compras y costos y a todo material del proyecto (manual de uso, documentación, presentaciones). Úsala antes de diseñar o revisar una pantalla, escribir un texto para el usuario, elegir colores, logotipo, íconos o imágenes, o revisar que algo "se vea De Panas". Resume paleta, tipografía, logotipo, assets, voz y reglas, y dice dónde vive cada cosa en el repo.
+argument-hint: "[revisar|aplicar] [pantalla o archivo]"
 metadata:
-  author: claudekit
-  version: "1.0.0"
+  author: claudekit (plantilla), adaptada para De Panas
+  version: "2.0.0"
 ---
 
-# Brand
+# Marca DE PANAS
 
-Brand identity, voice, messaging, asset management, and consistency frameworks.
+**La fuente de verdad es `DESIGN_DECISIONS.md` (raíz del repo)**, que describe la marca como vive hoy en el sitio. Esta skill es su resumen operativo. Precedencia: **sitio actual (DESIGN_DECISIONS.md) > Brandbook mayo 2026 > otras skills**.
 
-## When to Use
+## Dónde vive cada cosa
 
-- Brand voice definition and content tone guidance
-- Visual identity standards and style guide development
-- Messaging framework creation
-- Brand consistency review and audit
-- Asset organization, naming, and approval
-- Color palette management and typography specs
+| Qué | Dónde |
+|---|---|
+| Decisiones de marca completas | `DESIGN_DECISIONS.md` |
+| Tokens (colores, espacios, radios, fuentes, sombras) | `frontend/src/styles/tokens.css` |
+| Tipografía base, collage, foco, vista de teléfono | `frontend/src/styles/base.css` |
+| Componentes de marca | `frontend/src/components/common/` |
+| Textos con la voz de marca | `frontend/src/utils/mensajes.js` |
+| Logos, arepa, collage, íconos de app | `frontend/public/brand/` |
+| Animaciones | `frontend/src/styles/movimiento.js` |
+| Resumen para los scripts de esta skill | `docs/brand-guidelines.md` |
 
-## Script Paths
+## Identidad en 30 segundos
 
-Script paths in this skill and its `references/` are relative to the directory that contains this SKILL.md, not to the project: `scripts/<file>` is this skill's own `scripts/` folder, and `../<skill>/scripts/<file>` is a sibling sub-skill installed alongside it. Build the full path from that directory (Claude Code reports it as the skill's base directory when the skill loads) and keep the working directory at the project root — the scripts read and write project files such as `docs/brand-guidelines.md`, `assets/design-tokens.json` or `src/` relative to it.
+- **Esencia:** sazón venezolana casera y familiar (arepas, empanadas, tequeños, cachitos, golfeados), cercana, auténtica, vibrante. Lema: «La verdadera sazón venezolana».
+- **Protagonistas:** **Naranja Sazón `#EF7D05`** (menú, barra inferior, botón principal) y **Crema y Trigo `#FEEECC`** (fondo con el collage de ilustraciones al 10 %).
+- **Tinta:** **Verde Ávila `#144428`** para texto, cifras y títulos. Sobre naranja, **Ávila profundo `#0F331E`** (`--color-on-primary`).
+- **Acentos:** Amarillo Criollo `#F8A914` (insignias de marca, avisos), Rojo Vinotinto `#911C0D` (eliminar, errores, foco, sombra sólida de marca), Verde Fresco `#6DAD28` (éxito, solo como fondo o ícono).
+- **Superficies:** blanco para tarjetas, tablas y campos. Nunca negro puro.
+- **Tipografía:** **Josefin Sans** (400/600/700) para interfaz y titulares en MAYÚSCULAS; **Cardo** (400, 400 itálica, 700) para párrafos y ayudas.
+- **Formas:** píldoras en botones e insignias, campos de 12 px, tarjetas de 20 px, modales de 24 px. Sombra sólida desplazada Vinotinto (`3px 4px 0`) solo en la acción principal.
+- **Logotipo:** en el menú, la arepa del badge + «DE PANAS» en crema con sombra vinotinto; en el acceso, píldora naranja «DE PANAS» + arepa en círculo; en teléfono, la píldora. El badge completo solo en íconos de app y piezas amplias.
+- **Íconos:** solo Lucide, de línea. Sin emojis. Sin fotos dentro de la app.
+- **Encabezados:** solo el título de la pantalla en MAYÚSCULAS y la fecha; sin frase debajo.
 
-## Quick Start
+## Voz
 
-**Inject brand context into prompts:**
-```bash
-node scripts/inject-brand-context.cjs
-node scripts/inject-brand-context.cjs --json
-```
+- Cercana, venezolana, amigable: «¡Épale, pana!», «¡Listo, pana! Compra guardada.», «Naguará».
+- **Errores y validaciones sin modismos:** qué pasó y qué hacer. Nunca culpan al usuario.
+- Datos con etiquetas literales: «Subtotal», «IVA (13 %)», «Total».
+- En la interfaz se dice **artículo**, no material.
+- Todo texto nuevo va en `mensajes.js`, nunca escrito en el JSX.
 
-**Validate an asset:**
-```bash
-node scripts/validate-asset.cjs <asset-path>
-```
+## Reglas que no se rompen
 
-**Extract/compare colors:**
-```bash
-node scripts/extract-colors.cjs --palette
-node scripts/extract-colors.cjs <image-path>
-```
+1. Solo colores de la paleta y sus derivados documentados; componentes con roles `--color-*`, nunca hex sueltos.
+2. Nunca texto blanco o crema sobre naranja, amarillo o verde fresco (salvo el logotipo tipográfico).
+3. Contraste WCAG AA en todo; sobre el collage, texto en `--color-text`, nunca `--color-text-muted`.
+4. Tablas y cifras sobrias, montos a la derecha.
+5. Una pantalla con fondo crema no pinta su propio fondo.
+6. `prefers-reduced-motion` siempre respetado.
 
-## Brand Sync Workflow
+## Cómo revisar algo contra la marca
 
-```bash
-# 1. Edit docs/brand-guidelines.md (or use /brand update)
-# 2. Sync to design tokens
-node scripts/sync-brand-to-tokens.cjs
-# 3. Verify
-node scripts/inject-brand-context.cjs --json | head -20
-```
+1. Lee `DESIGN_DECISIONS.md` en la sección que corresponda (color, tipografía, logotipo, componentes, voz).
+2. Compara el CSS: busca hex o `rgb()` sueltos fuera de `tokens.css` y colores de capa 1 usados directo en componentes.
+3. Compara los textos con `mensajes.js` y la tabla de voz.
+4. Revisa la pantalla en escritorio (≥ 1100 px) y teléfono (< 1100 px), con capturas si es posible.
+5. Reporta: qué no cumple, dónde (archivo:línea) y la corrección con el token o el componente correcto.
 
-The sync stops when it detects existing token files, `:root` custom properties
-or Tailwind v4 `@theme` variables in common CSS entry points and their local
-CSS imports, or Tailwind theme colors and presets. Review the reported source
-before proceeding. If the detected files are the managed
-`assets/design-tokens.*` outputs from an earlier sync and replacing them is
-intentional, re-run with `--force`.
+Para material fuera de la app (manual de uso en HTML, documentación, presentaciones): misma paleta, Josefin para títulos y Cardo para el cuerpo, fondo crema, acentos naranja y el badge completo en la portada.
 
-**Files synced:**
-- `docs/brand-guidelines.md` → Source of truth
-- `assets/design-tokens.json` → Token definitions
-- `assets/design-tokens.css` → CSS variables
+## Referencias de método
 
-## Subcommands
+Las guías de `references/` son la plantilla general de la skill (voz, identidad visual, logotipo, color, tipografía, consistencia, aprobación). Sirven como método; los valores de De Panas son los de arriba.
 
-| Subcommand | Description | Reference |
-|------------|-------------|-----------|
-| `update` | Update brand identity and sync to all design systems | `references/update.md` |
-
-## References
-
-| Topic | File |
-|-------|------|
-| Voice Framework | `references/voice-framework.md` |
-| Visual Identity | `references/visual-identity.md` |
-| Messaging | `references/messaging-framework.md` |
-| Consistency | `references/consistency-checklist.md` |
-| Guidelines Template | `references/brand-guideline-template.md` |
-| Asset Organization | `references/asset-organization.md` |
-| Color Management | `references/color-palette-management.md` |
-| Typography | `references/typography-specifications.md` |
-| Logo Usage | `references/logo-usage-rules.md` |
-| Approval Checklist | `references/approval-checklist.md` |
+| Tema | Archivo |
+|---|---|
+| Consistencia | `references/consistency-checklist.md` |
+| Logotipo | `references/logo-usage-rules.md` |
+| Color | `references/color-palette-management.md` |
+| Tipografía | `references/typography-specifications.md` |
+| Voz | `references/voice-framework.md` |
+| Aprobación | `references/approval-checklist.md` |
 
 ## Scripts
 
-| Script | Purpose |
-|--------|---------|
-| `scripts/inject-brand-context.cjs` | Extract brand context for prompt injection |
-| `scripts/sync-brand-to-tokens.cjs` | Sync brand-guidelines.md → design-tokens.json/css |
-| `scripts/validate-asset.cjs` | Validate asset naming, size, format |
-| `scripts/extract-colors.cjs` | Extract and compare colors against palette |
+Leen `docs/brand-guidelines.md`, el resumen de la marca en el formato que esperan (encabezados en inglés). Se corren desde la raíz del repo:
 
-## Templates
+```bash
+node .claude/skills/brand/scripts/inject-brand-context.cjs          # contexto de marca para un prompt (--json también)
+node .claude/skills/brand/scripts/extract-colors.cjs --palette      # la paleta
+node .claude/skills/brand/scripts/extract-colors.cjs <imagen>       # colores de una imagen comparados con la paleta
+node .claude/skills/brand/scripts/validate-asset.cjs <archivo>      # nombre, tamaño y formato de un asset
+```
 
-| Template | Purpose |
-|----------|---------|
-| `templates/brand-guidelines-starter.md` | Complete starter template for new brands |
-
-## Routing
-
-1. Parse subcommand from `$ARGUMENTS` (first word)
-2. Load corresponding `references/{subcommand}.md`
-3. Execute with remaining arguments
+Si cambia la marca, se actualizan `DESIGN_DECISIONS.md` (manda) y `docs/brand-guidelines.md` juntos. **No uses `scripts/sync-brand-to-tokens.cjs`:** escribe `assets/design-tokens.*`, y aquí los tokens viven en `frontend/src/styles/tokens.css`.

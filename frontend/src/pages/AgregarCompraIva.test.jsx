@@ -51,8 +51,8 @@ describe('IVA en la compra', () => {
     const usuario = userEvent.setup()
     montar()
     await usuario.type(proveedor(), 'Tienda Nueva')
+    await llenarFila(usuario) // la casilla aparece con la fila completa (formulario por pasos)
     expect(casilla()).not.toBeChecked()
-    await llenarFila(usuario)
     expect(screen.getAllByText('$100.00')).toHaveLength(2) // sin IVA, subtotal y total coinciden
 
     await usuario.click(casilla())
@@ -85,6 +85,7 @@ describe('IVA en la compra', () => {
     const usuario = userEvent.setup()
     montar()
     await usuario.type(proveedor(), 'con iva')
+    await llenarFila(usuario)
     expect(casilla()).toBeChecked()
 
     await usuario.clear(proveedor())
@@ -97,6 +98,7 @@ describe('IVA en la compra', () => {
     const usuario = userEvent.setup()
     montar()
     await usuario.type(proveedor(), 'Con Iva')
+    await llenarFila(usuario)
     expect(casilla()).toBeChecked()
     await usuario.click(casilla())
     expect(casilla()).not.toBeChecked()

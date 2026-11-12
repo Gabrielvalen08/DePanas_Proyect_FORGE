@@ -1,8 +1,8 @@
 # Decisiones técnicas
 
-Resumen técnico de lo aplicado en el refactor ([plan](PLAN_REFACTOR_FRONTEND.md)) y en los cambios posteriores (catálogo, categoría y producto por material, collage y voz de marca). Las decisiones de **marca** (paleta, tipografía, logotipo, tono, movimiento) están en [`DESIGN_DECISIONS.md`](../DESIGN_DECISIONS.md); este documento no las repite.
+Resumen técnico de lo aplicado en el refactor del frontend y en los cambios posteriores (catálogo, categoría y producto por material, collage y voz de marca). Las decisiones de **marca** (paleta, tipografía, logotipo, tono, movimiento) están en [`DESIGN_DECISIONS.md`](../DESIGN_DECISIONS.md); este documento no las repite.
 
-**Precedencia:** Brandbook > skills de `.claude/skills/` > `DESIGN_DECISIONS.md` > este documento.
+**Precedencia:** `DESIGN_DECISIONS.md` (la marca como vive hoy en el sitio) > Brandbook > skills de `.claude/skills/` > este documento.
 
 ## Tokens semánticos aplicados
 
@@ -82,7 +82,7 @@ Por la fila marcada con ✗, el texto que va **directo sobre el collage** (frase
 
 ## Listas de compra (cambio de funcionalidad)
 
-Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
+Una compra agrupa un proveedor, una fecha y sus artículos: en la base, sus filas de `ingresos` comparten `compra_id`. El modelo completo está en [MODELO_DATOS.md](MODELO_DATOS.md).
 
 | Tema | Decisión |
 | ---- | -------- |
@@ -220,7 +220,7 @@ Ver [PLAN_LISTAS_COMPRA.md](PLAN_LISTAS_COMPRA.md).
 
 - Todo texto que el sistema le dice al usuario vive en `frontend/src/utils/mensajes.js`, agrupado por tema (`ACCESO`, `COMPRA`, `LISTA_COMPRAS`, `VALIDACION`, `ASIGNACION`, `ESTADOS`, `PANTALLA_CATALOGO`, `USUARIOS`, `EXPORTAR`, `CARGAR`, `CONFIRMAR`). Los mensajes con datos son funciones (`COMPRA.confirmarGuardar.mensaje(proveedor, n, total)`).
 - Los tests importan los textos de ahí: cambiar una frase no rompe pruebas.
-- La frase del encabezado cambia una vez al día (`fraseDelDia`, por día del año), no en cada recarga, para que la interfaz no "salte".
+- Los encabezados llevan solo el título: las frases del día (`fraseDelDia`) se quitaron porque recargaban las pantallas de trabajo.
 
 ## Pendientes
 - **Bundle:** el JS pasó de ~193 kB a ~339 kB (sin gzip), sobre todo por `motion`. Si importa, se puede cargar Motion de forma diferida.

@@ -1,3 +1,4 @@
+import { NO_ENCONTRADA } from '../utils/mensajes'
 import { BookOpen, Download, Upload, PlusCircle, ShoppingCart, UsersRound } from 'lucide-react'
 
 // Lista única de navegación: la usan Sidebar, BarraInferior y App (títulos).
@@ -5,10 +6,11 @@ import { BookOpen, Download, Upload, PlusCircle, ShoppingCart, UsersRound } from
 // Agregar compra es la página principal: es lo que el cliente hace más seguido.
 // enBarra: va directo en la barra inferior; el resto se abre desde "Más".
 // oculto: la ruta y su permiso siguen vigentes (y su título se resuelve), pero no sale en el menú.
+// subrutas: tiene rutas debajo (/catalogo/:seccion) que llevan su mismo título.
 export const itemsNavegacion = [
   { a: '/', Icono: PlusCircle, etiqueta: 'Agregar compra', etiquetaCorta: 'Agregar', titulo: 'Agregar compra', enBarra: true },
   { a: '/compras', Icono: ShoppingCart, etiqueta: 'Lista de compras', etiquetaCorta: 'Lista', titulo: 'Lista de compras', enBarra: true },
-  { a: '/catalogo', Icono: BookOpen, etiqueta: 'Catálogo', etiquetaCorta: 'Catálogo', titulo: 'Catálogo', enBarra: true },
+  { a: '/catalogo', Icono: BookOpen, etiqueta: 'Catálogo', etiquetaCorta: 'Catálogo', titulo: 'Catálogo', enBarra: true, subrutas: true },
   { a: '/exportar', Icono: Download, etiqueta: 'Exportar datos', etiquetaCorta: 'Exportar', titulo: 'Exportar datos', oculto: true },
   { a: '/cargar', Icono: Upload, etiqueta: 'Cargar datos', etiquetaCorta: 'Cargar', titulo: 'Cargar datos', oculto: true },
 ]
@@ -21,11 +23,11 @@ export const itemUsuarios = {
 /** Ítems del pie del menú, en orden */
 export const itemsPie = [itemUsuarios]
 
-/** Título de la página para document.title según la ruta (las subrutas heredan el de su sección) */
+/** Título de la página para document.title según la ruta (las subrutas de una sección con `subrutas` heredan su título; una ruta que no existe, «Pantalla no encontrada») */
 export function tituloDeRuta(ruta) {
   const todas = [...itemsNavegacion, ...itemsPie]
   const exacta = todas.find(item => item.a === ruta)
-  const seccion = todas.find(item => item.a !== '/' && ruta.startsWith(`${item.a}/`))
-  return (exacta ?? seccion)?.titulo ?? 'Agregar compra'
+  const seccion = todas.find(item => item.subrutas && ruta.startsWith(`${item.a}/`))
+  return (exacta ?? seccion)?.titulo ?? NO_ENCONTRADA.titulo
 }
 

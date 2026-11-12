@@ -1,4 +1,4 @@
-/* ---------- Encabezado de la tabla: cuenta, Filtrar, Agregar compra y menú ⋮ ---------- */
+/* ---------- Encabezado de la tabla: páginas, íconos (Eliminar, Filtrar), Agregar compra y menú ⋮ ---------- */
 .acciones {
   display: flex;
   flex-wrap: wrap;
@@ -19,10 +19,90 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Botón solo de ícono con el borde de los secundarios (como Filtrar) */
+.botonIcono {
+  width: var(--alto-control);
+  padding: 0;
+}
+
+.botonEliminar:hover:not(:disabled) {
+  --boton-texto: var(--color-danger);
+  --boton-borde: var(--color-danger);
+}
+
+/* Cuántos filtros hay activos: una burbuja sobre el ícono */
 .contador {
-  margin-left: var(--space-1);
+  position: absolute;
+  top: -0.4rem;
+  right: -0.4rem;
+  min-width: 1.25rem;
+  justify-content: center;
   text-transform: none;
   letter-spacing: 0;
+}
+
+/* ---------- Páginas (como en el correo): «1–50 de 380» y las flechas ---------- */
+.paginas {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.rango {
+  margin-right: var(--space-1);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* Con la página entera elegida: ofrece elegir todas las de la lista */
+.avisoSeleccion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1) var(--space-2);
+  max-width: none;
+  margin: 0;
+  padding: var(--space-2) var(--tabla-celda-x);
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  background: var(--color-seleccion);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* ---------- Casillas (como en el correo) ---------- */
+/* «Elegir todas» con texto solo en el teléfono (ahí no se ven los encabezados de columna) */
+.textoTodas {
+  display: none;
+}
+
+.colCasilla {
+  width: 1%;
+}
+
+.tabla .colCasilla {
+  padding-right: 0;
+}
+
+/* Por encima del botón que cubre la fila: marcar no abre el detalle */
+.casilla {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* Zona táctil de 44px alrededor de la casilla */
+.casilla::after {
+  content: '';
+  position: absolute;
+  inset: -0.75rem;
 }
 
 /* ---------- Tabla de listas ---------- */
@@ -33,7 +113,7 @@
 }
 
 .tabla th {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--tabla-encabezado-y) var(--tabla-celda-x);
   background: var(--color-surface-soft);
   border-bottom: 1px solid var(--color-border);
   font-size: 0.875rem;
@@ -45,7 +125,7 @@
 }
 
 .tabla td {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--tabla-celda-y) var(--tabla-celda-x);
   border-bottom: 1px solid var(--color-border);
   line-height: 1.4;
   vertical-align: middle;
@@ -74,6 +154,13 @@
 
 .fila:active {
   background: var(--tinte-aviso);
+}
+
+/* Fila elegida: otro color y la franja naranja de lo elegido */
+.filaElegida,
+.filaElegida:hover {
+  background: var(--color-seleccion);
+  box-shadow: inset 4px 0 0 var(--color-primary);
 }
 
 .abrir {
@@ -175,5 +262,71 @@
 
   .tabla td:first-child {
     padding-right: var(--space-8);
+  }
+
+  /* La casilla va arriba a la izquierda de cada tarjeta; el resto se corre a su derecha */
+  .tabla tbody tr:has(.colCasilla) {
+    padding-left: calc(var(--space-4) + 2rem);
+  }
+
+  .tabla td.colCasilla {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    width: auto;
+    padding: 0;
+  }
+
+  /* La flecha va arriba a la derecha: la fecha le deja espacio */
+  .tabla td.fecha {
+    padding-right: var(--space-8);
+  }
+
+  /* Con casillas, del encabezado solo queda «Elegir todas», como barra sobre las tarjetas */
+  .tabla thead:has(.colCasilla) {
+    position: static;
+    display: block;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+
+  .tabla thead:has(.colCasilla) tr {
+    display: block;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-soft);
+  }
+
+  .tabla thead:has(.colCasilla) th {
+    display: none;
+  }
+
+  .tabla thead th.colCasilla {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: auto;
+    padding: 0;
+    background: none;
+    border: none;
+  }
+
+  .textoTodas {
+    display: inline;
+    padding-top: 0.15em;
+  }
+
+  .acciones {
+    justify-content: flex-start;
+  }
+}
+
+/* Alto de fila común a todas las tablas (tokens --tabla-*) */
+@media (min-width: 1100px) {
+  .tabla tbody td,
+  .tabla tbody th {
+    height: var(--tabla-alto-fila);
   }
 }

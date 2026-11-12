@@ -7,6 +7,30 @@ Programa para registrar las compras de la cocina y administrar el catálogo (pro
 - Funciona en **Windows 10 u 11 de 64 bits**.
 - **No se instala:** se entrega en un archivo **`De Panas SV 1.2.0.zip`**.
 
+## Lista para el día de la instalación
+
+Para quien instala, en la computadora del local. Marca cada paso.
+
+**Antes de ir**
+- [ ] Armar el .zip con la versión final (`desktop/`: `npm run preparar`, `npm run test:escritorio` y `npm run dist`).
+- [ ] Copiarlo a una memoria USB (así no hace falta «Desbloquear»).
+- [ ] Las contraseñas iniciales (`Cesar_01` y `Marta_02`, las dos `DePanas#2026`, también en el manual) se cambian allá el primer día.
+
+**En la computadora del local**
+- [ ] Windows 10 u 11 de 64 bits y un navegador (Chrome o Edge).
+- [ ] Extraer el .zip en `Documentos` (paso 1).
+- [ ] Abrir **«Abrir De Panas SV»**: se abre el navegador y aparece el acceso directo en el escritorio (paso 2).
+- [ ] Entrar como César y cambiar su contraseña en el Gestor de usuarios; luego Marta cambia la suya (paso 3).
+- [ ] Registrar una compra de prueba, verla en la Lista de compras y eliminarla.
+- [ ] Exportar a Excel y abrir el archivo (hojas «Compras» y «Resumen»).
+- [ ] Hacer el primer respaldo (paso 5) y mostrar dónde guardarlo.
+- [ ] Apagar con **«Apagar De Panas SV»** y volver a abrir desde el acceso directo: lo registrado sigue ahí.
+- [ ] Abrir la **demostración** para practicar sin tocar los datos reales, y mostrar el **Manual de uso** (doble clic en «Manual de uso» de la carpeta).
+
+**Al irse**
+- [ ] César y Marta saben abrir, entrar, registrar, buscar, exportar y apagar.
+- [ ] Queda acordado el respaldo **mensual** y dónde se guarda.
+
 ## 1. Preparar (una sola vez)
 
 1. **Si el .zip llegó por correo, WhatsApp, Drive o una descarga:**
@@ -19,10 +43,12 @@ Programa para registrar las compras de la cocina y administrar el catálogo (pro
 
    ```
    De Panas SV/
-     Abrir De Panas SV.cmd   ← este se abre
+     Abrir De Panas SV.cmd          ← este se abre
+     Abrir De Panas SV (demo).cmd   (versión de demostración, aparte)
+     Manual de uso.html             ← doble clic: abre el manual
      LEEME.txt
-     node/                   (no tocar)
-     app/                    (no tocar)
+     node/                          (no tocar)
+     app/                           (no tocar)
    ```
 
 ## 2. Abrir y apagar
@@ -48,12 +74,22 @@ La primera pantalla pide usuario y contraseña:
 | Usuario | Contraseña | Qué puede hacer |
 |---|---|---|
 | `Cesar_01` | `DePanas#2026` | Administrador: todo, incluido el Gestor de usuarios |
-| `Marta_02` | `5678` | Operadora: todo menos el Gestor de usuarios |
+| `Marta_02` | `DePanas#2026` | Operadora: todo menos el Gestor de usuarios |
 
 - **Cambia estas contraseñas** desde **Gestor de usuarios** (solo el administrador).
 - Tras **5 contraseñas incorrectas seguidas**, ese usuario debe esperar **5 minutos** antes de volver a intentar.
 - La sesión dura mientras la pestaña esté abierta (hasta 8 horas sin uso). **Cada pestaña nueva pide entrar.**
 - **Si vas a salir con datos sin guardar, el sistema avisa:** puedes elegir **«Registrar»** o **«Salir sin guardar»**.
+
+### Versión de demostración
+
+Para conocer el sistema sin tocar los datos reales, abre **«Abrir De Panas SV (demo)»**:
+
+- Se abre aparte, en http://localhost:4511.
+- Trae dos meses de compras de ejemplo, del 11 de septiembre al 11 de noviembre de 2026.
+- Guarda todo en su propia carpeta, `%APPDATA%\De Panas SV\demo`.
+
+Para empezar la demostración de cero, apágala y borra esa carpeta.
 
 ## 4. Dónde quedan los datos
 
@@ -70,11 +106,11 @@ Para abrir esa carpeta, pega `%APPDATA%\De Panas SV` en la barra de direcciones 
 - Los archivos que se descargan (Excel, respaldos) van a la carpeta **Descargas** del navegador.
 - Si algo falla al abrir, el detalle queda en `%APPDATA%\De Panas SV\registro.log`.
 
-## 5. Respaldos (recomendado cada semana)
+## 5. Respaldos (recomendado cada mes)
 
 Cualquiera de estas dos formas sirve:
 
-- **Desde el sistema:** en **Lista de compras**, menú **⋮ → Exportar datos**, elige **Respaldo (.json)** y guárdalo en una memoria USB o en la nube. Para recuperarlo: **⋮ → Cargar datos**.
+- **Desde el sistema:** en **Lista de compras**, menú **⋮ → Exportar datos**, elige el rango **Todo** y **Respaldo (.json)**, y guárdalo en una memoria USB. Hazlo **una vez al mes**. Para recuperarlo: **⋮ → Cargar datos**.
 - **Copiando el archivo:** primero **«Apagar De Panas SV»**; después copia `depanas.db` de la carpeta del punto 4 a una memoria USB.
 
 En cada sección del Catálogo, el menú **⋮** también permite exportar a Excel y guardar o cargar un respaldo de esa sección.
@@ -99,3 +135,7 @@ Los datos se conservan, y el acceso directo del escritorio se actualiza solo la 
 - **«El puerto 4510 lo está usando otro programa»:** cierra ese programa o reinicia la computadora y vuelve a abrir De Panas SV.
 - **Olvidaste la contraseña de un usuario:** el administrador la cambia desde el Gestor de usuarios.
 - **Olvidaste la del administrador:** contacta al equipo de desarrollo.
+
+---
+
+**Ver también:** [Manual de uso](manual/index.html) (va dentro del .zip) · [Versión .zip en detalle](../desktop/README.md) · [Índice de la documentación](README.md)

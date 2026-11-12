@@ -1,0 +1,8 @@
+/* Fuentes de la marca dentro de la documentación (subconjunto latino de @fontsource, licencia
+   SIL OFL 1.1 en LICENCIA-*.txt): el manual viaja en el .zip y se abre sin internet */
+@font-face { font-family: 'Josefin Sans'; font-style: normal; font-weight: 400; font-display: swap; src: url('josefin-sans-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Josefin Sans'; font-style: normal; font-weight: 600; font-display: swap; src: url('josefin-sans-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Josefin Sans'; font-style: normal; font-weight: 700; font-display: swap; src: url('josefin-sans-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Cardo'; font-style: normal; font-weight: 400; font-display: swap; src: url('cardo-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Cardo'; font-style: italic; font-weight: 400; font-display: swap; src: url('cardo-latin-400-italic.woff2') format('woff2'); }
+@font-face { font-family: 'Cardo'; font-style: normal; font-weight: 700; font-display: swap; src: url('cardo-latin-700-normal.woff2') format('woff2'); }

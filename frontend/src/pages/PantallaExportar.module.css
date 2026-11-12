@@ -169,6 +169,18 @@
   .pie > * {
     flex-basis: 100%;
   }
+
+  /* En el teléfono el resumen y Descargar quedan fijos abajo, sobre la barra inferior:
+     así la acción principal se ve sin bajar */
+  .pie {
+    position: sticky;
+    bottom: calc(var(--alto-barra-inferior) + env(safe-area-inset-bottom));
+    z-index: 1;
+    margin: 0 calc(-1 * var(--space-4)) calc(-1 * var(--space-4));
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    background: var(--color-surface);
+    box-shadow: var(--sombra-flotante);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

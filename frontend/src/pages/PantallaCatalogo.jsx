@@ -10,7 +10,7 @@ import {
 } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { textoBusqueda } from '../utils/formato'
-import { PANTALLA_CATALOGO, fraseDelDia } from '../utils/mensajes'
+import { PANTALLA_CATALOGO } from '../utils/mensajes'
 import estilos from './PantallaCatalogo.module.css'
 import { tieneProducto } from '../../../shared/productos.js'
 import { filasDelCatalogo, ordenarFilas } from '../../../shared/catalogo-json.js'
@@ -70,7 +70,7 @@ export default function PantallaCatalogo({ acciones = TODAS_LAS_ACCIONES }) {
 
   return (
     <>
-      <Header title="Catálogo" frase={fraseDelDia('/catalogo')} />
+      <Header title="Catálogo" />
 
       <main id="contenido" tabIndex={-1}>
         <nav aria-label="Secciones del catálogo">
@@ -246,9 +246,21 @@ function ListaCatalogo({ tipo, catalogo, acciones, alCambio }) {
       >
 
         {todas.length === 0 ? (
-          <EstadoVacio icono={<Icono />} titulo={PANTALLA_CATALOGO.vacio(tipo)} />
+          <EstadoVacio
+            icono={<Icono />}
+            titulo={PANTALLA_CATALOGO.vacio(tipo)}
+            accion={acciones.agregar && (
+              <Boton variante="primario" icono={<Plus />} onClick={() => setEdicion({ registro: null })}>
+                {PANTALLA_CATALOGO.agregar(tipo)}
+              </Boton>
+            )}
+          />
         ) : filas.length === 0 ? (
-          <EstadoVacio icono={<Search />} titulo={PANTALLA_CATALOGO.sinResultados} />
+          <EstadoVacio
+            icono={<Search />}
+            titulo={PANTALLA_CATALOGO.sinResultados}
+            accion={<Boton variante="fantasma" onClick={() => setBusqueda('')}>{PANTALLA_CATALOGO.limpiarBusqueda}</Boton>}
+          />
         ) : (
           <table className={estilos.tabla}>
             <caption className="solo-lector">{titulo}</caption>

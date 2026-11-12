@@ -7,7 +7,7 @@
  * (USUARIOS_INICIALES), para el modo local.
  *
  * Las contraseñas nunca se guardan en texto plano: van como hash PBKDF2
- * (ver contrasenas.js). Las de aquí son DePanas#2026 (Cesar_01) y 5678 (Marta_02).
+ * (ver contrasenas.js). Las de aquí son DePanas#2026 (Cesar_01 y Marta_02).
  */
 
 import { permisosDeRol } from '../../shared/usuarios.js'
@@ -20,6 +20,13 @@ export { RUTAS_ASIGNABLES, RUTA_USUARIOS } from '../../shared/usuarios.js'
  */
 export const HASH_CESAR_ANTERIOR =
   'pbkdf2$100000$5a43060896bd80a84a7d4224a028b545$c19cba8f54fc5c6afa5638a7ac9be25b870d6a132d9a64f6f96f597121b3d54e'
+
+/**
+ * Contraseña anterior de Marta_02. db.js la cambia por la nueva (DePanas#2026) una sola vez
+ * por base, solo si Marta aún entra con esta; si ya la cambió, no se toca. Se compara la
+ * contraseña y no el hash porque al entrar el hash se recalcula con otra sal.
+ */
+export const CONTRASENA_MARTA_ANTERIOR = '5678'
 
 /** El administrador tiene '*': todas las pantallas, también las que se creen después */
 export const USUARIOS_INICIALES = [
@@ -36,6 +43,6 @@ export const USUARIOS_INICIALES = [
     nombre: 'Marta',
     rol: 'operador',
     ...permisosDeRol('operador'),
-    contrasena: 'pbkdf2$100000$d0f24824a99bff7180d523f67b5b6ff5$e1f9aaceda70ab381493fc4662cc7c561c76aef0415446fcb0b3d7c90fdda447',
+    contrasena: 'pbkdf2$100000$af42236fff5eb0c2eccec19ce3a95610$59a692988cced65679cd0207b34b18d8fde41a2883927092a055f9fcdf252a3b',
   },
 ]

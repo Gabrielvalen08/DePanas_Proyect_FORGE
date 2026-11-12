@@ -2,8 +2,9 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
-import PantallaMaestra from './PantallaMaestra'
+import PantallaMaestra, { TAM_PAGINA } from './PantallaMaestra'
 import { COMPRA, LISTA_COMPRAS, IVA } from '../utils/mensajes'
+import { fetchListas } from '../services/api'
 
 function renderizar(props = {}) {
   return render(
@@ -32,15 +33,17 @@ describe('PantallaMaestra', () => {
   it('la primera columna es la fecha, se dice «Costos» y las compras van de la más reciente a la más vieja', async () => {
     renderizar()
     const tabla = await screen.findByRole('table', { name: /listas de compra/i })
-    const encabezados = within(tabla).getAllByRole('columnheader').slice(0, 4).map(th => th.textContent)
+    // La primera columna es la casilla para elegir (como en el correo); después, la fecha
+    const encabezados = within(tabla).getAllByRole('columnheader').slice(1, 5).map(th => th.textContent)
     expect(encabezados).toEqual(['Fecha', 'Proveedor', 'Artículos', 'Costos'])
+    expect(within(tabla).getByRole('checkbox', { name: LISTA_COMPRAS.elegirTodas })).toBeInTheDocument()
 
-    const fechas = within(tabla).getAllByRole('row').slice(1).map(fila => within(fila).getAllByRole('cell')[0].textContent)
+    const fechas = within(tabla).getAllByRole('row').slice(1).map(fila => within(fila).getAllByRole('cell')[1].textContent)
     const iso = fechas.map(f => f.split('/').reverse().join('-'))
     expect(iso).toEqual([...iso].sort().reverse())
   })
 
-  it('Filtrar y Agregar compra van en el encabezado de la tabla, y el menú ⋮ abre Exportar y Cargar datos', async () => {
+  it('Filtrar (solo ícono) y Agregar compra (con texto) van en el encabezado; el ⋮ abre Exportar y Cargar', async () => {
     const usuario = userEvent.setup()
     renderizar()
     const tarjeta = (await screen.findByRole('heading', { name: LISTA_COMPRAS.titulo })).closest('section')
@@ -54,6 +57,93 @@ describe('PantallaMaestra', () => {
     expect(opciones.map(o => o.textContent)).toEqual([LISTA_COMPRAS.exportar, LISTA_COMPRAS.cargar])
     expect(opciones[0]).toHaveAttribute('href', '/exportar')
     expect(opciones[1]).toHaveAttribute('href', '/cargar')
+  })
+
+  it('como en el correo: se eligen compras con su casilla, la fila cambia de color y aparece Eliminar', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const tarjeta = (await screen.findByRole('heading', { name: LISTA_COMPRAS.titulo })).closest('section')
+    await within(tarjeta).findByText(LISTA_COMPRAS.cuenta(5))
+    expect(within(tarjeta).queryByRole('button', { name: LISTA_COMPRAS.eliminarElegidas(1) })).not.toBeInTheDocument()
+
+    const casilla = screen.getByRole('checkbox', { name: /Elegir la compra en Súper Selectos del 29\/09\/2026/ })
+    await usuario.click(casilla)
+    expect(casilla.closest('tr').className).toMatch(/filaElegida/)
+    expect(within(tarjeta).getByText(LISTA_COMPRAS.elegidas(1, 5))).toBeInTheDocument()
+    expect(within(tarjeta).getByRole('button', { name: LISTA_COMPRAS.eliminarElegidas(1) })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument() // marcar no abre el detalle
+
+    // La de «todas» queda a medias, y al tocarla elige todas
+    const todas = screen.getByRole('checkbox', { name: LISTA_COMPRAS.elegirTodas })
+    expect(todas.indeterminate).toBe(true)
+    await usuario.click(todas)
+    expect(within(tarjeta).getByText(LISTA_COMPRAS.elegidas(5, 5))).toBeInTheDocument()
+    await usuario.click(todas)
+    expect(within(tarjeta).getByText(LISTA_COMPRAS.cuenta(5))).toBeInTheDocument()
+    // Con una sola página no hay flechas ni aviso de selección
+    expect(screen.queryByRole('navigation', { name: LISTA_COMPRAS.paginacion })).not.toBeInTheDocument()
+  })
+
+  it('eliminar varias pide confirmar (acción peligrosa) y las borra', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await usuario.click(await screen.findByRole('checkbox', { name: LISTA_COMPRAS.elegirTodas }))
+    await usuario.click(screen.getByRole('button', { name: LISTA_COMPRAS.eliminarElegidas(5) }))
+    expect(screen.getByRole('alertdialog', { name: LISTA_COMPRAS.confirmarEliminarVarias.titulo(5) })).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: LISTA_COMPRAS.confirmarEliminarVarias.confirmar }))
+    expect(await screen.findByText(LISTA_COMPRAS.eliminadas(5))).toBeInTheDocument()
+    expect(await fetchListas()).toHaveLength(0)
+  })
+
+  it('sin permiso para eliminar no hay casillas', async () => {
+    renderizar({ puedeEliminar: false })
+    await screen.findByRole('button', { name: LISTA_SELECTOS })
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  it('con más de 50 compras va por páginas: flechas arriba, «Elegir todas» elige la página y el aviso ofrece todas', async () => {
+    // 120 compras, una por día hacia atrás desde el 30/09/2026
+    const compras = Array.from({ length: 120 }, (_, i) => {
+      const d = new Date(2026, 8, 30 - i)
+      const fecha = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      return { id: i + 1, proveedor: `Proveedor ${i + 1}`, fecha, materiales: [{ material: 'Arroz', cantidad: 1, unidad: 'lb', monto: 1 }] }
+    })
+    localStorage.setItem('depanas_listas', JSON.stringify(compras))
+    const usuario = userEvent.setup()
+    renderizar()
+    const tabla = await screen.findByRole('table', { name: /listas de compra/i })
+    const paginas = screen.getByRole('navigation', { name: LISTA_COMPRAS.paginacion })
+    expect(within(paginas).getByText(LISTA_COMPRAS.rango(1, TAM_PAGINA, 120))).toBeInTheDocument()
+    expect(within(tabla).getAllByRole('row')).toHaveLength(TAM_PAGINA + 1)
+    expect(within(paginas).getByRole('button', { name: LISTA_COMPRAS.anterior })).toBeDisabled()
+
+    // «Elegir todas» elige solo la página; el aviso ofrece elegir las 120
+    await usuario.click(screen.getByRole('checkbox', { name: LISTA_COMPRAS.elegirTodas }))
+    expect(screen.getByText(LISTA_COMPRAS.elegidas(TAM_PAGINA, 120))).toBeInTheDocument()
+    expect(screen.getByText(LISTA_COMPRAS.paginaElegida(TAM_PAGINA))).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: LISTA_COMPRAS.elegirTodasLista(120) }))
+    expect(screen.getByText(LISTA_COMPRAS.elegidas(120, 120))).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: LISTA_COMPRAS.quitarSeleccion }))
+    expect(screen.getByText(LISTA_COMPRAS.cuenta(120))).toBeInTheDocument()
+
+    // Siguiente: 51–100 y luego 101–120, con la flecha de avanzar apagada al final
+    await usuario.click(within(paginas).getByRole('button', { name: LISTA_COMPRAS.siguiente }))
+    expect(within(paginas).getByText(LISTA_COMPRAS.rango(51, 100, 120))).toBeInTheDocument()
+    expect(within(tabla).getByRole('button', { name: /Proveedor 51 / })).toBeInTheDocument()
+    await usuario.click(within(paginas).getByRole('button', { name: LISTA_COMPRAS.siguiente }))
+    expect(within(paginas).getByText(LISTA_COMPRAS.rango(101, 120, 120))).toBeInTheDocument()
+    expect(within(tabla).getAllByRole('row')).toHaveLength(21)
+    expect(within(paginas).getByRole('button', { name: LISTA_COMPRAS.siguiente })).toBeDisabled()
+    await usuario.click(within(paginas).getByRole('button', { name: LISTA_COMPRAS.anterior }))
+    expect(within(paginas).getByText(LISTA_COMPRAS.rango(51, 100, 120))).toBeInTheDocument()
+    expect(within(paginas).getByText(LISTA_COMPRAS.rango(51, 100, 120))).toHaveAttribute('aria-live', 'polite')
+
+    // Elegidas en dos páginas: Eliminar avisa las que no se ven
+    await usuario.click(screen.getByRole('checkbox', { name: /Elegir la compra en Proveedor 51 / }))
+    await usuario.click(within(paginas).getByRole('button', { name: LISTA_COMPRAS.anterior }))
+    await usuario.click(screen.getByRole('checkbox', { name: /Elegir la compra en Proveedor 1 / }))
+    await usuario.click(screen.getByRole('button', { name: LISTA_COMPRAS.eliminarElegidas(2) }))
+    expect(screen.getByRole('alertdialog')).toHaveTextContent(LISTA_COMPRAS.confirmarEliminarVarias.otrasPaginas(1))
   })
 
   it('al abrir una lista muestra sus productos y el total', async () => {

@@ -41,6 +41,8 @@ it('muestra proveedor, fecha y total y carga únicamente la compra elegida compl
   await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.cargar.confirmar }))
   await waitFor(() => expect(importarCompras).toHaveBeenCalledWith([otra], []))
   expect(await within(screen.getByRole('main')).findByRole('status')).toHaveTextContent(CARGAR.resultado({ nuevas: 1 }))
+  // Después de cargar, un enlace lleva a ver las compras
+  expect(screen.getByRole('link', { name: CARGAR.verLista })).toHaveAttribute('href', '/compras')
 })
 it('rechaza estructura inválida y borra la selección del archivo anterior', async () => {
   const usuario = userEvent.setup()

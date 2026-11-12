@@ -29,6 +29,8 @@ export function permisoRequerido(metodo, ruta) {
 
   if (recurso === 'compras' || recurso === 'ingresos') {
     if (metodo === 'GET') return LEER_COMPRAS
+    // Varias a la vez desde las casillas de la Lista de compras
+    if (recurso === 'compras' && metodo === 'POST' && segundo === 'eliminar') return { funciones: ['compras.eliminar'] }
     if (metodo === 'POST') return { pantallas: ['/'] }
     if (metodo === 'PUT') return { funciones: ['compras.editar'] }
     if (metodo === 'DELETE') return { funciones: ['compras.eliminar'] }

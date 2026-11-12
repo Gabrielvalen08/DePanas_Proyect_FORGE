@@ -4,6 +4,14 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { MotionConfig } from 'motion/react'
 import App from './App.jsx'
 import { detectarModo } from './services/api'
+// Las fuentes de la marca van dentro de la app (solo el subconjunto latino, que cubre el
+// español): funciona sin internet y nada se le pide a Google Fonts
+import '@fontsource/josefin-sans/latin-400.css'
+import '@fontsource/josefin-sans/latin-600.css'
+import '@fontsource/josefin-sans/latin-700.css'
+import '@fontsource/cardo/latin-400.css'
+import '@fontsource/cardo/latin-400-italic.css'
+import '@fontsource/cardo/latin-700.css'
 import './styles/global.css'
 
 // Servidor o local, y en servidor el catálogo de los autocompletados, desde el arranque

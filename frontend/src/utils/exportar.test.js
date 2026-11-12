@@ -1,4 +1,4 @@
-import { readSheet } from 'read-excel-file/universal'
+import readExcelFile, { readSheet } from 'read-excel-file/universal'
 import { comprasAXlsx, comprasAJson, nombreArchivo, rangoRapido, catalogoAXlsx, catalogoAJson } from './exportar'
 
 const COMPRAS = [
@@ -37,6 +37,27 @@ describe('exportar', () => {
     const filas = await readSheet(await comprasAXlsx([compra('a', '2026-10-01', 13), compra('b', '2026-10-02', 6.5)]))
     const columna = filas[0].indexOf('IVA')
     expect(filas.slice(1).map(f => f[columna])).toEqual([13, null, 6.5, null])
+  })
+
+  it('Excel: la hoja «Resumen» trae el reporte de gastos del rango (totales, por proveedor, por categoría y por mes)', async () => {
+    const conIva = [{ ...COMPRAS[0], iva: 0.92 }, COMPRAS[1]]
+    const hojas = await readExcelFile(await comprasAXlsx(conIva))
+    expect(hojas.map(h => h.sheet)).toEqual(['Compras', 'Resumen'])
+    const filas = hojas[1].data
+    const valor = etiqueta => filas.find(f => f[0] === etiqueta)?.[1]
+    expect(filas[0][0]).toBe('Resumen de gastos')
+    expect(valor('Desde')).toBe('2026-08-04')
+    expect(valor('Hasta')).toBe('2026-08-27')
+    expect(valor('Compras')).toBe(2)
+    expect(valor('Artículos')).toBe(3)
+    expect(valor('Subtotal')).toBe(26.77) // 2.69 + 17 + 7.08
+    expect(valor('IVA')).toBe(0.92)
+    expect(valor('Total')).toBe(27.69)
+    // Proveedores de mayor a menor gasto
+    const inicio = filas.findIndex(f => f[0] === 'Por proveedor')
+    expect(filas.slice(inicio + 1, inicio + 3)).toEqual([['Selectos', 1, 19.69, 0, 19.69], ['Pepsi', 1, 7.08, 0.92, 8]])
+    const meses = filas.findIndex(f => f[0] === 'Por mes')
+    expect(filas[meses + 1]).toEqual(['2026-08', 2, 26.77, 0.92, 27.69])
   })
 
   it('JSON: lleva el IVA de cada compra', () => {

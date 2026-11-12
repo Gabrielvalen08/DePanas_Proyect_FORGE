@@ -7,17 +7,17 @@
  *   POST /api/db/importar-json     → carga compras completas desde JSON
  *
  * Para importar el archivo binario se usa multer (upload a una carpeta temporal del sistema).
+ * Los respaldos JSON leen y escriben con el DAO de compras (dao/compras.js).
  */
 
 import { Router } from 'express'
 import multer from 'multer'
-import { randomUUID } from 'crypto'
-import { resolverCarga } from '../../shared/carga-compras.js'
 import { existsSync, mkdirSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { copiaConsistente, enTransaccion, esBaseDePanas, registrarCompra } from '../db.js'
-import { agruparFilas } from './listas.js'
+import { copiaConsistente, esBaseDePanas } from '../db.js'
+import { comprasDAO } from '../dao/compras.js'
+import { enviarError, responder } from './responder.js'
 
 const CARPETA_TEMPORAL = join(tmpdir(), 'depanas-uploads')
 mkdirSync(CARPETA_TEMPORAL, { recursive: true })
@@ -45,7 +45,7 @@ export function crearRutasExport(getDb, reemplazarDB) {
       copiaConsistente(getDb(), temporal)
     } catch (err) {
       borrarSiExiste(temporal)
-      return res.status(500).json({ error: `No se pudo exportar: ${err.message}` })
+      return enviarError(res, err)
     }
     res.download(temporal, 'depanas.db', err => {
       borrarSiExiste(temporal)
@@ -65,7 +65,7 @@ export function crearRutasExport(getDb, reemplazarDB) {
       const { respaldo } = reemplazarDB(req.file.path)
       res.json({ ok: true, mensaje: 'Base de datos importada correctamente', respaldo })
     } catch (err) {
-      res.status(500).json({ error: err.message })
+      enviarError(res, err)
     } finally {
       borrarSiExiste(req.file.path)
     }
@@ -73,45 +73,15 @@ export function crearRutasExport(getDb, reemplazarDB) {
 
   // GET /api/db/exportar-json — todas las compras, agrupadas
   router.get('/exportar-json', (_req, res) => {
-    try {
-      const filas = getDb().prepare('SELECT * FROM ingresos ORDER BY fecha DESC, id DESC').all()
-      res.setHeader('Content-Disposition', 'attachment; filename="depanas_compras.json"')
-      res.json(agruparFilas(filas))
-    } catch (err) {
-      res.status(500).json({ error: err.message })
-    }
+    res.setHeader('Content-Disposition', 'attachment; filename="depanas_compras.json"')
+    responder(res, () => comprasDAO(getDb()).todas())
   })
 
-  // Valida y resuelve el lote completo dentro de la misma transacción.
+  // POST /api/db/importar-json — { compras, decisiones } (o solo la lista): todo o nada
   router.post('/importar-json', (req, res) => {
     const compras = Array.isArray(req.body) ? req.body : req.body?.compras
     const decisiones = Array.isArray(req.body) ? [] : req.body?.decisiones ?? []
-    const db = getDb()
-    try {
-      const resultado = enTransaccion(db, () => {
-        const existentes = agruparFilas(db.prepare('SELECT * FROM ingresos ORDER BY id').all())
-        let plan
-        try { plan = resolverCarga(compras, existentes, decisiones) }
-        catch (err) { err.status ??= 400; throw err }
-        if (!compras.length) { const err = new Error('Selecciona al menos una compra'); err.status = 400; throw err }
-        const insertar = db.prepare(
-          'INSERT INTO ingresos (compra_id, fecha, material, cantidad, unidad, monto, proveedor, categoria, producto, origen_id, compra_categoria, compra_iva) ' +
-          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        )
-        for (const { compra: c, nueva } of plan.escrituras) {
-          const id = nueva ? randomUUID() : c.id
-          if (!nueva) db.prepare('DELETE FROM ingresos WHERE compra_id = ?').run(id)
-          registrarCompra(db, c)
-          for (const m of c.materiales) {
-            insertar.run(id, c.fecha, m.material, m.cantidad, m.unidad, m.monto, c.proveedor, m.categoria, m.producto, c.origen_id, c.categoria, c.iva ?? 0)
-          }
-        }
-        return plan.resultado
-      })
-      res.json({ ok: true, ...resultado })
-    } catch (err) {
-      res.status(err.status ?? 500).json({ error: err.message })
-    }
+    responder(res, () => ({ ok: true, ...comprasDAO(getDb()).cargarRespaldo(compras, decisiones) }))
   })
 
   return router

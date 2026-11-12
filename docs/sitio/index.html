@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Documentación · De Panas SV</title>
+  <link rel="stylesheet" href="../manual/fuentes/fuentes.css">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="contenedor">
+      <a class="logo" href="index.html"><img src="../manual/img/arepa.png" alt=""><span>DE PANAS</span></a>
+      <nav class="menu" aria-label="Documentación">
+        <ul>
+          <li><a href="index.html" aria-current="page">Inicio</a></li>
+          <li><a href="modulos.html">Módulos</a></li>
+          <li><a href="arquitectura.html">Arquitectura</a></li>
+          <li><a href="decisiones.html">Decisiones</a></li>
+          <li><a href="calidad.html">Calidad</a></li>
+          <li><a href="../manual/index.html">Manual de uso</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <div class="titular">
+      <h1>Documentación de De Panas SV</h1>
+      <p>Cómo funciona la app de registro de compras y costos de De Panas: sus módulos, cómo está construida, las decisiones que tomamos y cómo la probamos.</p>
+    </div>
+
+    <div class="cifras" role="list" aria-label="El proyecto en cifras">
+      <div class="cifra" role="listitem"><strong>8</strong><span>módulos</span></div>
+      <div class="cifra" role="listitem"><strong>594</strong><span>pruebas automáticas</span></div>
+      <div class="cifra" role="listitem"><strong>3</strong><span>sesiones con el cliente</span></div>
+      <div class="cifra" role="listitem"><strong>0</strong><span>servidores que instalar</span></div>
+    </div>
+
+    <section aria-labelledby="t-proyecto">
+      <h2 id="t-proyecto">El proyecto</h2>
+      <p><b>De Panas</b> es un negocio de comida venezolana en El Salvador: arepas, empanadas, tequeños, cachitos, golfeados y pan de guayaba. Marta Martínez es la dueña principal y prepara la comida; César lleva la administración y es nuestro contacto.</p>
+      <h3>El problema</h3>
+      <p>Su sistema de ventas solo tenía cargados los productos. <b>No había un registro de compras de insumos</b>: qué se compró, a quién, cuánto y a qué precio. Las compras se anotaban en un Excel.</p>
+      <h3>Lo que pidió el cliente</h3>
+      <ul class="lista">
+        <li>Registrar cada compra con proveedor, fecha, artículos, cantidades y montos, con o sin IVA.</li>
+        <li>Consultar, corregir y exportar las compras a Excel.</li>
+        <li>Que cada persona entre con su usuario y vea solo lo que le toca.</li>
+        <li>Sin presupuesto para hosting ni dominio: todo en la computadora del local y sin internet.</li>
+      </ul>
+      <p>Proyecto de Programación Orientada a Objetos del equipo <b>FORGE</b> (Instituto Kriete). Los requisitos y el descubrimiento están en los PDF de la raíz del repositorio.</p>
+    </section>
+
+    <section aria-labelledby="t-hace">
+      <h2 id="t-hace">Qué hace</h2>
+      <div class="rejilla">
+        <a class="tarjeta" href="modulos.html#agregar"><h3>Agregar compra</h3><p>Registrar lo que llega a la cocina, paso a paso, con el precio de la última compra y el IVA.</p></a>
+        <a class="tarjeta" href="modulos.html#lista"><h3>Lista de compras</h3><p>Consultar, filtrar, corregir y eliminar compras, de 50 en 50 cuando se acumulan.</p></a>
+        <a class="tarjeta" href="modulos.html#catalogo"><h3>Catálogo</h3><p>Proveedores, categorías, artículos y productos, con quién vende qué.</p></a>
+        <a class="tarjeta" href="modulos.html#exportar"><h3>Exportar y cargar</h3><p>Excel con resumen de gastos y respaldos para pasar los datos a otro equipo.</p></a>
+        <a class="tarjeta" href="modulos.html#usuarios"><h3>Usuarios</h3><p>Roles, pantallas y funciones por persona, con contraseñas seguras.</p></a>
+        <a class="tarjeta" href="modulos.html#zip"><h3>Versión para el cliente</h3><p>Un .zip que se abre como sitio web local, con una versión de demostración.</p></a>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-leer">
+      <h2 id="t-leer">Cómo leer esta documentación</h2>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Si quieres…</th><th scope="col">Lee</th></tr></thead>
+          <tbody>
+            <tr><td>Usar la app</td><td><a href="../manual/index.html">Manual de uso</a></td></tr>
+            <tr><td>Instalarla en la computadora del cliente</td><td><a href="../INSTALACION_CLIENTE.md">Guía de instalación</a></td></tr>
+            <tr><td>Saber qué hace cada pantalla y sus reglas</td><td><a href="modulos.html">Módulos</a></td></tr>
+            <tr><td>Entender cómo está construida</td><td><a href="arquitectura.html">Arquitectura</a> y <a href="../MODELO_DATOS.md">Modelo de datos</a></td></tr>
+            <tr><td>Saber por qué se hizo así</td><td><a href="decisiones.html">Decisiones</a></td></tr>
+            <tr><td>Ver cómo se probó y qué protege</td><td><a href="calidad.html">Calidad</a> y <a href="../SEGURIDAD.md">Seguridad</a></td></tr>
+            <tr><td>Respetar la marca en algo nuevo</td><td><a href="../../DESIGN_DECISIONS.md">Decisiones de diseño</a></td></tr>
+            <tr><td>Correr el proyecto o programar en él</td><td><a href="../../README.md">README</a> y <a href="../../CLAUDE.md">CLAUDE.md</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-equipo">
+      <h2 id="t-equipo">Equipo FORGE</h2>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Integrante</th><th scope="col">Rol</th><th scope="col">Aportes principales</th></tr></thead>
+          <tbody>
+            <tr><td>Gabriel Valencia</td><td>Formulario de compras y entrega al cliente</td><td>El .zip con el Node.js oficial, la seguridad de la API, el monto editable, el «+» y el lápiz del artículo, el aviso de nombres parecidos y los artículos por proveedor</td></tr>
+            <tr><td>Pedro Rodríguez</td><td>Datos y catálogo</td><td>La ficha del proveedor, un artículo en varios productos, exportar y cargar el catálogo, el precio tipo cajero, la validación campo por campo y el IVA</td></tr>
+            <tr><td>Alejandro Salgado</td><td>Usuarios, seguridad y calidad</td><td>El gestor de usuarios, los requisitos de contraseña, los roles y permisos, las pruebas con Playwright, la vista de teléfono y el aviso antes de perder datos</td></tr>
+            <tr><td>Soham Villacorta</td><td>Enlace con el cliente e integración</td><td>Las sesiones con César y Marta, el Catálogo, Cargar datos, la integración de ramas y el cierre final: marca, formulario por pasos, casillas y páginas en la lista, capa DAO, pruebas, demostración y documentación</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-estado">
+      <h2 id="t-estado">Estado</h2>
+      <p class="ok"><b>Lista para que la usen César y Marta.</b> Registro, consulta y exportación de compras con base de datos SQLite; catálogo editable; usuarios con permisos; versión .zip para Windows con demostración; manual de uso.</p>
+      <h3>Lo que queda para después</h3>
+      <ul class="lista">
+        <li>Conversión automática de unidades (HU-02).</li>
+        <li>Un panel de costos y márgenes dentro de la app (hoy el reporte de gastos va en el Excel).</li>
+        <li>Acceso desde la tablet por la red local.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>De Panas SV · Equipo FORGE · noviembre de 2026</footer>
+</body>
+</html>

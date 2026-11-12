@@ -14,6 +14,7 @@ import PantallaExportar from './pages/PantallaExportar'
 import PantallaCargar from './pages/PantallaCargar'
 import PantallaUsuarios from './pages/PantallaUsuarios'
 import PantallaApagado from './pages/PantallaApagado'
+import PantallaNoEncontrada from './pages/PantallaNoEncontrada'
 import { apagarSistema, avisarCierrePestana, detectarModo, puedeApagar, registrarPestana } from './services/api'
 import { ConfirmDialog } from './components/common'
 import { rutaInicio } from './utils/permisos'
@@ -150,11 +151,11 @@ function AppContenido() {
             <Route path="/configuracion" element={<RedirigirACatalogo />} />
             <Route path="/configuracion/:seccion" element={<RedirigirACatalogo />} />
             <Route path="/exportar" element={protegida('/exportar', <PantallaExportar />)} />
-            <Route path="/cargar" element={protegida('/cargar', <PantallaCargar />)} />
+            <Route path="/cargar" element={protegida('/cargar', <PantallaCargar puedeVerLista={tienePermiso('/compras')} />)} />
             <Route path="/usuarios" element={protegida('/usuarios', <PantallaUsuarios />)} />
             <Route path="/agregar-compra" element={<Navigate to="/" replace />} />
-            {/* Redirige cualquier ruta desconocida a la principal */}
-            <Route path="*" element={<Navigate to={inicio} replace />} />
+            {/* Una ruta que no existe: lo dice y ofrece volver al inicio del usuario */}
+            <Route path="*" element={<PantallaNoEncontrada inicio={inicio} />} />
           </Routes>
         </div>
         <BarraInferior onCerrarSesion={alCerrarSesion} onApagar={alApagar} />

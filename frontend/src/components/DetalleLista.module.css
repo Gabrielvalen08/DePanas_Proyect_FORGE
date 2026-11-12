@@ -28,7 +28,7 @@
 
 .tabla th,
 .tabla td {
-  padding: var(--space-3);
+  padding: var(--tabla-celda-y) var(--space-3);
   border-bottom: 1px solid var(--color-border);
   text-align: left;
 }
@@ -89,4 +89,12 @@
 
 .edicion > form > div:last-child {
   padding: var(--space-4) var(--space-6) 0;
+}
+
+/* Alto de fila común a todas las tablas (tokens --tabla-*) */
+@media (min-width: 1100px) {
+  .tabla tbody td,
+  .tabla tbody th {
+    height: var(--tabla-alto-fila);
+  }
 }

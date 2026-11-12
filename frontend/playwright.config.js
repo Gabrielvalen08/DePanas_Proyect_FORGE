@@ -14,8 +14,9 @@ import { defineConfig, devices } from '@playwright/test'
  *   npx playwright show-report    reporte de la última corrida (con capturas y video de lo que falló)
  */
 
-const PUERTO_BACKEND = 3100
-const PUERTO_FRONTEND = 5174
+// Se pueden cambiar si ese puerto ya está ocupado (p. ej. una vista previa de Vite que cayó en 5174)
+const PUERTO_BACKEND = Number(process.env.E2E_PUERTO_BACKEND) || 3100
+const PUERTO_FRONTEND = Number(process.env.E2E_PUERTO_FRONTEND) || 5174
 
 export default defineConfig({
   testDir: './e2e',

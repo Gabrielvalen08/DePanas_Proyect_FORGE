@@ -26,6 +26,7 @@ import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../../shared/productos.js'
 import { ivaDe } from '../../../shared/iva.js'
+import { validarIds } from '../../../shared/lote.js'
 import { fichaVacia, leerFicha, normalizarFicha } from '../../../shared/proveedores.js'
 import { CARGAR } from '../utils/mensajes'
 import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
@@ -1229,7 +1230,9 @@ export function totalLista(lista) {
 // CRUD de listas de compra
 // ---------------------------------------------------------------------------
 
-/** filters: { proveedor, material (o producto), fechaDesde, fechaHasta } */
+/**
+ * filters: { proveedor, material (o producto), fechaDesde, fechaHasta }
+ */
 export async function fetchListas(filters = {}) {
   const material = filters.material || filters.producto
 
@@ -1243,7 +1246,9 @@ export async function fetchListas(filters = {}) {
   }
 
   await delay(200)
-  let listas = getListas()
+  // Las compras guardadas cuando existía el Archivo pueden traer esos campos: ya no se usan
+  // eslint-disable-next-line no-unused-vars
+  let listas = getListas().map(({ archivo, archivada, ...l }) => l)
   const contiene = (texto, busqueda) => (texto || '').toLowerCase().includes(busqueda.toLowerCase())
   if (filters.proveedor) listas = listas.filter(l => contiene(l.proveedor, filters.proveedor))
   if (material) listas = listas.filter(l => (l.materiales || []).some(m => contiene(m.material, material)))
@@ -1292,6 +1297,25 @@ export async function eliminarLista(id) {
 
   await delay(150)
   setListas(getListas().filter(l => l.id !== id))
+}
+
+/** Elimina varias compras de una vez (todo o nada). Devuelve { eliminadas } */
+export async function eliminarListas(ids) {
+  if ((await detectarModo()) === 'servidor') {
+    const resultado = await pedirJSON('/compras/eliminar', 'POST', { ids })
+    refrescarCache()
+    return resultado
+  }
+
+  const error = validarIds(ids)
+  if (error) throw new Error(error)
+  await delay(150)
+  const elegidas = new Set(ids.map(String))
+  const listas = getListas()
+  const quedan = listas.filter(l => !elegidas.has(String(l.id)))
+  if (quedan.length === listas.length) throw new Error('No se encontraron las compras elegidas')
+  setListas(quedan)
+  return { eliminadas: listas.length - quedan.length }
 }
 
 // ---------------------------------------------------------------------------
@@ -1520,11 +1544,18 @@ export async function importarCatalogo(tipo, filas) {
 // requisitos, hay un solo administrador (permisos ['*'], no se elimina) y nadie más
 // recibe el Gestor de usuarios.
 
+/**
+ * Contraseña anterior de Marta_02: si aún entra con ella, pasa a la nueva una sola vez por
+ * navegador (CLAVE_MIGRACION_MARTA). Se compara la contraseña porque al entrar el hash cambia de sal.
+ */
+const CONTRASENA_MARTA_ANTERIOR = '5678'
+const CLAVE_MIGRACION_MARTA = 'depanas_migracion_marta'
+
 /** Hash de la contraseña anterior de Cesar_01 (1234): se cambia por la nueva al leer los usuarios */
 const HASH_CESAR_ANTERIOR =
   'pbkdf2$100000$5a43060896bd80a84a7d4224a028b545$c19cba8f54fc5c6afa5638a7ac9be25b870d6a132d9a64f6f96f597121b3d54e'
 
-/** Iguales a backend/db/usuarios.js: Cesar_01 / DePanas#2026 (admin) y Marta_02 / 5678 (operadora) */
+/** Iguales a backend/db/usuarios.js: Cesar_01 (admin) y Marta_02 (operadora), las dos con DePanas#2026 */
 const USUARIOS_INICIALES = [
   {
     usuario: 'Cesar_01', nombre: 'César', rol: ROL_ADMIN, permisos: ['*'], funciones: null,
@@ -1532,7 +1563,7 @@ const USUARIOS_INICIALES = [
   },
   {
     usuario: 'Marta_02', nombre: 'Marta', rol: 'operador', ...permisosDeRol('operador'),
-    contrasena: 'pbkdf2$100000$d0f24824a99bff7180d523f67b5b6ff5$e1f9aaceda70ab381493fc4662cc7c561c76aef0415446fcb0b3d7c90fdda447',
+    contrasena: 'pbkdf2$100000$af42236fff5eb0c2eccec19ce3a95610$59a692988cced65679cd0207b34b18d8fde41a2883927092a055f9fcdf252a3b',
   },
 ]
 
@@ -1638,12 +1669,23 @@ function validarFunciones(funciones, permisos) {
 }
 
 /** Devuelve el usuario (público, con sus funciones) si la contraseña es correcta; si no, lanza */
+/** Marta_02 deja la contraseña anterior (5678) por la nueva; si ya la cambió, no se toca */
+async function migrarContrasenaMartaLocal(usuarios, marta) {
+  if (localStorage.getItem(CLAVE_MIGRACION_MARTA)) return
+  if (await verificar(CONTRASENA_MARTA_ANTERIOR, marta.contrasena)) {
+    marta.contrasena = USUARIOS_INICIALES.find(u => u.usuario === 'Marta_02').contrasena
+    setUsuariosLocal(usuarios)
+  }
+  localStorage.setItem(CLAVE_MIGRACION_MARTA, '1')
+}
+
 export async function iniciarSesion(usuario, contrasena) {
   if ((await detectarModo()) === 'servidor') {
     return pedirJSON('/sesion', 'POST', { usuario, contrasena })
   }
   const usuarios = getUsuariosLocal()
   const registro = buscarUsuarioLocal(usuarios, recortado(usuario))
+  if (registro?.usuario === 'Marta_02') await migrarContrasenaMartaLocal(usuarios, registro)
   const limpia = recortado(contrasena)
   if (!registro || !limpia || !(await verificar(limpia, registro.contrasena))) throw new Error(V.incorrecta)
   if (necesitaRehash(registro.contrasena)) {

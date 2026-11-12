@@ -1,190 +1,117 @@
 # De Panas — Registro de compras y costos
 
-Aplicación web local para que **De Panas**, un negocio de comida venezolana, registre sus compras de insumos con proveedor, fecha y costo, y sepa cuánto gasta. Proyecto de Programación Orientada a Objetos del equipo **FORGE** (Instituto Kriete), con un cliente real.
+Aplicación web local para que **De Panas**, un negocio de comida venezolana en El Salvador, registre sus compras de insumos con proveedor, fecha, artículos y costo, y sepa cuánto gasta. Proyecto de Programación Orientada a Objetos del equipo **FORGE** (Instituto Kriete), con un cliente real.
+
+## Documentación
+
+| Para… | Abre |
+|---|---|
+| Conocer el proyecto: módulos, arquitectura, decisiones y calidad | **[docs/sitio/index.html](docs/sitio/index.html)** (en el navegador) |
+| Usar la app | [docs/manual/index.html](docs/manual/index.html), el manual de uso |
+| Instalarla en la computadora del cliente | [docs/INSTALACION_CLIENTE.md](docs/INSTALACION_CLIENTE.md) |
+| Ver el modelo de datos y la capa DAO | [docs/MODELO_DATOS.md](docs/MODELO_DATOS.md) |
+| Revisar la seguridad y sus pruebas | [docs/SEGURIDAD.md](docs/SEGURIDAD.md) |
+| Respetar la marca | [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) |
+| Programar en el proyecto | [CLAUDE.md](CLAUDE.md) y el `README.md` de cada carpeta de `frontend/src/` |
+
+El índice completo de `docs/` está en [docs/README.md](docs/README.md).
 
 ## El problema y el cliente
 
 - De Panas tiene local propio. Marta Martínez es la dueña principal y prepara la comida; César, socio, lleva la administración y es nuestro contacto.
-- Su sistema de ventas solo tiene cargados los productos. **No hay un registro de compras de insumos**: qué se compró, a quién, cuánto y a qué precio.
-- Restricciones: sin presupuesto para hosting ni dominio, todo en dólares y funcionando en la red local (computadora + tablet), sin internet.
-- Lo levantamos conversando con César y lo validamos con él en una llamada el 25/09/2026. Detalle en [Documento de descubrimiento](Documento%20de%20descubrimiento%20-%20De%20Panas.pdf) y [Documento de requerimientos](Documento%20de%20requerimientos%20-%20De%20Panas.pdf).
-- El negocio ya llevaba sus compras en un Excel (`Datos De Panas.xlsx`). Sus listas de proveedores, categorías, materiales y productos son el catálogo inicial de la app.
-- Probamos el programa con el cliente el 13/10/2026 y el 29/10/2026. Las decisiones de cada sesión están en [Pruebas de usuario](docs/PRUEBAS_USUARIO.md).
+- Su sistema de ventas solo tenía los productos. **No había un registro de compras de insumos**: qué se compró, a quién, cuánto y a qué precio. Las compras se llevaban en un Excel.
+- Restricciones: sin presupuesto para hosting ni dominio, todo en dólares y en la computadora del local, sin internet.
+- Requisitos y descubrimiento: [Documento de descubrimiento](Documento%20de%20descubrimiento%20-%20De%20Panas.pdf) y [Documento de requerimientos](Documento%20de%20requerimientos%20-%20De%20Panas.pdf). Sesiones con el cliente: [docs/PRUEBAS_USUARIO.md](docs/PRUEBAS_USUARIO.md).
 
-## Funcionalidades
+## Qué hace
 
-**Implementado:**
+- **Agregar compra**, paso a paso: fecha y proveedor; luego los artículos (solo los que vende ese proveedor), con el precio de la última compra y el IVA de 13 %. Varias compras a la vez.
+- **Lista de compras** con filtros, detalle para editar o eliminar, **casillas como en el correo** para eliminar varias y **páginas de 50** cuando las compras se acumulan.
+- **Catálogo** de proveedores (con su ficha), categorías (con quién las vende), artículos (con su categoría y productos) y productos. Renombrar actualiza las compras.
+- **Exportar** a Excel, con una hoja **Resumen** de gastos por proveedor, por categoría y por mes, o a un respaldo JSON. **Cargar datos** compara compra por compra.
+- **Usuarios** con roles (administrador, operador y empleado), pantallas y funciones por persona, y requisitos de contraseña.
+- **Seguridad real con el servidor**: sesión con token, permisos en cada petición, bloqueo tras 5 intentos y contraseñas con PBKDF2.
+- **Versión .zip para Windows**: se abre como sitio web local, sin internet, e incluye una **versión de demostración** con dos meses de compras de ejemplo y el manual.
 
-- **Pantalla de acceso** con usuario y contraseña. La sesión dura hasta cerrar la pestaña (o 8 horas sin uso) y el menú tiene **Cerrar sesión** (con confirmación). Con el servidor la seguridad es real: la API exige la sesión y revisa los permisos en cada pedido, 5 contraseñas malas seguidas bloquean a ese usuario 5 minutos y las contraseñas se guardan con PBKDF2 de 600 000 iteraciones. El servidor solo escucha en la propia computadora.
-- **Versión para el cliente en un .zip** (`desktop/`): al descomprimirlo, **«Abrir De Panas SV»** levanta el sistema y lo abre en el navegador como sitio web local (`http://localhost:4510`), sin internet; se apaga desde el propio sistema («Apagar De Panas SV») y los datos quedan en `%APPDATA%\De Panas SV\depanas.db`. Lleva el Node.js oficial firmado, así que Windows (Smart App Control) lo deja abrir. Guía del cliente en [docs/INSTALACION_CLIENTE.md](docs/INSTALACION_CLIENTE.md).
-- **Gestor de usuarios** (solo el administrador): crear usuarios con su contraseña y un **rol** (Operador o Empleado) que ya trae sus pantallas y funciones; editar nombre, contraseña, rol, **pantallas** y **funciones** de cada pantalla (por ejemplo, ver la Lista de compras pero no eliminar compras); y eliminarlos. El administrador también define los **requisitos de contraseña** (mínimo de caracteres, mayúscula, minúscula, número y carácter especial), que se revisan en vivo al escribirla. No se repiten usuarios ni contraseñas, y las contraseñas se guardan con hash. Cada usuario ve solo sus pantallas y botones.
-- **Registro de compras** (página principal). Proveedor y fecha se escriben una vez; cada fila lleva material, cantidad, unidad y precio. El total se calcula en vivo.
-- **Varias compras a la vez.** "Nueva compra" agrega otro bloque, y cada uno tiene su propio Guardar.
-- **Buscador tipo Excel** en Proveedor y Material: un clic muestra todas las opciones, al escribir se filtran (sin distinguir tildes ni mayúsculas) y también se puede escribir un valor nuevo.
-- **Catálogo del Excel:** 4 proveedores, 6 categorías, 36 materiales y 12 productos, sembrados en la base de datos.
-- **Categoría y producto de cada material**, como en el Excel (por ejemplo, Tocino La Rioja → Materia Prima · Cachitos). Si un material es nuevo o le falta alguno, una ventana pide elegirlos con botones; si lo escrito no existe, se agrega como categoría o producto nuevo.
-- **Validación al guardar**, con el error junto a cada campo y un resumen con enlaces. Las filas vacías se ignoran.
-- **Listas de compra**: tabla con proveedor, cantidad de materiales, gasto total y fecha.
-- **Detalle de cada compra** para ver, editar o eliminar (con confirmación).
-- **Filtros en línea** por proveedor, material y rango de fechas.
-- **Artículos por proveedor:** cada categoría guarda los proveedores que la surten. En Agregar compra, al elegir el proveedor solo se sugieren los artículos de sus categorías (si no tiene ninguna, todos), con «Materia Prima» primero. Cada compra guardada y cada artículo nuevo asignado en una compra suman esa relación.
-- **Catálogo** (menú, debajo de Lista de compras): cuatro opciones para administrar proveedores, categorías, materiales y productos. Se pueden agregar, cambiar de nombre y eliminar; cambiar un nombre lo actualiza también en las compras guardadas. En cada material se ven y se cambian su categoría y su producto, y al agregarlo se pueden crear categorías o productos nuevos. En cada categoría y cada producto se ven sus materiales y se eligen con casillas cuáles lleva; el cambio llega también a las compras.
-- **Base de datos SQLite** (backend Node.js + Express). Sin servidor, la app funciona igual guardando en el navegador (modo local); los dos modos nunca se mezclan.
-- **Exportar datos** (pantalla propia): eliges un rango de fechas (o este mes, mes pasado, este año, todo) y el formato, Excel (`.xlsx`, se abre directo en columnas) o respaldo (`.json`), y ves cuántas compras y cuánto dinero entran antes de descargar.
-- **Cargar datos** (pantalla propia): se elige un respaldo `.json` de Exportar y qué compras traer. Las que ya están se omiten; las que llegan con cambios se comparan lado a lado, con las diferencias marcadas en rojo, y se elige qué materiales, proveedor y fecha quedan.
-- **Interfaz con la marca De Panas**: collage de las ilustraciones del brandbook sobre el fondo crema, la arepa del logo en el menú, mensajes con la voz de marca ("¡Listo, pana!", "Hoy toca arepita…"), adaptable a escritorio y móvil, con contraste WCAG AA.
+## Capturas
 
-**Pendiente** (según el documento de requerimientos):
-
-- Conversión automática de unidades (HU-02).
-- Reportes de gastos por producto y por periodo (HU-03).
-- Acceso desde la tablet por la red local.
-
-## Capturas de pantalla
-
-| Registro de compras | Material nuevo: categoría y producto |
+| Agregar compra | Lista de compras |
 |---|---|
-| ![Registro de compras con la arepa del logo y el collage de fondo](docs/img/agregar-compra.jpg) | ![Ventana para elegir la categoría y el producto de un material nuevo](docs/img/material-nuevo.jpg) |
+| ![Agregar compra con una fila completa, subtotal, IVA y total](docs/manual/img/02-agregar-compra.png) | ![Lista de compras con dos compras elegidas y el ícono Eliminar](docs/manual/img/04-lista-compras.png) |
 
-| Acceso (móvil) | Registro (móvil) | Compras (móvil) |
-|---|---|---|
-| ![Pantalla de acceso con teclado numérico](docs/img/acceso-movil.jpg) | ![Registro de compras en el teléfono](docs/img/agregar-compra-movil.jpg) | ![Listas de compra en el teléfono](docs/img/compras-movil.jpg) |
+| Catálogo | Exportar datos |
+|---|---|
+| ![Catálogo en la sección Artículos](docs/manual/img/07-catalogo.png) | ![Exportar datos con el rango, los formatos y el botón Descargar](docs/manual/img/08-exportar.png) |
 
 ## Tecnologías
 
 | Parte | Tecnología |
 |---|---|
-| Frontend | React 18.3, Vite 5.4, React Router 6.26, Motion 14, lucide-react 0.441 |
-| Estilos | CSS Modules y tokens de diseño propios |
-| Backend | Node.js ≥ 22.13, Express 4.19, `node:sqlite`, multer |
-| Calidad | Vitest 2 + Testing Library, ESLint 9 con `jsx-a11y`; `node --test` en el backend |
-| Fuentes | Josefin Sans y Cardo (Google Fonts) |
+| Frontend | React 18, Vite 5, React Router 6, Motion, lucide-react; CSS Modules con tokens de la marca |
+| Backend | Node.js ≥ 22.13, Express 4, SQLite con `node:sqlite`; capa DAO en `backend/dao/` |
+| Calidad | `node:test` (backend), Vitest + Testing Library (frontend), Playwright (de punta a punta), ESLint 9 con `jsx-a11y` |
+| Entrega | .zip con el Node.js oficial firmado (`desktop/`) |
 
-**POO:** el código actual no define clases. El frontend usa componentes funcionales de React (`frontend/src/components/`) y el backend usa funciones de Express (`backend/routes/`). [COMPLETAR: principios de POO aplicados o previstos (clases, herencia, encapsulamiento) y en qué archivos]
-
-## Arquitectura
-
-```
-frontend/src/
-  pages/          AgregarCompra (principal), PantallaMaestra (compras), PantallaCatalogo,
-                  PantallaExportar, PantallaCargar, PantallaUsuarios y PantallaContrasena (acceso)
-  components/     BloqueCompra, AsignarMaterial, EditorCatalogo, DetalleLista, FiltrosEnLinea, navegación…
-  components/common/  Piezas base: Boton, Campo, Modal, Tarjeta…
-  context/        Toasts y sesión (AuthContext)
-  services/api.js Única capa de datos (modo servidor o local)
-  utils/          Formato, exportar.js (Excel .xlsx/JSON) y mensajes.js (todos los textos del sistema)
-  styles/         Tokens de marca, collage de fondo y presets de movimiento
-frontend/public/brand/  Logo, arepa, íconos y el collage de la pág. 10 del brandbook
-backend/
-  routes/         compras.js (/api/ingresos), listas.js (/api/compras), catalogo.js, db_export.js
-  db/             schema.sql y catalogo.js (catálogo inicial del Excel)
-  db.js           Apertura, migraciones y siembra del catálogo
-docs/             Decisiones técnicas, planes y capturas
-```
-
-Cada carpeta de `frontend/src/` tiene su propio `README.md`.
-
-```mermaid
-flowchart LR
-  U[Navegador<br/>computadora o tablet] --> R[React + Vite]
-  R --> A[services/api.js]
-  A -->|con servidor| E[Express :3000] --> S[(SQLite<br/>depanas.db)]
-  A -->|sin servidor| L[(localStorage)]
-```
-
-### API del backend
-
-| Ruta | Qué hace |
-|---|---|
-| `GET /api/health` | El frontend lo usa para decidir si trabaja con el servidor |
-| `GET/POST /api/compras`, `GET/PUT/DELETE /api/compras/:id` | Compras completas (proveedor, fecha y materiales), agrupadas por `compra_id`. Valida montos y cantidades > 0 |
-| `GET /api/compras/sugerencias` | Nombres para el autocompletado |
-| `GET /api/catalogo` | Proveedores, categorías, productos y materiales con su categoría y producto, y `uso` (compras o materiales que usan cada opción) |
-| `PUT /api/catalogo/materiales/:nombre` | Asigna categoría y producto a un material (crea los que no existan) |
-| `POST /api/catalogo/:tipo` | Agrega un proveedor, categoría, material (con su categoría y producto) o producto |
-| `PUT /api/catalogo/:tipo/:nombre` | Cambia el nombre (y, en un material, su categoría y producto) y lo actualiza en todas las compras |
-| `DELETE /api/catalogo/:tipo/:nombre` | Quita la opción; las compras conservan su texto |
-| `/api/ingresos` | Acceso fila por fila a la tabla |
-| `GET /api/db/exportar`, `POST /api/db/importar` | Copia completa de `depanas.db` (`VACUUM INTO`) y reemplazo con validación y respaldo |
-| `GET /api/db/exportar-json`, `POST /api/db/importar-json` | Compras en JSON; importar omite las repetidas y pide decidir las que cambiaron |
+Cómo se aplicó la programación orientada a objetos (encapsulamiento en los DAO, herencia en `ErrorDatos`, abstracción en `services/api.js`…): [docs/sitio/arquitectura.html](docs/sitio/arquitectura.html#t-poo).
 
 ## Cómo ejecutarlo
 
-Requisitos: Node.js y npm. El backend necesita Node.js ≥ 22.13 por `node:sqlite` (probado con v24.16.0).
+Requisitos: Node.js ≥ 22.13 (por `node:sqlite`) y npm. Probado en Windows 11 con Node v24.
 
 **Backend** (desde `backend/`):
 
 ```bash
 npm install
-npm start          # http://localhost:3000 (o npm run dev, con recarga)
+npm start               # http://localhost:3000 (o npm run dev, con recarga)
 npm test
+npm run demo:base       # base de demostración en db/depanas-demo.db
 ```
-
-La base se crea sola en `backend/db/depanas.db` (ignorada por git) con el catálogo del Excel.
 
 **Frontend** (desde `frontend/`):
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173 (redirige /api al backend)
-npm run test:run   # tests
-npm run test:e2e   # pruebas end-to-end con Playwright (ver frontend/e2e/README.md)
+npm run dev             # http://localhost:5173 (redirige /api al backend)
 npm run lint
-npm run build      # producción en frontend/dist/
+npm run test:run
+npm run test:e2e        # la primera vez: npx playwright install chromium
+npm run build
 ```
 
-**Pruebas end-to-end** (Playwright, desde `frontend/`): un navegador real recorre la app completa con su propio backend y una base temporal, así que no tocan `backend/db/depanas.db` y se pueden correr con `npm run dev` abierto.
+**Versión para el cliente** (desde `desktop/`, en Windows): `npm install`, `npm run preparar` y `npm run dist`. Detalle en [desktop/README.md](desktop/README.md).
 
-```bash
-npx playwright install chromium   # solo la primera vez (descarga el navegador)
-npm run test:e2e                  # todas, sin ventana
-npm run test:e2e -- --headed      # viendo el navegador
-npm run test:e2e:ui               # modo interactivo
-npx playwright show-report        # reporte con capturas y video de lo que falló
+Sin el backend, el frontend trabaja en modo local con datos de ejemplo. Usuarios iniciales: `Cesar_01` (administrador) y `Marta_02` (operadora), los dos con `DePanas#2026`. Cámbialas en el Gestor de usuarios.
+
+## Estructura
+
 ```
-
-Detalle en [`frontend/e2e/README.md`](frontend/e2e/README.md).
-
-Sin el backend encendido, el frontend trabaja en modo local con datos de ejemplo. Usuarios de prueba: `Cesar_01` / `DePanas#2026` (administrador, entra a todo) y `Marta_02` / `5678` (operadora: todo menos el Gestor de usuarios; su contraseña no cumple los requisitos nuevos y conviene cambiarla desde el gestor). Se siembran en la base al crearla (`backend/db/usuarios.js`) y, en modo local, en `depanas_usuarios`.
-
-Los comandos se probaron en Windows 11.
-
-## Decisiones de diseño
-
-La identidad visual sale del **Brandbook DE PANAS (mayo 2026)**. Lo esencial:
-
-- **Colores:** Naranja Sazón `#EF7D05` y Crema y Trigo `#FEEECC` son los protagonistas. El texto va en Verde Ávila `#144428`.
-- **Tipografía:** Josefin Sans para títulos e interfaz; Cardo para textos largos y las frases de marca.
-- **Elementos gráficos:** las ilustraciones de la pág. 10 forman un collage al 10 % de opacidad sobre el fondo crema. En el menú, la arepa del logo acompaña al nombre.
-- **Voz de marca** (diapositiva 10): cercana, venezolana y vibrante en confirmaciones y encabezados; clara y sin modismos en errores.
-- **Accesibilidad:** contraste WCAG AA verificado, también sobre los trazos del collage. El texto sobre naranja usa un tono más oscuro del verde (`#0F331E`).
-- **Movimiento:** respuesta inmediata al presionar, animaciones interrumpibles y respeto por "reducir movimiento".
-- **Datos:** tablas sobrias, con montos alineados a la derecha.
-
-Más detalle en [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) y [docs/DECISIONS.md](docs/DECISIONS.md).
-
-## Flujo de trabajo del equipo
-
-- Una rama por cambio (por ejemplo `refactor/frontend-marca`, `fix/db-bloqueantes`) y Pull Request hacia `main`.
-- Commits con prefijo y área: `feat(compras): …`, `fix(agregar-compra): …`, `refactor(estilos): …`, `chore: …`, `docs: …`, `test: …`.
-- Antes de abrir un PR: `npm run lint`, `npm run test:run`, `npm run test:e2e` y `npm run build` en `frontend/`, y `npm test` en `backend/`.
-- Comandos básicos de Git: [PASOS_GIT.md](PASOS_GIT.md).
+frontend/src/   pages, components (common = UI base), context, hooks, services/api.js, utils, styles
+backend/        app.js, routes/ (HTTP), dao/ (acceso a datos), db.js y db/ (esquema, catálogo inicial, demo), test/
+shared/         reglas que usan igual backend y frontend (compras, IVA, archivo, gastos, usuarios…)
+desktop/        la versión .zip para Windows
+docs/           documentación, manual de uso y sitio de documentación
+.claude/skills/ skills del proyecto (marca, diseño, backend, seguridad, auditorías)
+```
 
 ## Equipo FORGE
 
-| Integrante | GitHub | Rol | Aportes principales |
-|---|---|---|---|
-| Gabriel Valencia | [@Gabrielvalen08](https://github.com/Gabrielvalen08) | Formulario de compras y entrega al cliente | El .zip con el Node.js oficial para que Windows lo deje abrir, la corrección de seguridad de la API, el monto editable que calcula el precio, el «+» y el lápiz del artículo, el aviso de nombres parecidos y los artículos por proveedor |
-| Pedro Rodríguez | [@PedroR007102](https://github.com/PedroR007102) | Datos y catálogo | La ficha del proveedor, un artículo en varios productos, exportar y cargar cada sección del catálogo, el precio tipo cajero, la validación campo por campo y el IVA |
-| Alejandro Salgado | [@alsalgado-24](https://github.com/alsalgado-24) | Usuarios, seguridad y calidad | El gestor de usuarios con hash, los requisitos de contraseña, los roles y permisos por función, las pruebas automáticas con Playwright, la vista de teléfono y el aviso antes de perder datos |
-| Soham Villacorta | [@casoham](https://github.com/casoham) | Enlace con el cliente e integración | Las reuniones del 13/10 y el 29/10, las pruebas con César y Marta, el paso de Configuración a Catálogo, la pantalla de Cargar con la comparación de versiones, la revisión y fusión de PRs (#8, #18, #19 y #25) y la integración de las ramas de cambios |
+| Integrante | GitHub | Rol |
+|---|---|---|
+| Gabriel Valencia | [@Gabrielvalen08](https://github.com/Gabrielvalen08) | Formulario de compras y entrega al cliente |
+| Pedro Rodríguez | [@PedroR007102](https://github.com/PedroR007102) | Datos y catálogo |
+| Alejandro Salgado | [@alsalgado-24](https://github.com/alsalgado-24) | Usuarios, seguridad y calidad |
+| Soham Villacorta | [@casoham](https://github.com/casoham) | Enlace con el cliente e integración |
 
-## Estado y próximos pasos
+Los aportes de cada uno están en [docs/sitio/index.html](docs/sitio/index.html#t-equipo).
 
-**Estado:** registro y consulta de compras con base de datos SQLite, catálogo del Excel editable desde Catálogo, exportación por rango y pantalla de acceso, con 105 tests en el frontend y 24 en el backend.
+## Flujo de trabajo
 
-**Próximos pasos:**
+- Una rama por cambio y Pull Request hacia `main`.
+- Commits en español con prefijo y área: `feat(compras): …`, `fix(agregar-compra): …`, `docs: …`, `test: …`.
+- Antes de un PR: `npm run lint`, `npm run test:run`, `npm run test:e2e` y `npm run build` en `frontend/`, y `npm test` en `backend/`.
 
-1. Conversión de unidades y reportes de gastos por producto y periodo.
-2. Acceso desde la tablet por la red local.
-3. Prueba en la computadora y la tablet del negocio, y validación con César y Marta.
+## Estado
+
+**Lista para que la usen César y Marta.** 594 pruebas automáticas: 131 del backend, 373 del frontend y 90 recorridos en navegador.
+
+Para después: conversión automática de unidades (HU-02), un panel de costos y márgenes dentro de la app y el acceso desde la tablet por la red local.

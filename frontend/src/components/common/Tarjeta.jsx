@@ -8,10 +8,12 @@ import estilos from './Tarjeta.module.css'
  * - interactiva + a: toda la tarjeta es un enlace de React Router.
  * - interactiva + onClick: toda la tarjeta es un <button>.
  * - franja: franja superior de identidad en Naranja Sazón.
+ * - detalle: texto corto junto al título (p. ej. «12 compras»), con aria-live para anunciar cambios.
  */
 export default function Tarjeta({
   titulo,
   icono,
+  detalle,
   accion,
   sombra = false,
   franja = false,
@@ -49,6 +51,7 @@ export default function Tarjeta({
         <div className={estilos.tituloGrupo}>
           {icono && <span className={estilos.icono} aria-hidden="true">{icono}</span>}
           <h2 id={idTitulo} className={estilos.titulo}>{titulo}</h2>
+          {detalle !== undefined && <span className={estilos.detalle} aria-live="polite">{detalle}</span>}
         </div>
         {accion && <div className={estilos.accion}>{accion}</div>}
       </header>

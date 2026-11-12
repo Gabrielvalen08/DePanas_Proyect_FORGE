@@ -9,73 +9,17 @@
  *            "Hoy toca arepita", "Naguará, qué rico".
  *
  * Reglas para mantenerla útil:
- *  - El sabor venezolano va en confirmaciones, encabezados y pantallas vacías.
+ *  - El sabor venezolano va en el acceso, las confirmaciones y las pantallas vacías (los encabezados llevan solo el título).
  *  - Los errores van claros primero: qué pasó y qué hacer. Nunca culpan al usuario.
  *  - Los mensajes de validación son cortos: se leen junto al campo.
  *  - Nada de jerga que confunda: "pana", "chévere", "naguará" y "épale" bastan.
  */
-
-/** Las frases del brandbook, tal cual */
-export const FRASES_MARCA = [
-  'Tu antojo venezolano en El Salvador',
-  'Aquí se viene a comer rico',
-  'Hoy toca arepita',
-  'Naguará, qué rico',
-]
 
 const plural = (n, singular, pluralTexto = `${singular}es`) => (n === 1 ? singular : pluralTexto)
 // En toda la interfaz los materiales se llaman «artículos» (en el código y los datos siguen como `material`)
 const articulos = n => plural(n, 'artículo', 'artículos')
 /** Nombre del formato de un archivo para el usuario: Excel o JSON */
 const nombreFormato = formato => (formato === 'json' ? 'JSON' : 'Excel')
-
-// ---------------------------------------------------------------------------
-// Encabezados: una frase por página que cambia cada día (no en cada recarga)
-// ---------------------------------------------------------------------------
-export const FRASES_ENCABEZADO = {
-  '/': [
-    'Hoy toca arepita: anota lo que llegó a la cocina',
-    'Aquí se viene a comer rico… y a llevar las cuentas claras',
-    '¿Qué trajimos hoy para la cocina, pana?',
-    'Cada insumo cuenta para la sazón',
-    'Del mercado a la plancha, todo queda anotado',
-  ],
-  '/compras': [
-    'Naguará, mira todo lo que ha entrado a la cocina',
-    'Cuentas claras, arepas bien rellenas',
-    'Todo lo que compramos, en un solo lugar',
-    'Tu antojo venezolano en El Salvador empieza aquí',
-  ],
-  '/catalogo': [
-    'Cada cosa en su sitio, como en la cocina de la abuela',
-    'Ordena tus proveedores, artículos y productos',
-    'Un catálogo bien hecho, una sazón bien medida',
-  ],
-  '/exportar': [
-    'Llévate tus cuentas a donde quieras',
-    'Las compras, listas para el Excel',
-  ],
-  '/cargar': [
-    'Trae tus compras completas desde otro equipo',
-    'Que no se pierda ni una compra, pana',
-  ],
-  '/usuarios': [
-    'Cada pana con su clave y su lugar en la cocina',
-    'Quién entra y a dónde, aquí lo decides tú',
-    'Un equipo bien organizado cocina mejor',
-  ],
-}
-
-/** Día del año (1–366): la frase cambia a medianoche y es la misma en toda la jornada */
-function diaDelAno(fecha) {
-  const inicio = new Date(fecha.getFullYear(), 0, 0)
-  return Math.floor((fecha - inicio) / 86_400_000)
-}
-
-export function fraseDelDia(ruta, fecha = new Date()) {
-  const frases = FRASES_ENCABEZADO[ruta] ?? FRASES_ENCABEZADO['/']
-  return frases[diaDelAno(fecha) % frases.length]
-}
 
 // ---------------------------------------------------------------------------
 // Acceso
@@ -140,6 +84,7 @@ export const COMPRA = {
     confirmar: 'Sí, cancelar',
     volver: 'Seguir editando',
   },
+  agregarFila: 'Agregar otro artículo',
   agregarArticulo: material => `Agregar artículo nuevo${material ? `: ${material}` : ''}`,
   editarArticulo: material => `Editar artículo: ${material}`,
   asignarArticulo: material => `Asignar categoría y producto${material ? ` a ${material}` : ''}`,
@@ -160,6 +105,30 @@ export const LISTA_COMPRAS = {
   masAcciones: 'Más acciones de Lista de compras',
   exportar: 'Exportar datos',
   cargar: 'Cargar datos',
+  // Selección como en el correo: una casilla por compra y una para todas
+  elegirTodas: 'Elegir todas las compras',
+  todas: 'Elegir todas',
+  elegirUna: (proveedor, fecha) => `Elegir la compra en ${proveedor} del ${fecha}`,
+  elegidas: (n, total) => `${n} de ${total} ${plural(total, 'elegida', 'elegidas')}`,
+  eliminarElegidas: n => `Eliminar ${n} ${plural(n, 'compra', 'compras')}`,
+  eliminadas: n => `${n} ${plural(n, 'compra eliminada', 'compras eliminadas')}. La lista quedó al día.`,
+  errorEliminar: detalle => `No pudimos eliminar las compras: ${detalle}. Inténtalo de nuevo.`,
+  confirmarEliminarVarias: {
+    titulo: n => `¿Eliminamos ${n} ${plural(n, 'compra', 'compras')}?`,
+    mensaje: 'Se borrarán con todos sus artículos. Esto no se puede deshacer.',
+    otrasPaginas: n => `Incluye ${n} ${plural(n, 'compra elegida', 'compras elegidas')} en otras páginas.`,
+    confirmar: 'Sí, eliminar',
+  },
+  // Páginas de 50 compras, con flechas arriba como en el correo
+  paginacion: 'Páginas de la lista',
+  rango: (desde, hasta, total) => `${desde}–${hasta} de ${total}`,
+  anterior: 'Página anterior',
+  siguiente: 'Página siguiente',
+  // «Elegir todas» elige la página; un aviso ofrece elegir todas las de la lista
+  paginaElegida: n => `Elegiste las ${n} compras de esta página.`,
+  elegirTodasLista: total => `Elegir las ${total}`,
+  todasLaLista: total => `Elegiste las ${total} compras de la lista.`,
+  quitarSeleccion: 'Quitar la selección',
 }
 
 // ---------------------------------------------------------------------------
@@ -173,7 +142,6 @@ export const VALIDACION = {
   cantidad: 'Debe ser mayor a 0',
   unidad: 'Elige la unidad',
   precio: 'Debe ser mayor a 0',
-  filaIncompleta: 'Completa la fila anterior para agregar otra',
   rangoFechas: 'La fecha final debe ser igual o posterior a la inicial',
 }
 
@@ -277,6 +245,13 @@ export const AVISO_SALIDA = {
 // ---------------------------------------------------------------------------
 // Apagar el sistema (versión del .zip: el servidor corre oculto en la computadora)
 // ---------------------------------------------------------------------------
+// Una dirección que no existe (/compras/xyz)
+export const NO_ENCONTRADA = {
+  titulo: 'Pantalla no encontrada',
+  texto: 'Esta dirección no lleva a ninguna pantalla de De Panas. Puede que esté mal escrita o que la pantalla haya cambiado de lugar.',
+  accion: 'Volver al inicio',
+}
+
 export const APAGADO = {
   boton: 'Apagar De Panas SV',
   titulo: 'De Panas SV está apagado',
@@ -472,6 +447,7 @@ export const PANTALLA_CATALOGO = {
     quitar: nombre => `Quitar ${nombre}`,
   },
   sinResultados: 'Nada por aquí con ese nombre',
+  limpiarBusqueda: 'Limpiar búsqueda',
   vacio: tipo => `Todavía no hay ${SECCIONES[tipo].titulo.toLowerCase()}.`,
   uso: (tipo, n) =>
     usaCompras(tipo)
@@ -596,7 +572,6 @@ export const USUARIOS = {
   /** Requisitos de las contraseñas (solo el administrador los cambia) */
   requisitos: {
     titulo: 'Requisitos de contraseña',
-    intro: 'Toda contraseña nueva o cambiada debe cumplirlos. Las que ya existen siguen sirviendo hasta que se cambien.',
     editar: 'Editar requisitos',
     tituloEditor: 'Requisitos de contraseña',
     minimo: 'Mínimo de caracteres',
@@ -622,18 +597,34 @@ export const USUARIOS = {
 // Exportar y cargar datos
 // ---------------------------------------------------------------------------
 export const EXPORTAR = {
+  /** Hoja «Resumen» del Excel: el reporte de gastos del rango exportado */
+  hojaResumen: {
+    hoja: 'Resumen',
+    titulo: 'Resumen de gastos',
+    desde: 'Desde',
+    hasta: 'Hasta',
+    compras: 'Compras',
+    articulos: 'Artículos',
+    subtotal: 'Subtotal',
+    iva: 'IVA',
+    total: 'Total',
+    porProveedor: 'Por proveedor',
+    porCategoria: 'Por categoría',
+    porMes: 'Por mes',
+  },
   rangoTitulo: 'Rango de fechas',
   rangos: { mes: 'Este mes', mesAnterior: 'Mes pasado', ano: 'Este año', todo: 'Todo' },
   desde: 'Desde',
   hasta: 'Hasta',
   formato: 'Formato',
   formatos: {
-    xlsx: { titulo: 'Excel (.xlsx)', descripcion: 'Una fila por artículo, se abre directo en columnas en Excel o Google Sheets' },
+    xlsx: { titulo: 'Excel (.xlsx)', descripcion: 'Una fila por artículo y una hoja con el resumen de gastos; se abre directo en Excel o Google Sheets' },
     json: { titulo: 'Respaldo (.json)', descripcion: 'Para pasar las compras a otro equipo' },
   },
   calculando: 'Contando las compras del rango…',
   resumen: (n, total) => `${n} ${plural(n, 'compra', 'compras')} en el rango · ${total} en total`,
   sinCompras: 'No hay compras en ese rango. Prueba con otras fechas.',
+  verTodo: 'Ver todas las fechas',
   descargar: 'Descargar',
   descargado: n => `¡Listo! Descargamos ${n} ${plural(n, 'compra', 'compras')}. Guarda el archivo en un lugar seguro.`,
   error: detalle => `No pudimos exportar${detalle ? `: ${detalle}` : ''}. Inténtalo de nuevo.`,
@@ -692,6 +683,7 @@ export const CARGAR = {
     return `¡Listo, pana! ${unir(hechas)}.${extra}`
   },
   vacio: 'El archivo está bien, pero viene vacío: no trae compras.',
+  verLista: 'Ver la Lista de compras',
 }
 
 // ---------------------------------------------------------------------------

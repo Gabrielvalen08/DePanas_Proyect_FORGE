@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Plus } from 'lucide-react'
 import Header from '../components/Header'
@@ -7,18 +7,31 @@ import { Boton } from '../components/common'
 import { guardarLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { springSuave } from '../styles/movimiento'
-import { COMPRA, fraseDelDia } from '../utils/mensajes'
+import { COMPRA } from '../utils/mensajes'
 import estilos from './AgregarCompra.module.css'
 
 /**
  * Página principal. Cada bloque es una compra distinta (un proveedor y una
- * fecha) y se guarda por separado. "Nueva compra" agrega otro bloque debajo.
+ * fecha) y se guarda por separado. "Nueva compra" agrega otro bloque debajo; aparece
+ * cuando alguna compra ya tiene una fila completa (formulario por pasos).
  * Props: puedeEditarArticulo (el usuario tiene catalogo.editar; activa el lápiz de cada artículo)
  */
 export default function AgregarCompra({ puedeEditarArticulo = true }) {
   const { addToast } = useToast()
   const siguiente = useRef(2)
   const [bloques, setBloques] = useState([{ clave: 1, enfocar: false }])
+  // Compras que ya tienen una fila completa: hasta entonces no se ofrece «Nueva compra»
+  const [listos, setListos] = useState(() => new Set())
+  const cambiarProgreso = useCallback((claveBloque, listo) => {
+    setListos(prev => {
+      if (prev.has(claveBloque) === listo) return prev
+      const next = new Set(prev)
+      if (listo) next.add(claveBloque)
+      else next.delete(claveBloque)
+      return next
+    })
+  }, [])
+  const hayCompraLista = bloques.some(b => listos.has(b.clave))
   function nuevaCompra() {
     setBloques(prev => [...prev, { clave: siguiente.current++, enfocar: true }])
   }
@@ -47,7 +60,7 @@ export default function AgregarCompra({ puedeEditarArticulo = true }) {
 
   return (
     <>
-      <Header title="Agregar compra" frase={fraseDelDia('/')} />
+      <Header title="Agregar compra" />
 
       <main id="contenido" tabIndex={-1} className={estilos.contenido}>
         {/* popLayout: la compra que sale no empuja a la que entra */}
@@ -65,6 +78,7 @@ export default function AgregarCompra({ puedeEditarArticulo = true }) {
                 alGuardar={guardar}
                 alGuardado={() => alGuardado(bloque.clave)}
                 alCancelar={() => retirarBloque(bloque.clave)}
+                alCambiarProgreso={listo => cambiarProgreso(bloque.clave, listo)}
                 enfocarAlMontar={bloque.enfocar}
                 cancelarVacio={bloques.length > 1}
                 puedeEditarArticulo={puedeEditarArticulo}
@@ -73,11 +87,13 @@ export default function AgregarCompra({ puedeEditarArticulo = true }) {
           ))}
         </AnimatePresence>
 
-        <div className={estilos.nuevaCompra}>
-          <Boton variante="secundario" icono={<Plus />} onClick={nuevaCompra} className={estilos.botonNueva}>
-            Nueva compra
-          </Boton>
-        </div>
+        {hayCompraLista && (
+          <div className={estilos.nuevaCompra}>
+            <Boton variante="secundario" icono={<Plus />} onClick={nuevaCompra} className={estilos.botonNueva}>
+              Nueva compra
+            </Boton>
+          </div>
+        )}
 
       </main>
 

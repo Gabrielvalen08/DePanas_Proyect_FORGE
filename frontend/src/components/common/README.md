@@ -13,7 +13,7 @@ import { Boton, Campo, Selector, Tarjeta, Insignia, Modal, ConfirmDialog, Cuerpo
 | `AvisoDestacado` | `id`, `texto`. Advertencia llamativa en amarillo que no impide seguir (p. ej. un nombre parecido a otro). La región viva queda siempre montada; sin `texto` no ocupa espacio |
 | `CampoMoneda` | Igual que `Campo`; `onChange(valor)` recibe el monto ya convertido (`'1.25'` o `''`). Tipo cajero: el punto está fijo y los dígitos entran por la derecha empezando por los centavos (5 → 0.05, 500 → 5.00) |
 | `Selector`    | `id`, `etiqueta`, `etiquetaOculta`, `opciones` (`string[]` o `{ valor, texto }[]`), `error` |
-| `Tarjeta`     | `titulo`, `icono`, `accion`, `sombra`, `franja`, `interactiva` + `a` u `onClick` |
+| `Tarjeta`     | `titulo`, `icono`, `detalle` (texto corto junto al título, p. ej. «12 compras»), `accion`, `sombra`, `franja`, `interactiva` + `a` u `onClick` |
 | `Insignia`    | `tono` (`neutro` · `marca` · `exito` · `aviso` · `error`)                       |
 | `Modal`       | `abierto`, `alCerrar`, `titulo`, `icono`, `rol` (`dialog` · `alertdialog`), `anchoMax` (`sm` · `md` · `lg`), `focoInicial` (ref). Se centra en el área del módulo (`<main id="contenido">`), no en toda la pantalla; el velo cubre todo |
 | `ConfirmDialog` | `isOpen`, `onClose`, `onConfirm`, `title`, `message`, `confirmLabel`, `cancelLabel`, `danger`. Confirmación (`alertdialog`): el foco inicial va a «Cancelar», nunca a la acción. Úsalo antes de cualquier acción que guarde, cancele o elimine |

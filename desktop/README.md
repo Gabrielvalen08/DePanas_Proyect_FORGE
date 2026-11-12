@@ -76,6 +76,15 @@ Variables **solo para pruebas**:
 - `DEPANAS_PUERTO`: puerto;
 - `DEPANAS_PRUEBA=1`: no abre el navegador, ni crea el acceso directo, ni muestra cuadros de mensaje.
 
+## Demostración
+
+`Abrir De Panas SV (demo).cmd` pone `DEPANAS_DEMO=1`. `iniciar.mjs` usa entonces:
+- el puerto 4511;
+- la carpeta de datos `%APPDATA%\De Panas SV\demo`;
+- ningún acceso directo en el escritorio.
+
+`servidor.mjs` carga las compras de ejemplo (`backend/db/compras-demo.json`, vía `backend/db/demo.js`) solo si esa base no tiene compras. La base real nunca la recibe.
+
 ## Versión nueva
 
 Sube `version` en `package.json` y corre `npm run dist`. El cliente apaga el sistema, reemplaza la carpeta y sus datos se conservan.

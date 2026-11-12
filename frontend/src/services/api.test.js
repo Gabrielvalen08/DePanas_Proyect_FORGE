@@ -9,6 +9,7 @@ import {
   iniciarSesion,
   actualizarLista,
   eliminarLista,
+  eliminarListas,
   fetchListas,
   asignarMaterial,
   subtotalLista,
@@ -115,6 +116,15 @@ describe('api: modo servidor', () => {
     expect(aviso).not.toHaveBeenCalled()
     window.removeEventListener(EVENTO_SESION_VENCIDA, aviso)
     await expect(iniciarSesion('Cesar_01', 'mala')).rejects.toMatchObject({ status: 429, minutos: 5 })
+  })
+
+  it('elimina varias compras de una vez en el backend', async () => {
+    const llamadas = simularServidor({
+      'POST /compras/eliminar': { cuerpo: { eliminadas: 1 } },
+    })
+    expect(await eliminarListas(['c-1'])).toEqual({ eliminadas: 1 })
+    expect(llamadas.find(l => l.ruta === '/compras/eliminar').cuerpo).toEqual({ ids: ['c-1'] })
+    expect(localStorage.getItem('depanas_listas')).toBeNull()
   })
 
   it('lee las compras del backend sin mezclar datos locales', async () => {
@@ -324,6 +334,21 @@ describe('api: listas de compra (modo local)', () => {
 
     await eliminarLista(2)
     expect(await fetchListas({ proveedor: 'walmart' })).toHaveLength(0)
+  })
+
+  it('las compras viejas siguen en la lista y los campos del antiguo Archivo no salen', async () => {
+    const vieja = await guardarLista({ proveedor: 'Pepsi', fecha: '2020-01-15', productos: [{ producto: 'Agua', cantidad: 1, unidad: 'caja', precio: 5 }] })
+    localStorage.setItem('depanas_listas', JSON.stringify(JSON.parse(localStorage.getItem('depanas_listas')).map(l => ({ ...l, archivo: 'archivada' }))))
+    const listas = await fetchListas()
+    expect(listas.map(l => l.id)).toContain(vieja.id)
+    expect(listas.every(l => !('archivo' in l) && !('archivada' in l))).toBe(true)
+    await expect(eliminarListas([])).rejects.toThrow('Elige al menos una compra')
+  })
+
+  it('elimina varias compras de una vez', async () => {
+    expect(await eliminarListas([1, 2])).toEqual({ eliminadas: 2 })
+    expect(await fetchListas()).toHaveLength(3)
+    await expect(eliminarListas([999])).rejects.toThrow('No se encontraron las compras elegidas')
   })
 
   it('migra una sola vez las compras del modelo anterior agrupando por proveedor y fecha', async () => {
@@ -647,9 +672,9 @@ describe('api: usuarios (modo servidor)', () => {
       'PUT /usuarios/Marta_02': { cuerpo: MARTA },
       'DELETE /usuarios/Marta_02': { cuerpo: { usuario: 'Marta_02' } },
     })
-    expect(await iniciarSesion('Marta_02', '5678')).toEqual(MARTA)
+    expect(await iniciarSesion('Marta_02', 'DePanas#2026')).toEqual(MARTA)
     expect(await fetchUsuarios()).toEqual([MARTA])
-    await crearUsuario({ usuario: 'Marta_02', nombre: 'Marta', contrasena: '5678', permisos: ['/'] })
+    await crearUsuario({ usuario: 'Marta_02', nombre: 'Marta', contrasena: 'DePanas#2026', permisos: ['/'] })
     await editarUsuario('Marta_02', { contrasena: 'nueva' })
     expect(await eliminarUsuario('Marta_02')).toEqual({ usuario: 'Marta_02' })
 
@@ -690,7 +715,6 @@ describe('api: usuarios (modo local)', () => {
     ])
     expect(await iniciarSesion('cesar_01', 'DePanas#2026')).toMatchObject({ usuario: 'Cesar_01', rol: 'admin' })
     await expect(iniciarSesion('Cesar_01', '1234')).rejects.toThrow()
-    await expect(iniciarSesion('Cesar_01', '5678')).rejects.toThrow()
   })
 
   it('un navegador con la contraseña anterior de César (1234) pasa a la nueva', async () => {
@@ -747,21 +771,36 @@ describe('api: usuarios (modo local)', () => {
     expect(await iniciarSesion('Marta_02', 'DePanas#2026')).toMatchObject({ usuario: 'Marta_02' })
   })
 
+  it('un navegador con Marta en 5678 pasa a la contraseña nueva una sola vez; si ya la cambió, no se toca', async () => {
+    const anterior = 'pbkdf2$100000$d0f24824a99bff7180d523f67b5b6ff5$e1f9aaceda70ab381493fc4662cc7c561c76aef0415446fcb0b3d7c90fdda447'
+    await editarUsuario('Marta_02', { nombre: 'Marta' }) // guarda los usuarios en depanas_usuarios
+    const usuarios = JSON.parse(localStorage.getItem('depanas_usuarios'))
+    usuarios.find(u => u.usuario === 'Marta_02').contrasena = anterior
+    localStorage.setItem('depanas_usuarios', JSON.stringify(usuarios))
+
+    await expect(iniciarSesion('Marta_02', '5678')).rejects.toThrow()
+    expect(await iniciarSesion('Marta_02', 'DePanas#2026')).toMatchObject({ usuario: 'Marta_02' })
+
+    // Migrada: si después le ponen 5678 desde el gestor, se respeta
+    await editarUsuario('Marta_02', { contrasena: 'Cachito#5678' })
+    expect(await iniciarSesion('Marta_02', 'Cachito#5678')).toMatchObject({ usuario: 'Marta_02' })
+  })
+
   it('al entrar, una contraseña guardada con menos iteraciones se recalcula con las actuales', async () => {
     await editarUsuario('Marta_02', { nombre: 'Marta' }) // guarda los usuarios en depanas_usuarios
     // Un hash viejo de 10 iteraciones (en las pruebas el actual usa 1000; la app real, 600 000)
     const sal = new Uint8Array(16).fill(7)
-    const llave = await crypto.subtle.importKey('raw', new TextEncoder().encode('5678'), 'PBKDF2', false, ['deriveBits'])
+    const llave = await crypto.subtle.importKey('raw', new TextEncoder().encode('DePanas#2026'), 'PBKDF2', false, ['deriveBits'])
     const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: sal, iterations: 10 }, llave, 256)
     const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('')
     const usuarios = JSON.parse(localStorage.getItem('depanas_usuarios'))
     usuarios.find(u => u.usuario === 'Marta_02').contrasena = `pbkdf2$10$${hex(sal)}$${hex(bits)}`
     localStorage.setItem('depanas_usuarios', JSON.stringify(usuarios))
 
-    await iniciarSesion('Marta_02', '5678')
+    await iniciarSesion('Marta_02', 'DePanas#2026')
     const despues = JSON.parse(localStorage.getItem('depanas_usuarios')).find(u => u.usuario === 'Marta_02')
     expect(despues.contrasena).toMatch(/^pbkdf2\$1000\$/)
-    expect(await iniciarSesion('Marta_02', '5678')).toMatchObject({ usuario: 'Marta_02' })
+    expect(await iniciarSesion('Marta_02', 'DePanas#2026')).toMatchObject({ usuario: 'Marta_02' })
   })
 
   it('el administrador conserva su rol, todas las pantallas y funciones, y no se elimina', async () => {
@@ -769,6 +808,6 @@ describe('api: usuarios (modo local)', () => {
       .toMatchObject({ rol: 'admin', permisos: ['*'], funciones: ['*'] })
     await expect(eliminarUsuario('Cesar_01')).rejects.toThrow('El administrador no se puede eliminar')
     expect(await eliminarUsuario('marta_02')).toEqual({ usuario: 'Marta_02' })
-    await expect(iniciarSesion('Marta_02', '5678')).rejects.toThrow()
+    await expect(iniciarSesion('Marta_02', 'DePanas#2026')).rejects.toThrow()
   })
 })

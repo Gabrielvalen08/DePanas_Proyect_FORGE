@@ -17,6 +17,7 @@ import { buscar, crearRutaSesion, crearRutasRequisitos, crearRutasUsuarios, publ
 import { crearSesiones } from './sesiones.js'
 import { crearPestanas, ESPERA_APAGADO_MS } from './pestanas.js'
 import { cumple, permisoRequerido } from './permisos.js'
+import { enviarError } from './routes/responder.js'
 
 /**
  * @param {Object} opciones
@@ -66,6 +67,20 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
   }
 
   const app = express()
+  // No anunciar qué servidor es (cabecera X-Powered-By: Express)
+  app.disable('x-powered-by')
+  // Cabeceras de seguridad: la página solo carga lo suyo (nada de otros sitios), no se puede
+  // meter dentro de otra página y el navegador no adivina tipos de archivo.
+  // style-src admite 'unsafe-inline' porque las animaciones (Motion) ponen estilos en línea.
+  app.use((_req, res, next) => {
+    res.set({
+      'Content-Security-Policy': CSP,
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'no-referrer',
+    })
+    next()
+  })
   if (hostsPermitidos) {
     const permitidos = new Set(hostsPermitidos.map(h => h.toLowerCase()))
     app.use((req, res, next) => {
@@ -76,6 +91,12 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
   app.use(cors({ origin: origenCors }))
   app.use(express.json({ limit: '50mb' }))
   app.use(express.urlencoded({ extended: true }))
+  // Un cuerpo que no es JSON o es demasiado grande responde en JSON, como el resto de la API
+  app.use((err, _req, res, next) => {
+    if (err?.type === 'entity.parse.failed') return res.status(400).json({ error: 'Los datos enviados no son válidos' })
+    if (err?.type === 'entity.too.large') return res.status(413).json({ error: 'Los datos enviados son demasiado grandes' })
+    next(err)
+  })
 
   // Tras cada escritura que salió bien, sus cambios pasan del WAL a depanas.db
   // (ver consolidar en db.js): así el archivo .db siempre está completo
@@ -144,11 +165,15 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
     })
   }
 
+  // Una ruta de la API que no existe responde JSON, no la página HTML de Express
+  app.use('/api', (_req, res) => res.status(404).json({ error: 'Esta ruta de la API no existe' }))
+
   // App de escritorio: el frontend compilado sale de este mismo servidor; cualquier
   // ruta que no sea de la API devuelve index.html para que la resuelva React Router
   if (estaticos) {
     app.use(express.static(estaticos))
     app.get(/^\/(?!api(\/|$)).*/, (_req, res) => res.sendFile(join(estaticos, 'index.html')))
+    app.use(manejarError)
     return { app, cerrar, sesiones }
   }
 
@@ -168,5 +193,26 @@ export function crearApp({ dbPath, schemaPath, origenCors = 'http://localhost:51
     `)
   })
 
+  app.use(manejarError)
   return { app, cerrar, sesiones }
+}
+
+/** Política de contenido: todo sale de este mismo servidor */
+export const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ')
+
+/** Último recurso: un error que nadie atrapó se registra y responde sin detalles internos */
+// eslint-disable-next-line no-unused-vars
+function manejarError(err, _req, res, _next) {
+  enviarError(res, err)
 }

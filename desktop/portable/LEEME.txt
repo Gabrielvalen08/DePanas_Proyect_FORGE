@@ -8,6 +8,9 @@ ANTES DE DESCOMPRIMIR (solo si el .zip llegó por correo, WhatsApp o internet)
   Clic derecho al .zip > Propiedades > marca "Desbloquear" > Aceptar.
   Sin ese paso, Windows (Smart App Control) puede no dejar abrir el sistema.
 
+MANUAL DE USO
+  Doble clic en "Manual de uso" (se abre en el navegador, no necesita internet).
+
 ABRIR
   Doble clic en "Abrir De Panas SV". Se abre el navegador en http://localhost:4510
   La primera vez queda un acceso directo "De Panas SV" en el escritorio: desde ahí
@@ -21,12 +24,19 @@ APAGAR
 
 USUARIOS INICIALES (cámbialos en el Gestor de usuarios)
   Cesar_01 / DePanas#2026   (administrador)
-  Marta_02 / 5678           (operadora)
+  Marta_02 / DePanas#2026   (operadora)
 
 DATOS
   Se guardan en  %APPDATA%\De Panas SV\depanas.db  (fuera de esta carpeta).
   Mover, reemplazar o borrar esta carpeta NO borra los datos.
-  Respaldo: en Lista de compras, menú ... > Exportar datos > Respaldo (.json).
+  Respaldo (una vez al mes): en Lista de compras, menú ... > Exportar datos >
+  rango Todo > Respaldo (.json). Guárdalo en una memoria USB.
+
+DEMOSTRACIÓN
+  Doble clic en "Abrir De Panas SV (demo)". Se abre aparte, en http://localhost:4511,
+  con dos meses de compras de ejemplo para conocer el sistema. Usa su propia carpeta
+  (%APPDATA%\De Panas SV\demo): lo que hagas ahí NUNCA toca los datos reales.
+  Para empezar la demostración de cero, apágala y borra esa carpeta demo.
 
 VERSIÓN NUEVA
   Apaga el sistema, borra esta carpeta y descomprime la nueva en el mismo lugar.

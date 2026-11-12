@@ -4,11 +4,10 @@ import Header from './Header'
 
 describe('Header', () => {
   it('renderiza título, badge y fecha sin botón regresar si no se pasa alRegresar', () => {
-    render(<Header title="Compras" badge="Administrador" frase="Aquí se viene a comer rico" />)
+    render(<Header title="Compras" badge="Administrador" />)
 
     expect(screen.getByRole('heading', { level: 1, name: 'Compras' })).toBeInTheDocument()
     expect(screen.getByText('Administrador')).toBeInTheDocument()
-    expect(screen.getByText('Aquí se viene a comer rico')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Regresar/i })).not.toBeInTheDocument()
   })
 

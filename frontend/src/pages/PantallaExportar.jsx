@@ -8,7 +8,7 @@ import { useToast } from '../context/ToastContext'
 import { useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { formatearPrecio } from '../utils/formato'
 import { rangoRapido } from '../utils/exportar'
-import { CONFIRMAR, EXPORTAR, VALIDACION, fraseDelDia } from '../utils/mensajes'
+import { CONFIRMAR, EXPORTAR, VALIDACION } from '../utils/mensajes'
 import estilos from './PantallaExportar.module.css'
 
 const FORMATOS = [
@@ -77,7 +77,7 @@ export default function PantallaExportar() {
 
   return (
     <>
-      <Header title="Exportar datos" frase={fraseDelDia('/exportar')} alRegresar={regresar} />
+      <Header title="Exportar datos" alRegresar={regresar} />
 
       <main id="contenido" tabIndex={-1}>
 
@@ -145,6 +145,9 @@ export default function PantallaExportar() {
                   <><Loader2 size={16} aria-hidden="true" className={estilos.girando} /> {EXPORTAR.calculando}</>
                 ) : n === 0 ? EXPORTAR.sinCompras : EXPORTAR.resumen(n, formatearPrecio(total))}
               </p>
+              {listo && n === 0 && rangoActivo !== 'todo' && (
+                <Boton variante="fantasma" onClick={() => elegirRango('todo')}>{EXPORTAR.verTodo}</Boton>
+              )}
               <Boton
                 variante="primario"
                 sombra

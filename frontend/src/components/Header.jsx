@@ -7,9 +7,9 @@ import estilos from './Header.module.css'
 
 /**
  * Header fijo: transparente sobre el collage y crema sólido al hacer scroll. Props: title (título de la página), badge (contexto),
- * frase (frase de la voz de marca bajo el título; ver utils/mensajes.js), alRegresar (función opcional para botón volver).
+ * alRegresar (función opcional para botón volver).
  */
-export default function Header({ title, badge, frase, alRegresar }) {
+export default function Header({ title, badge, alRegresar }) {
   const [centinelaRef, hayScroll] = useScrollDetectado()
   const hoy = formatearFechaLarga(new Date())
 
@@ -21,14 +21,21 @@ export default function Header({ title, badge, frase, alRegresar }) {
           <span className={estilos.logoMovil} aria-hidden="true">DE PANAS</span>
           <div className={estilos.textos}>
             <h1 className={estilos.titulo}>{title}</h1>
-            {frase && <p className={estilos.frase}>{frase}</p>}
           </div>
           {badge && <Insignia tono="marca" className={estilos.insignia}>{badge}</Insignia>}
         </div>
         <div className={estilos.derecha}>
           {alRegresar && (
-            <Boton variante="secundario" icono={<ArrowLeft size={16} />} onClick={alRegresar}>
-              {NAVEGACION.regresar}
+            // En un teléfono angosto queda solo la flecha: así el título de la pantalla no se corta
+            <Boton
+              variante="secundario"
+              className={estilos.regresar}
+              icono={<ArrowLeft size={16} />}
+              onClick={alRegresar}
+              aria-label={NAVEGACION.regresar}
+              title={NAVEGACION.regresar}
+            >
+              <span className={estilos.textoRegresar}>{NAVEGACION.regresar}</span>
             </Boton>
           )}
           <p className={estilos.fecha}>

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arquitectura · De Panas SV</title>
+  <link rel="stylesheet" href="../manual/fuentes/fuentes.css">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="contenedor">
+      <a class="logo" href="index.html"><img src="../manual/img/arepa.png" alt=""><span>DE PANAS</span></a>
+      <nav class="menu" aria-label="Documentación">
+        <ul>
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="modulos.html">Módulos</a></li>
+          <li><a href="arquitectura.html" aria-current="page">Arquitectura</a></li>
+          <li><a href="decisiones.html">Decisiones</a></li>
+          <li><a href="calidad.html">Calidad</a></li>
+          <li><a href="../manual/index.html">Manual de uso</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <div class="titular">
+      <h1>Arquitectura</h1>
+      <p>Cómo está construida la app: tecnologías, capas, cómo viajan los datos y dónde vive cada cosa. El detalle de las tablas y la capa DAO está en <a href="../MODELO_DATOS.md">Modelo de datos</a>. El detalle de las tablas está en el <a href="../MODELO_DATOS.md">modelo de datos</a>.</p>
+    </div>
+
+    <section aria-labelledby="t-tec">
+      <h2 id="t-tec">Tecnologías</h2>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Parte</th><th scope="col">Tecnología</th><th scope="col">Para qué</th></tr></thead>
+          <tbody>
+            <tr><td>Interfaz</td><td>React 18, Vite 5, React Router 6</td><td>Pantallas, navegación y compilación</td></tr>
+            <tr><td>Estilos y movimiento</td><td>CSS Modules con tokens propios, Motion, lucide-react</td><td>La marca De Panas, animaciones interrumpibles, íconos</td></tr>
+            <tr><td>Servidor</td><td>Node.js ≥ 22.13, Express 4</td><td>La API, la sesión y los permisos</td></tr>
+            <tr><td>Base de datos</td><td>SQLite con <code>node:sqlite</code></td><td>Un solo archivo, sin servidor que instalar</td></tr>
+            <tr><td>Excel</td><td>write-excel-file, read-excel-file</td><td>Exportar el .xlsx real con su hoja Resumen</td></tr>
+            <tr><td>Pruebas</td><td><code>node:test</code>, Vitest + Testing Library, Playwright</td><td>Backend, pantallas y recorridos completos</td></tr>
+            <tr><td>Entrega</td><td>.zip con el Node.js oficial</td><td>Que Windows (Smart App Control) lo deje abrir</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-capas">
+      <h2 id="t-capas">Capas</h2>
+      <div class="capas" aria-label="Capas de la app, de arriba abajo">
+        <div class="capa marca"><strong>Navegador · React</strong>Páginas (<code>pages/</code>) armadas con componentes (<code>components/</code>, <code>components/common/</code>), hooks y contextos (sesión, avisos, datos sin guardar)</div>
+        <div class="flecha" aria-hidden="true">↓</div>
+        <div class="capa"><strong><code>services/api.js</code> · única capa de datos del frontend</strong>Ninguna página usa <code>fetch</code> ni <code>localStorage</code> directamente</div>
+        <div class="flecha" aria-hidden="true">↓ con servidor &nbsp;·&nbsp; sin servidor ↘ localStorage del navegador</div>
+        <div class="capa"><strong>Express · <code>app.js</code></strong>Sesión (token), permisos de cada ruta (<code>permisos.js</code>), hosts permitidos, errores sin detalles</div>
+        <div class="flecha" aria-hidden="true">↓</div>
+        <div class="capa"><strong>Rutas · <code>routes/</code></strong>Solo traducen HTTP ↔ DAO con <code>responder()</code>; no tienen SQL</div>
+        <div class="flecha" aria-hidden="true">↓</div>
+        <div class="capa"><strong>DAO · <code>dao/</code></strong>Compras, filas, catálogo y usuarios: validan, escriben en transacción y lanzan <code>ErrorDatos</code></div>
+        <div class="flecha" aria-hidden="true">↓</div>
+        <div class="capa marca"><strong>SQLite · <code>depanas.db</code></strong>Modo WAL, claves foráneas, migraciones al abrir</div>
+      </div>
+      <p><b><code>shared/</code></b> guarda las reglas de negocio puras: validar compras, IVA, archivo, gastos, usuarios, productos y respaldos. Las usan <b>igual</b> el backend y el modo local del frontend, así las dos versiones nunca se separan.</p>
+    </section>
+
+    <section aria-labelledby="t-modos">
+      <h2 id="t-modos">Dos modos que nunca se mezclan</h2>
+      <p>Al cargar, <code>api.js</code> pregunta una vez a <code>/api/health</code> si hay servidor.</p>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Modo</th><th scope="col">Dónde quedan los datos</th><th scope="col">Seguridad</th></tr></thead>
+          <tbody>
+            <tr><td><b>Servidor</b> (el del cliente)</td><td>SQLite, en <code>depanas.db</code></td><td>Real: sesión con token y permisos en cada petición</td></tr>
+            <tr><td><b>Local</b> (sin backend)</td><td><code>localStorage</code> del navegador</td><td>Solo una barrera de interfaz</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Si el servidor falla, el error se muestra; nunca se guarda en silencio en el navegador.</p>
+    </section>
+
+    <section aria-labelledby="t-api">
+      <h2 id="t-api">API del servidor</h2>
+      <p>Toda la API exige sesión (<code>Authorization: Bearer</code>), salvo <code>/api/health</code> y entrar.</p>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Ruta</th><th scope="col">Qué hace</th></tr></thead>
+          <tbody>
+            <tr><td><code>POST/DELETE /api/sesion</code></td><td>Entrar (devuelve el token) y salir</td></tr>
+            <tr><td><code>GET /api/compras</code></td><td>Compras con filtros (proveedor, artículo, fechas)</td></tr>
+            <tr><td><code>POST /api/compras</code>, <code>GET/PUT/DELETE /api/compras/:id</code></td><td>Crear, ver, editar y eliminar una compra</td></tr>
+            <tr><td><code>POST /api/compras/eliminar</code></td><td>Varias compras a la vez (casillas)</td></tr>
+            <tr><td><code>/api/catalogo</code> y <code>/api/catalogo/:tipo/…</code></td><td>Leer, agregar, renombrar, eliminar e importar el catálogo; asignar categoría y productos a un artículo</td></tr>
+            <tr><td><code>/api/usuarios</code>, <code>/api/requisitos-contrasena</code></td><td>Gestor de usuarios (solo el administrador)</td></tr>
+            <tr><td><code>/api/db/exportar(-json)</code>, <code>/api/db/importar(-json)</code></td><td>Respaldos: base completa y compras en JSON</td></tr>
+            <tr><td><code>/api/apagar</code>, <code>/api/pestanas</code></td><td>Solo en la versión .zip: apagar y cerrar con la última pestaña</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-poo">
+      <h2 id="t-poo">Programación orientada a objetos</h2>
+      <p>El proyecto está en JavaScript. Usamos los principios de POO donde aportan, sin forzar clases donde React y Express trabajan mejor con funciones:</p>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Principio</th><th scope="col">Dónde</th></tr></thead>
+          <tbody>
+            <tr><td><b>Encapsulamiento</b></td><td>Cada DAO (<code>comprasDAO(db)</code>, <code>catalogoDAO(db)</code>…) es un objeto que guarda la conexión y expone solo sus operaciones. El SQL, las transacciones y las reglas quedan adentro. Lo mismo hacen las sesiones (<code>crearSesiones()</code>) y las pestañas.</td></tr>
+            <tr><td><b>Herencia</b></td><td><code>ErrorDatos</code> (<code>dao/errores.js</code>) es una clase que hereda de <code>Error</code> y suma el código HTTP y el campo del formulario.</td></tr>
+            <tr><td><b>Abstracción</b></td><td><code>services/api.js</code> esconde si los datos van al servidor o al navegador: las pantallas piden «guarda esta compra» sin saber cómo.</td></tr>
+            <tr><td><b>Polimorfismo</b></td><td><code>responder()</code> trata igual cualquier <code>ErrorDatos</code> (400, 403, 404 o 409) y cualquier otro error; las mismas funciones de <code>api.js</code> se comportan distinto en cada modo.</td></tr>
+            <tr><td><b>Composición</b></td><td>Cada pantalla se arma con piezas de <code>components/common/</code> (<code>Boton</code>, <code>Campo</code>, <code>Tarjeta</code>, <code>Modal</code>…).</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-carpetas">
+      <h2 id="t-carpetas">Dónde vive cada cosa</h2>
+<pre><code>frontend/src/
+  pages/              las pantallas (AgregarCompra, PantallaMaestra, PantallaCatalogo…)
+  components/         piezas de las pantallas; common/ = la UI base
+  context/            sesión, avisos (toasts), datos sin guardar
+  services/api.js     única capa de datos (servidor o local)
+  utils/              formato, exportar (Excel/JSON), mensajes.js (todos los textos)
+  styles/             tokens de la marca, collage, movimiento
+backend/
+  app.js              Express: sesión, permisos, errores
+  routes/             HTTP ↔ DAO
+  dao/                acceso a datos (patrón DAO) y ErrorDatos
+  db.js · db/         conexión, esquema, migraciones, catálogo inicial y datos demo
+  test/               pruebas con node:test
+shared/               reglas que usan igual backend y frontend
+desktop/              la versión .zip para Windows
+docs/                 esta documentación, el manual y los documentos técnicos</code></pre>
+      <p>Cada carpeta de <code>frontend/src/</code> tiene su propio <code>README.md</code> con sus convenciones.</p>
+    </section>
+  </main>
+
+  <footer>De Panas SV · Equipo FORGE · noviembre de 2026</footer>
+</body>
+</html>

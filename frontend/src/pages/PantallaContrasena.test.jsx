@@ -87,14 +87,14 @@ describe('PantallaContrasena', () => {
     })
   })
 
-  it('autentica con éxito al ingresar Marta_02 y 5678', async () => {
+  it('autentica con éxito al ingresar Marta_02 y su contraseña', async () => {
     const usuario = userEvent.setup()
     renderizar()
     const inputUsuario = screen.getByLabelText(ACCESO.etiquetaUsuario)
     const inputContrasena = screen.getByLabelText(ACCESO.etiquetaContrasena)
 
     await usuario.type(inputUsuario, 'Marta_02')
-    await usuario.type(inputContrasena, '5678')
+    await usuario.type(inputContrasena, 'DePanas#2026')
     await usuario.click(screen.getByRole('button', { name: ACCESO.boton }))
 
     await waitFor(() => {

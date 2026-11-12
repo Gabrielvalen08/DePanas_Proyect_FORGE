@@ -10,6 +10,9 @@
  * Usa el node.exe de la carpeta node/ (el oficial, firmado por OpenJS Foundation).
  * DEPANAS_PUERTO y DEPANAS_DATOS cambian el puerto y la carpeta de datos; DEPANAS_PRUEBA=1 no abre
  * el navegador, ni crea el acceso directo, ni muestra ventanas de aviso (pruebas automáticas).
+ * DEPANAS_DEMO=1 («Abrir De Panas SV (demo).cmd») abre la versión de demostración: puerto 4511,
+ * datos en %APPDATA%\De Panas SV\demo con dos meses de compras de ejemplo, y sin acceso directo.
+ * Nunca toca la base real.
  */
 
 import { execFile, spawn } from 'child_process'
@@ -20,10 +23,14 @@ import { fileURLToPath } from 'url'
 
 const APP = dirname(fileURLToPath(import.meta.url))
 const RAIZ = dirname(APP)
-const PUERTO = Number(process.env.DEPANAS_PUERTO) || 4510
+const DEMO = process.env.DEPANAS_DEMO === '1'
+const PUERTO = Number(process.env.DEPANAS_PUERTO) || (DEMO ? 4511 : 4510)
 const DIRECCION = `http://localhost:${PUERTO}`
 const PRUEBA = process.env.DEPANAS_PRUEBA === '1'
-const DATOS = process.env.DEPANAS_DATOS || join(process.env.APPDATA ?? homedir(), 'De Panas SV')
+const DATOS = process.env.DEPANAS_DATOS || join(process.env.APPDATA ?? homedir(), 'De Panas SV', ...(DEMO ? ['demo'] : []))
+// El servidor usa los mismos valores
+process.env.DEPANAS_PUERTO = String(PUERTO)
+process.env.DEPANAS_DATOS = DATOS
 
 const esperar = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -61,7 +68,7 @@ async function avisar(mensaje) {
 
 /** Acceso directo «De Panas SV» en el escritorio, apuntando a esta carpeta (se rehace si la carpeta se movió) */
 async function accesoDirecto() {
-  if (PRUEBA) return
+  if (PRUEBA || DEMO) return
   const node = join(RAIZ, 'node', 'node.exe')
   await powershell([
     "$escritorio = [Environment]::GetFolderPath('Desktop')",

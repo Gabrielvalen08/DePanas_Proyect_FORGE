@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Decisiones · De Panas SV</title>
+  <link rel="stylesheet" href="../manual/fuentes/fuentes.css">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="contenedor">
+      <a class="logo" href="index.html"><img src="../manual/img/arepa.png" alt=""><span>DE PANAS</span></a>
+      <nav class="menu" aria-label="Documentación">
+        <ul>
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="modulos.html">Módulos</a></li>
+          <li><a href="arquitectura.html">Arquitectura</a></li>
+          <li><a href="decisiones.html" aria-current="page">Decisiones</a></li>
+          <li><a href="calidad.html">Calidad</a></li>
+          <li><a href="../manual/index.html">Manual de uso</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <div class="titular">
+      <h1>Decisiones</h1>
+      <p>Las decisiones que más pesan en cómo es la app: qué se decidió y por qué. El detalle técnico de cada una está en <a href="../DECISIONS.md">docs/DECISIONS.md</a>; las de marca, en <a href="../../DESIGN_DECISIONS.md">DESIGN_DECISIONS.md</a>.</p>
+    </div>
+
+    <section aria-labelledby="t-plataforma">
+      <h2 id="t-plataforma">Plataforma y entrega</h2>
+      <div class="decision">
+        <h3>Sitio web local en vez de un sistema en internet</h3>
+        <p class="meta">Requisitos del cliente</p>
+        <p>La app corre en la computadora del local y se usa en el navegador, sin internet. <b>Por qué:</b> el negocio no tiene presupuesto para hosting ni dominio, y sus datos se quedan en su computadora.</p>
+      </div>
+      <div class="decision">
+        <h3>SQLite con <code>node:sqlite</code></h3>
+        <p class="meta">Base de datos</p>
+        <p>Un solo archivo, sin servidor de base de datos. <b>Por qué:</b> nada que instalar ni administrar, respaldos de un archivo y transacciones para que una compra nunca quede a medias. Viene dentro de Node.js, sin dependencias que compilar en Windows. Detalle en el <a href="../MODELO_DATOS.md">modelo de datos</a>.</p>
+      </div>
+      <div class="decision">
+        <h3>Un .zip con el Node.js oficial, no un .exe propio</h3>
+        <p class="meta">Entrega al cliente</p>
+        <p>Antes fue un instalador de Electron. <b>Por qué el cambio:</b> Smart App Control de Windows bloquea los ejecutables sin firma, y un certificado cuesta. El Node.js oficial viene firmado y sí corre. El cliente desbloquea el .zip una vez.</p>
+      </div>
+      <div class="decision">
+        <h3>Dos modos: con servidor y local</h3>
+        <p class="meta">Arquitectura</p>
+        <p>Sin backend, la app funciona en el navegador. <b>Por qué:</b> para desarrollar y mostrar sin levantar nada. Los modos nunca se mezclan y comparten las reglas de <code>shared/</code>; la versión del cliente siempre usa el servidor.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-datos">
+      <h2 id="t-datos">Datos y seguridad</h2>
+      <div class="decision">
+        <h3>Capa DAO con excepciones propias</h3>
+        <p class="meta">Cierre del proyecto</p>
+        <p>Todo el SQL vive en <code>backend/dao/</code>; las rutas solo traducen HTTP. Los errores esperados son <code>ErrorDatos</code> con su código; los inesperados se registran y el usuario no ve detalles. <b>Por qué:</b> separar responsabilidades, reutilizar validaciones y no filtrar información interna.</p>
+      </div>
+      <div class="decision">
+        <h3>El catálogo nace del Excel del negocio</h3>
+        <p class="meta">Catálogo</p>
+        <p>Proveedores, categorías, artículos y productos salieron de <code>Datos De Panas.xlsx</code>, con la categoría y los productos de cada artículo. <b>Por qué:</b> es lo que el negocio ya usaba; el primer día ya tiene sus opciones.</p>
+      </div>
+      <div class="decision">
+        <h3>«Artículo» en la interfaz, <code>material</code> en el código</h3>
+        <p class="meta">Pruebas con el cliente</p>
+        <p><b>Por qué:</b> «artículo» es como lo dice el negocio. Cambiar el nombre interno habría roto los respaldos y el trabajo del equipo.</p>
+      </div>
+      <div class="decision">
+        <h3>Seguridad real en el servidor</h3>
+        <p class="meta">Antes de entregar</p>
+        <p>Sesión con token, permisos revisados en cada petición, bloqueo tras 5 intentos fallidos, contraseñas con PBKDF2 de 600 000 iteraciones y el servidor escuchando solo en la propia computadora. <b>Por qué:</b> antes la API no pedía sesión. Detalle en <a href="../SEGURIDAD.md">Seguridad</a>.</p>
+      </div>
+      <div class="decision">
+        <h3>Excel real (.xlsx), no CSV</h3>
+        <p class="meta">Exportar</p>
+        <p><b>Por qué:</b> un CSV depende del separador regional y en la computadora del cliente Excel lo abría en una sola columna. El Excel suma una hoja <b>Resumen</b> con el reporte de gastos.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-uso">
+      <h2 id="t-uso">Experiencia de uso</h2>
+      <div class="decision">
+        <h3>Agregar compra por pasos</h3>
+        <p class="meta">Cierre del proyecto · pedido del cliente</p>
+        <p>Primero fecha y proveedor; con el proveedor, la fila; con una fila completa, el resto. Lo que aún no se puede usar no se muestra, en vez de mostrarse apagado en gris. <b>Por qué:</b> al entrar había demasiados botones.</p>
+      </div>
+      <div class="decision">
+        <h3>Páginas de 50 en vez de un Archivo</h3>
+        <p class="meta">Cierre del proyecto · decisión del equipo</p>
+        <p>Se pensó en un Archivo de compras (las de más de 3 meses pasaban solas ahí), pero por tiempo se quitó: todas las compras se quedan en la lista y, cuando pasan de 50, la lista va por páginas de 50 con las flechas de arriba, como en el correo. <b>Por qué:</b> la pantalla no se vuelve un scroll infinito y no hay que explicar dónde quedó una compra vieja. La paginación es en el navegador; si algún día son miles de compras, se puede pasar al servidor.</p>
+      </div>
+      <div class="decision">
+        <h3>Elegir varias compras como en el correo</h3>
+        <p class="meta">Cierre del proyecto</p>
+        <p>Casillas a la izquierda; las acciones aparecen como íconos al elegir. <b>Por qué:</b> es un patrón que el cliente ya conoce y quita botones de la pantalla.</p>
+      </div>
+      <div class="decision">
+        <h3>El IVA se suma encima y se guarda en dinero</h3>
+        <p class="meta">Pruebas con el cliente</p>
+        <p>Los montos van sin IVA; el 13 % se suma con una casilla que recuerda lo hecho con cada proveedor. <b>Por qué:</b> algunas facturas lo traen y otras no; guardarlo en dinero evita diferencias de redondeo.</p>
+      </div>
+      <div class="decision">
+        <h3>Avisar antes de perder datos</h3>
+        <p class="meta">Pruebas con el cliente</p>
+        <p>Cambiar de pantalla, cerrar una ventana o la pestaña con algo sin guardar ofrece <b>Registrar</b> o <b>Salir sin guardar</b>. <b>Por qué:</b> en las pruebas se perdían compras a medias.</p>
+      </div>
+      <div class="decision">
+        <h3>La marca como vive en el sitio</h3>
+        <p class="meta">Cierre del proyecto</p>
+        <p>La referencia de diseño pasó a ser el sitio actual, con las diferencias con el brandbook documentadas. Los encabezados quedaron sin frase. <b>Por qué:</b> el sitio ya había resuelto lo que el brandbook no cubre (texto sobre naranja, logo a tamaño de menú) y las frases recargaban las pantallas de trabajo.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-no-aplica">
+      <h2 id="t-no-aplica">Lo que evaluamos y no aplica</h2>
+      <p>Al cerrar revisamos prácticas comunes de los sitios web públicos. La app es un sitio local, sin internet y para dos personas, así que estas no le sirven:</p>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th scope="col">Práctica</th><th scope="col">Por qué no</th></tr></thead>
+          <tbody>
+            <tr><td>Google Analytics</td><td>Necesita internet y mandaría a Google datos del negocio. Va contra «todo en la computadora del local».</td></tr>
+            <tr><td>Schema local (LocalBusiness)</td><td>Sirve para que Google muestre un negocio en sus resultados. La app no es pública; serviría en un sitio público del restaurante.</td></tr>
+            <tr><td>robots.txt</td><td>Ningún buscador llega a <code>localhost</code>.</td></tr>
+            <tr><td>Breadcrumbs</td><td>La app tiene pocos niveles; Exportar, Cargar y las secciones del Catálogo ya tienen Regresar o pestañas.</td></tr>
+            <tr><td>Promesa de tiempo de respuesta</td><td>El equipo decidió no comprometer un tiempo de soporte ni de rendimiento.</td></tr>
+            <tr><td>Títulos únicos por página</td><td>Ya estaba: cada pantalla y cada página de la documentación tiene el suyo.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Sí tomamos tres: la pantalla <b>No encontrada</b> para direcciones que no existen, que la <b>acción principal</b> de cada pantalla se vea sin bajar, y <b>enlaces internos</b> en los estados vacíos y entre el manual y esta documentación.</p>
+    </section>
+  </main>
+
+  <footer>De Panas SV · Equipo FORGE · noviembre de 2026</footer>
+</body>
+</html>

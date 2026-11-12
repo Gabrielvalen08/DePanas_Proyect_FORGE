@@ -6,7 +6,8 @@ import { DatabaseSync } from 'node:sqlite'
 import { readFileSync } from 'fs'
 import { CATALOGO_INICIAL } from './db/catalogo.js'
 import { listaProductos } from '../shared/productos.js'
-import { HASH_CESAR_ANTERIOR, USUARIOS_INICIALES } from './db/usuarios.js'
+import { CONTRASENA_MARTA_ANTERIOR, HASH_CESAR_ANTERIOR, USUARIOS_INICIALES } from './db/usuarios.js'
+import { verificar } from './contrasenas.js'
 
 // Columnas mínimas para aceptar un archivo .db importado
 export const COLUMNAS_REQUERIDAS = ['fecha', 'material', 'cantidad', 'monto', 'proveedor']
@@ -107,6 +108,7 @@ export function prepararUsuarios(db) {
   // Cesar_01 deja la contraseña inicial (1234) por la nueva; si ya la cambió, no se toca
   const nuevoCesar = USUARIOS_INICIALES.find(u => u.usuario === 'Cesar_01').contrasena
   db.prepare("UPDATE usuarios SET contrasena = ? WHERE usuario = 'Cesar_01' AND contrasena = ?").run(nuevoCesar, HASH_CESAR_ANTERIOR)
+  migrarContrasenaMarta(db)
   if (db.prepare('SELECT COUNT(*) AS n FROM usuarios').get().n > 0) return
   const insertar = db.prepare('INSERT INTO usuarios (usuario, nombre, contrasena, rol, permisos, funciones) VALUES (?, ?, ?, ?, ?, ?)')
   enTransaccion(db, () => {
@@ -114,6 +116,21 @@ export function prepararUsuarios(db) {
       insertar.run(u.usuario, u.nombre, u.contrasena, u.rol, JSON.stringify(u.permisos), u.funciones ? JSON.stringify(u.funciones) : null)
     }
   })
+}
+
+/**
+ * Marta_02 deja la contraseña anterior (5678) por la nueva (DePanas#2026), una sola vez por
+ * base (ajuste 'migracionContrasenaMarta'). Si ya la había cambiado, no se toca.
+ */
+const AJUSTE_MIGRACION_MARTA = 'migracionContrasenaMarta'
+function migrarContrasenaMarta(db) {
+  if (db.prepare('SELECT 1 FROM ajustes WHERE clave = ?').get(AJUSTE_MIGRACION_MARTA)) return
+  const marta = db.prepare("SELECT contrasena FROM usuarios WHERE usuario = 'Marta_02'").get()
+  if (marta && verificar(CONTRASENA_MARTA_ANTERIOR, marta.contrasena)) {
+    const nueva = USUARIOS_INICIALES.find(u => u.usuario === 'Marta_02').contrasena
+    db.prepare("UPDATE usuarios SET contrasena = ? WHERE usuario = 'Marta_02'").run(nueva)
+  }
+  db.prepare('INSERT INTO ajustes (clave, valor) VALUES (?, ?)').run(AJUSTE_MIGRACION_MARTA, 'true')
 }
 
 /**
@@ -255,6 +272,7 @@ export function migrar(db) {
   if (!columnas.includes('compra_categoria')) db.exec('ALTER TABLE ingresos ADD COLUMN compra_categoria TEXT')
   // Las compras anteriores al IVA quedan sin IVA
   if (!columnas.includes('compra_iva')) db.exec('ALTER TABLE ingresos ADD COLUMN compra_iva REAL NOT NULL DEFAULT 0')
+  db.exec('CREATE INDEX IF NOT EXISTS idx_ingresos_fecha ON ingresos(fecha)')
 
   // Catálogos creados antes de que los materiales guardaran categoría y producto,
   // o de que los proveedores tuvieran su ficha

@@ -51,6 +51,10 @@ describe('PantallaExportar', () => {
     fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '2020-01-31' } })
     expect(await screen.findByText(EXPORTAR.sinCompras)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: EXPORTAR.descargar })).toBeDisabled()
+    // Ofrece ver todas las fechas, y con eso vuelven las 5
+    fireEvent.click(screen.getByRole('button', { name: EXPORTAR.verTodo }))
+    expect(await screen.findByText(EXPORTAR.resumen(5, '$57.50'))).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: EXPORTAR.verTodo })).not.toBeInTheDocument()
   })
 
   it('un rango rápido llena las fechas y queda marcado', async () => {

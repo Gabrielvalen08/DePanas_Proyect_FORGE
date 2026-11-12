@@ -1,5 +1,5 @@
 import { test, expect, entrar, confirmar, CESAR } from './ayudantes.js'
-import { ASIGNACION, COMPRA, NOMBRE_PARECIDO, VALIDACION } from '../src/utils/mensajes.js'
+import { ASIGNACION, COMPRA, NOMBRE_PARECIDO } from '../src/utils/mensajes.js'
 
 const formularioCompra = page => page.getByRole('form', { name: 'Detalle de compra' }).first()
 
@@ -35,11 +35,8 @@ test.describe('Formulario de artículo en Agregar compra', () => {
     const formulario = formularioCompra(page)
     const fila = formulario.getByRole('combobox', { name: 'Artículo, fila 1' })
 
-    // Sin proveedor, el «+» está activo pero lo pide primero
-    await formulario.getByRole('button', { name: COMPRA.agregarArticulo('') }).click()
-    await expect(formulario.getByText(VALIDACION.proveedorPrimero)).toBeVisible()
-    await expect(page.getByRole('dialog')).toHaveCount(0)
-
+    // Las filas aparecen al elegir el proveedor (formulario por pasos)
+    await expect(fila).toHaveCount(0)
     await elegirProveedor(page)
     await formulario.getByRole('button', { name: COMPRA.agregarArticulo('') }).click()
     let ventana = page.getByRole('dialog', { name: ASIGNACION.tituloNuevo })
@@ -60,7 +57,11 @@ test.describe('Formulario de artículo en Agregar compra', () => {
     await expect(fila).toHaveValue(renombrado)
     await expect(formulario.getByRole('button', { name: COMPRA.editarArticulo(renombrado) })).toBeVisible()
 
-    // Quedó en el catálogo con el nombre nuevo, y el viejo ya no existe
+    // Quedó en el catálogo con el nombre nuevo, y el viejo ya no existe.
+    // Cancelar aparece con la fila completa
+    await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('1')
+    await formulario.getByRole('combobox', { name: 'Unidad, fila 1' }).selectOption('lb')
+    await formulario.getByRole('textbox', { name: 'Precio unitario, fila 1' }).fill('1.00')
     await page.getByRole('button', { name: 'Cancelar' }).first().click()
     await confirmar(page, COMPRA.confirmarCancelar.confirmar)
     await page.goto('/catalogo/articulos')

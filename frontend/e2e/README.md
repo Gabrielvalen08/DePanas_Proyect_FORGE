@@ -19,15 +19,17 @@ No hace falta tener `npm run dev` ni el backend abiertos: `playwright.config.js`
 
 ## Base de datos
 
-`servidor-pruebas.js` arranca el backend de siempre con `DEPANAS_DB` apuntando a `e2e/.tmp/e2e.db`, que se borra al empezar cada corrida. Cada corrida parte de los datos iniciales (catálogo del Excel, `Cesar_01` / `DePanas#2026` y `Marta_02` / `5678`) y **nunca toca `backend/db/depanas.db`**. Como todas las pruebas comparten esa base, corren una a la vez y cada una deja los datos como los encontró (lo que crea, lo elimina).
+`servidor-pruebas.js` arranca el backend de siempre con `DEPANAS_DB` apuntando a `e2e/.tmp/e2e.db`, que se borra al empezar cada corrida. Cada corrida parte de los datos iniciales (catálogo del Excel, `Cesar_01` / `DePanas#2026` y `Marta_02` / `DePanas#2026`) y **nunca toca `backend/db/depanas.db`**. Como todas las pruebas comparten esa base, corren una a la vez y cada una deja los datos como los encontró (lo que crea, lo elimina).
 
 ## Archivos
 
 | Archivo | Qué prueba |
 | --- | --- |
 | `acceso.spec.js` | La API responde 401 sin sesión (nadie lista ni cambia usuarios sin entrar); pantalla de acceso, contraseña incorrecta, ver/ocultar contraseña, permisos de César y Marta (el menú: Agregar compra, Lista de compras, Catálogo, Gestor de usuarios), Cerrar sesión con confirmación, sesión al recargar |
+| `accion-principal.spec.js` | La acción principal de cada pantalla se ve al abrirla, sin bajar ni quedar tapada, a 1280 × 720 y a 390 × 844 |
 | `navegacion.spec.js` | Cada botón del menú abre su pantalla con su título; Exportar y Cargar fuera del menú (se abren desde el ⋮ de Lista de compras y tienen Regresar); que la app use el servidor; rutas viejas (`/configuracion`, `/catalogo/materiales`) o inexistentes; secciones del Catálogo; "Saltar al contenido" |
 | `compras.spec.js` | Validación, total, filas y bloques; artículos filtrados por las categorías del proveedor; registrar una compra (con confirmación), verla en Lista de compras, exportarla a Excel (.xlsx, leído con `read-excel-file`) y eliminarla |
+| `lista-compras.spec.js` | Lista de compras: elegir varias con su casilla y eliminarlas de una vez; con más de 50 compras, páginas de 50 con las flechas de arriba |
 | `catalogo.spec.js` | Agregar, renombrar y eliminar un proveedor; nombre vacío o repetido; exportar a Excel quitando un proveedor y cargar un respaldo eligiendo uno; buscador |
 | `usuarios.spec.js` | Gestor de usuarios: requisitos de contraseña en vivo, usuario o contraseña repetidos; un empleado que registra compras pero no ve el Catálogo ni puede eliminarlas; darle el Catálogo solo para consultar; cambiar los requisitos |
 | `aviso-salida.spec.js` | Aviso antes de perder datos, en escritorio y móvil: «Salir sin guardar», «Registrar» y X/Esc; Agregar compra, editar compra, catálogo, usuarios, requisitos, Cargar y Exportar; sin cambios o tras guardar no avisa |

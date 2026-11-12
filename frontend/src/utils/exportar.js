@@ -1,9 +1,13 @@
 import { fechaHoyISO } from './formato'
 import { respaldoCatalogo } from '../../../shared/catalogo-json.js'
+import { resumenGastos } from '../../../shared/gastos.js'
+import { EXPORTAR } from './mensajes'
 
 /**
  * exportar.js — Archivos de la pantalla Exportar datos (funciones puras).
- *  - Excel (.xlsx): una fila por artículo, las mismas columnas que el Excel del negocio.
+ *  - Excel (.xlsx): hoja «Compras» con una fila por artículo (las mismas columnas que el Excel
+ *    del negocio) y hoja «Resumen» con el reporte de gastos del rango (shared/gastos.js):
+ *    totales, gasto por proveedor, por categoría y por mes.
  *    Es un .xlsx real y no un CSV: un CSV depende del separador de la configuración regional
  *    (coma o punto y coma) y en muchas computadoras Excel lo abría todo en una sola columna.
  *  - JSON: las compras completas, en el formato que acepta "Cargar datos" / importar-json.
@@ -18,15 +22,52 @@ const porFecha = compras => [...compras].sort((a, b) => a.fecha.localeCompare(b.
 const texto = valor => ({ value: String(valor ?? ''), type: String })
 const numero = (valor, format) => ({ value: Number(valor) || 0, type: Number, ...(format ? { format } : {}) })
 
-/**
- * Libro de Excel de una sola hoja: encabezado en negrita y fijo arriba, y el ancho de cada columna.
- * Devuelve una promesa del Blob.
- */
-async function libroExcel(hoja, encabezados, filas, anchos) {
+const negrita = valor => ({ value: String(valor), type: String, fontWeight: 'bold' })
+const dinero = valor => numero(valor, '#,##0.00')
+
+/** Hoja con encabezado en negrita y fijo arriba, y el ancho de cada columna */
+const hojaConEncabezado = (hoja, encabezados, filas, anchos) => ({
+  sheet: hoja,
+  data: [encabezados.map(negrita), ...filas],
+  columns: anchos.map(width => ({ width })),
+  stickyRowsCount: 1,
+})
+
+/** Libro de Excel con una o varias hojas. Devuelve una promesa del Blob */
+async function libroExcel(hojas) {
   // Se carga al exportar, no con la app: así no pesa en la primera carga
   const { default: writeExcelFile } = await import('write-excel-file/browser')
-  const datos = [encabezados.map(e => ({ value: e, type: String, fontWeight: 'bold' })), ...filas]
-  return writeExcelFile(datos, { sheet: hoja, columns: anchos.map(width => ({ width })), stickyRowsCount: 1 }).toBlob()
+  return writeExcelFile(hojas).toBlob()
+}
+
+/**
+ * Hoja «Resumen»: el reporte de gastos de las compras exportadas. Bloques uno debajo del otro,
+ * cada uno con su título en negrita; los montos son números con dos decimales.
+ */
+function hojaResumen(compras) {
+  const r = resumenGastos(compras)
+  const R = EXPORTAR.hojaResumen
+  const vacia = []
+  const filas = [
+    [negrita(R.titulo)],
+    [texto(R.desde), texto(r.desde ?? '')],
+    [texto(R.hasta), texto(r.hasta ?? '')],
+    [texto(R.compras), numero(r.compras)],
+    [texto(R.articulos), numero(r.articulos)],
+    [texto(R.subtotal), dinero(r.subtotal)],
+    [texto(R.iva), dinero(r.iva)],
+    [negrita(R.total), { ...dinero(r.total), fontWeight: 'bold' }],
+    vacia,
+    [negrita(R.porProveedor), negrita(R.compras), negrita(R.subtotal), negrita(R.iva), negrita(R.total)],
+    ...r.porProveedor.map(p => [texto(p.nombre), numero(p.compras), dinero(p.subtotal), dinero(p.iva), dinero(p.total)]),
+    vacia,
+    [negrita(R.porCategoria), negrita(R.articulos), negrita(R.subtotal)],
+    ...r.porCategoria.map(c => [texto(c.nombre), numero(c.articulos), dinero(c.subtotal)]),
+    vacia,
+    [negrita(R.porMes), negrita(R.compras), negrita(R.subtotal), negrita(R.iva), negrita(R.total)],
+    ...r.porMes.map(m => [texto(m.mes), numero(m.compras), dinero(m.subtotal), dinero(m.iva), dinero(m.total)]),
+  ]
+  return { sheet: R.hoja, data: filas, columns: [24, 12, 14, 12, 14].map(width => ({ width })) }
 }
 
 /** Excel con una fila por artículo, ordenado por fecha, como el Excel del negocio. Promesa del Blob */
@@ -44,7 +85,7 @@ export function comprasAXlsx(compras) {
       ])
     })
   }
-  return libroExcel('Compras', COLUMNAS, filas, ANCHOS)
+  return libroExcel([hojaConEncabezado('Compras', COLUMNAS, filas, ANCHOS), hojaResumen(compras)])
 }
 
 /** Compras completas sin los campos de compatibilidad internos (precio, productos) */
@@ -107,7 +148,7 @@ export function catalogoAXlsx(tipo, filas) {
     if (tipo === 'categoria') return [f.nombre, (f.proveedores ?? []).join('; '), f.articulos.join('; ')]
     return [f.nombre, f.articulos.join('; ')]
   }).map(fila => fila.map(texto))
-  return libroExcel(HOJA_CATALOGO[tipo], COLUMNAS_CATALOGO[tipo], cuerpo, ANCHOS_CATALOGO[tipo])
+  return libroExcel([hojaConEncabezado(HOJA_CATALOGO[tipo], COLUMNAS_CATALOGO[tipo], cuerpo, ANCHOS_CATALOGO[tipo])])
 }
 
 /** Respaldo .json de una sección, en el formato que acepta Cargar de esa misma sección */

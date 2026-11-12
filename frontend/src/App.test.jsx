@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import App from './App'
 import { apagarSistema, avisarCierrePestana, puedeApagar, registrarPestana } from './services/api'
-import { ACCESO, APAGADO, CARGAR, CONFIRMAR } from './utils/mensajes'
+import { ACCESO, APAGADO, CARGAR, CONFIRMAR, NO_ENCONTRADA } from './utils/mensajes'
 
 vi.mock('./services/api', () => ({
   guardarLista: vi.fn(),
@@ -38,7 +38,7 @@ vi.mock('./services/api', () => ({
   fetchCatalogo: () => Promise.resolve({ proveedores: ['Selectos'], categorias: [], productos: [], materiales: [], uso: {}, fichas: {} }),
   iniciarSesion: async (usuario, contrasena) => {
     if (usuario === 'Cesar_01' && contrasena === 'DePanas#2026') return CESAR
-    if (usuario === 'Marta_02' && contrasena === '5678') return MARTA
+    if (usuario === 'Marta_02' && contrasena === 'DePanas#2026') return MARTA
     throw new Error('Usuario o contraseña incorrectos')
   },
   fetchUsuarios: () => Promise.resolve([CESAR, MARTA]),
@@ -189,6 +189,24 @@ describe('App - Flujo de seguridad con PantallaContrasena y Permisos', () => {
     iniciarComo(CESAR)
     renderizarApp('/configuracion/proveedores')
     expect(await screen.findByRole('heading', { name: 'Catálogo', level: 1 })).toBeInTheDocument()
+  })
+
+  it('una dirección que no existe muestra «Pantalla no encontrada» con un botón al inicio', async () => {
+    const usuario = userEvent.setup()
+    iniciarComo(CESAR)
+    renderizarApp('/compras/xyz')
+    expect(await screen.findByRole('heading', { name: NO_ENCONTRADA.titulo, level: 1 })).toBeInTheDocument()
+    expect(document.title).toBe(`${NO_ENCONTRADA.titulo} | De Panas SV`)
+    expect(screen.getByRole('navigation', { name: 'Menú principal' })).toBeInTheDocument()
+    await usuario.click(screen.getByRole('link', { name: NO_ENCONTRADA.accion }))
+    expect(await screen.findByRole('heading', { name: 'Agregar compra', level: 1 })).toBeInTheDocument()
+  })
+
+  it('una pantalla que existe pero sin permiso sigue llevando al inicio, sin «no encontrada»', async () => {
+    iniciarComo(MARTA)
+    renderizarApp('/usuarios')
+    expect(await screen.findByRole('heading', { name: 'Agregar compra', level: 1 })).toBeInTheDocument()
+    expect(screen.queryByText(NO_ENCONTRADA.texto)).not.toBeInTheDocument()
   })
 
   it('para Cesar_01: el menú tiene el Gestor de usuarios y lo abre', async () => {

@@ -9,7 +9,7 @@ test.describe('Acceso', () => {
   })
 
   test('la API no responde sin sesión: nadie lista ni cambia usuarios sin entrar', async ({ request }) => {
-    const api = 'http://127.0.0.1:3100/api'
+    const api = `http://127.0.0.1:${process.env.E2E_PUERTO_BACKEND || 3100}/api`
     expect((await request.get(`${api}/health`)).status()).toBe(200)
     expect((await request.get(`${api}/usuarios`)).status()).toBe(401)
     expect((await request.put(`${api}/usuarios/Cesar_01`, { data: { contrasena: 'Robada#2026' } })).status()).toBe(401)
