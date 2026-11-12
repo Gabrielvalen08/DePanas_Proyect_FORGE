@@ -115,8 +115,6 @@ Cualquiera de estas dos formas sirve:
 
 En cada sección del Catálogo, el menú **⋮** también permite exportar a Excel y guardar o cargar un respaldo de esa sección.
 
-El Excel de Exportar sirve también para pedirle informes a un asistente de IA (ChatGPT, Claude, Copilot…). Al subirlo, el archivo sale de la computadora: si no quieren compartir el detalle, suban solo la hoja **Resumen**. El manual trae ejemplos de preguntas.
-
 ## 6. Versión nueva
 
 1. **«Apagar De Panas SV».**
