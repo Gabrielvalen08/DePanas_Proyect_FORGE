@@ -5,11 +5,11 @@
  *   De Panas SV/
  *     Abrir De Panas SV.cmd   ← lo que se abre (portable/)
  *     Abrir De Panas SV (demo).cmd  ← la versión de demostración, con datos de ejemplo (portable/)
+ *     Manual de uso.html      ← doble clic: abre el manual en el navegador (portable/)
  *     LEEME.txt               (portable/)
- *     Manual de uso/          (docs/manual/: abrir index.html)
  *     node/node.exe           ← el Node.js oficial que corre este script, SIN modificar: su firma
  *                               de OpenJS Foundation es lo que deja pasar a Smart App Control
- *     app/  iniciar.mjs, servidor.mjs, package.json (portable/app/), icono.ico,
+ *     app/  iniciar.mjs, servidor.mjs, package.json (portable/app/), icono.ico, manual/ (docs/manual/),
  *           backend/ (sin pruebas ni bases), shared/, frontend/ (compilado),
  *           node_modules/ (las dependencias de producción del backend)
  *
@@ -51,7 +51,8 @@ execSync('npm run build', { cwd: join(RAIZ, 'frontend'), stdio: 'inherit' })
 rmSync(join(ESCRITORIO, 'salida'), { recursive: true, force: true })
 mkdirSync(DESTINO, { recursive: true })
 cpSync(join(ESCRITORIO, 'portable'), DESTINO, { recursive: true })
-cpSync(join(RAIZ, 'docs', 'manual'), join(DESTINO, 'Manual de uso'), { recursive: true })
+// El manual va dentro de app/; «Manual de uso.html» (portable/) lo abre con un doble clic
+cpSync(join(RAIZ, 'docs', 'manual'), join(DESTINO, 'app', 'manual'), { recursive: true })
 
 // 3. node.exe tal cual (copiar no cambia la firma) y su licencia
 mkdirSync(join(DESTINO, 'node'))

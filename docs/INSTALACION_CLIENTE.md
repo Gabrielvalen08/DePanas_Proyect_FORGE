@@ -25,7 +25,7 @@ Para quien instala, en la computadora del local. Marca cada paso.
 - [ ] Exportar a Excel y abrir el archivo (hojas «Compras» y «Resumen»).
 - [ ] Hacer el primer respaldo (paso 5) y mostrar dónde guardarlo.
 - [ ] Apagar con **«Apagar De Panas SV»** y volver a abrir desde el acceso directo: lo registrado sigue ahí.
-- [ ] Abrir la **demostración** para practicar sin tocar los datos reales, y mostrar el **Manual de uso**.
+- [ ] Abrir la **demostración** para practicar sin tocar los datos reales, y mostrar el **Manual de uso** (doble clic en «Manual de uso» de la carpeta).
 
 **Al irse**
 - [ ] César y Marta saben abrir, entrar, registrar, buscar, exportar y apagar.
@@ -45,7 +45,7 @@ Para quien instala, en la computadora del local. Marca cada paso.
    De Panas SV/
      Abrir De Panas SV.cmd          ← este se abre
      Abrir De Panas SV (demo).cmd   (versión de demostración, aparte)
-     Manual de uso/                 (abrir index.html)
+     Manual de uso.html             ← doble clic: abre el manual
      LEEME.txt
      node/                          (no tocar)
      app/                           (no tocar)

@@ -9,7 +9,7 @@ ANTES DE DESCOMPRIMIR (solo si el .zip llegó por correo, WhatsApp o internet)
   Sin ese paso, Windows (Smart App Control) puede no dejar abrir el sistema.
 
 MANUAL DE USO
-  Abre la carpeta "Manual de uso" y luego index.html (se ve en el navegador).
+  Doble clic en "Manual de uso" (se abre en el navegador, no necesita internet).
 
 ABRIR
   Doble clic en "Abrir De Panas SV". Se abre el navegador en http://localhost:4510
