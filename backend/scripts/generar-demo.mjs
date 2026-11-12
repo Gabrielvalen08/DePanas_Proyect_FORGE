@@ -12,6 +12,8 @@
  *   - Pepsi: cada martes; bebidas, con factura y 13 % de IVA.
  *   - MMAG: un jueves sí y otro no; gabachas y bolsas al vacío.
  *   - Desechables Diver.: un sábado sí y otro no; bandejas y vasitos, con 13 % de IVA.
+ *   - Mercado: cada sábado; verduras y frutas frescas, sin factura.
+ *   Así los dos meses pasan de 50 compras y en la Lista de compras se ven las páginas.
  *
  * El archivo tiene el formato de un respaldo de compras: se carga desde Cargar datos o con
  * crear-base-demo.mjs.
@@ -93,6 +95,16 @@ const DESECHABLES = [
   ['Tapa Portion Cup Cuadrado', 'Desechables', 'Salsa', 'bolsa', 1.72, 1.8, 1, 2, 1],
 ]
 
+const MERCADO = [
+  ['Tomate', 'Materia Prima', 'Arepas/Empanadas', 'lb', 0.45, 0.65, 3, 6, 1],
+  ['Aguacate', 'Materia Prima', 'Arepas', 'unidad', 0.5, 0.75, 4, 10, 1],
+  ['Cebolla', 'Materia Prima', 'Arepas/Empanadas', 'lb', 0.6, 0.85, 2, 4, 1],
+  ['Plátanos', 'Materia Prima', 'Arepas/Empanadas', 'unidad', 0.25, 0.3, 10, 20, 1],
+  ['Cilantro', 'Materia Prima', 'Salsa', 'unidad', 0.25, 0.4, 2, 4, 1],
+  ['Chile verde', 'Materia Prima', 'Arepas/Empanadas', 'unidad', 0.2, 0.3, 3, 6, 1],
+  ['Limón', 'Materia Prima', 'Salsa', 'unidad', 0.08, 0.12, 10, 20, 1],
+]
+
 const DIAS = { domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6 }
 
 export function generarComprasDemo({ desde = DESDE, hasta = HASTA, semilla = SEMILLA } = {}) {
@@ -131,6 +143,7 @@ export function generarComprasDemo({ desde = DESDE, hasta = HASTA, semilla = SEM
     if (dia === DIAS.sabado && semana % 2 === 1) {
       compras.push(compra(fecha, 'Desechables Diver.', mezclar(DESECHABLES).slice(0, 3 + Math.floor(azar() * 3)), true))
     }
+    if (dia === DIAS.sabado) compras.push(compra(fecha, 'Mercado', mezclar(MERCADO).slice(0, 3 + Math.floor(azar() * 3)), false))
   }
   return compras
 }

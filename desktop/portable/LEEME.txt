@@ -29,7 +29,8 @@ USUARIOS INICIALES (cámbialos en el Gestor de usuarios)
 DATOS
   Se guardan en  %APPDATA%\De Panas SV\depanas.db  (fuera de esta carpeta).
   Mover, reemplazar o borrar esta carpeta NO borra los datos.
-  Respaldo: en Lista de compras, menú ... > Exportar datos > Respaldo (.json).
+  Respaldo (una vez al mes): en Lista de compras, menú ... > Exportar datos >
+  rango Todo > Respaldo (.json). Guárdalo en una memoria USB.
 
 DEMOSTRACIÓN
   Doble clic en "Abrir De Panas SV (demo)". Se abre aparte, en http://localhost:4511,

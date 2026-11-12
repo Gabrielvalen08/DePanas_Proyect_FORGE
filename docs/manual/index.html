@@ -118,7 +118,38 @@
 
     table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 0.75rem; font-size: 0.98rem; }
     th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
+    /* En el teléfono una tabla ancha se desliza de lado, sin ensanchar la página */
+    @media (max-width: 600px) { table { display: block; overflow-x: auto; } }
     th { background: var(--crema-claro); font-weight: 600; text-transform: uppercase; font-size: 0.82rem; letter-spacing: 0.04em; }
+
+    /* Pasos que corresponden a los números naranjas de la foto */
+    ol.marcas { list-style: none; counter-reset: marca; margin: 0.25rem 0 1rem; max-width: 72ch; }
+    ol.marcas li { counter-increment: marca; position: relative; padding-left: 2.6rem; margin-bottom: 0.6rem; min-height: 1.9rem; }
+    ol.marcas li::before, .numero {
+      content: counter(marca);
+      display: inline-block;
+      width: 1.75rem; height: 1.75rem; line-height: 1.75rem;
+      border-radius: 50%;
+      background: var(--naranja); color: var(--avila-profundo);
+      font-family: var(--titulos); font-weight: 700; text-align: center;
+      border: 2px solid var(--blanco); box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+    }
+    ol.marcas li::before { position: absolute; left: 0; top: 0; }
+    .numero { width: 1.5rem; height: 1.5rem; line-height: 1.5rem; font-size: 0.85rem; vertical-align: middle; }
+    .leyenda { background: var(--blanco); border: 1px dashed var(--naranja); border-radius: 12px; padding: 0.7rem 1rem; margin-bottom: 1.5rem; max-width: none; }
+
+    /* Recorte del botón que se usa, dentro del texto */
+    img.boton {
+      display: inline-block;
+      height: 2.1em; width: auto;
+      vertical-align: middle;
+      margin: 0 0.15em;
+      border: 1px solid var(--borde);
+      border-radius: 8px;
+      background: var(--blanco);
+    }
+    caption { text-align: left; font-family: var(--titulos); font-weight: 600; padding-bottom: 0.35rem; }
+    code { font-size: 0.95em; background: var(--crema-claro); border: 1px solid var(--borde); border-radius: 5px; padding: 0 0.3em; }
 
     /* Preguntas frecuentes */
     details { border-bottom: 1px solid var(--borde); padding: 0.6rem 0; }
@@ -161,146 +192,204 @@
         <li><a href="#articulo">Un artículo nuevo</a></li>
         <li><a href="#lista">Lista de compras</a></li>
         <li><a href="#catalogo">Catálogo</a></li>
-        <li><a href="#exportar">Exportar y respaldos</a></li>
+        <li><a href="#exportar">Exportar, informes y respaldos</a></li>
         <li><a href="#usuarios">Usuarios y contraseñas</a></li>
         <li><a href="#privacidad">Tus datos y su privacidad</a></li>
         <li><a href="#preguntas">Preguntas frecuentes</a></li>
       </ol>
     </nav>
 
+    <p class="leyenda">En cada foto, los <span class="numero" aria-hidden="true">1</span> números naranjas marcan dónde tocar, en el mismo orden que los pasos. Los botones pequeños dentro del texto son los mismos que verás en la pantalla.</p>
+
     <section id="abrir" aria-labelledby="t-abrir">
       <h2 id="t-abrir">1. Abrir, entrar y apagar</h2>
-      <ol class="pasos">
-        <li>Doble clic en el acceso <b>De Panas SV</b> del escritorio. Se abre el navegador solo.</li>
-        <li>Escribe tu <b>usuario</b> y tu <b>contraseña</b> y toca <b>Ingresar</b>.</li>
-        <li>Al terminar el día, en el menú: <b>Apagar De Panas SV</b>. Cerrar la pestaña del navegador también apaga.</li>
-      </ol>
+      <p>Doble clic en el acceso <b>De Panas SV</b> del escritorio. Se abre el navegador solo.</p>
       <figure>
-        <img src="img/01-acceso.png" alt="Pantalla de acceso con los campos Usuario y Contraseña y el botón Ingresar" loading="lazy">
-        <figcaption>La pantalla de acceso.</figcaption>
+        <img src="img/01-acceso.png" alt="Pantalla de acceso con los campos Usuario (1) y Contraseña (2) y el botón Ingresar (3)" loading="lazy">
       </figure>
-      <p class="nota">Para practicar sin tocar los datos reales, abre <b>Abrir De Panas SV (demo)</b>: trae dos meses de compras de ejemplo y guarda todo aparte.</p>
+      <ol class="marcas">
+        <li>Escribe tu <b>usuario</b> (por ejemplo, <code>Cesar_01</code>).</li>
+        <li>Escribe tu <b>contraseña</b>.</li>
+        <li>Toca <img class="boton" src="img/botones/ingresar.png" alt="Ingresar">.</li>
+      </ol>
+      <table>
+        <caption>Usuarios para entrar la primera vez</caption>
+        <thead><tr><th scope="col">Persona</th><th scope="col">Usuario</th><th scope="col">Contraseña inicial</th><th scope="col">Puede</th></tr></thead>
+        <tbody>
+          <tr><td>César</td><td><code>Cesar_01</code></td><td><code>DePanas#2026</code></td><td>Todo, también el Gestor de usuarios (administrador)</td></tr>
+          <tr><td>Marta</td><td><code>Marta_02</code></td><td><code>DePanas#2026</code></td><td>Todo menos el Gestor de usuarios (operadora)</td></tr>
+        </tbody>
+      </table>
+      <p class="nota"><b>Cambien estas contraseñas el primer día</b> (ver <a href="#usuarios">Usuarios y contraseñas</a>): están escritas en este manual. Respeta mayúsculas y minúsculas al escribirlas.</p>
+      <p>Al terminar el día, en el menú: <img class="boton" src="img/botones/apagar.png" alt="Apagar De Panas SV">. Cerrar la pestaña del navegador también apaga.</p>
+      <p class="nota">Para practicar sin tocar los datos reales, abre <b>Abrir De Panas SV (demo)</b>: trae dos meses de compras de ejemplo (53 compras) y guarda todo aparte. Entra con los mismos usuarios.</p>
       <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
     </section>
 
     <section id="registrar" aria-labelledby="t-registrar">
       <h2 id="t-registrar">2. Registrar una compra</h2>
       <p>Es la pantalla principal, <b>Agregar compra</b>. Lo siguiente aparece a medida que llenas lo anterior.</p>
-      <ol class="pasos">
-        <li>Revisa la <b>fecha</b> (empieza en hoy) y escribe el <b>proveedor</b>. Al escribir, la opción que más coincide queda marcada: <kbd>Enter</kbd> la completa.</li>
-        <li>En la primera fila escribe el <b>artículo</b>. Solo salen los que vende ese proveedor.</li>
-        <li>Pon la <b>cantidad</b> y la <b>unidad</b>. El precio de la última compra se pone solo; escribe el <b>monto</b> o el <b>precio unitario</b> y el otro se calcula.</li>
-        <li>Para otro artículo, toca <b>+ Agregar otro artículo</b>.</li>
-        <li>Si la factura trae IVA, marca <b>IVA (13 %)</b>. Revisa el <b>total</b>.</li>
-        <li>Toca <b>Guardar compra</b> y confirma.</li>
-      </ol>
       <figure>
-        <img src="img/02-agregar-compra.png" alt="Formulario de Agregar compra con proveedor Selectos, una fila de Harina PAN, subtotal, IVA, total y el botón Guardar compra" loading="lazy">
-        <figcaption>Una compra lista para guardar.</figcaption>
+        <img src="img/02-agregar-compra.png" alt="Agregar compra con la fecha (1), el proveedor Selectos (2), el artículo Harina PAN (3), la cantidad (4), el monto (5) y el botón Guardar compra (6)" loading="lazy">
       </figure>
-      <p><b>Nueva compra</b> abre otra compra debajo, por ejemplo de otro proveedor. Cada una se guarda por separado.</p>
+      <ol class="marcas">
+        <li>Revisa la <b>fecha</b>: empieza en hoy.</li>
+        <li>Escribe el <b>proveedor</b>. Si lo que escribes empieza igual que uno guardado, queda marcado y <kbd>Enter</kbd> lo completa.</li>
+        <li>Escribe el <b>artículo</b>. Solo salen los que vende ese proveedor.</li>
+        <li>Pon la <b>cantidad</b> y elige la <b>unidad</b>.</li>
+        <li>Revisa el <b>monto</b>: el precio de la última compra se pone solo. Si cambió, escribe el monto o el precio unitario y el otro se calcula.</li>
+        <li>Toca <img class="boton" src="img/botones/guardar-compra.png" alt="Guardar compra"> y confirma.</li>
+      </ol>
+      <ul class="lista">
+        <li>Otro artículo en la misma compra: <img class="boton" src="img/botones/agregar-otro.png" alt="Agregar otro artículo">.</li>
+        <li>Si la factura trae IVA, marca <b>IVA (13 %)</b> antes de guardar.</li>
+        <li>Otra compra, por ejemplo de otro proveedor: <img class="boton" src="img/botones/nueva-compra.png" alt="Nueva compra">. Cada una se guarda por separado.</li>
+      </ul>
       <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
     </section>
 
     <section id="articulo" aria-labelledby="t-articulo">
       <h2 id="t-articulo">3. Un artículo nuevo</h2>
-      <p>Si escribes un artículo que no está en el catálogo, se abre un formulario corto:</p>
-      <ol class="pasos">
-        <li>Elige su <b>categoría</b> (por ejemplo, Materia Prima).</li>
+      <p>Si el artículo no está en el catálogo, toca <img class="boton" src="img/botones/mas-articulo.png" alt="+ (agregar artículo nuevo)"> junto a la fila. Se abre este formulario:</p>
+      <figure>
+        <img src="img/03-articulo-nuevo.png" alt="Ventana Artículo nuevo con el nombre (1), la categoría (2), los productos (3) y el botón Guardar (4)" loading="lazy">
+      </figure>
+      <ol class="marcas">
+        <li>Revisa el <b>nombre</b>: viene de lo que escribiste en la fila.</li>
+        <li>Elige su <b>categoría</b> (por ejemplo, Materia Prima). Si no está, escríbela.</li>
         <li>Elige en qué <b>productos</b> se usa (Arepas, Tequeños…). Es opcional.</li>
         <li>Toca <b>Guardar</b> y confirma. Desde ahora sale en el buscador.</li>
       </ol>
-      <p>Con <b>Ahora no</b> la compra se guarda igual y la fila queda marcada en rojo con un «!», para completarlo después. El botón <b>+</b> junto a la fila crea un artículo; el <b>lápiz</b> edita uno que ya existe.</p>
+      <p>Con <img class="boton" src="img/botones/ahora-no.png" alt="Ahora no"> la compra se guarda igual y la fila queda marcada en rojo con un «!», para completarlo después. Para corregir un artículo que ya existe, toca el <img class="boton" src="img/botones/lapiz-articulo.png" alt="lápiz (editar artículo)"> junto a la fila.</p>
       <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
     </section>
 
     <section id="lista" aria-labelledby="t-lista">
       <h2 id="t-lista">4. Lista de compras</h2>
       <p>Todas las compras, la más reciente arriba. Cuando hay más de 50, se ven de 50 en 50.</p>
-      <table>
-        <thead><tr><th scope="col">Quiero…</th><th scope="col">Cómo</th></tr></thead>
-        <tbody>
-          <tr><td>Ver una compra</td><td>Toca su fila. Ahí también se <b>edita</b> o se <b>elimina</b>.</td></tr>
-          <tr><td>Buscar compras</td><td>Ícono <b>Filtrar</b> (las rayitas): por proveedor, artículo o fechas.</td></tr>
-          <tr><td>Elegir varias</td><td>Marca sus <b>casillas</b>, como en el correo. La de arriba elige las de la página; un aviso ofrece elegir todas.</td></tr>
-          <tr><td>Eliminar las elegidas</td><td>Ícono <b>Eliminar</b> (la papelera), junto a Filtrar. Pide confirmar.</td></tr>
-          <tr><td>Ver las siguientes 50</td><td>Flechas <b>‹ ›</b> arriba, junto a «1–50 de …», como en el correo.</td></tr>
-          <tr><td>Exportar o cargar</td><td>Menú <b>⋮</b> de la lista.</td></tr>
-        </tbody>
-      </table>
       <figure>
-        <img src="img/03-lista-compras.png" alt="Lista de compras con dos compras elegidas en color naranja suave y los íconos Eliminar y Filtrar" loading="lazy">
-        <figcaption>Dos compras elegidas: aparece el ícono Eliminar.</figcaption>
+        <img src="img/04-lista-compras.png" alt="Lista de compras con dos compras elegidas (1), los íconos Eliminar (2) y Filtrar (3), las páginas 1–50 de 53 (4) y el menú de tres puntos (5)" loading="lazy">
       </figure>
+      <ol class="marcas">
+        <li><b>Elegir compras</b>: marca sus casillas, como en el correo. La casilla de arriba elige las 50 de la página; un aviso ofrece elegir todas.</li>
+        <li><b>Eliminar las elegidas</b>: <img class="boton" src="img/botones/eliminar.png" alt="Eliminar (papelera)">. Pide confirmar y dice cuántas son.</li>
+        <li><b>Buscar</b>: <img class="boton" src="img/botones/filtrar.png" alt="Filtrar"> abre los filtros (proveedor, artículo y fechas).</li>
+        <li><b>Ver las siguientes 50</b>: <img class="boton" src="img/botones/paginas.png" alt="1–50 de 53 con las flechas"> las flechas avanzan o regresan.</li>
+        <li><b>Exportar o cargar</b>: <img class="boton" src="img/botones/mas-acciones.png" alt="Más acciones (tres puntos)">.</li>
+      </ol>
+      <h3>Buscar con los filtros</h3>
       <figure>
-        <img src="img/04-detalle-compra.png" alt="Ventana con el detalle de una compra en Selectos: fecha, artículos, cantidades y montos" loading="lazy">
-        <figcaption>El detalle de una compra.</figcaption>
+        <img src="img/05-filtros.png" alt="Lista de compras con el panel de filtros abierto (1)" loading="lazy">
       </figure>
+      <ol class="marcas">
+        <li>Escribe el proveedor o el artículo, o elige las fechas. La lista se filtra mientras escribes. Para ver todo otra vez, borra los filtros.</li>
+      </ol>
+      <h3>Ver, corregir o eliminar una compra</h3>
+      <p>Toca cualquier parte de su fila. Se abre su detalle:</p>
+      <figure>
+        <img src="img/06-detalle-compra.png" alt="Detalle de una compra con sus artículos, el total y los botones Editar (1) y Eliminar (2)" loading="lazy">
+      </figure>
+      <ol class="marcas">
+        <li><img class="boton" src="img/botones/editar.png" alt="Editar"> para corregirla. Al terminar, guarda.</li>
+        <li><b>Eliminar</b> la borra con todos sus artículos (pide confirmar).</li>
+      </ol>
       <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
     </section>
 
-
     <section id="catalogo" aria-labelledby="t-catalogo">
       <h2 id="t-catalogo">5. Catálogo</h2>
-      <p>Las opciones de los buscadores, en cuatro secciones: <b>Proveedores</b>, <b>Categorías</b>, <b>Artículos</b> y <b>Productos</b>.</p>
-      <ul class="lista">
-        <li><b>Agregar</b>: el botón naranja de cada sección.</li>
-        <li><b>Editar</b> (lápiz): cambiar un nombre lo cambia también en todas las compras.</li>
-        <li><b>Eliminar</b> (papelera): las compras guardadas conservan su texto.</li>
-        <li>En un proveedor se guardan su ubicación, teléfonos y contactos; en una categoría, qué proveedores la venden.</li>
-      </ul>
+      <p>Las opciones de los buscadores: proveedores, categorías, artículos y productos.</p>
       <figure>
-        <img src="img/05-catalogo.png" alt="Catálogo en la sección Artículos, con nombre, categoría, productos y cantidad de compras" loading="lazy">
-        <figcaption>La sección Artículos del Catálogo.</figcaption>
+        <img src="img/07-catalogo.png" alt="Catálogo con las cuatro secciones (1), el buscador (2), el botón Agregar artículo (3) y el lápiz de una fila (4)" loading="lazy">
       </figure>
+      <ol class="marcas">
+        <li>Elige la <b>sección</b>: Proveedores, Categorías, Artículos o Productos. El número dice cuántos hay.</li>
+        <li><b>Busca</b> por nombre.</li>
+        <li><b>Agrega</b> uno nuevo: <img class="boton" src="img/botones/agregar-catalogo.png" alt="Agregar artículo">.</li>
+        <li><b>Edita</b> con el <img class="boton" src="img/botones/lapiz-catalogo.png" alt="lápiz">: cambiar un nombre lo cambia también en todas las compras. La papelera lo elimina; las compras guardadas conservan su texto.</li>
+      </ol>
+      <p>En un proveedor se guardan su ubicación, teléfonos y contactos; en una categoría, qué proveedores la venden (así, al registrar una compra, solo salen sus artículos).</p>
       <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
     </section>
 
     <section id="exportar" aria-labelledby="t-exportar">
-      <h2 id="t-exportar">6. Exportar y respaldos</h2>
-      <ol class="pasos">
-        <li>En la lista: <b>⋮ → Exportar datos</b>.</li>
-        <li>Elige el rango (<b>Este mes</b>, <b>Mes pasado</b>…) o las fechas.</li>
-        <li>Elige el formato y toca <b>Descargar</b>.</li>
+      <h2 id="t-exportar">6. Exportar, informes y respaldos</h2>
+      <p>En la Lista de compras: <img class="boton" src="img/botones/mas-acciones.png" alt="Más acciones (tres puntos)"> → <b>Exportar datos</b>.</p>
+      <figure>
+        <img src="img/08-exportar.png" alt="Exportar datos con los rangos rápidos (1), las fechas (2), el formato (3) y el botón Descargar (4)" loading="lazy">
+      </figure>
+      <ol class="marcas">
+        <li>Elige un <b>rango rápido</b>: Este mes, Mes pasado, Este año o Todo.</li>
+        <li>O escribe las fechas <b>Desde</b> y <b>Hasta</b>.</li>
+        <li>Elige el <b>formato</b>: Excel para revisar los gastos, o Respaldo (.json) para guardar una copia.</li>
+        <li>Toca <img class="boton" src="img/botones/descargar.png" alt="Descargar"> y confirma. El archivo queda en <b>Descargas</b>.</li>
       </ol>
       <table>
         <thead><tr><th scope="col">Formato</th><th scope="col">Para qué</th></tr></thead>
         <tbody>
           <tr><td>Excel (.xlsx)</td><td>Revisar los gastos. Trae una hoja con cada artículo y una hoja <b>Resumen</b>: total, IVA y gasto por proveedor, por categoría y por mes.</td></tr>
-          <tr><td>Respaldo (.json)</td><td>Guardar una copia o pasar las compras a otra computadora con <b>⋮ → Cargar datos</b>.</td></tr>
+          <tr><td>Respaldo (.json)</td><td>Guardar una copia o pasar las compras a otra computadora.</td></tr>
         </tbody>
       </table>
+
+      <h3>Informes con ayuda de IA</h3>
+      <p>El Excel sirve para pedirle informes a un asistente de inteligencia artificial (por ejemplo ChatGPT, Claude o Copilot). Sube el archivo y pregunta en tus palabras, por ejemplo:</p>
+      <ul class="lista">
+        <li>«¿En qué categoría gasté más este mes y cuánto subió respecto al mes pasado?»</li>
+        <li>«¿Qué artículos subieron de precio en Selectos?»</li>
+        <li>«Hazme un resumen de gastos por proveedor en una tabla.»</li>
+      </ul>
+      <p class="nota">Al subirlo, el archivo <b>sale de esta computadora</b> y lo recibe ese servicio. Si no quieres compartir el detalle, sube solo la hoja <b>Resumen</b>. Revisa las cifras que te dé la IA contra el Excel antes de decidir.</p>
+
+      <h3>Cargar un respaldo</h3>
       <figure>
-        <img src="img/06-exportar.png" alt="Pantalla Exportar datos con el rango de fechas, los formatos Excel y Respaldo y el botón Descargar" loading="lazy">
-        <figcaption>Exportar datos.</figcaption>
+        <img src="img/09-cargar.png" alt="Cargar datos con el botón Elegir archivo (1)" loading="lazy">
       </figure>
-      <p class="nota"><b>Haz un respaldo .json cada semana</b> y guárdalo en una memoria USB. No lo envíes por correo.</p>
+      <ol class="marcas">
+        <li>En la lista: <b>⋮ → Cargar datos</b> y toca <img class="boton" src="img/botones/elegir-archivo.png" alt="Elegir archivo">. Elige el respaldo .json, marca las compras que quieres traer y toca <b>Cargar</b>. Las que ya están no se repiten.</li>
+      </ol>
+      <p class="nota"><b>Haz un respaldo .json cada mes</b> (rango <b>Todo</b>) y guárdalo en una memoria USB. No lo envíes por correo.</p>
       <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
     </section>
 
     <section id="usuarios" aria-labelledby="t-usuarios">
       <h2 id="t-usuarios">7. Usuarios y contraseñas</h2>
-      <p>Solo el administrador ve el <b>Gestor de usuarios</b>, al pie del menú.</p>
-      <ul class="lista">
-        <li><b>Agregar usuario</b>: nombre, usuario, contraseña y rol. El <b>operador</b> puede todo menos el gestor; el <b>empleado</b>, registrar, ver y corregir compras.</li>
-        <li>Con el <b>lápiz</b> se cambian la contraseña, las pantallas y lo que puede hacer cada persona.</li>
-        <li><b>Editar requisitos</b> define cómo deben ser las contraseñas nuevas.</li>
-      </ul>
-      <p class="nota">Cada persona entra con <b>su propio usuario</b>. Cambia las contraseñas iniciales la primera vez.</p>
+      <p>Solo el administrador (César) ve el <b>Gestor de usuarios</b>, al pie del menú.</p>
+      <figure>
+        <img src="img/10-usuarios.png" alt="Gestor de usuarios con el botón Agregar usuario (1), el lápiz de Marta (2) y Editar requisitos (3)" loading="lazy">
+      </figure>
+      <ol class="marcas">
+        <li><img class="boton" src="img/botones/agregar-usuario.png" alt="Agregar usuario">: nombre, usuario, contraseña y rol. El <b>operador</b> puede todo menos el gestor; el <b>empleado</b>, registrar, ver y corregir compras.</li>
+        <li>Con el <img class="boton" src="img/botones/lapiz-usuario.png" alt="lápiz"> se cambian la contraseña, las pantallas y lo que puede hacer cada persona.</li>
+        <li><img class="boton" src="img/botones/editar-requisitos.png" alt="Editar requisitos"> define cómo deben ser las contraseñas nuevas.</li>
+      </ol>
+      <h3>Cambiar la contraseña inicial</h3>
+      <ol class="pasos">
+        <li>César entra con <code>Cesar_01</code> y abre <b>Gestor de usuarios</b>.</li>
+        <li>Toca el lápiz de su usuario, escribe la <b>nueva contraseña</b> dos veces y toca <b>Guardar</b>.</li>
+        <li>Hace lo mismo con <code>Marta_02</code>, o se la da a Marta para que la escriba ella.</li>
+      </ol>
+      <p class="nota">Cada persona entra con <b>su propio usuario</b>. Por defecto, la contraseña nueva necesita al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial; el formulario marca en vivo lo que falta.</p>
       <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
     </section>
 
     <section id="privacidad" aria-labelledby="t-privacidad">
       <h2 id="t-privacidad">8. Tus datos y su privacidad</h2>
+      <figure>
+        <img src="img/11-permisos.png" alt="Editor de Marta con su rol (1) y las pantallas y funciones que tiene (2)" loading="lazy">
+      </figure>
+      <ol class="marcas">
+        <li>El <b>rol</b> de cada persona trae lo que puede ver y hacer.</li>
+        <li>Las <b>pantallas y funciones</b> se ajustan persona por persona: lo que no está marcado, no lo ve.</li>
+      </ol>
       <table>
         <thead><tr><th scope="col">Pregunta</th><th scope="col">Respuesta</th></tr></thead>
         <tbody>
           <tr><td>¿Qué guarda?</td><td>Las compras (proveedor, fecha, artículos, cantidades y montos), el catálogo con la ficha de cada proveedor (ubicación, teléfonos y contactos) y los usuarios (nombre, usuario y rol).</td></tr>
           <tr><td>¿Dónde?</td><td>Solo en esta computadora, en la carpeta <code>%APPDATA%\De Panas SV</code>. La demostración usa otra carpeta aparte (<code>demo</code>).</td></tr>
-          <tr><td>¿Sale algo a internet?</td><td>No. No necesita internet, no manda datos a ningún lado y no usa publicidad ni estadísticas. Nadie más en la red puede abrirla.</td></tr>
+          <tr><td>¿Sale algo a internet?</td><td>No. No necesita internet, no manda datos a ningún lado y no usa publicidad ni estadísticas. Nadie más en la red puede abrirla. Solo sale lo que tú subas, por ejemplo un Excel a una IA.</td></tr>
           <tr><td>¿Y las contraseñas?</td><td>No se guardan tal cual: se guarda una huella cifrada que no se puede revertir. Ni el administrador puede ver la contraseña de otro.</td></tr>
-          <tr><td>¿Quién ve qué?</td><td>Cada persona ve solo las pantallas que le dio el administrador (ver <a href="#usuarios">Usuarios y contraseñas</a>).</td></tr>
-          <tr><td>¿Cómo los respaldo?</td><td>Con <a href="#exportar">Exportar</a>. Guarda el archivo en un lugar seguro: trae tus compras completas.</td></tr>
+          <tr><td>¿Cómo los respaldo?</td><td>Cada mes, con <a href="#exportar">Exportar</a>. Guarda el archivo en un lugar seguro: trae tus compras completas.</td></tr>
           <tr><td>¿Cómo los borro?</td><td>Una compra o un dato del catálogo, con <b>Eliminar</b>. Todo: apaga De Panas SV y borra la carpeta <code>%APPDATA%\De Panas SV</code> (no se puede deshacer; respalda antes).</td></tr>
         </tbody>
       </table>
@@ -315,15 +404,15 @@
       </details>
       <details>
         <summary>Me equivoqué al guardar una compra. ¿Cómo la corrijo?</summary>
-        <p>En la <a href="#lista">Lista de compras</a> toca su fila y luego <b>Editar</b>.</p>
+        <p>En la <a href="#lista">Lista de compras</a> toca su fila y luego <img class="boton" src="img/botones/editar.png" alt="Editar">.</p>
       </details>
       <details>
         <summary>No encuentro una compra vieja.</summary>
-        <p>Usa <b>Filtrar</b> con su proveedor o sus fechas, o avanza con las flechas <b>‹ ›</b> de arriba: la lista va de 50 en 50.</p>
+        <p>Usa <img class="boton" src="img/botones/filtrar.png" alt="Filtrar"> con su proveedor o sus fechas, o avanza con las flechas <img class="boton" src="img/botones/paginas.png" alt="páginas"> de arriba: la lista va de 50 en 50.</p>
       </details>
       <details>
         <summary>El artículo no aparece al escribirlo.</summary>
-        <p>Solo salen los artículos de las categorías que vende ese proveedor. Si es nuevo, sigue escribiendo y llena el formulario que se abre (ver <a href="#articulo">Un artículo nuevo</a>). Para que un proveedor venda una categoría, edítala en el <a href="#catalogo">Catálogo</a>.</p>
+        <p>Solo salen los artículos de las categorías que vende ese proveedor. Si es nuevo, toca <img class="boton" src="img/botones/mas-articulo.png" alt="+"> y llena el formulario (ver <a href="#articulo">Un artículo nuevo</a>). Para que un proveedor venda una categoría, edítala en el <a href="#catalogo">Catálogo</a>.</p>
       </details>
       <details>
         <summary>Salió un aviso de que hay datos sin guardar.</summary>
@@ -339,7 +428,11 @@
       </details>
       <details>
         <summary>¿Cómo paso los datos a otra computadora?</summary>
-        <p>En la computadora vieja: Exportar → <b>Respaldo (.json)</b>, con el rango <b>Todo</b>. En la nueva: <b>⋮ → Cargar datos</b> y elige ese archivo (ver <a href="#exportar">Exportar y respaldos</a>).</p>
+        <p>En la computadora vieja: Exportar → <b>Respaldo (.json)</b>, con el rango <b>Todo</b>. En la nueva: <b>⋮ → Cargar datos</b> y elige ese archivo (ver <a href="#exportar">Exportar, informes y respaldos</a>).</p>
+      </details>
+      <details>
+        <summary>¿Puedo sacar informes de mis gastos?</summary>
+        <p>Sí: el Excel trae una hoja <b>Resumen</b> por proveedor, categoría y mes, y puedes pedirle más informes a una IA (ver <a href="#exportar">Informes con ayuda de IA</a>).</p>
       </details>
       <details>
         <summary>¿Dónde se guardan los datos?</summary>

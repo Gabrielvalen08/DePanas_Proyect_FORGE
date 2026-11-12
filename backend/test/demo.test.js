@@ -38,7 +38,7 @@ test('demo: dos meses de compras válidas, con los proveedores y los rangos del 
   assert.doesNotThrow(() => validarComprasJSON(compras))
   const fechas = compras.map(c => c.fecha).sort()
   assert.ok(fechas[0] >= DESDE && fechas.at(-1) <= HASTA)
-  assert.deepEqual([...new Set(compras.map(c => c.proveedor))].sort(), ['Desechables Diver.', 'MMAG', 'Pepsi', 'Selectos'])
+  assert.deepEqual([...new Set(compras.map(c => c.proveedor))].sort(), ['Desechables Diver.', 'MMAG', 'Mercado', 'Pepsi', 'Selectos'])
   assert.equal(new Set(compras.map(c => c.id)).size, compras.length, 'sin ids repetidos')
   for (const c of compras) {
     for (const m of c.materiales) {
@@ -49,6 +49,8 @@ test('demo: dos meses de compras válidas, con los proveedores y los rangos del 
   // Pepsi y Desechables Diver. facturan con IVA; Selectos y MMAG no
   assert.ok(compras.filter(c => c.proveedor === 'Pepsi').every(c => c.iva > 0))
   assert.ok(compras.filter(c => c.proveedor === 'Selectos').every(c => c.iva === 0))
+  // Más de 50 compras: en la Lista de compras se ven las páginas
+  assert.ok(compras.length > 50, `${compras.length} compras`)
   // Un restaurante pequeño: entre 600 y 1 600 dólares al mes
   for (const { mes, total } of resumenGastos(compras).porMes.filter(m => m.mes !== HASTA.slice(0, 7))) {
     assert.ok(total > 600 && total < 1600, `${mes}: ${total}`)

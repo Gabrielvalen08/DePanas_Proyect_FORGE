@@ -37,11 +37,11 @@ El índice completo de `docs/` está en [docs/README.md](docs/README.md).
 
 | Agregar compra | Lista de compras |
 |---|---|
-| ![Agregar compra con una fila completa, subtotal, IVA y total](docs/manual/img/02-agregar-compra.png) | ![Lista de compras con dos compras elegidas y el ícono Eliminar](docs/manual/img/03-lista-compras.png) |
+| ![Agregar compra con una fila completa, subtotal, IVA y total](docs/manual/img/02-agregar-compra.png) | ![Lista de compras con dos compras elegidas y el ícono Eliminar](docs/manual/img/04-lista-compras.png) |
 
 | Catálogo | Exportar datos |
 |---|---|
-| ![Catálogo en la sección Artículos](docs/manual/img/05-catalogo.png) | ![Exportar datos con el rango, los formatos y el botón Descargar](docs/manual/img/06-exportar.png) |
+| ![Catálogo en la sección Artículos](docs/manual/img/07-catalogo.png) | ![Exportar datos con el rango, los formatos y el botón Descargar](docs/manual/img/08-exportar.png) |
 
 ## Tecnologías
 

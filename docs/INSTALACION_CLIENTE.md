@@ -14,7 +14,7 @@ Para quien instala, en la computadora del local. Marca cada paso.
 **Antes de ir**
 - [ ] Armar el .zip con la versión final (`desktop/`: `npm run preparar`, `npm run test:escritorio` y `npm run dist`).
 - [ ] Copiarlo a una memoria USB (así no hace falta «Desbloquear»).
-- [ ] Llevar anotadas las contraseñas iniciales de César y Marta para cambiarlas allá.
+- [ ] Las contraseñas iniciales (`Cesar_01` y `Marta_02`, las dos `DePanas#2026`, también en el manual) se cambian allá el primer día.
 
 **En la computadora del local**
 - [ ] Windows 10 u 11 de 64 bits y un navegador (Chrome o Edge).
@@ -29,7 +29,7 @@ Para quien instala, en la computadora del local. Marca cada paso.
 
 **Al irse**
 - [ ] César y Marta saben abrir, entrar, registrar, buscar, exportar y apagar.
-- [ ] Queda acordado cada cuánto se hace el respaldo y dónde se guarda.
+- [ ] Queda acordado el respaldo **mensual** y dónde se guarda.
 
 ## 1. Preparar (una sola vez)
 
@@ -106,14 +106,16 @@ Para abrir esa carpeta, pega `%APPDATA%\De Panas SV` en la barra de direcciones 
 - Los archivos que se descargan (Excel, respaldos) van a la carpeta **Descargas** del navegador.
 - Si algo falla al abrir, el detalle queda en `%APPDATA%\De Panas SV\registro.log`.
 
-## 5. Respaldos (recomendado cada semana)
+## 5. Respaldos (recomendado cada mes)
 
 Cualquiera de estas dos formas sirve:
 
-- **Desde el sistema:** en **Lista de compras**, menú **⋮ → Exportar datos**, elige **Respaldo (.json)** y guárdalo en una memoria USB o en la nube. Para recuperarlo: **⋮ → Cargar datos**.
+- **Desde el sistema:** en **Lista de compras**, menú **⋮ → Exportar datos**, elige el rango **Todo** y **Respaldo (.json)**, y guárdalo en una memoria USB. Hazlo **una vez al mes**. Para recuperarlo: **⋮ → Cargar datos**.
 - **Copiando el archivo:** primero **«Apagar De Panas SV»**; después copia `depanas.db` de la carpeta del punto 4 a una memoria USB.
 
 En cada sección del Catálogo, el menú **⋮** también permite exportar a Excel y guardar o cargar un respaldo de esa sección.
+
+El Excel de Exportar sirve también para pedirle informes a un asistente de IA (ChatGPT, Claude, Copilot…). Al subirlo, el archivo sale de la computadora: si no quieren compartir el detalle, suban solo la hoja **Resumen**. El manual trae ejemplos de preguntas.
 
 ## 6. Versión nueva
 
