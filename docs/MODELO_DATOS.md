@@ -95,11 +95,12 @@ Una fila por artículo comprado. Las filas de una misma compra comparten `compra
 | `tipo` | `proveedor`, `categoria`, `material` o `producto` |
 | `nombre` | Único por tipo, sin distinguir mayúsculas |
 | `categoria`, `producto` | Solo artículos: su categoría y sus productos |
+| `categoria_anterior` | Solo artículos sin categoría: la categoría de la que se quitaron al editarla |
 | `ficha` | Solo proveedores: JSON con ubicación, teléfonos y contactos |
 
 ### `proveedor_categoria`: quién surte qué
 
-Relación muchos a muchos por `id` (`proveedor_id`, `categoria_id`) con `ON DELETE CASCADE`. Renombrar no la rompe y borrar la limpia. En Agregar compra, elegir un proveedor sugiere los artículos de sus categorías y los que ya se le compraron.
+Relación muchos a muchos por `id` (`proveedor_id`, `categoria_id`) con `ON DELETE CASCADE`. Renombrar no la rompe y borrar la limpia. En Agregar compra, elegir un proveedor sugiere los artículos de sus categorías y los que ya se le compraron. En el editor de la categoría, seleccionar un proveedor marca los artículos suyos que están en ella, o que se quitaron de ella y siguen sin categoría (`catalogo.categoria_anterior`). Al quitar el proveedor se desmarcan, salvo los compartidos con otro proveedor que siga seleccionado.
 
 ### `proveedor_material`: artículos de cada proveedor
 
