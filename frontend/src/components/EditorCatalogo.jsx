@@ -1,4 +1,4 @@
-import { useCallback, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Check, Pencil, Plus, Search, X } from 'lucide-react'
 import { AvisoDestacado, Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
 import { SelectorOpciones } from './AsignarMaterial'
@@ -7,18 +7,20 @@ import FichaProveedor, { fichaInicial } from './FichaProveedor'
 import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { getCategorias, getProductos, ordenarMaterialesPorCategoria as ordenarPorCategoria } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
-import { listaProductos, sinProducto, tieneProducto } from '../../../shared/productos.js'
+import { listaProductos, tieneProducto } from '../../../shared/productos.js'
 import { normalizarFicha } from '../../../shared/proveedores.js'
 import { AVISO_SALIDA, CONFIRMAR, NOMBRE_PARECIDO, PANTALLA_CATALOGO } from '../utils/mensajes'
 import { nombreParecido } from '../utils/parecidos'
+import { alternarAjuste, articulosAlGuardar, articulosDeProveedores, estaMarcado, ordenarArticulos } from '../utils/seleccionCategoria'
 import estilos from './EditorCatalogo.module.css'
 
 /**
  * EditorCatalogo
  * Ventana para agregar o editar una opción del catálogo (Catálogo).
  * Un material también lleva su categoría y su producto: se eligen con botones
- * y, si se escribe uno que no existe, se agrega. Una categoría o un producto
- * eligen con casillas qué materiales llevan.
+ * y, si se escribe uno que no existe, se agrega. En una categoría las casillas
+ * muestran los artículos de los proveedores elegidos y los clics a mano cambian
+ * qué artículos lleva. En un producto se mueven entre dos paneles.
  *
  * Props:
  *  - tipo: proveedor | categoria | material | producto
@@ -62,27 +64,35 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
   const esMaterial = tipo === 'material'
   const esProveedor = tipo === 'proveedor'
   const esCategoria = tipo === 'categoria'
-  const conMateriales = tipo === 'categoria' || tipo === 'producto'
+  const esProducto = tipo === 'producto'
   const [nombre, setNombre] = useState(registro?.nombre ?? '')
   const [ficha, setFicha] = useState(() => fichaInicial(registro?.ficha))
   const [categoria, setCategoria] = useState(registro?.categoria ?? '')
   const [productos, setProductos] = useState(() => listaProductos(registro?.producto))
-  // Proveedores que surten la categoría editada
-  const [proveedores, setProveedores] = useState(() => registro?.proveedores ?? [])
-  // Los materiales que ya la llevan, sin distinguir mayúsculas (un producto puede estar en la lista de varios)
+  const [proveedores, setProveedores] = useState([])
+  const [proveedoresTocados, setProveedoresTocados] = useState(false)
+  const [ajustes, setAjustes] = useState(() => new Map())
+  // Un producto puede estar entre varios en el mismo artículo
   const [elegidos, setElegidos] = useState(() => new Set(
-    registro ? todos.filter(m => llevaA(m, tipo, registro.nombre)).map(m => m.nombre) : []
+    esProducto && registro ? todos.filter(m => llevaA(m, 'producto', registro.nombre)).map(m => m.nombre) : []
   ))
   const [errores, setErrores] = useState({})
   const [guardando, setGuardando] = useState(false)
   const [confirmando, setConfirmando] = useState(null) // null | 'guardar' | 'descartar'
   const [inicial] = useState(() => ({
     nombre, categoria, productos: productos.join('\n'), elegidos: [...elegidos].sort().join('\n'), ficha: JSON.stringify(ficha),
-    proveedores: [...proveedores].sort().join('\n'),
+    proveedores: [...(registro?.proveedores ?? [])].sort().join('\n'),
   }))
+  const miembros = useMemo(() => new Set(
+    esCategoria && registro ? todos.filter(m => llevaA(m, 'categoria', registro.nombre)).map(m => m.nombre) : []
+  ), [esCategoria, registro, todos])
+  const delProveedor = useMemo(() => esCategoria ? articulosDeProveedores(todos, miembros, proveedores) : new Set(),
+    [esCategoria, todos, miembros, proveedores])
+  const materialesCategoria = esCategoria ? articulosAlGuardar(todos, miembros, ajustes) : []
+  const cambianArticulos = materialesCategoria.length !== miembros.size || materialesCategoria.some(m => !miembros.has(m))
   const cambiado = nombre !== inicial.nombre || categoria !== inicial.categoria || productos.join('\n') !== inicial.productos ||
     [...elegidos].sort().join('\n') !== inicial.elegidos || JSON.stringify(ficha) !== inicial.ficha ||
-    [...proveedores].sort().join('\n') !== inicial.proveedores
+    cambianArticulos || (proveedoresTocados && [...proveedores].sort().join('\n') !== inicial.proveedores)
   const formRef = useRef(null)
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
   const avisoSalida = useDatosSinGuardar({
@@ -90,27 +100,9 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
   })
 
   function cambiarProveedores(nuevos) {
-    const anteriores = new Set(proveedores.map(p => p.toLowerCase()))
-    const seleccionados = new Set(nuevos.map(p => p.toLowerCase()))
     setProveedores(nuevos)
+    setProveedoresTocados(true)
     setErrores(prev => ({ ...prev, proveedores: undefined }))
-    if (!registro) return
-
-    setElegidos(prev => {
-      const siguientes = new Set(prev)
-      for (const material of todos) {
-        // Los de esta categoría, y los que se quitaron de ella y siguen sin categoría
-        const categoriaDelMaterial = material.categoria || material.categoriaAnterior
-        if (categoriaDelMaterial?.toLowerCase() !== registro.nombre.toLowerCase()) continue
-        const asociados = (material.proveedores ?? []).map(p => p.toLowerCase())
-        const proveedorAgregado = asociados.some(p => seleccionados.has(p) && !anteriores.has(p))
-        if (proveedorAgregado) siguientes.add(material.nombre)
-        else if (asociados.some(p => anteriores.has(p)) && !asociados.some(p => seleccionados.has(p))) {
-          siguientes.delete(material.nombre)
-        }
-      }
-      return siguientes
-    })
   }
 
   // Solo una sugerencia: los nombres ya registrados de este tipo, sin contar el que se edita
@@ -150,10 +142,16 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
     try {
       if (esMaterial) {
         await alGuardar({ nombre: nombre.trim(), categoria: categoria.trim(), productos })
-      } else if (conMateriales) {
+      } else if (esCategoria) {
+        await alGuardar({
+          nombre: nombre.trim(),
+          ...(cambianArticulos && { materiales: materialesCategoria }),
+          ...(proveedoresTocados && { proveedores }),
+        })
+      } else if (esProducto) {
         // En el orden del catálogo
         const materiales = todos.map(m => m.nombre).filter(m => elegidos.has(m))
-        await alGuardar(esCategoria ? { nombre: nombre.trim(), materiales, proveedores } : { nombre: nombre.trim(), materiales })
+        await alGuardar({ nombre: nombre.trim(), materiales })
       } else if (esProveedor) {
         await alGuardar({ nombre: nombre.trim(), ficha })
       } else {
@@ -240,22 +238,18 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
               error={errores.proveedores}
             />
           )}
-          {conMateriales && (
-            tipo === 'producto' ? (
-              <SelectorMaterialesDual
-                todos={todos}
-                elegidos={elegidos}
-                onCambiar={setElegidos}
-              />
-            ) : (
-              <SelectorMateriales
-                tipo={tipo}
-                nombreActual={registro?.nombre ?? ''}
-                todos={todos}
-                elegidos={elegidos}
-                onCambiar={setElegidos}
-              />
-            )
+          {esProducto && (
+            <SelectorMaterialesDual todos={todos} elegidos={elegidos} onCambiar={setElegidos} />
+          )}
+          {esCategoria && (
+            <SelectorMateriales
+              orden={ordenarArticulos(todos, miembros, delProveedor)}
+              marcados={new Set(todos.filter(m => estaMarcado(m.nombre, delProveedor, ajustes)).map(m => m.nombre))}
+              miembros={miembros}
+              ajustes={ajustes}
+              proveedores={proveedores}
+              onAlternar={articulo => setAjustes(prev => alternarAjuste(prev, articulo, delProveedor))}
+            />
           )}
         </CuerpoModal>
         <PieModal>
@@ -292,35 +286,28 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
 }
 
 /**
- * Casillas con todos los materiales para elegir los que lleva una categoría o un
- * producto. Debajo de cada uno dice dónde está ahora, para saber si se cambia.
- * Los que ya la llevaban van primero (el orden no cambia al marcar o desmarcar).
+ * Casillas para consultar los artículos de los proveedores y ajustar la categoría.
+ * Cambiar de proveedor reordena la lista. Tocar una casilla conserva el orden.
  */
-function SelectorMateriales({ tipo, nombreActual, todos, elegidos, onCambiar }) {
+function SelectorMateriales({ orden, marcados, miembros, ajustes, proveedores, onAlternar }) {
   const id = useId().replace(/:/g, '')
+  const rejillaRef = useRef(null)
   const [busqueda, setBusqueda] = useState('')
   const textos = PANTALLA_CATALOGO.materiales
-  const [orden] = useState(() => [
-    ...todos.filter(m => elegidos.has(m.nombre)),
-    ...todos.filter(m => !elegidos.has(m.nombre)),
-  ])
   const buscado = textoBusqueda(busqueda.trim())
   const visibles = orden.filter(m => textoBusqueda(m.nombre).includes(buscado))
 
-  function alternar(nombre) {
-    const nuevos = new Set(elegidos)
-    if (nuevos.has(nombre)) nuevos.delete(nombre)
-    else nuevos.add(nombre)
-    onCambiar(nuevos)
-  }
+  useEffect(() => {
+    if (rejillaRef.current) rejillaRef.current.scrollTop = 0
+  }, [proveedores])
 
   return (
     <fieldset className={estilos.materiales}>
       <legend className={estilos.leyenda}>
-        {textos.titulo(tipo)}
-        <Insignia tono="neutro">{textos.elegidos(elegidos.size)}</Insignia>
+        {textos.titulo('categoria')}
+        <Insignia tono="neutro">{textos.elegidos(marcados.size)}</Insignia>
       </legend>
-      {todos.length === 0 ? (
+      {orden.length === 0 ? (
         <p className={estilos.vacio}>{textos.ninguno}</p>
       ) : (
         <>
@@ -339,24 +326,26 @@ function SelectorMateriales({ tipo, nombreActual, todos, elegidos, onCambiar }) 
           {visibles.length === 0 ? (
             <p className={estilos.vacio}>{textos.sinResultados}</p>
           ) : (
-            <ul className={estilos.opciones}>
+            <ul ref={rejillaRef} className={estilos.opciones}>
               {visibles.map(m => {
-                const enEste = nombreActual !== '' && llevaA(m, tipo, nombreActual)
-                // En un producto se dice en qué otros está (puede ir en varios); en una categoría, dónde está ahora
-                const detalle = tipo === 'producto'
-                  ? textos.tambienEn(sinProducto(m.producto, nombreActual))
-                  : !enEste && textos.ahoraEn(tipo, m[tipo])
+                const esMiembro = miembros.has(m.nombre)
+                const seQuitara = esMiembro && ajustes.get(m.nombre) === false
+                const detalle = esMiembro ? seQuitara && textos.seQuitara : textos.ahoraEn('categoria', m.categoria)
                 return (
                   <li key={m.nombre}>
                     <label className={estilos.opcion}>
                       <input
                         type="checkbox"
                         className={estilos.casilla}
-                        checked={elegidos.has(m.nombre)}
-                        onChange={() => alternar(m.nombre)}
+                        checked={marcados.has(m.nombre)}
+                        onChange={() => onAlternar(m.nombre)}
                       />
                       <span className={estilos.opcionNombre}>{m.nombre}</span>
-                      {detalle && <span className={estilos.opcionDetalle}>{detalle}</span>}
+                      {detalle && (
+                        <span className={seQuitara ? `${estilos.opcionDetalle} ${estilos.opcionSeQuitara}` : estilos.opcionDetalle}>
+                          {detalle}
+                        </span>
+                      )}
                     </label>
                   </li>
                 )

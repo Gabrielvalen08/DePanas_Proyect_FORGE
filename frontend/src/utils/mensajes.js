@@ -444,7 +444,7 @@ export const PANTALLA_CATALOGO = {
     buscar: 'Buscar artículo',
     elegidos: n => `${n} ${plural(n, 'elegido', 'elegidos')}`,
     ahoraEn: (tipo, nombre) => (nombre ? `Ahora en «${nombre}»` : tipo === 'categoria' ? 'Sin categoría' : 'Sin producto'),
-    tambienEn: otros => (otros ? `También en «${otros}»` : ''),
+    seQuitara: 'Se quitará de la categoría',
     ninguno: 'Todavía no hay artículos. Agrégalos en la sección Artículos.',
     sinResultados: 'Ningún artículo con ese nombre',
     // Panel doble del producto: un clic pasa el artículo de un lado al otro

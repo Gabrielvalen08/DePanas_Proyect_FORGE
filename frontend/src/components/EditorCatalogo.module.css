@@ -106,6 +106,10 @@
   overflow-wrap: anywhere;
 }
 
+.opcionSeQuitara {
+  color: var(--color-danger);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .opcion,
   .itemBoton {

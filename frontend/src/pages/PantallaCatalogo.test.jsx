@@ -73,55 +73,55 @@ describe('PantallaCatalogo', () => {
     renderizar('/catalogo/categorias')
     await usuario.click(await screen.findByRole('button', { name: 'Editar categoría Bebidas' }))
     const ventana = within(screen.getByRole('dialog', { name: 'Editar categoría' }))
-    const proveedor = nombre => ventana.getByRole('button', { name: nombre, exact: true })
+    const proveedores = within(ventana.getByRole('group', { name: PANTALLA_CATALOGO.etiquetaProveedores }))
+    const proveedor = nombre => proveedores.getByRole('button', { name: nombre, exact: true })
     const articulo = nombre => ventana.getByRole('checkbox', { name: nombre })
+    const marcados = () => ventana.queryAllByRole('checkbox', { checked: true })
 
-    await usuario.click(proveedor('Pepsi'))
-    expect(articulo(/^Agua/)).toBeChecked() // También la vende Mercado
-    expect(articulo(/^Gatorade/)).not.toBeChecked()
-    expect(articulo(/^Té del mercado/)).toBeChecked()
-    await usuario.click(proveedor('Mercado'))
-    expect(articulo(/^Agua/)).not.toBeChecked()
-    expect(articulo(/^Té del mercado/)).not.toBeChecked()
-    await usuario.click(proveedor('Desechables Diver.'))
-    expect(ventana.queryAllByRole('checkbox', { checked: true })).toHaveLength(0)
+    expect(proveedores.queryAllByRole('button', { pressed: true })).toHaveLength(0)
+    expect(ventana.getByText(PANTALLA_CATALOGO.materiales.elegidos(0))).toBeInTheDocument()
+    expect(marcados()).toHaveLength(0)
+    expect(ventana.getAllByRole('checkbox')[0]).toBe(articulo('Agua'))
     await usuario.click(proveedor('Pepsi'))
     for (const nombre of ['Agua', 'Gatorade', 'Lipton', 'Pepsi']) {
       expect(articulo(nombre)).toBeChecked()
     }
-    expect(ventana.queryAllByRole('checkbox', { checked: true })).toHaveLength(4)
+    expect(marcados()).toHaveLength(4)
+    expect(ventana.getAllByRole('checkbox').slice(0, 4)).toEqual(marcados())
+    await usuario.click(proveedor('Pepsi'))
+    expect(marcados()).toHaveLength(0)
     await usuario.click(proveedor('Pepsi'))
     await usuario.click(proveedor('Mercado'))
-    expect(articulo(/^Agua/)).toBeChecked()
-    expect(articulo(/^Té del mercado/)).toBeChecked()
-    expect(articulo(/^Azucar/)).not.toBeChecked() // Mercado lo vende en otra categoría
+    expect(marcados()).toEqual(['Agua', 'Gatorade', 'Lipton', 'Pepsi', 'Té del mercado'].map(articulo))
+    expect(articulo(/^Azucar/)).not.toBeChecked()
 
     await usuario.click(articulo(/^Agua/))
+    expect(articulo(/^Agua/).closest('label')).toHaveTextContent(PANTALLA_CATALOGO.materiales.seQuitara)
     await usuario.click(articulo(/^Azucar/))
+    await usuario.click(proveedor('Pepsi'))
+    await usuario.click(proveedor('Mercado'))
+    expect(marcados()).toEqual([articulo(/^Azucar/)])
+    await usuario.click(proveedor('Pepsi'))
+    await usuario.click(proveedor('Mercado'))
+    expect(articulo(/^Agua/)).not.toBeChecked()
+    expect(articulo(/^Azucar/)).toBeChecked()
     await usuario.click(ventana.getByRole('button', { name: 'Guardar' }))
     await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
-    await screen.findByRole('cell', { name: 'Azucar, Té del mercado' })
+    const bebidas = ['Azucar', 'Gatorade', 'Lipton', 'Pepsi', 'Té del mercado']
+    await screen.findByRole('cell', { name: PANTALLA_CATALOGO.listaMateriales(bebidas) })
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Editar categoría' })).not.toBeInTheDocument())
 
     const guardado = await fetchCatalogo()
-    expect(guardado.proveedoresPorCategoria.bebidas).toEqual(['Desechables Diver.', 'Mercado'])
-    expect(guardado.materiales.filter(m => m.categoria === 'Bebidas').map(m => m.nombre)).toEqual(['Azucar', 'Té del mercado'])
+    expect(guardado.proveedoresPorCategoria.bebidas).toEqual(['Mercado', 'Pepsi'])
+    expect(guardado.materiales.filter(m => m.categoria === 'Bebidas').map(m => m.nombre))
+      .toEqual(bebidas)
     expect(guardado.materiales.find(m => m.nombre === 'Agua').categoria).toBe('')
 
-    // Reversible tras guardar: al volver a elegir Pepsi se marcan los suyos que habían salido
     await usuario.click(screen.getByRole('button', { name: 'Editar categoría Bebidas' }))
     const otra = within(screen.getByRole('dialog', { name: 'Editar categoría' }))
     await usuario.click(otra.getByRole('button', { name: 'Pepsi', exact: true }))
-    for (const nombre of [/^Agua/, /^Gatorade/, /^Lipton/, /^Pepsi/]) {
-      expect(otra.getByRole('checkbox', { name: nombre })).toBeChecked()
-    }
-    expect(otra.getAllByRole('checkbox', { checked: true })).toHaveLength(6) // más Azucar y Té del mercado
-    await usuario.click(otra.getByRole('button', { name: 'Guardar' }))
-    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Editar categoría' })).not.toBeInTheDocument())
-    const repuesto = await fetchCatalogo()
-    expect(repuesto.materiales.filter(m => m.categoria === 'Bebidas')).toHaveLength(6)
-    expect(repuesto.materiales.find(m => m.nombre === 'Agua')).not.toHaveProperty('categoriaAnterior')
+    expect(otra.getByRole('checkbox', { name: /^Agua/ })).not.toBeChecked()
+    expect(otra.getAllByRole('checkbox', { checked: true })).toHaveLength(3)
   })
 
   it('el editor pide confirmar al guardar y, si hay cambios, al cancelar; sin cambios se cierra solo', async () => {
@@ -368,10 +368,11 @@ describe('PantallaCatalogo', () => {
 
     await usuario.click(within(fila).getByRole('button', { name: 'Editar categoría Bebidas' }))
     const ventana = screen.getByRole('dialog', { name: 'Editar categoría' })
-    expect(within(ventana).getByText(PANTALLA_CATALOGO.materiales.elegidos(4))).toBeInTheDocument()
-    expect(within(ventana).getByRole('checkbox', { name: 'Pepsi' })).toBeChecked()
+    expect(within(ventana).getByText(PANTALLA_CATALOGO.materiales.elegidos(0))).toBeInTheDocument()
+    expect(within(ventana).getByRole('checkbox', { name: 'Pepsi' })).not.toBeChecked()
 
     // Quita Lipton y suma Arroz, que hoy está en otra categoría
+    await usuario.click(within(ventana).getByRole('button', { name: 'Pepsi', exact: true }))
     await usuario.click(within(ventana).getByRole('checkbox', { name: 'Lipton' }))
     await usuario.type(within(ventana).getByLabelText(PANTALLA_CATALOGO.materiales.buscar), 'arroz')
     const arroz = within(ventana).getByRole('checkbox', { name: /^Arroz/ })
