@@ -49,4 +49,25 @@ describe('Modal', () => {
     await usuario.tab()
     expect(cerrar).toHaveFocus()
   })
+
+  // Bug de «no deja bajar»: un editor y su confirmación abiertos a la vez
+  it('con dos ventanas, la página vuelve a bajar al cerrarlas en cualquier orden', async () => {
+    const dosVentanas = (editor, confirmacion) => (
+      <>
+        <Modal abierto={editor} alCerrar={() => {}} titulo="Editor" />
+        <Modal abierto={confirmacion} alCerrar={() => {}} titulo="Confirmación" rol="alertdialog" />
+      </>
+    )
+    const { rerender } = render(dosVentanas(true, false))
+    rerender(dosVentanas(true, true))
+    expect(document.body.style.overflow).toBe('hidden')
+
+    // El editor termina de cerrarse primero y la confirmación después
+    rerender(dosVentanas(false, true))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(document.body.style.overflow).toBe('hidden')
+    rerender(dosVentanas(false, false))
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+    expect(document.body.style.overflow).toBe('')
+  })
 })

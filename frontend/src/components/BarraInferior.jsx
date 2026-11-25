@@ -1,9 +1,10 @@
-import { useEffect, useId, useState } from 'react'
+import { useId, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { LogOut, Menu, Power } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useBloqueoScroll } from '../hooks/useBloqueoScroll'
 import { useFocoAtrapado } from '../hooks/useFocoAtrapado'
 import { itemsNavegacion, itemsPie } from './navegacion'
 import { APAGADO } from '../utils/mensajes'
@@ -90,11 +91,7 @@ function HojaMas({ items, alCerrar, onCerrarSesion, onApagar }) {
   const idTitulo = useId()
   const contenedorRef = useFocoAtrapado(true, alCerrar)
 
-  useEffect(() => {
-    const previo = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = previo }
-  }, [])
+  useBloqueoScroll()
 
   return (
     <div className={estilos.capaHoja}>
