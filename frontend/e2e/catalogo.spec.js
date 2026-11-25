@@ -95,4 +95,27 @@ test.describe('Catálogo', () => {
     await expect(page.getByRole('rowheader', { name: 'MMAG' })).toBeVisible()
     await expect(page.getByRole('rowheader', { name: 'Pepsi' })).toHaveCount(0)
   })
+
+  test('en Editar categoría, Pepsi marca sus artículos y se puede descartar la selección', async ({ page }) => {
+    await page.goto('/catalogo/categorias')
+    await page.getByRole('button', { name: CATALOGO.editar('categoria', 'Bebidas') }).click()
+    const ventana = page.getByRole('dialog', { name: CATALOGO.tituloEditar('categoria') })
+    const pepsi = ventana.getByRole('group', { name: CATALOGO.etiquetaProveedores })
+      .getByRole('button', { name: 'Pepsi', exact: true })
+    const marcados = ventana.getByRole('checkbox', { checked: true })
+    await expect(pepsi).toHaveAttribute('aria-pressed', 'false')
+    await expect(ventana.getByText(CATALOGO.materiales.elegidos(0))).toBeVisible()
+    await expect(marcados).toHaveCount(0)
+
+    await pepsi.click()
+    await expect(ventana.getByRole('checkbox', { name: 'Agua', exact: true })).toBeChecked()
+    await expect(ventana.getByRole('checkbox', { name: 'Gatorade', exact: true })).toBeChecked()
+    await pepsi.click()
+    await expect(marcados).toHaveCount(0)
+
+    await ventana.getByRole('button', { name: CATALOGO.cancelar }).click()
+    await expect(page.getByRole('alertdialog', { name: CONFIRMAR.descartar.titulo })).toBeVisible()
+    await confirmar(page, CONFIRMAR.descartar.confirmar)
+    await expect(ventana).toBeHidden()
+  })
 })

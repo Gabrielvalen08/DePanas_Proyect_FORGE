@@ -58,13 +58,13 @@ test.describe('Compras', () => {
   })
 
   test('al elegir un proveedor solo se sugieren los artículos de las categorías que surte', async ({ page }) => {
-    // En Catálogo, Bebidas queda surtida por Pepsi (si ya lo estaba, se deja igual)
+    // El editor abre sin proveedores elegidos. Elegir Pepsi y guardar la deja como proveedora de Bebidas.
     await page.goto('/catalogo/categorias')
     const fila = page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: 'Bebidas', exact: true }) })
     await fila.getByRole('button', { name: 'Editar categoría Bebidas' }).click()
     const ventana = page.getByRole('dialog', { name: 'Editar categoría' })
     const pepsi = ventana.getByRole('group', { name: PANTALLA_CATALOGO.etiquetaProveedores }).getByRole('button', { name: 'Pepsi', exact: true })
-    if ((await pepsi.getAttribute('aria-pressed')) !== 'true') await pepsi.click()
+    await pepsi.click()
     await ventana.getByRole('button', { name: 'Guardar' }).click()
     await confirmar(page, CONFIRMAR.guardarCambios.confirmar)
     await expect(fila.getByRole('cell').filter({ hasText: 'Pepsi' }).first()).toBeVisible()

@@ -2,9 +2,11 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
-import { fetchCatalogo, guardarLista, reiniciarModo } from '../services/api'
+import * as api from '../services/api'
 import { PANTALLA_CATALOGO, CONFIRMAR, ASIGNACION } from '../utils/mensajes'
 import PantallaCatalogo from './PantallaCatalogo'
+
+const { fetchCatalogo, guardarLista, reiniciarModo } = api
 
 // Usa api.js real en modo local (sin servidor), sobre localStorage
 function renderizar(ruta = '/catalogo', acciones) {
@@ -20,11 +22,36 @@ function renderizar(ruta = '/catalogo', acciones) {
   )
 }
 
+async function editarCategoria(usuario, nombre) {
+  await usuario.click(await screen.findByRole('button', { name: PANTALLA_CATALOGO.editar('categoria', nombre) }))
+  return within(screen.getByRole('dialog', { name: PANTALLA_CATALOGO.tituloEditar('categoria') }))
+}
+
+async function guardarCategoria(usuario, ventana, titulo = PANTALLA_CATALOGO.tituloEditar('categoria')) {
+  await usuario.click(ventana.getByRole('button', { name: PANTALLA_CATALOGO.guardar }))
+  await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: titulo })).not.toBeInTheDocument())
+}
+
+function botonProveedor(ventana, nombre) {
+  const grupo = ventana.getByRole('group', { name: PANTALLA_CATALOGO.etiquetaProveedores })
+  return within(grupo).getByRole('button', { name: nombre, exact: true })
+}
+
+async function comprarAguaEnMercado() {
+  await guardarLista({
+    proveedor: 'Mercado', fecha: '2026-10-01',
+    materiales: [{ material: 'Agua', categoria: 'Bebidas', cantidad: 1, monto: 2 }],
+  })
+}
+
 describe('PantallaCatalogo', () => {
   beforeEach(() => {
     localStorage.clear()
     reiniciarModo()
   })
+
+  afterEach(() => vi.restoreAllMocks())
 
   it('muestra las cuatro opciones y pide elegir una', async () => {
     renderizar()
@@ -122,6 +149,107 @@ describe('PantallaCatalogo', () => {
     await usuario.click(otra.getByRole('button', { name: 'Pepsi', exact: true }))
     expect(otra.getByRole('checkbox', { name: /^Agua/ })).not.toBeChecked()
     expect(otra.getAllByRole('checkbox', { checked: true })).toHaveLength(3)
+  })
+
+  it('conserva los proveedores sin tocarlos al guardar, renombrar o quitar un artículo', async () => {
+    const usuario = userEvent.setup()
+    await comprarAguaEnMercado()
+    await api.agregarAlCatalogo('material', { nombre: 'Infusión casera', categoria: 'Bebidas' })
+    renderizar('/catalogo/categorias')
+
+    await guardarCategoria(usuario, await editarCategoria(usuario, 'Bebidas'))
+    const inicial = await fetchCatalogo()
+    expect(inicial.proveedoresPorCategoria.bebidas).toEqual(['Mercado', 'Pepsi'])
+
+    const ventana = await editarCategoria(usuario, 'Bebidas')
+    const articulo = () => ventana.getByRole('checkbox', { name: /^Infusión casera/ })
+    expect(articulo()).not.toBeChecked()
+    await usuario.click(articulo())
+    expect(articulo()).toBeChecked()
+    await usuario.click(articulo())
+    expect(articulo()).not.toBeChecked()
+    expect(ventana.getByText(PANTALLA_CATALOGO.materiales.seQuitara)).toBeInTheDocument()
+    const nombre = ventana.getByLabelText(PANTALLA_CATALOGO.etiquetaNombre('categoria'))
+    await usuario.clear(nombre)
+    await usuario.type(nombre, 'Refrescos')
+    await guardarCategoria(usuario, ventana)
+    expect(await screen.findByRole('rowheader', { name: 'Refrescos' })).toBeInTheDocument()
+
+    const guardado = await fetchCatalogo()
+    expect(guardado.proveedoresPorCategoria.refrescos).toEqual(['Mercado', 'Pepsi'])
+    expect(guardado.materiales.find(m => m.nombre === 'Infusión casera').categoria).toBe('')
+    expect(guardado.materiales.filter(m => m.categoria === 'Refrescos').map(m => m.nombre))
+      .toEqual(['Agua', 'Gatorade', 'Lipton', 'Pepsi'])
+  })
+
+  it('guarda exactamente los proveedores elegidos, incluso ninguno, sin mover artículos', async () => {
+    const usuario = userEvent.setup()
+    await comprarAguaEnMercado()
+    const inicial = await fetchCatalogo()
+    renderizar('/catalogo/categorias')
+
+    const ventana = await editarCategoria(usuario, 'Bebidas')
+    await usuario.click(botonProveedor(ventana, 'Mercado'))
+    await guardarCategoria(usuario, ventana)
+    const conMercado = await fetchCatalogo()
+    expect(conMercado.proveedoresPorCategoria.bebidas).toEqual(['Mercado'])
+    expect(conMercado.materiales).toEqual(inicial.materiales)
+
+    const otra = await editarCategoria(usuario, 'Bebidas')
+    await usuario.click(botonProveedor(otra, 'Mercado'))
+    await usuario.click(botonProveedor(otra, 'Mercado'))
+    await guardarCategoria(usuario, otra)
+    const sinProveedores = await fetchCatalogo()
+    expect(sinProveedores.proveedoresPorCategoria.bebidas ?? []).toEqual([])
+    expect(sinProveedores.materiales).toEqual(inicial.materiales)
+  })
+
+  it('solo pide descartar al cancelar si la selección difiere de los proveedores guardados', async () => {
+    const usuario = userEvent.setup()
+    await comprarAguaEnMercado()
+    renderizar('/catalogo/categorias')
+    const titulo = PANTALLA_CATALOGO.tituloEditar('categoria')
+    const cancelar = ventana => usuario.click(ventana.getByRole('button', { name: PANTALLA_CATALOGO.cancelar }))
+    const cerrada = () => waitFor(() => expect(screen.queryByRole('dialog', { name: titulo })).not.toBeInTheDocument())
+
+    await cancelar(await editarCategoria(usuario, 'Bebidas'))
+    expect(screen.queryByRole('alertdialog', { name: CONFIRMAR.descartar.titulo })).not.toBeInTheDocument()
+    await cerrada()
+
+    const igual = await editarCategoria(usuario, 'Bebidas')
+    await usuario.click(botonProveedor(igual, 'Pepsi'))
+    await usuario.click(botonProveedor(igual, 'Mercado'))
+    await cancelar(igual)
+    expect(screen.queryByRole('alertdialog', { name: CONFIRMAR.descartar.titulo })).not.toBeInTheDocument()
+    await cerrada()
+
+    const distinta = await editarCategoria(usuario, 'Bebidas')
+    await usuario.click(botonProveedor(distinta, 'Pepsi'))
+    await cancelar(distinta)
+    const descartar = await screen.findByRole('alertdialog', { name: CONFIRMAR.descartar.titulo })
+    await usuario.click(within(descartar).getByRole('button', { name: CONFIRMAR.descartar.confirmar }))
+    await cerrada()
+    expect((await fetchCatalogo()).proveedoresPorCategoria.bebidas).toEqual(['Mercado', 'Pepsi'])
+  })
+
+  it('crea una categoría con los artículos marcados y omite los proveedores sin tocar', async () => {
+    const usuario = userEvent.setup()
+    const agregar = vi.spyOn(api, 'agregarAlCatalogo')
+    renderizar('/catalogo/categorias')
+    await usuario.click(await screen.findByRole('button', { name: PANTALLA_CATALOGO.agregar('categoria') }))
+    const titulo = PANTALLA_CATALOGO.tituloNuevo('categoria')
+    const ventana = within(screen.getByRole('dialog', { name: titulo }))
+    await usuario.type(ventana.getByLabelText(PANTALLA_CATALOGO.etiquetaNombre('categoria')), 'Granos')
+    const arroz = ventana.getByRole('checkbox', { name: /^Arroz/ })
+    expect(arroz).not.toBeChecked()
+    await usuario.click(arroz)
+    await guardarCategoria(usuario, ventana, titulo)
+
+    expect(agregar).toHaveBeenCalledTimes(1)
+    expect(agregar).toHaveBeenCalledWith('categoria', { nombre: 'Granos', materiales: ['Arroz'] })
+    const guardado = await fetchCatalogo()
+    expect(guardado.materiales.find(m => m.nombre === 'Arroz').categoria).toBe('Granos')
+    expect(guardado.proveedoresPorCategoria.granos).toBeUndefined()
   })
 
   it('el editor pide confirmar al guardar y, si hay cambios, al cancelar; sin cambios se cierra solo', async () => {
