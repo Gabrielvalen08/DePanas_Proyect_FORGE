@@ -397,7 +397,8 @@ describe('PantallaCatalogo', () => {
     await usuario.click(within(fila).getByRole('button', { name: 'Editar categoría Servicios' }))
     const ventana = screen.getByRole('dialog', { name: 'Editar categoría' })
     const grupo = within(ventana).getByRole('group', { name: PANTALLA_CATALOGO.etiquetaProveedores })
-    expect(within(grupo).getByText(PANTALLA_CATALOGO.ayudaProveedores)).toBeInTheDocument()
+    expect(within(ventana).queryByText(/Al elegir uno de estos proveedores en una compra/)).not.toBeInTheDocument()
+    expect(within(ventana).queryByText(/Cada artículo va en una sola categoría/)).not.toBeInTheDocument()
 
     // Un proveedor nuevo se escribe aquí; a diferencia de un producto, su nombre puede llevar comas
     const buscador = within(grupo).getByRole('textbox', { name: 'Buscar o agregar proveedor' })
