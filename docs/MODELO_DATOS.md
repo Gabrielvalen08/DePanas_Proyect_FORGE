@@ -98,7 +98,11 @@ Una fila por artículo comprado. Las filas de una misma compra comparten `compra
 
 ### `proveedor_categoria`: quién surte qué
 
-Relación muchos a muchos por `id` (`proveedor_id`, `categoria_id`) con `ON DELETE CASCADE`. Renombrar no la rompe y borrar la limpia. En Agregar compra, elegir un proveedor sugiere solo los artículos de sus categorías.
+Relación muchos a muchos por `id` (`proveedor_id`, `categoria_id`) con `ON DELETE CASCADE`. Renombrar no la rompe y borrar la limpia. En el editor, seleccionar un proveedor marca los artículos que vende dentro de esa categoría. Al quitar el proveedor, se desmarcan sus artículos, salvo los compartidos con otro proveedor que siga seleccionado.
+
+### `proveedor_material`: artículos de cada proveedor
+
+Relación por `id` (`proveedor_id`, `material_id`) con clave compuesta y `ON DELETE CASCADE`. Guardar o importar una compra registra las asociaciones. La migración recupera los pares de compras históricas cuyos proveedores y artículos siguen en el catálogo. Agregar compra usa estos vínculos para sus sugerencias.
 
 ### `usuarios`
 

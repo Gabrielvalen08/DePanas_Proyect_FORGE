@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
-import { reiniciarModo } from '../services/api'
+import { fetchCatalogo, guardarLista, reiniciarModo } from '../services/api'
 import { PANTALLA_CATALOGO, CONFIRMAR, ASIGNACION } from '../utils/mensajes'
 import PantallaCatalogo from './PantallaCatalogo'
 
@@ -60,6 +60,53 @@ describe('PantallaCatalogo', () => {
     const ventana = screen.getByRole('dialog', { name: 'Nueva categoría' })
     expect(within(ventana).getByLabelText('Categoría')).toBeInTheDocument()
     expect(within(ventana).getByText('Artículos de esta categoría')).toBeInTheDocument()
+  })
+
+  it('marca los artículos de los proveedores de la categoría y guarda los ajustes manuales', async () => {
+    const usuario = userEvent.setup()
+    await guardarLista({
+      proveedor: 'Mercado', fecha: '2026-10-01',
+      materiales: ['Agua', 'Té del mercado', 'Azucar'].map(material => ({
+        material, categoria: 'Bebidas', cantidad: 1, monto: 2,
+      })),
+    })
+    renderizar('/catalogo/categorias')
+    await usuario.click(await screen.findByRole('button', { name: 'Editar categoría Bebidas' }))
+    const ventana = within(screen.getByRole('dialog', { name: 'Editar categoría' }))
+    const proveedor = nombre => ventana.getByRole('button', { name: nombre, exact: true })
+    const articulo = nombre => ventana.getByRole('checkbox', { name: nombre })
+
+    await usuario.click(proveedor('Pepsi'))
+    expect(articulo(/^Agua/)).toBeChecked() // También la vende Mercado
+    expect(articulo(/^Gatorade/)).not.toBeChecked()
+    expect(articulo(/^Té del mercado/)).toBeChecked()
+    await usuario.click(proveedor('Mercado'))
+    expect(articulo(/^Agua/)).not.toBeChecked()
+    expect(articulo(/^Té del mercado/)).not.toBeChecked()
+    await usuario.click(proveedor('Desechables Diver.'))
+    expect(ventana.queryAllByRole('checkbox', { checked: true })).toHaveLength(0)
+    await usuario.click(proveedor('Pepsi'))
+    for (const nombre of ['Agua', 'Gatorade', 'Lipton', 'Pepsi']) {
+      expect(articulo(nombre)).toBeChecked()
+    }
+    expect(ventana.queryAllByRole('checkbox', { checked: true })).toHaveLength(4)
+    await usuario.click(proveedor('Pepsi'))
+    await usuario.click(proveedor('Mercado'))
+    expect(articulo(/^Agua/)).toBeChecked()
+    expect(articulo(/^Té del mercado/)).toBeChecked()
+    expect(articulo(/^Azucar/)).not.toBeChecked() // Mercado lo vende en otra categoría
+
+    await usuario.click(articulo(/^Agua/))
+    await usuario.click(articulo(/^Azucar/))
+    await usuario.click(ventana.getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
+    await screen.findByRole('cell', { name: 'Azucar, Té del mercado' })
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Editar categoría' })).not.toBeInTheDocument())
+
+    const guardado = await fetchCatalogo()
+    expect(guardado.proveedoresPorCategoria.bebidas).toEqual(['Desechables Diver.', 'Mercado'])
+    expect(guardado.materiales.filter(m => m.categoria === 'Bebidas').map(m => m.nombre)).toEqual(['Azucar', 'Té del mercado'])
+    expect(guardado.materiales.find(m => m.nombre === 'Agua').categoria).toBe('')
   })
 
   it('el editor pide confirmar al guardar y, si hay cambios, al cancelar; sin cambios se cierra solo', async () => {
