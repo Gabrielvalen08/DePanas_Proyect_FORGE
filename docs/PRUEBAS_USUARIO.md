@@ -6,7 +6,7 @@ Registro de las tres sesiones de prueba con el cliente de De Panas SV y de las d
 |---|---|---|---|---|
 | 1 | 13/10/2026 | Pedro, Alejandro, Gabriel y Soham | César | Le mostramos el programa a César y nos dio su opinión sobre cómo funcionaba y cómo se veía. |
 | 2 | 29/10/2026 | Pedro, Alejandro, Gabriel y Soham | César y Marta | Le dimos el programa a César para que lo usara, con una factura real. |
-| 3 | 12/11/2026 | Pedro, Alejandro, Gabriel y Soham | César y Marta | Revisamos con ellos los cambios de la sesión 2 y salió la ronda de cambios de noviembre. |
+| 3 | 12/11/2026 | Pedro, Alejandro, Gabriel y Soham | César y Marta | Revisamos con ellos los cambios de la sesión 2, instalamos el .zip en la computadora del local y salió la ronda de cambios de noviembre. |
 
 ## Sesión 1: 13 de octubre de 2026
 
@@ -102,7 +102,7 @@ En esta sesión César usó el programa y entre todos fuimos señalando errores 
 
 ## Sesión 3: 12 de noviembre de 2026
 
-César y Marta revisaron los cambios de la sesión 2. De aquí salió la ronda de cambios de noviembre, repartida entre Gabriel (catálogo y guardado de compras), Alejandro (artículo, unidades y usuarios) y Pedro (errores, avisos y textos).
+César y Marta revisaron los cambios de la sesión 2, y ese día dejamos instalada la versión .zip en la computadora de De Panas. De aquí salió la ronda de cambios de noviembre, repartida entre Gabriel (catálogo y guardado de compras), Alejandro (artículo, unidades y usuarios) y Pedro (errores, avisos y textos).
 
 **Lo que descubrimos:** con varias filas en Agregar compra, la página dejó de bajar y no se llegaba a «Guardar compra». Luego pasó también en el Catálogo.
 
