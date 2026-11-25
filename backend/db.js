@@ -6,6 +6,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { readFileSync } from 'fs'
 import { CATALOGO_INICIAL } from './db/catalogo.js'
 import { listaProductos } from '../shared/productos.js'
+import { MATERIALES_INICIALES_POR_PROVEEDOR } from '../shared/proveedor-material.js'
 import { CONTRASENA_MARTA_ANTERIOR, HASH_CESAR_ANTERIOR, USUARIOS_INICIALES } from './db/usuarios.js'
 import { verificar } from './contrasenas.js'
 
@@ -15,7 +16,8 @@ export const COLUMNAS_REQUERIDAS = ['fecha', 'material', 'cantidad', 'monto', 'p
 // Versión del catálogo (PRAGMA user_version). La siembra corre una sola vez por
 // base: si corriera en cada arranque, lo que el usuario elimina volvería a aparecer.
 // 1: catálogo sembrado y completado con las compras. 2: proveedores de cada categoría.
-const VERSION_CATALOGO = 2
+// 3: artículos de cada proveedor.
+const VERSION_CATALOGO = 3
 
 /** Abre la base, aplica el esquema y migra bases del esquema anterior */
 export function abrirDB(dbPath, schemaPath) {
@@ -59,8 +61,31 @@ export function prepararCatalogo(db) {
       completarDesdeCompras(db)
     }
     if (version < 2) completarProveedorCategoria(db)
+    if (version < 3) completarProveedorMaterial(db)
+    db.exec(`PRAGMA user_version = ${VERSION_CATALOGO}`)
   })
-  db.exec(`PRAGMA user_version = ${VERSION_CATALOGO}`)
+}
+
+/** Recupera relaciones históricas conservando los artículos y proveedores del catálogo vigente. */
+function completarProveedorMaterial(db) {
+  for (const [proveedor, material] of MATERIALES_INICIALES_POR_PROVEEDOR) {
+    vincularProveedorMaterial(db, proveedor, material)
+  }
+  for (const { proveedor, material } of db.prepare(
+    "SELECT DISTINCT proveedor, material FROM ingresos WHERE trim(proveedor) != '' AND trim(material) != ''"
+  ).all()) {
+    vincularProveedorMaterial(db, proveedor, material)
+  }
+}
+
+function vincularProveedorMaterial(db, proveedor, material) {
+  const p = buscarEnCatalogo(db, 'proveedor', proveedor)
+  const m = buscarEnCatalogo(db, 'material', material)
+  if (!p || !m) return
+  db.prepare(
+    'INSERT OR IGNORE INTO proveedor_material (proveedor_id, material_id) ' +
+    "SELECT p.id, m.id FROM catalogo p, catalogo m WHERE p.tipo = 'proveedor' AND p.nombre = ? AND m.tipo = 'material' AND m.nombre = ?"
+  ).run(p.nombre, m.nombre)
 }
 
 /** Cada proveedor queda ligado a las categorías de lo que ya se le compró */
@@ -240,6 +265,7 @@ export function registrarCompra(db, compra) {
     const producto = (m.producto || '').trim()
     const material = registrarEnCatalogo(db, 'material', m.material).nombre
     if (difiereParaSQLite(material, m.material)) m.material = material
+    vincularProveedorMaterial(db, proveedor, material)
     if (categoria) registrarEnCatalogo(db, 'categoria', categoria)
     // Una fila puede llevar varios productos («Arepas, Empanadas»): se registra cada uno
     for (const nombre of listaProductos(producto)) registrarEnCatalogo(db, 'producto', nombre)
