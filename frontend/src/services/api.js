@@ -583,7 +583,11 @@ export async function fetchCatalogo() {
     categorias: sinDuplicados(cat.categorias),
     productos: sinDuplicados(cat.productos),
     materiales: [...cat.materiales]
-      .map(m => ({ ...m, productos: listaProductos(m.producto), proveedores: ordenar(m.proveedores ?? []) }))
+      // categoriaAnterior solo cuenta mientras el artículo siga sin categoría, como en el backend
+      .map(({ categoriaAnterior, ...m }) => ({
+        ...m, productos: listaProductos(m.producto), proveedores: ordenar(m.proveedores ?? []),
+        ...(categoriaAnterior && !m.categoria ? { categoriaAnterior } : {}),
+      }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
     // Ficha de cada proveedor (claves en minúsculas), como el backend
     fichas: Object.fromEntries(
@@ -614,6 +618,8 @@ function fijarMaterialesLocal(cat, tipo, nombre, materiales) {
   let cambios = 0
   for (const m of cat.materiales) {
     if (clave(m[tipo]) === clave(nombre) && !elegidos.has(clave(m.nombre))) {
+      // Recuerda de cuál salió, como el backend (categoria_anterior)
+      m.categoriaAnterior = m[tipo]
       m[tipo] = ''
       cambios++
     }
@@ -787,7 +793,10 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
       }
     }
     if (tipo === 'categoria') {
-      for (const m of cat.materiales) if (clave(m.categoria) === clave(anterior)) m.categoria = nuevo
+      for (const m of cat.materiales) {
+        if (clave(m.categoria) === clave(anterior)) m.categoria = nuevo
+        if (clave(m.categoriaAnterior) === clave(anterior)) m.categoriaAnterior = nuevo
+      }
       // Sus proveedores siguen a la categoría renombrada
       const mapa = (cat.proveedoresPorCategoria ??= {})
       const proveedores = mapa[clave(anterior)]
@@ -905,8 +914,11 @@ export async function eliminarDelCatalogo(tipo, nombre) {
       }
     } else if (tipo !== 'proveedor') {
       for (const m of cat.materiales) {
+        // Una categoría eliminada tampoco se recuerda como anterior
+        if (clave(m.categoriaAnterior) === clave(registro)) delete m.categoriaAnterior
         if (clave(m[tipo]) === clave(registro)) {
           m[tipo] = ''
+          delete m.categoriaAnterior
           materiales++
         }
       }

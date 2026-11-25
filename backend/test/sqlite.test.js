@@ -73,6 +73,23 @@ test('editar una fila suelta valida monto, cantidad y fecha como una compra', as
   assert.equal((await pedir(`${base}/ingresos/999999`, 'PUT', datos)).status, 404)
 })
 
+test('un catálogo sin categoria_anterior la gana al abrirse, sin tocar sus artículos', async t => {
+  const { carpeta } = await levantar(t)
+  const ruta = join(carpeta, 'sin-anterior.db')
+  let db = abrirDB(ruta, SCHEMA)
+  db.exec('ALTER TABLE catalogo DROP COLUMN categoria_anterior')
+  db.close()
+
+  for (let i = 0; i < 2; i++) {
+    db = abrirDB(ruta, SCHEMA)
+    assert.deepEqual(
+      { ...db.prepare("SELECT categoria, categoria_anterior FROM catalogo WHERE tipo = 'material' AND nombre = 'Agua'").get() },
+      { categoria: 'Bebidas', categoria_anterior: '' },
+    )
+    db.close()
+  }
+})
+
 test('migra una sola vez las relaciones artículo-proveedor de las compras conservadas', async t => {
   const { carpeta } = await levantar(t)
   const ruta = join(carpeta, 'anterior.db')

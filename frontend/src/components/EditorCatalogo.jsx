@@ -23,7 +23,7 @@ import estilos from './EditorCatalogo.module.css'
  * Props:
  *  - tipo: proveedor | categoria | material | producto
  *  - edicion: null (cerrado) | { registro: null } (agregar) | { registro: { nombre, categoria, producto }, uso }
- *  - materiales: todos los materiales del catálogo [{ nombre, categoria, producto }]
+ *  - materiales: todos los materiales del catálogo [{ nombre, categoria, producto, proveedores }]
  *  - proveedores: nombres de los proveedores (una categoría elige los que la surten)
  *  - alGuardar({ nombre, categoria?, producto?, materiales?, proveedores? }): async; si lanza, la ventana sigue abierta
  *  - alCerrar()
@@ -67,7 +67,7 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
   const [ficha, setFicha] = useState(() => fichaInicial(registro?.ficha))
   const [categoria, setCategoria] = useState(registro?.categoria ?? '')
   const [productos, setProductos] = useState(() => listaProductos(registro?.producto))
-  // Categoría: los proveedores que la surten (filtran los artículos en Agregar compra)
+  // Proveedores que surten la categoría editada
   const [proveedores, setProveedores] = useState(() => registro?.proveedores ?? [])
   // Los materiales que ya la llevan, sin distinguir mayúsculas (un producto puede estar en la lista de varios)
   const [elegidos, setElegidos] = useState(() => new Set(
@@ -88,6 +88,30 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
   const avisoSalida = useDatosSinGuardar({
     sucio: cambiado, registrar: registrarDesdeAviso, cierreRef, etiqueta: AVISO_SALIDA.guardar.catalogo(tipo),
   })
+
+  function cambiarProveedores(nuevos) {
+    const anteriores = new Set(proveedores.map(p => p.toLowerCase()))
+    const seleccionados = new Set(nuevos.map(p => p.toLowerCase()))
+    setProveedores(nuevos)
+    setErrores(prev => ({ ...prev, proveedores: undefined }))
+    if (!registro) return
+
+    setElegidos(prev => {
+      const siguientes = new Set(prev)
+      for (const material of todos) {
+        // Los de esta categoría, y los que se quitaron de ella y siguen sin categoría
+        const categoriaDelMaterial = material.categoria || material.categoriaAnterior
+        if (categoriaDelMaterial?.toLowerCase() !== registro.nombre.toLowerCase()) continue
+        const asociados = (material.proveedores ?? []).map(p => p.toLowerCase())
+        const proveedorAgregado = asociados.some(p => seleccionados.has(p) && !anteriores.has(p))
+        if (proveedorAgregado) siguientes.add(material.nombre)
+        else if (asociados.some(p => anteriores.has(p)) && !asociados.some(p => seleccionados.has(p))) {
+          siguientes.delete(material.nombre)
+        }
+      }
+      return siguientes
+    })
+  }
 
   // Solo una sugerencia: los nombres ya registrados de este tipo, sin contar el que se edita
   const yaRegistrados = esMaterial ? todos.map(m => m.nombre) : esProveedor ? todosProveedores : esCategoria ? getCategorias() : getProductos()
@@ -213,10 +237,7 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
               opciones={todosProveedores}
               valor={proveedores}
               ayuda={PANTALLA_CATALOGO.ayudaProveedores}
-              onCambiar={v => {
-                setProveedores(v)
-                setErrores(prev => ({ ...prev, proveedores: undefined }))
-              }}
+              onCambiar={cambiarProveedores}
               error={errores.proveedores}
             />
           )}

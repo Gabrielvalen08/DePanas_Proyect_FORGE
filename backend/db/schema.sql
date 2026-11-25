@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS catalogo (
     tipo       TEXT NOT NULL CHECK (tipo IN ('proveedor', 'categoria', 'material', 'producto')),
     nombre     TEXT NOT NULL,
     categoria  TEXT NOT NULL DEFAULT '',   -- Solo materiales
-    producto   TEXT NOT NULL DEFAULT '',   -- Solo materiales: uno o varios, «Arepas, Empanadas»
+    categoria_anterior TEXT NOT NULL DEFAULT '', -- Solo materiales: de cuál se quitó al editar esa categoría
+    producto  TEXT NOT NULL DEFAULT '',   -- Solo materiales: uno o varios, «Arepas, Empanadas»
     ficha      TEXT NOT NULL DEFAULT '',   -- Solo proveedores: JSON con ubicación, teléfonos y contactos
     UNIQUE (tipo, nombre COLLATE NOCASE)
 );
