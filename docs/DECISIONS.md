@@ -185,9 +185,10 @@ Una compra agrupa un proveedor, una fecha y sus artículos: en la base, sus fila
 | ---- | -------- | ------- |
 | Relación | Muchos a muchos entre proveedor y categoría, en la tabla `proveedor_categoria` | «Materia Prima» se le compra a varios proveedores y un proveedor surte varias categorías |
 | Claves | Por `id` de `catalogo`, con `ON DELETE CASCADE` y `PRAGMA foreign_keys = ON` | Renombrar conserva el `id` (no hay que tocar la relación) y eliminar la limpia sola; un nombre de proveedor puede llevar comas |
-| Filtro | En Agregar compra salen solo los artículos de las categorías del proveedor; si no surte ninguna (o es nuevo), todos. Igual en servidor y en local | No bloquear el registro; reemplaza el filtro anterior por historial, que en servidor no filtraba |
+| Filtro | En Agregar compra salen los artículos de las categorías del proveedor y los que ya se le compraron; sin ninguno (o es nuevo), no se sugiere nada y se escribe a mano. Igual en servidor y en local | No bloquear el registro; lo comprado una vez (Gatorade a Pepsi) se puede volver a elegir aunque esté en otra categoría o sin ella |
+| Artículo ↔ proveedor | Tabla `proveedor_material`, por `id`: la crea cada compra guardada o importada; una vez por base se recupera de las compras (`user_version` 3) | Sirve para volver a sugerirlo y para marcar sus artículos al elegir el proveedor en una categoría |
 | Llenado | Una vez por base con las compras existentes (`user_version` 2) y, después, cada compra guardada o importada y cada artículo asignado en una compra suman la relación que falte. A mano se edita en la categoría | Que funcione desde el primer día sin cargar nada; lo que se quita a mano no reaparece al reabrir |
-| Respaldo | Las filas de categorías llevan `proveedores` (opcional, `version` sigue en 1); cargar suma y omite los que no existen | Los respaldos anteriores siguen cargando |
+| Respaldo | Las filas de categorías y de artículos llevan `proveedores` (opcional, `version` sigue en 1); cargar suma y omite los que no existen | Los respaldos anteriores siguen cargando |
 
 ## Seguridad del acceso (antes de entregar al cliente)
 

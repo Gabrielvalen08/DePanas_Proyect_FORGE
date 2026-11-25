@@ -78,7 +78,8 @@ function completarProveedorMaterial(db) {
   }
 }
 
-function vincularProveedorMaterial(db, proveedor, material) {
+/** Liga un artículo con un proveedor, ambos ya registrados (si falta alguno, no hace nada) */
+export function vincularProveedorMaterial(db, proveedor, material) {
   const p = buscarEnCatalogo(db, 'proveedor', proveedor)
   const m = buscarEnCatalogo(db, 'material', material)
   if (!p || !m) return

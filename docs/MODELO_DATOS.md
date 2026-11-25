@@ -45,6 +45,7 @@ Si el backend no está encendido, el frontend trabaja en **modo local** y guarda
    (fecha, IVA,          (cantidad, unidad,                 │ N
     archivo)              monto)                            │
                                                             │ va en (muchos a muchos)
+   PROVEEDOR ── se le compra (muchos a muchos) ── ARTÍCULO  │
                                                             │
                                                         PRODUCTO (Arepas, Cachitos…)
 
@@ -98,7 +99,11 @@ Una fila por artículo comprado. Las filas de una misma compra comparten `compra
 
 ### `proveedor_categoria`: quién surte qué
 
-Relación muchos a muchos por `id` (`proveedor_id`, `categoria_id`) con `ON DELETE CASCADE`. Renombrar no la rompe y borrar la limpia. En Agregar compra, elegir un proveedor sugiere solo los artículos de sus categorías.
+Relación muchos a muchos por `id` (`proveedor_id`, `categoria_id`) con `ON DELETE CASCADE`. Renombrar no la rompe y borrar la limpia. En Agregar compra, elegir un proveedor sugiere los artículos de sus categorías y los que ya se le compraron.
+
+### `proveedor_material`: artículos de cada proveedor
+
+Relación muchos a muchos por `id` (`proveedor_id`, `material_id`) con clave compuesta y `ON DELETE CASCADE`. Guardar, editar o importar una compra registra las asociaciones sin duplicarlas. La migración (`user_version` 3) recupera los pares de las compras históricas cuyos proveedores y artículos siguen en el catálogo y agrega los iniciales de `shared/proveedor-material.js`. Cargar un respaldo de artículos suma sus proveedores.
 
 ### `usuarios`
 

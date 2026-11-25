@@ -556,6 +556,20 @@ test('cargar categorías suma sus proveedores; los que no existen se omiten', as
   assert.ok((await catalogo(base)).proveedoresPorCategoria.bebidas.includes('Pepsi'))
 })
 
+test('cargar artículos suma los proveedores a los que se les compra; los que no existen se omiten', async t => {
+  const base = await levantar(t)
+  const importar = () => pedir(`${base}/catalogo/material/importar`, 'POST', {
+    filas: { tipo: 'material', version: 1, filas: [{ nombre: 'Queso', proveedores: ['mmag', 'MMAG', 'Nadie'] }] },
+  })
+  const res = await importar()
+  assert.equal(res.status, 200)
+  assert.deepEqual(res.cuerpo, { nuevos: 0, actualizados: 1, omitidos: 0 })
+  assert.equal((await importar()).status, 200)
+  const cat = await catalogo(base)
+  assert.deepEqual(material(cat, 'Queso').proveedores, ['MMAG'])
+  assert.ok(!cat.proveedores.includes('Nadie'))
+})
+
 test('un proveedor nuevo se crea al guardar la categoría, sin duplicar y solo con catalogo.agregar', async t => {
   const base = await levantar(t)
   const creada = await pedir(url(base, 'categoria'), 'POST', { nombre: 'Lácteos', proveedores: ['Distribuidora X, S.A.', 'mmag'] })

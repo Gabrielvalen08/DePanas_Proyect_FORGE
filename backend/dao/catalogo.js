@@ -19,7 +19,9 @@
  * tipo: proveedor | categoria | material | producto
  */
 
-import { buscarEnCatalogo, enTransaccion, leerProveedoresPorCategoria, registrarEnCatalogo, vincularProveedorCategoria } from '../db.js'
+import {
+  buscarEnCatalogo, enTransaccion, leerProveedoresPorCategoria, registrarEnCatalogo, vincularProveedorCategoria, vincularProveedorMaterial,
+} from '../db.js'
 import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../shared/productos.js'
@@ -308,6 +310,8 @@ function importarFilas(db, tipo, filas) {
     } else if (tipo === 'material') {
       const actual = buscar(db, 'material', nombre)
       asignar(db, nombre, fila.categoria || actual?.categoria || '', [...listaProductos(actual?.producto), ...fila.productos])
+      // Suma los proveedores del archivo; los que no existen se omiten
+      for (const proveedor of fila.proveedores ?? []) vincularProveedorMaterial(db, proveedor, nombre)
     } else {
       if (tipo === 'categoria') {
         // Suma los proveedores del archivo; los que no existen se omiten

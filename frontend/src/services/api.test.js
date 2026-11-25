@@ -39,6 +39,7 @@ import {
   fijarTokenSesion,
 } from './api'
 import { FUNCIONES, RUTAS_ASIGNABLES } from '../../../shared/usuarios.js'
+import { filasDelCatalogo } from '../../../shared/catalogo-json.js'
 
 // El modo (servidor/local) se detecta una vez por carga: cada test empieza de cero
 beforeEach(() => reiniciarModo())
@@ -173,14 +174,14 @@ describe('api: modo servidor', () => {
     expect(getProveedores()).not.toContain('La Colonia') // los datos de ejemplo locales no se mezclan
   })
 
-  it('filtra por relaciones directas y manda el proveedor al asignar un artículo', async () => {
+  it('sugiere lo comprado al proveedor y lo de sus categorías, y manda el proveedor al asignar un artículo', async () => {
     const llamadas = simularServidor({
       'GET /catalogo': {
         cuerpo: {
           proveedores: ['Pepsi', 'Selectos'], categorias: ['Bebidas', 'Materia Prima'], productos: ['Todos'],
           materiales: [
             { nombre: 'Agua', categoria: 'Bebidas', producto: 'Todos', proveedores: ['Pepsi'] },
-            { nombre: 'Otra bebida', categoria: 'Bebidas', producto: 'Todos', proveedores: ['Selectos'] },
+            { nombre: 'Cloro', categoria: 'Limpieza', producto: 'Todos', proveedores: ['Selectos'] },
           ],
           proveedoresPorCategoria: { bebidas: ['Pepsi'] },
         },
@@ -193,8 +194,8 @@ describe('api: modo servidor', () => {
       },
     })
     await fetchCatalogo()
-    expect(getMaterialesPorProveedor('pepsi')).toEqual(['Agua'])
-    expect(getMaterialesPorProveedor('Selectos')).toEqual(['Otra bebida'])
+    expect(getMaterialesPorProveedor('pepsi')).toEqual(['Agua']) // por su categoría
+    expect(getMaterialesPorProveedor('Selectos')).toEqual(['Cloro']) // porque ya se le compró
 
     await asignarMaterial('Cafe', { categoria: 'Materia Prima', productos: ['Todos'], proveedor: 'Pepsi' })
     expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ categoria: 'Materia Prima', productos: ['Todos'], proveedor: 'Pepsi' })
@@ -432,27 +433,52 @@ describe('api: categoría y producto de cada material (modo local)', () => {
     expect(getCategoriasDeProveedor('Selectos')).toEqual(['Limpieza', 'Materia Prima', 'Material Común'])
   })
 
-  it('sugiere los artículos comprados al proveedor y conserva el vínculo sin duplicarlo', async () => {
+  it('sugiere los artículos de las categorías del proveedor; sin categorías ni compras, ninguno', async () => {
     await agregarAlCatalogo('categoria', { nombre: 'Lácteos', materiales: [], proveedores: [] })
     await agregarAlCatalogo('proveedor', { nombre: 'La Lechería' })
-    await editarEnCatalogo('categoria', 'Lácteos', { proveedores: ['la lechería'] })
     await editarEnCatalogo('material', 'Queso', { categoria: 'Lácteos', productos: ['Todos'] })
+    expect(getMaterialesPorProveedor('La Lechería')).toEqual([])
+    await editarEnCatalogo('categoria', 'Lácteos', { proveedores: ['la lechería'] })
     expect(getCategoriasDeProveedor('La Lechería')).toEqual(['Lácteos'])
-    expect(getMaterialesPorProveedor('la lechería')).toEqual([])
+    expect(getMaterialesPorProveedor('la lechería')).toEqual(['Queso'])
+
     expect(getMaterialesPorProveedor('Proveedor Inexistente')).toEqual([])
     expect(getMaterialesPorProveedor('')).toEqual([])
 
+    // Ordenados por categoría: Materia Prima primero
+    await editarEnCatalogo('categoria', 'Materia Prima', { proveedores: ['La Lechería'] })
+    await editarEnCatalogo('categoria', 'Bebidas', { proveedores: ['La Lechería'] })
+    const varios = getMaterialesPorProveedor('La Lechería')
+    expect(varios).toEqual(expect.arrayContaining(['Agua', 'Tocino La Rioja', 'Queso']))
+    expect(varios.indexOf('Tocino La Rioja')).toBeLessThan(varios.indexOf('Agua'))
+  })
+
+  it('sugiere lo comprado al proveedor aunque no surta su categoría, sin duplicar el vínculo', async () => {
     const compra = {
       fecha: '2026-10-01', proveedor: 'La Lechería',
-      materiales: ['Agua', 'Tocino La Rioja', 'Queso'].map(material => ({ material, cantidad: 1, monto: 2 })),
+      materiales: ['Agua', 'Queso'].map(material => ({ material, cantidad: 1, monto: 2 })),
     }
     await guardarLista(compra)
     await guardarLista({ ...compra, proveedor: 'LA LECHERÍA' })
-    expect(getMaterialesPorProveedor('La Lechería')).toEqual(['Tocino La Rioja', 'Agua', 'Queso'])
-    const cat = await fetchCatalogo()
+    let cat = await fetchCatalogo()
     expect(cat.materiales.find(m => m.nombre === 'Queso').proveedores).toEqual(['La Lechería'])
+
+    // Sin categorías ligadas, quedan los comprados
+    for (const categoria of getCategoriasDeProveedor('La Lechería')) {
+      await editarEnCatalogo('categoria', categoria, { proveedores: [] })
+    }
+    expect(getCategoriasDeProveedor('La Lechería')).toEqual([])
+    expect(getMaterialesPorProveedor('La Lechería')).toEqual(['Agua', 'Queso'])
     await editarEnCatalogo('proveedor', 'La Lechería', { nombre: 'Mercado' })
-    expect(getMaterialesPorProveedor('Mercado')).toContain('Queso')
+    expect(getMaterialesPorProveedor('Mercado')).toEqual(['Agua', 'Queso'])
+  })
+
+  it('el respaldo de artículos lleva sus proveedores; al cargarlo se suman los que existen', async () => {
+    await importarCatalogo('material', [{ nombre: 'Queso', proveedores: ['mmag', 'Nadie'] }])
+    const cat = await fetchCatalogo()
+    expect(cat.proveedores).not.toContain('Nadie')
+    expect(filasDelCatalogo('material', cat).find(f => f.nombre === 'Queso').proveedores).toEqual(['MMAG'])
+    expect(filasDelCatalogo('material', cat).find(f => f.nombre === 'Anis')).not.toHaveProperty('proveedores')
   })
 
   it('un proveedor que no existe se crea al guardar la categoría, sin duplicar por mayúsculas y con ficha vacía', async () => {

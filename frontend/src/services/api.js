@@ -362,12 +362,15 @@ export function getCategoriasDeProveedor(proveedor) {
 
 /**
  * Artículos para el autocompletado de Agregar Compra, ordenados por categoría
- * («Materia Prima» primero). Solo los que están asociados directamente al proveedor.
+ * («Materia Prima» primero): los que ya se le compraron al proveedor y los de las
+ * categorías que surte. Si no hay ninguno (o no se eligió), el artículo se escribe a mano.
  */
 export function getMaterialesPorProveedor(proveedor) {
   const nombre = clave(proveedor)
   if (!nombre) return []
-  const lista = catalogo().materiales.filter(m => m.proveedores?.some(p => clave(p) === nombre))
+  const categorias = new Set(getCategoriasDeProveedor(proveedor).map(clave))
+  const lista = catalogo().materiales.filter(m =>
+    categorias.has(clave(m.categoria)) || m.proveedores?.some(p => clave(p) === nombre))
   // Orden estable: sinDuplicados reordenaría alfabéticamente
   const vistos = new Set()
   return ordenarMaterialesPorCategoria(lista).map(m => m.nombre)
@@ -1527,6 +1530,8 @@ export async function importarCatalogo(tipo, filas) {
       const p = registrarProductos(cat, [...listaProductos(destino.producto), ...fila.productos])
       Object.assign(destino, { categoria: c, producto: p.texto })
       propagar(nombre, { categoria: c, producto: p.texto })
+      // Suma los proveedores del archivo; los que no existen se omiten
+      for (const proveedor of fila.proveedores ?? []) vincularMaterialLocal(cat, proveedor, nombre)
     } else {
       if (tipo === 'categoria') {
         // Suma los proveedores del archivo; los que no existen se omiten
