@@ -27,7 +27,6 @@
   color: var(--color-text);
 }
 
-.nota,
 .vacio {
   font-size: 0.875rem;
   line-height: 1.4;
@@ -36,7 +35,7 @@
 
 /*
  * Varias columnas si hay espacio; la lista se desplaza sola y el buscador queda arriba.
- * Usa la altura que deja la ventana (nombre, nota, buscador y botones ocupan ~29rem), con un mínimo
+ * Usa la altura que deja la ventana (campos, buscador y botones), con un mínimo
  * para que no se aplaste, así no hay un scroll dentro de otro scroll.
  */
 .opciones {
