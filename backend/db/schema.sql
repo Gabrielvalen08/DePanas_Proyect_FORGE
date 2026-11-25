@@ -38,8 +38,7 @@ CREATE TABLE IF NOT EXISTS catalogo (
     UNIQUE (tipo, nombre COLLATE NOCASE)
 );
 
--- Qué proveedores surten cada categoría (muchos a muchos). En Agregar compra,
--- al elegir un proveedor solo se sugieren los artículos de sus categorías.
+-- Qué proveedores surten cada categoría (muchos a muchos).
 -- Por id: renombrar un proveedor o una categoría no rompe la relación, y
 -- eliminar cualquiera de los dos borra sus filas aquí (db.js activa foreign_keys).
 CREATE TABLE IF NOT EXISTS proveedor_categoria (
@@ -47,6 +46,15 @@ CREATE TABLE IF NOT EXISTS proveedor_categoria (
     categoria_id INTEGER NOT NULL REFERENCES catalogo(id) ON DELETE CASCADE,
     PRIMARY KEY (proveedor_id, categoria_id)
 );
+
+-- Qué artículos se le compran a cada proveedor, independientemente de su categoría.
+CREATE TABLE IF NOT EXISTS proveedor_material (
+    proveedor_id INTEGER NOT NULL REFERENCES catalogo(id) ON DELETE CASCADE,
+    material_id INTEGER NOT NULL REFERENCES catalogo(id) ON DELETE CASCADE,
+    PRIMARY KEY (proveedor_id, material_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_proveedor_material_articulo ON proveedor_material(material_id);
 
 -- Usuarios del sistema y las pantallas a las que entra cada uno.
 -- contrasena es un hash PBKDF2 (contrasenas.js), nunca el texto.

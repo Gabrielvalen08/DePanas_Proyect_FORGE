@@ -19,7 +19,9 @@
  * tipo: proveedor | categoria | material | producto
  */
 
-import { buscarEnCatalogo, enTransaccion, leerProveedoresPorCategoria, registrarEnCatalogo, vincularProveedorCategoria } from '../db.js'
+import {
+  buscarEnCatalogo, enTransaccion, leerProveedoresPorCategoria, registrarEnCatalogo, vincularProveedorCategoria, vincularProveedorMaterial,
+} from '../db.js'
 import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../shared/productos.js'
@@ -117,12 +119,21 @@ function leerIvaPorProveedor(db) {
 
 export function leerCatalogo(db) {
   const nombres = tipo => ordenar(db.prepare('SELECT nombre FROM catalogo WHERE tipo = ?').all(tipo).map(f => f.nombre))
+  const proveedoresPorMaterial = new Map()
+  for (const { material_id, proveedor } of db.prepare(
+    'SELECT r.material_id, p.nombre AS proveedor FROM proveedor_material r JOIN catalogo p ON p.id = r.proveedor_id'
+  ).all()) {
+    if (!proveedoresPorMaterial.has(material_id)) proveedoresPorMaterial.set(material_id, [])
+    proveedoresPorMaterial.get(material_id).push(proveedor)
+  }
   return {
     proveedores: nombres('proveedor'),
     categorias: nombres('categoria'),
     productos: nombres('producto'),
-    materiales: db.prepare("SELECT nombre, categoria, producto FROM catalogo WHERE tipo = 'material'").all()
-      .map(m => ({ ...m, productos: listaProductos(m.producto) }))
+    materiales: db.prepare("SELECT id, nombre, categoria, producto FROM catalogo WHERE tipo = 'material'").all()
+      .map(({ id, ...m }) => ({
+        ...m, productos: listaProductos(m.producto), proveedores: ordenar(proveedoresPorMaterial.get(id) ?? []),
+      }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
     uso: leerUso(db),
     precios: leerPrecios(db),
@@ -299,6 +310,8 @@ function importarFilas(db, tipo, filas) {
     } else if (tipo === 'material') {
       const actual = buscar(db, 'material', nombre)
       asignar(db, nombre, fila.categoria || actual?.categoria || '', [...listaProductos(actual?.producto), ...fila.productos])
+      // Suma los proveedores del archivo; los que no existen se omiten
+      for (const proveedor of fila.proveedores ?? []) vincularProveedorMaterial(db, proveedor, nombre)
     } else {
       if (tipo === 'categoria') {
         // Suma los proveedores del archivo; los que no existen se omiten

@@ -98,7 +98,9 @@ test('cambiar el nombre, la categoría y el producto de un material se refleja e
   assert.equal(r.cuerpo.categoriaNueva, true)
   const fila = (await pedir(`${base}/compras`)).cuerpo[0].materiales[0]
   assert.deepEqual([fila.material, fila.categoria, fila.producto], ['Tocino ahumado', 'Carnes', 'Tequeños'])
-  assert.deepEqual(material(await catalogo(base), 'Tocino ahumado'), { nombre: 'Tocino ahumado', categoria: 'Carnes', producto: 'Tequeños', productos: ['Tequeños'] })
+  assert.deepEqual(material(await catalogo(base), 'Tocino ahumado'), {
+    nombre: 'Tocino ahumado', categoria: 'Carnes', producto: 'Tequeños', productos: ['Tequeños'], proveedores: [COMPRA.proveedor],
+  })
 })
 
 test('renombrar una categoría la cambia en sus materiales y en las compras', async t => {
@@ -133,7 +135,9 @@ test('una compra con un proveedor o material nuevo los registra en el catálogo'
   })
   const cat = await catalogo(base)
   assert.ok(cat.proveedores.includes('Walmart'))
-  assert.deepEqual(material(cat, 'Servilletas'), { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'] })
+  assert.deepEqual(material(cat, 'Servilletas'), {
+    nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'], proveedores: ['Walmart'],
+  })
 })
 
 test('lo que se elimina no reaparece al reabrir la base', t => {
@@ -550,6 +554,20 @@ test('cargar categorías suma sus proveedores; los que no existen se omiten', as
   assert.equal(res.status, 200)
   assert.equal(res.cuerpo.omitidos, 1)
   assert.ok((await catalogo(base)).proveedoresPorCategoria.bebidas.includes('Pepsi'))
+})
+
+test('cargar artículos suma los proveedores a los que se les compra; los que no existen se omiten', async t => {
+  const base = await levantar(t)
+  const importar = () => pedir(`${base}/catalogo/material/importar`, 'POST', {
+    filas: { tipo: 'material', version: 1, filas: [{ nombre: 'Queso', proveedores: ['mmag', 'MMAG', 'Nadie'] }] },
+  })
+  const res = await importar()
+  assert.equal(res.status, 200)
+  assert.deepEqual(res.cuerpo, { nuevos: 0, actualizados: 1, omitidos: 0 })
+  assert.equal((await importar()).status, 200)
+  const cat = await catalogo(base)
+  assert.deepEqual(material(cat, 'Queso').proveedores, ['MMAG'])
+  assert.ok(!cat.proveedores.includes('Nadie'))
 })
 
 test('un proveedor nuevo se crea al guardar la categoría, sin duplicar y solo con catalogo.agregar', async t => {

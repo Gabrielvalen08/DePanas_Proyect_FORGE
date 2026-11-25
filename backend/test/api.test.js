@@ -134,8 +134,8 @@ test('el catálogo trae la categoría y el producto de cada material, como en el
   const { base } = await levantar(t)
   const { cuerpo } = await pedir(`${base}/catalogo`)
   const buscar = nombre => cuerpo.materiales.find(m => m.nombre === nombre)
-  assert.deepEqual(buscar('Tocino La Rioja'), { nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'] })
-  assert.deepEqual(buscar('Queso'), { nombre: 'Queso', categoria: '', producto: '', productos: [] })
+  assert.deepEqual(buscar('Tocino La Rioja'), { nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'], proveedores: [] })
+  assert.deepEqual(buscar('Queso'), { nombre: 'Queso', categoria: '', producto: '', productos: [], proveedores: [] })
   assert.equal(buscar('Mr Músculo Antigrasa').categoria, 'Limpieza')
   assert.equal(cuerpo.categorias.length, 6)
 })
@@ -187,7 +187,7 @@ test('cada material de una compra guarda su propia categoría', async t => {
   })
   const catalogo = await pedir(`${base}/catalogo`)
   assert.deepEqual(catalogo.cuerpo.materiales.find(m => m.nombre === 'Servilletas'),
-    { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'] })
+    { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'], proveedores: ['MMAG'] })
 })
 
 test('exportar descarga una base con todos los datos aunque estén en el WAL', async t => {

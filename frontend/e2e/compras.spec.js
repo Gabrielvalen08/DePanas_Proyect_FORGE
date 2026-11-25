@@ -83,6 +83,37 @@ test.describe('Compras', () => {
     await expect(formulario.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveValue('Agua')
   })
 
+  test('una compra registra los artículos que se sugerirán al volver a elegir el proveedor', async ({ page, request }) => {
+    const proveedor = `Mercado e2e ${crypto.randomUUID()}`
+    await llenarCompra(page, { proveedor, material: 'Gatorade', cantidad: 1, precio: 2.5 })
+    await page.getByRole('button', { name: 'Guardar compra' }).click()
+    const guardado = page.waitForResponse(r => new URL(r.url()).pathname === '/api/compras' && r.request().method() === 'POST')
+    await confirmar(page, COMPRA.confirmarGuardar.confirmar)
+    const respuesta = await guardado
+    expect(respuesta.ok()).toBe(true)
+    const { id } = await respuesta.json()
+    const headers = { Authorization: await respuesta.request().headerValue('authorization') }
+
+    try {
+      await expect(page.getByText(COMPRA.guardada)).toBeVisible()
+      const formulario = page.getByRole('form', { name: 'Detalle de compra' }).first()
+      const campoProveedor = formulario.getByRole('combobox', { name: 'Proveedor' })
+      await expect(campoProveedor).toHaveValue('')
+      await campoProveedor.fill(proveedor)
+      await page.keyboard.press('Escape')
+      const articulo = formulario.getByRole('combobox', { name: 'Artículo, fila 1' })
+      await articulo.fill('a')
+      const sugerencias = page.getByRole('listbox', { name: 'Artículo, fila 1' })
+      await expect(sugerencias.getByRole('option', { name: 'Gatorade' })).toBeVisible()
+      await expect(sugerencias.getByRole('option', { name: 'Azucar' })).toHaveCount(0)
+      await sugerencias.getByRole('option', { name: 'Gatorade' }).click()
+      await expect(articulo).toHaveValue('Gatorade')
+    } finally {
+      expect((await request.delete(`/api/compras/${id}`, { headers })).ok()).toBe(true)
+      expect((await request.delete(`/api/catalogo/proveedor/${encodeURIComponent(proveedor)}`, { headers })).ok()).toBe(true)
+    }
+  })
+
   test('al escribir, la sugerencia que más coincide queda marcada y Enter la completa', async ({ page }) => {
     const formulario = page.getByRole('form', { name: 'Detalle de compra' }).first()
     await formulario.getByRole('combobox', { name: 'Proveedor' }).fill('Selec')
