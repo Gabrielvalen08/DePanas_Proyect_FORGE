@@ -96,7 +96,9 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
     setElegidos(prev => {
       const siguientes = new Set(prev)
       for (const material of todos) {
-        if (material.categoria?.toLowerCase() !== registro.nombre.toLowerCase()) continue
+        // Los de esta categoría, y los que se quitaron de ella y siguen sin categoría
+        const categoriaDelMaterial = material.categoria || material.categoriaAnterior
+        if (categoriaDelMaterial?.toLowerCase() !== registro.nombre.toLowerCase()) continue
         const asociados = (material.proveedores ?? []).map(p => p.toLowerCase())
         const proveedorAgregado = asociados.some(p => seleccionados.has(p) && !anteriores.has(p))
         if (proveedorAgregado) siguientes.add(material.nombre)

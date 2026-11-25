@@ -302,9 +302,9 @@ export function migrar(db) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_ingresos_fecha ON ingresos(fecha)')
 
   // Catálogos creados antes de que los materiales guardaran categoría y producto,
-  // o de que los proveedores tuvieran su ficha
+  // de que los proveedores tuvieran su ficha o de que se recordara la categoría anterior
   const columnasCatalogo = db.prepare('PRAGMA table_info(catalogo)').all().map(c => c.name)
-  for (const columna of ['categoria', 'producto', 'ficha']) {
+  for (const columna of ['categoria', 'producto', 'ficha', 'categoria_anterior']) {
     if (!columnasCatalogo.includes(columna)) {
       db.exec(`ALTER TABLE catalogo ADD COLUMN ${columna} TEXT NOT NULL DEFAULT ''`)
     }

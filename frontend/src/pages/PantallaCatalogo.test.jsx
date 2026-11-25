@@ -107,6 +107,21 @@ describe('PantallaCatalogo', () => {
     expect(guardado.proveedoresPorCategoria.bebidas).toEqual(['Desechables Diver.', 'Mercado'])
     expect(guardado.materiales.filter(m => m.categoria === 'Bebidas').map(m => m.nombre)).toEqual(['Azucar', 'Té del mercado'])
     expect(guardado.materiales.find(m => m.nombre === 'Agua').categoria).toBe('')
+
+    // Reversible tras guardar: al volver a elegir Pepsi se marcan los suyos que habían salido
+    await usuario.click(screen.getByRole('button', { name: 'Editar categoría Bebidas' }))
+    const otra = within(screen.getByRole('dialog', { name: 'Editar categoría' }))
+    await usuario.click(otra.getByRole('button', { name: 'Pepsi', exact: true }))
+    for (const nombre of [/^Agua/, /^Gatorade/, /^Lipton/, /^Pepsi/]) {
+      expect(otra.getByRole('checkbox', { name: nombre })).toBeChecked()
+    }
+    expect(otra.getAllByRole('checkbox', { checked: true })).toHaveLength(6) // más Azucar y Té del mercado
+    await usuario.click(otra.getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Editar categoría' })).not.toBeInTheDocument())
+    const repuesto = await fetchCatalogo()
+    expect(repuesto.materiales.filter(m => m.categoria === 'Bebidas')).toHaveLength(6)
+    expect(repuesto.materiales.find(m => m.nombre === 'Agua')).not.toHaveProperty('categoriaAnterior')
   })
 
   it('el editor pide confirmar al guardar y, si hay cambios, al cancelar; sin cambios se cierra solo', async () => {
