@@ -2,6 +2,7 @@ import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { Check, Pencil, Plus, Search, X } from 'lucide-react'
 import { AvisoDestacado, Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
 import { SelectorOpciones } from './AsignarMaterial'
+import ConfirmarCambios from './ConfirmarCambios'
 import FichaProveedor, { fichaInicial } from './FichaProveedor'
 import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { getCategorias, getProductos, ordenarMaterialesPorCategoria as ordenarPorCategoria } from '../services/api'
@@ -245,16 +246,15 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
       </form>
 
       {/* Fuera del <form>: los eventos del portal no deben llegar a su onSubmit */}
-      <ConfirmDialog
+      <ConfirmarCambios
         isOpen={confirmando === 'guardar'}
         onClose={() => {
           setConfirmando(null)
           avisoSalida.cerrar()
         }}
         onConfirm={guardarConfirmado}
-        title={CONFIRMAR.guardarCambios.titulo}
-        message={CONFIRMAR.guardarCambios.mensaje}
-        confirmLabel={CONFIRMAR.guardarCambios.confirmar}
+        anterior={registro?.nombre}
+        nombre={nombre}
       />
       <ConfirmDialog
         isOpen={confirmando === 'descartar'}

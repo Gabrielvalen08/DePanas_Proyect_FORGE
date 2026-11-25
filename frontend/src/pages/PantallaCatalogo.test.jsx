@@ -244,7 +244,10 @@ describe('PantallaCatalogo', () => {
     await usuario.clear(nombre)
     await usuario.type(nombre, 'Selectos Centro')
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
-    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
+    // La confirmación avisa que el nombre nuevo llega a todas las compras registradas
+    const confirmacion = await screen.findByRole('alertdialog', { name: CONFIRMAR.guardarCambios.titulo })
+    expect(within(confirmacion).getByText(CONFIRMAR.guardarCambios.renombre('Súper Selectos', 'Selectos Centro'))).toBeInTheDocument()
+    await usuario.click(within(confirmacion).getByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
 
     expect(await screen.findByText('¡Chévere! «Súper Selectos» ahora se llama «Selectos Centro» y se actualizó en 2 compras.')).toBeInTheDocument()
   })
