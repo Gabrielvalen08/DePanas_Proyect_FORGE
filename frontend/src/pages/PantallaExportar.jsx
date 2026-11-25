@@ -6,7 +6,7 @@ import { Boton, Campo, ConfirmDialog, Tarjeta } from '../components/common'
 import { exportarCompras, fetchListas, totalLista } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { useDatosSinGuardar } from '../context/DatosSinGuardarContext'
-import { formatearPrecio } from '../utils/formato'
+import { fechaHoyISO, formatearPrecio } from '../utils/formato'
 import { rangoRapido } from '../utils/exportar'
 import { CONFIRMAR, EXPORTAR, VALIDACION } from '../utils/mensajes'
 import estilos from './PantallaExportar.module.css'
@@ -32,7 +32,11 @@ export default function PantallaExportar() {
   const [compras, setCompras] = useState(null) // null = contando
   const [descargando, setDescargando] = useState(false)
 
-  const rangoInvalido = Boolean(desde && hasta && desde > hasta)
+  // Solo hay compras hasta hoy: el calendario no deja elegir días futuros
+  const hoy = fechaHoyISO()
+  const errorDesde = desde > hoy ? VALIDACION.fechaFutura : undefined
+  const errorHasta = hasta > hoy ? VALIDACION.fechaFutura : desde && hasta && desde > hasta ? VALIDACION.rangoFechas : undefined
+  const rangoInvalido = Boolean(errorDesde || errorHasta)
 
   // Un rango elegido y todavía sin descargar. Aquí no hay nada que registrar: el aviso ofrece «Seguir aquí»
   const [rangoDescargado, setRangoDescargado] = useState('|')
@@ -102,16 +106,19 @@ export default function PantallaExportar() {
                 id="exportar-desde"
                 etiqueta={EXPORTAR.desde}
                 tipo="date"
+                max={hoy}
                 value={desde}
                 onChange={e => { setCompras(null); setDesde(e.target.value) }}
+                error={errorDesde}
               />
               <Campo
                 id="exportar-hasta"
                 etiqueta={EXPORTAR.hasta}
                 tipo="date"
+                max={hoy}
                 value={hasta}
                 onChange={e => { setCompras(null); setHasta(e.target.value) }}
-                error={rangoInvalido ? VALIDACION.rangoFechas : undefined}
+                error={errorHasta}
               />
             </div>
 

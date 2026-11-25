@@ -109,6 +109,7 @@ const filaCompleta = fila => Object.keys(validarFila(fila)).length === 0
 function validarEncabezado(campo, valor) {
   if (campo === 'proveedor' && !valor.trim()) return VALIDACION.proveedor
   if (campo === 'fecha' && !valor) return VALIDACION.fecha
+  if (campo === 'fecha' && valor > fechaHoyISO()) return VALIDACION.fechaFutura
   return undefined
 }
 
@@ -609,6 +610,7 @@ export default function BloqueCompra({
                 id={`${id}-fecha`}
                 etiqueta="Fecha"
                 tipo="date"
+                max={fechaHoyISO()}
                 value={fecha}
                 onChange={e => cambiarEncabezado('fecha', e.target.value)}
                 onBlur={() => salirDeEncabezado('fecha')}

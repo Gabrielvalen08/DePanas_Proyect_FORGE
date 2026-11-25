@@ -143,6 +143,8 @@ export const VALIDACION = {
   unidad: 'Elige la unidad',
   precio: 'Debe ser mayor a 0',
   rangoFechas: 'La fecha final debe ser igual o posterior a la inicial',
+  // Solo compras ya hechas: el mismo texto que da el backend (shared/fechas.js)
+  fechaFutura: 'La fecha no puede ser posterior a hoy',
 }
 
 // ---------------------------------------------------------------------------

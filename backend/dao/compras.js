@@ -15,6 +15,7 @@
 
 import { randomUUID } from 'crypto'
 import { enTransaccion, registrarCompra } from '../db.js'
+import { FECHA_FUTURA, esFechaFutura } from '../../shared/fechas.js'
 import { ivaValido } from '../../shared/iva.js'
 import { validarIds } from '../../shared/lote.js'
 import { resolverCarga } from '../../shared/carga-compras.js'
@@ -79,6 +80,8 @@ export function validarCompra(cuerpo) {
   if (proveedor.length > MAX_TEXTO) return { error: `El proveedor es muy largo (máximo ${MAX_TEXTO} caracteres)` }
   if (typeof fecha !== 'string' || !FECHA_ISO.test(fecha)) return { error: 'La fecha debe tener el formato AAAA-MM-DD' }
   if (!fechaValida(fecha)) return { error: 'La fecha no existe' }
+  // Solo compras ya hechas
+  if (esFechaFutura(fecha)) return { error: FECHA_FUTURA }
   if (!Array.isArray(materiales) || materiales.length === 0) return { error: 'La compra necesita al menos un artículo' }
   const iva = cuerpo.iva ?? 0
   if (!ivaValido(iva)) return { error: 'El IVA debe ser un número mayor o igual a 0' }

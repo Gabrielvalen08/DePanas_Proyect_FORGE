@@ -25,6 +25,7 @@ import { validarComprasJSON } from '../../../shared/compras-json.js'
 import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../../shared/productos.js'
+import { FECHA_FUTURA, esFechaFutura } from '../../../shared/fechas.js'
 import { ivaDe } from '../../../shared/iva.js'
 import { validarIds } from '../../../shared/lote.js'
 import { fichaVacia, leerFicha, normalizarFicha } from '../../../shared/proveedores.js'
@@ -1257,6 +1258,14 @@ export async function fetchListas(filters = {}) {
   return listas.sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id)
 }
 
+/** Modo local, igual que el backend (shared/fechas.js): solo compras ya hechas */
+function exigirFechaPasada(fecha) {
+  if (!esFechaFutura(fecha)) return
+  const error = new Error(FECHA_FUTURA)
+  error.campo = 'fecha'
+  throw error
+}
+
 export async function guardarLista(lista) {
   if ((await detectarModo()) === 'servidor') {
     const guardada = enriquecerLista(await pedirJSON('/compras', 'POST', cuerpoCompra(lista)))
@@ -1265,6 +1274,7 @@ export async function guardarLista(lista) {
   }
 
   await delay(200)
+  exigirFechaPasada(lista.fecha)
   const listas = getListas()
   const nueva = enriquecerLista({ id: siguienteId(listas), origen_id: crypto.randomUUID(), ...normalizar(lista) })
   setListas([...listas, nueva])
@@ -1280,6 +1290,7 @@ export async function actualizarLista(id, lista) {
   }
 
   await delay(200)
+  exigirFechaPasada(lista.fecha)
   const listas = getListas()
   if (!listas.some(l => l.id === id)) throw new Error('La lista no existe')
   const actualizada = enriquecerLista({ ...listas.find(l => l.id === id), id, ...normalizar(lista) })

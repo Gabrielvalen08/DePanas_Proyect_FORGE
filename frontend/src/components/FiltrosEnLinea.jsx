@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 import { Boton, Campo } from './common'
 import { springSuave } from '../styles/movimiento'
+import { fechaHoyISO } from '../utils/formato'
 import { VALIDACION } from '../utils/mensajes'
 import estilos from './FiltrosEnLinea.module.css'
 
@@ -18,8 +19,12 @@ export function contarFiltrosActivos(filtros) {
  * Props: id (lo usa aria-controls del botón), abierto, filtros, alCambiar
  */
 export default function FiltrosEnLinea({ id, abierto, filtros, alCambiar }) {
-  const errorFechas =
-    filtros.fechaDesde && filtros.fechaHasta && filtros.fechaDesde > filtros.fechaHasta
+  // Solo hay compras hasta hoy: el calendario no deja elegir días futuros
+  const hoy = fechaHoyISO()
+  const errorDesde = filtros.fechaDesde > hoy ? VALIDACION.fechaFutura : undefined
+  const errorFechas = filtros.fechaHasta > hoy
+    ? VALIDACION.fechaFutura
+    : filtros.fechaDesde && filtros.fechaHasta && filtros.fechaDesde > filtros.fechaHasta
       ? VALIDACION.rangoFechas
       : undefined
 
@@ -59,14 +64,17 @@ export default function FiltrosEnLinea({ id, abierto, filtros, alCambiar }) {
             id="filtro-fecha-desde"
             etiqueta="Desde"
             tipo="date"
+            max={hoy}
             value={filtros.fechaDesde}
             onChange={e => cambiar('fechaDesde', e.target.value)}
+            error={errorDesde}
             className={estilos.campoFecha}
           />
           <Campo
             id="filtro-fecha-hasta"
             etiqueta="Hasta"
             tipo="date"
+            max={hoy}
             value={filtros.fechaHasta}
             onChange={e => cambiar('fechaHasta', e.target.value)}
             error={errorFechas}
