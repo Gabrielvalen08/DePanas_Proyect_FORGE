@@ -79,7 +79,7 @@ La primera pantalla pide usuario y contraseña:
 - **Cambia estas contraseñas** desde **Gestor de usuarios** (solo el administrador).
 - Tras **5 contraseñas incorrectas seguidas**, ese usuario debe esperar **5 minutos** antes de volver a intentar.
 - La sesión dura mientras la pestaña esté abierta (hasta 8 horas sin uso). **Cada pestaña nueva pide entrar.**
-- **Si vas a salir con datos sin guardar, el sistema avisa:** puedes elegir **«Registrar»** o **«Salir sin guardar»**.
+- **Si vas a salir con datos sin guardar, el sistema avisa:** puedes elegir **«Guardar compra»** (o lo que estés guardando) o **«Salir sin guardar»**.
 
 ### Versión de demostración
 

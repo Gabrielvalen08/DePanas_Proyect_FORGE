@@ -109,6 +109,26 @@ test.describe('Formulario de artículo en Agregar compra', () => {
     await page.keyboard.press('Escape')
     await proveedor.blur()
     await expect(page.getByText(NOMBRE_PARECIDO.aviso('Selecto', 'Selectos', 'proveedor'))).toBeVisible()
+
+    // Se elige el registrado y la compra queda con él
+    await page.getByRole('button', { name: NOMBRE_PARECIDO.usar('Selectos') }).click()
+    await expect(proveedor).toHaveValue('Selectos')
+    await expect(page.getByText(/se parece a/)).toHaveCount(0)
+  })
+
+  test('en el artículo nuevo, «Usar» deja la fila con el registrado', async ({ page }) => {
+    await entrar(page, CESAR)
+    await elegirProveedor(page)
+    const formulario = formularioCompra(page)
+    const fila = formulario.getByRole('combobox', { name: 'Artículo, fila 1' })
+    await fila.fill('Gatired')
+    await page.keyboard.press('Escape')
+    await formulario.getByRole('button', { name: COMPRA.agregarArticulo('Gatired') }).click()
+
+    const ventana = page.getByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await ventana.getByRole('button', { name: NOMBRE_PARECIDO.usar('Gatorade') }).click()
+    await expect(ventana).toBeHidden()
+    await expect(fila).toHaveValue('Gatorade')
   })
 
   test('sin producto: la primera compra pregunta y marca; la segunda ya no pide nada', async ({ page, request }, info) => {

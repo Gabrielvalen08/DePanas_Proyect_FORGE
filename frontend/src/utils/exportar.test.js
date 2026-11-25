@@ -78,11 +78,11 @@ describe('exportar', () => {
     expect(nombreArchivo('', '2026-08-31', 'json')).toBe('depanas_compras_inicio_2026-08-31.json')
   })
 
-  it('rangos rápidos en fecha local', () => {
+  it('rangos rápidos en fecha local, sin días futuros', () => {
     const hoy = new Date(2026, 9, 5)
-    expect(rangoRapido('mes', hoy)).toEqual({ desde: '2026-10-01', hasta: '2026-10-31' })
+    expect(rangoRapido('mes', hoy)).toEqual({ desde: '2026-10-01', hasta: '2026-10-05' })
     expect(rangoRapido('mesAnterior', hoy)).toEqual({ desde: '2026-09-01', hasta: '2026-09-30' })
-    expect(rangoRapido('ano', hoy)).toEqual({ desde: '2026-01-01', hasta: '2026-12-31' })
+    expect(rangoRapido('ano', hoy)).toEqual({ desde: '2026-01-01', hasta: '2026-10-05' })
     expect(rangoRapido('mesAnterior', new Date(2026, 0, 15))).toEqual({ desde: '2025-12-01', hasta: '2025-12-31' })
     expect(rangoRapido('todo', hoy)).toEqual({ desde: '', hasta: '' })
   })
@@ -94,7 +94,7 @@ describe('exportar: secciones del Catálogo', () => {
       { nombre: 'La Pulpería', ubicacion: 'Santa Tecla, La Libertad', telefonos: ['7123-4567', '2222-3333'], contactos: [{ nombre: 'Ana', telefono: '7000-1111' }, { nombre: 'Luis', telefono: '' }] },
     ]))
     expect(proveedores).toEqual([
-      ['Proveedor', 'Ubicación', 'Teléfonos', 'Contactos'],
+      ['Proveedor', 'Dirección', 'Teléfonos', 'Contactos'],
       ['La Pulpería', 'Santa Tecla, La Libertad', '7123-4567; 2222-3333', 'Ana (7000-1111); Luis'],
     ])
 

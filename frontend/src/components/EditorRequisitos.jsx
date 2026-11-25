@@ -3,7 +3,7 @@ import { Check, KeyRound } from 'lucide-react'
 import { Boton, Campo, ConfirmDialog, CuerpoModal, Modal, PieModal } from './common'
 import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { MAXIMO_LARGO, MINIMO_ABSOLUTO } from '../../../shared/usuarios.js'
-import { CONFIRMAR, USUARIOS } from '../utils/mensajes'
+import { AVISO_SALIDA, CONFIRMAR, USUARIOS } from '../utils/mensajes'
 import estilos from './EditorUsuario.module.css'
 
 const R = USUARIOS.requisitos
@@ -41,7 +41,9 @@ function Formulario({ requisitos, alGuardar, alCerrar, minimoRef, cierreRef }) {
   const cambiado = Number(minimo) !== requisitos.minimo || OPCIONES.some(o => opciones[o] !== requisitos[o])
   const formRef = useRef(null)
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
-  const avisoSalida = useDatosSinGuardar({ sucio: cambiado, registrar: registrarDesdeAviso, cierreRef })
+  const avisoSalida = useDatosSinGuardar({
+    sucio: cambiado, registrar: registrarDesdeAviso, cierreRef, etiqueta: AVISO_SALIDA.guardar.requisitos,
+  })
 
   function guardar(e) {
     e.preventDefault()

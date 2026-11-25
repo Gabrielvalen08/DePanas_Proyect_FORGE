@@ -40,6 +40,8 @@ import {
 } from './api'
 import { FUNCIONES, RUTAS_ASIGNABLES } from '../../../shared/usuarios.js'
 import { filasDelCatalogo } from '../../../shared/catalogo-json.js'
+import { FECHA_FUTURA } from '../../../shared/fechas.js'
+import { VALIDACION } from '../utils/mensajes'
 
 // El modo (servidor/local) se detecta una vez por carga: cada test empieza de cero
 beforeEach(() => reiniciarModo())
@@ -347,6 +349,14 @@ describe('api: listas de compra (modo local)', () => {
     expect(listas.map(l => l.id)).toContain(vieja.id)
     expect(listas.every(l => !('archivo' in l) && !('archivada' in l))).toBe(true)
     await expect(eliminarListas([])).rejects.toThrow('Elige al menos una compra')
+  })
+
+  it('como el backend, no guarda ni edita una compra con fecha posterior a hoy', async () => {
+    const compra = { proveedor: 'Pepsi', fecha: '2099-01-01', materiales: [{ material: 'Agua', cantidad: 1, unidad: 'caja', monto: 5 }] }
+    await expect(guardarLista(compra)).rejects.toMatchObject({ message: VALIDACION.fechaFutura, campo: 'fecha' })
+    await expect(actualizarLista(1, compra)).rejects.toThrow(VALIDACION.fechaFutura)
+    expect(VALIDACION.fechaFutura).toBe(FECHA_FUTURA)
+    expect(await fetchListas({ proveedor: 'pepsi' })).toHaveLength(0)
   })
 
   it('elimina varias compras de una vez', async () => {

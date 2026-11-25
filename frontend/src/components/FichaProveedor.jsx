@@ -15,7 +15,7 @@ export const fichaInicial = ficha => ({
 
 /**
  * FichaProveedor
- * Datos del proveedor dentro de su ventana del Catálogo: ubicación, uno o varios
+ * Datos del proveedor dentro de su ventana del Catálogo: dirección, uno o varios
  * teléfonos y contactos (cada uno con nombre y, si se quiere, su teléfono).
  * Las filas que se dejan vacías se ignoran al guardar (shared/proveedores.js).
  *

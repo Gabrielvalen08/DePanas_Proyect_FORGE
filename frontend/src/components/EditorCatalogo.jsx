@@ -2,13 +2,14 @@ import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { Check, Pencil, Plus, Search, X } from 'lucide-react'
 import { AvisoDestacado, Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
 import { SelectorOpciones } from './AsignarMaterial'
+import ConfirmarCambios from './ConfirmarCambios'
 import FichaProveedor, { fichaInicial } from './FichaProveedor'
 import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { getCategorias, getProductos, ordenarMaterialesPorCategoria as ordenarPorCategoria } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
 import { listaProductos, sinProducto, tieneProducto } from '../../../shared/productos.js'
 import { normalizarFicha } from '../../../shared/proveedores.js'
-import { CONFIRMAR, NOMBRE_PARECIDO, PANTALLA_CATALOGO } from '../utils/mensajes'
+import { AVISO_SALIDA, CONFIRMAR, NOMBRE_PARECIDO, PANTALLA_CATALOGO } from '../utils/mensajes'
 import { nombreParecido } from '../utils/parecidos'
 import estilos from './EditorCatalogo.module.css'
 
@@ -84,7 +85,9 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
     [...proveedores].sort().join('\n') !== inicial.proveedores
   const formRef = useRef(null)
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
-  const avisoSalida = useDatosSinGuardar({ sucio: cambiado, registrar: registrarDesdeAviso, cierreRef })
+  const avisoSalida = useDatosSinGuardar({
+    sucio: cambiado, registrar: registrarDesdeAviso, cierreRef, etiqueta: AVISO_SALIDA.guardar.catalogo(tipo),
+  })
 
   // Solo una sugerencia: los nombres ya registrados de este tipo, sin contar el que se edita
   const yaRegistrados = esMaterial ? todos.map(m => m.nombre) : esProveedor ? todosProveedores : esCategoria ? getCategorias() : getProductos()
@@ -159,7 +162,6 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
                 if (errores.nombre) setErrores(prev => ({ ...prev, nombre: undefined }))
               }}
               error={errores.nombre}
-              ayuda={registro ? PANTALLA_CATALOGO.ayudaRenombrar(edicion.uso ?? 0) : undefined}
             />
             <AvisoDestacado
               id="editor-catalogo-parecido"
@@ -245,16 +247,15 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
       </form>
 
       {/* Fuera del <form>: los eventos del portal no deben llegar a su onSubmit */}
-      <ConfirmDialog
+      <ConfirmarCambios
         isOpen={confirmando === 'guardar'}
         onClose={() => {
           setConfirmando(null)
           avisoSalida.cerrar()
         }}
         onConfirm={guardarConfirmado}
-        title={CONFIRMAR.guardarCambios.titulo}
-        message={CONFIRMAR.guardarCambios.mensaje}
-        confirmLabel={CONFIRMAR.guardarCambios.confirmar}
+        anterior={registro?.nombre}
+        nombre={nombre}
       />
       <ConfirmDialog
         isOpen={confirmando === 'descartar'}
