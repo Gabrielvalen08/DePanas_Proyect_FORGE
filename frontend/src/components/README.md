@@ -13,7 +13,7 @@ Componentes de la app. Las piezas genéricas y reutilizables están en [`common/
 | `SeleccionCatalogo` | Ventana del ⋮ de cada sección del Catálogo para elegir qué ítems se exportan o se cargan (todo elegido al abrir, buscador, «Elegir todos»/«Quitar todos» sobre lo visible, un dato por tipo y «Nuevo»/«Ya existe» al cargar). Su botón confirma con `ConfirmDialog` |
 | `ResumenCompra`     | Pie de `BloqueCompra`: subtotal, casilla de IVA con su costo y total |
 | `FichaProveedor`    | Ubicación, teléfonos y contactos del proveedor dentro de su ventana del Catálogo (`EditorCatalogo`); las filas vacías se ignoran al guardar |
-| `AvisoSalida`       | Ventana «Salir sin guardar» / «Registrar» (o «Seguir aquí»). La dibuja `DatosSinGuardarProvider`; no se usa directo |
+| `AvisoSalida`       | Ventana «Salir sin guardar» / «Guardar …» con lo que se guarda (o «Seguir aquí»). La dibuja `DatosSinGuardarProvider`; no se usa directo |
 | `DetalleLista`      | Modal con los materiales de una compra; permite editarla y eliminarla (con `ConfirmDialog`) |
 | `AsignarMaterial`   | Ventana del artículo: nombre, categoría (obligatoria) y productos (opcionales). `material.modo`: `nuevo`, `editar` (todo lleno y editable) o `completar` (sin `catalogo.editar`: solo lo que falta). Las opciones son botones (`aria-pressed`), un buscador las filtra y lo que no existe se puede agregar; avisa si un nombre se parece a otro. Props: `material` (`null` = cerrada), `proveedor`, `alGuardar`, `alOmitir` («Ahora no»), `alCerrar` (Cancelar, X, Esc) |
 | `FiltrosEnLinea`    | Panel de filtros que se despliega junto al botón "Filtrar" (sin ventana); filtra en vivo |

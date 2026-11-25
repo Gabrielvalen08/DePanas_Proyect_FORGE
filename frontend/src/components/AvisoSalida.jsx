@@ -9,10 +9,11 @@ import { AVISO_SALIDA } from '../utils/mensajes'
  * La X y Esc solo cierran el aviso: se sigue editando. Al abrir, el foco va a la opción
  * que no pierde nada.
  *
- * Props: abierto, conRegistrar (sin ella, «Seguir aquí» en vez de «Registrar»: en Exportar
- * no hay nada que registrar), alSalir, alRegistrar, alSeguir
+ * Props: abierto, conRegistrar (sin ella, «Seguir aquí» en vez de guardar: en Exportar
+ * no hay nada que guardar), etiquetaRegistrar (qué dice el botón que guarda, p. ej.
+ * «Guardar compra»; sin ella, «Guardar»), alSalir, alRegistrar, alSeguir
  */
-export default function AvisoSalida({ abierto, conRegistrar, alSalir, alRegistrar, alSeguir }) {
+export default function AvisoSalida({ abierto, conRegistrar, etiquetaRegistrar, alSalir, alRegistrar, alSeguir }) {
   const seguroRef = useRef(null)
 
   return (
@@ -31,7 +32,7 @@ export default function AvisoSalida({ abierto, conRegistrar, alSalir, alRegistra
       <PieModal>
         <Boton variante="fantasma" onClick={alSalir}>{AVISO_SALIDA.salir}</Boton>
         <Boton ref={seguroRef} variante="primario" onClick={conRegistrar ? alRegistrar : alSeguir}>
-          {conRegistrar ? AVISO_SALIDA.registrar : AVISO_SALIDA.seguir}
+          {conRegistrar ? etiquetaRegistrar || AVISO_SALIDA.registrar : AVISO_SALIDA.seguir}
         </Boton>
       </PieModal>
     </Modal>

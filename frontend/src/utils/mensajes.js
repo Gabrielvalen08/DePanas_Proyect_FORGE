@@ -240,10 +240,20 @@ export const ASIGNACION = {
 // ---------------------------------------------------------------------------
 export const AVISO_SALIDA = {
   titulo: '¿Salimos sin guardar?',
-  mensaje: 'Tienes datos sin registrar. Si sales ahora, se pierden.',
+  mensaje: 'Tienes datos sin guardar. Si sales ahora, se pierden.',
   mensajeSinRegistrar: 'Elegiste un rango y todavía no lo has descargado. Si sales ahora, se pierde.',
   salir: 'Salir sin guardar',
-  registrar: 'Registrar',
+  // El botón que guarda dice qué se guarda (etiqueta de useDatosSinGuardar); este es el de respaldo
+  registrar: 'Guardar',
+  guardar: {
+    compra: 'Guardar compra',
+    cambios: 'Guardar cambios',
+    articulo: 'Guardar artículo',
+    catalogo: tipo => `Guardar ${SECCIONES[tipo].singular}`,
+    usuario: 'Guardar usuario',
+    requisitos: 'Guardar requisitos',
+    carga: 'Cargar compras',
+  },
   seguir: 'Seguir aquí',
 }
 

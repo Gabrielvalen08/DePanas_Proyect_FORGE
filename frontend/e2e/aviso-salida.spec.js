@@ -80,19 +80,19 @@ test.describe('Aviso antes de perder datos sin guardar', () => {
     await expect(formulario(page).getByRole('combobox', { name: 'Proveedor' })).toHaveValue('Selectos')
   })
 
-  test('«Registrar» con errores se queda en el formulario marcándolos', async ({ page }) => {
+  test('«Guardar compra» con errores se queda en el formulario marcándolos', async ({ page }) => {
     await escribirProveedor(page, 'Selectos')
     await irALista(page)
-    await aviso(page).getByRole('button', { name: AVISO_SALIDA.registrar }).click()
+    await aviso(page).getByRole('button', { name: AVISO_SALIDA.guardar.compra, exact: true }).click()
     await expect(formulario(page).getByText(VALIDACION.material).first()).toBeVisible()
     await expect(page.getByRole('alertdialog')).toHaveCount(0)
     await expect(tituloAgregar(page)).toBeVisible()
   })
 
-  test('«Registrar» que no se confirma se queda; si se confirma, guarda y sigue. Editar también avisa', async ({ page }) => {
+  test('«Guardar compra» que no se confirma se queda; si se confirma, guarda y sigue. Editar también avisa', async ({ page }) => {
     await llenarCompra(page, 'Desechables Diver.')
     await irALista(page)
-    await aviso(page).getByRole('button', { name: AVISO_SALIDA.registrar }).click()
+    await aviso(page).getByRole('button', { name: AVISO_SALIDA.guardar.compra, exact: true }).click()
 
     // Primero dice que no en «¿Guardamos…?»
     const guardar = page.getByRole('alertdialog', { name: COMPRA.confirmarGuardar.titulo })
@@ -102,7 +102,7 @@ test.describe('Aviso antes de perder datos sin guardar', () => {
 
     // Ahora sí: guarda y sigue a donde iba, y después de guardar no vuelve a avisar
     await irALista(page)
-    await aviso(page).getByRole('button', { name: AVISO_SALIDA.registrar }).click()
+    await aviso(page).getByRole('button', { name: AVISO_SALIDA.guardar.compra, exact: true }).click()
     await confirmar(page, COMPRA.confirmarGuardar.confirmar)
     await expect(tituloLista(page)).toBeVisible()
     await expect(aviso(page)).toHaveCount(0)
@@ -116,7 +116,7 @@ test.describe('Aviso antes de perder datos sin guardar', () => {
     await expect(aviso(page)).toHaveCount(0)
     await expect(edicion).toBeHidden()
 
-    // Con un cambio: la X y Esc avisan, y «Registrar» lo guarda
+    // Con un cambio: la X y Esc avisan, y «Guardar cambios» lo guarda
     await abrir()
     await page.getByRole('dialog').getByRole('button', { name: 'Editar' }).click()
     await edicion.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('3')
@@ -127,7 +127,7 @@ test.describe('Aviso antes de perder datos sin guardar', () => {
     await expect(edicion).toBeVisible()
 
     await page.keyboard.press('Escape')
-    await aviso(page).getByRole('button', { name: AVISO_SALIDA.registrar }).click()
+    await aviso(page).getByRole('button', { name: AVISO_SALIDA.guardar.cambios, exact: true }).click()
     await confirmar(page, COMPRA.confirmarGuardar.confirmar)
     await expect(page.getByText(COMPRA.actualizada)).toBeVisible()
     await expect(edicion).toBeHidden()
@@ -170,6 +170,8 @@ test.describe('Aviso antes de perder datos sin guardar', () => {
     await ventana.getByLabel(A.nombre, { exact: true }).fill('Aviso proveedor e2e')
     await ventana.getByRole('button', { name: 'Cerrar' }).click()
     await expect(aviso(page)).toBeVisible()
+    // El botón dice qué se guarda
+    await expect(aviso(page).getByRole('button', { name: AVISO_SALIDA.guardar.catalogo('proveedor'), exact: true })).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(aviso(page)).toHaveCount(0)
     await expect(ventana.getByLabel(A.nombre, { exact: true })).toHaveValue('Aviso proveedor e2e')
@@ -216,7 +218,7 @@ test.describe('Aviso antes de perder datos sin guardar', () => {
     await page.getByRole('button', { name: EXPORTAR.rangos.ano }).click()
     await page.getByRole('button', { name: 'Regresar' }).click()
     await expect(aviso(page)).toBeVisible()
-    await expect(aviso(page).getByRole('button', { name: AVISO_SALIDA.registrar })).toHaveCount(0)
+    await expect(aviso(page).getByRole('button', { name: AVISO_SALIDA.registrar, exact: true })).toHaveCount(0)
     await aviso(page).getByRole('button', { name: AVISO_SALIDA.seguir }).click()
     await expect(page.getByRole('heading', { name: 'Exportar datos', level: 1 })).toBeVisible()
 

@@ -28,7 +28,8 @@ const aviso = useDatosSinGuardar({ sucio, registrar: () => formRef.current?.requ
 const pedirSalida = usePedirSalida() // Cerrar sesión y Apagar: pedirSalida(() => abrirSuConfirmacion())
 ```
 
-- Sin `registrar`, el aviso ofrece «Seguir aquí» en vez de «Registrar» (Exportar).
+- Sin `registrar`, el aviso ofrece «Seguir aquí» en vez de guardar (Exportar).
+- `etiqueta`: qué dice el botón que guarda («Guardar compra», «Guardar proveedor»…; textos en `AVISO_SALIDA.guardar`). Sin ella, «Guardar».
 - Sin provider, los hooks no hacen nada: una pantalla se puede probar sola.
 - `terminar(true)` y `descartar()` sueltan el formulario hasta que cambie `sucio`, porque `AnimatePresence` lo deja montado durante su salida. Si sigue abierto tras guardar, su `sucio` debe pasar a falso.
 
