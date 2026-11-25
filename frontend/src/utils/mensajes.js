@@ -348,8 +348,6 @@ export const PANTALLA_CATALOGO = {
   nombre: 'Nombre',
   // En Categorías la columna y el campo del nombre se llaman «Categoría»
   etiquetaNombre: tipo => (tipo === 'categoria' ? 'Categoría' : 'Nombre'),
-  ayudaRenombrar: n =>
-    n > 0 ? `Si cambias el nombre, también se cambia en ${n} ${plural(n, 'compra', 'compras')}.` : undefined,
   faltaNombre: 'Escribe el nombre',
   guardar: 'Guardar',
   cancelar: 'Cancelar',
@@ -410,7 +408,7 @@ export const PANTALLA_CATALOGO = {
       boton: (accion, n) => (accion === 'cargar' ? `Cargar ${n}` : `Descargar ${n}`),
       cancelar: 'Cancelar',
       articulos: n => `${n} ${articulos(n)}`,
-      sinUbicacion: 'Sin ubicación',
+      sinUbicacion: 'Sin dirección',
       sinCategoria: 'Sin categoría',
     },
     cargado: (tipo, r) => {
@@ -422,13 +420,13 @@ export const PANTALLA_CATALOGO = {
   },
   // Ficha del proveedor (su ventana al agregarlo o editarlo, y columnas de la tabla)
   ficha: {
-    ubicacion: 'Ubicación',
+    ubicacion: 'Dirección',
     telefonos: 'Teléfonos',
     telefono: n => `Teléfono ${n}`,
     agregarTelefono: 'Agregar teléfono',
     quitarTelefono: n => `Quitar teléfono ${n}`,
     contactos: 'Contactos',
-    sinContactos: 'Todavía no hay contactos.',
+    sinContactos: 'Aún no hay contactos.',
     nombre: 'Nombre',
     telefonoOpcional: 'Teléfono (opcional)',
     contactoNombre: n => `Nombre del contacto ${n}`,

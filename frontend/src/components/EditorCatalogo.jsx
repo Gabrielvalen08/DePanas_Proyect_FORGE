@@ -162,7 +162,6 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
                 if (errores.nombre) setErrores(prev => ({ ...prev, nombre: undefined }))
               }}
               error={errores.nombre}
-              ayuda={registro ? PANTALLA_CATALOGO.ayudaRenombrar(edicion.uso ?? 0) : undefined}
             />
             <AvisoDestacado
               id="editor-catalogo-parecido"
