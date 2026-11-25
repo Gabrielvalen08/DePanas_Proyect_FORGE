@@ -695,6 +695,9 @@ export const CONFIRMAR = {
     titulo: '¿Guardamos los cambios?',
     mensaje: 'Se aplicarán de inmediato.',
     confirmar: 'Sí, guardar',
+    // Al cambiar el nombre de un proveedor, categoría, artículo o producto (ConfirmarCambios)
+    renombre: (anterior, nombre) =>
+      `«${anterior}» pasará a llamarse «${nombre}». Los cambios se aplicarán automáticamente en todas las compras registradas.`,
   },
   descartar: {
     titulo: '¿Descartamos los cambios?',
