@@ -344,11 +344,9 @@ export const PANTALLA_CATALOGO = {
   sinAsignar: 'Sin asignar',
   columnaMateriales: 'Artículos',
   columnaProductos: 'Productos',
-  // Proveedores que surten una categoría: filtran los artículos en Agregar compra
+  // Proveedores que surten una categoría
   columnaProveedores: 'Proveedores',
   etiquetaProveedores: 'Proveedores que la surten',
-  ayudaProveedores:
-    'Al elegir uno de estos proveedores en una compra, solo salen los artículos de esta categoría. Un proveedor sin categorías no sugiere artículos: se escriben a mano.',
   sinProveedores: 'Ninguno',
   // Exportar y Cargar de cada sección (menú ⋮ de su lista)
   archivo: {
@@ -430,10 +428,6 @@ export const PANTALLA_CATALOGO = {
   // Ventana de edición de una categoría o un producto: qué artículos lleva
   materiales: {
     titulo: tipo => (tipo === 'categoria' ? 'Artículos de esta categoría' : 'Artículos que lleva este producto'),
-    nota: tipo =>
-      tipo === 'categoria'
-        ? 'Cada artículo va en una sola categoría: si eliges uno que está en otra, se cambia a esta. El que quites queda sin categoría.'
-        : 'Un artículo puede ir en varios productos: el que elijas suma este a los que ya tenía, y el que quites deja de ir en este.',
     buscar: 'Buscar artículo',
     elegidos: n => `${n} ${plural(n, 'elegido', 'elegidos')}`,
     ahoraEn: (tipo, nombre) => (nombre ? `Ahora en «${nombre}»` : tipo === 'categoria' ? 'Sin categoría' : 'Sin producto'),

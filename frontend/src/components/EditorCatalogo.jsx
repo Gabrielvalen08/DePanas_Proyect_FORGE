@@ -232,7 +232,6 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
               multiple
               opciones={todosProveedores}
               valor={proveedores}
-              ayuda={PANTALLA_CATALOGO.ayudaProveedores}
               onCambiar={cambiarProveedores}
               error={errores.proveedores}
             />
@@ -313,13 +312,11 @@ function SelectorMateriales({ tipo, nombreActual, todos, elegidos, onCambiar }) 
   }
 
   return (
-    <fieldset className={estilos.materiales} aria-describedby={`${id}-nota`}>
+    <fieldset className={estilos.materiales}>
       <legend className={estilos.leyenda}>
         {textos.titulo(tipo)}
         <Insignia tono="neutro">{textos.elegidos(elegidos.size)}</Insignia>
       </legend>
-      <p id={`${id}-nota`} className={estilos.nota}>{textos.nota(tipo)}</p>
-
       {todos.length === 0 ? (
         <p className={estilos.vacio}>{textos.ninguno}</p>
       ) : (
