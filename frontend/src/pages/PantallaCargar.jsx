@@ -9,7 +9,7 @@ import { leerComprasJSON, analizarCompras, importarCompras, totalLista } from '.
 import { useToast } from '../context/ToastContext'
 import { useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { formatearFecha, formatearPrecio } from '../utils/formato'
-import { CARGAR, CONFIRMAR } from '../utils/mensajes'
+import { AVISO_SALIDA, CARGAR, CONFIRMAR } from '../utils/mensajes'
 import estilos from './PantallaCargar.module.css'
 
 // Cada estado del análisis con su tono de insignia
@@ -43,6 +43,7 @@ export default function PantallaCargar({ puedeVerLista = true }) {
   const registro = useDatosSinGuardar({
     sucio: compras?.length > 0,
     registrar: puedeRegistrar ? registrarDesdeAviso : undefined,
+    etiqueta: AVISO_SALIDA.guardar.carga,
   })
 
   async function abrir(archivo) {

@@ -234,17 +234,21 @@ describe('PantallaCatalogo', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   })
 
-  it('renombra un proveedor: avisa en cuántas compras se cambió', async () => {
+  it('renombra un proveedor: el campo no lleva aviso y el toast dice en cuántas compras se cambió', async () => {
     const usuario = userEvent.setup()
     renderizar('/catalogo/proveedores')
     await usuario.click(await screen.findByRole('button', { name: 'Editar proveedor Súper Selectos' }))
     const ventana = screen.getByRole('dialog', { name: 'Editar proveedor' })
     const nombre = within(ventana).getByLabelText('Nombre')
-    expect(nombre).toHaveAccessibleDescription('Si cambias el nombre, también se cambia en 2 compras.')
+    expect(nombre).not.toHaveAccessibleDescription()
+    expect(within(ventana).queryByText(/Si cambias el nombre/)).not.toBeInTheDocument()
     await usuario.clear(nombre)
     await usuario.type(nombre, 'Selectos Centro')
     await usuario.click(within(ventana).getByRole('button', { name: 'Guardar' }))
-    await usuario.click(await screen.findByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
+    // La confirmación avisa que el nombre nuevo llega a todas las compras registradas
+    const confirmacion = await screen.findByRole('alertdialog', { name: CONFIRMAR.guardarCambios.titulo })
+    expect(within(confirmacion).getByText(CONFIRMAR.guardarCambios.renombre('Súper Selectos', 'Selectos Centro'))).toBeInTheDocument()
+    await usuario.click(within(confirmacion).getByRole('button', { name: CONFIRMAR.guardarCambios.confirmar }))
 
     expect(await screen.findByText('¡Chévere! «Súper Selectos» ahora se llama «Selectos Centro» y se actualizó en 2 compras.')).toBeInTheDocument()
   })

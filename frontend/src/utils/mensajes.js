@@ -143,6 +143,8 @@ export const VALIDACION = {
   unidad: 'Elige la unidad',
   precio: 'Debe ser mayor a 0',
   rangoFechas: 'La fecha final debe ser igual o posterior a la inicial',
+  // Solo compras ya hechas: el mismo texto que da el backend (shared/fechas.js)
+  fechaFutura: 'La fecha no puede ser posterior a hoy',
 }
 
 // ---------------------------------------------------------------------------
@@ -164,6 +166,9 @@ export const NOMBRE_PARECIDO = {
     return `«${escrito.trim()}» se parece a «${parecido}», que ya está ${femenino ? 'registrada' : 'registrado'}. ` +
       `Revisa si es ${femenino ? 'la misma' : 'el mismo'}.`
   },
+  // Las dos salidas del aviso (AvisoParecido)
+  usar: nombre => `Usar «${nombre}»`,
+  mantener: nombre => `Mantener «${nombre}»`,
 }
 
 /** Dónde va un artículo: «Limpieza · Cachitos», o solo la categoría si no lleva productos */
@@ -235,10 +240,20 @@ export const ASIGNACION = {
 // ---------------------------------------------------------------------------
 export const AVISO_SALIDA = {
   titulo: '¿Salimos sin guardar?',
-  mensaje: 'Tienes datos sin registrar. Si sales ahora, se pierden.',
+  mensaje: 'Tienes datos sin guardar. Si sales ahora, se pierden.',
   mensajeSinRegistrar: 'Elegiste un rango y todavía no lo has descargado. Si sales ahora, se pierde.',
   salir: 'Salir sin guardar',
-  registrar: 'Registrar',
+  // El botón que guarda dice qué se guarda (etiqueta de useDatosSinGuardar); este es el de respaldo
+  registrar: 'Guardar',
+  guardar: {
+    compra: 'Guardar compra',
+    cambios: 'Guardar cambios',
+    articulo: 'Guardar artículo',
+    catalogo: tipo => `Guardar ${SECCIONES[tipo].singular}`,
+    usuario: 'Guardar usuario',
+    requisitos: 'Guardar requisitos',
+    carga: 'Cargar compras',
+  },
   seguir: 'Seguir aquí',
 }
 
@@ -333,8 +348,6 @@ export const PANTALLA_CATALOGO = {
   nombre: 'Nombre',
   // En Categorías la columna y el campo del nombre se llaman «Categoría»
   etiquetaNombre: tipo => (tipo === 'categoria' ? 'Categoría' : 'Nombre'),
-  ayudaRenombrar: n =>
-    n > 0 ? `Si cambias el nombre, también se cambia en ${n} ${plural(n, 'compra', 'compras')}.` : undefined,
   faltaNombre: 'Escribe el nombre',
   guardar: 'Guardar',
   cancelar: 'Cancelar',
@@ -395,7 +408,7 @@ export const PANTALLA_CATALOGO = {
       boton: (accion, n) => (accion === 'cargar' ? `Cargar ${n}` : `Descargar ${n}`),
       cancelar: 'Cancelar',
       articulos: n => `${n} ${articulos(n)}`,
-      sinUbicacion: 'Sin ubicación',
+      sinUbicacion: 'Sin dirección',
       sinCategoria: 'Sin categoría',
     },
     cargado: (tipo, r) => {
@@ -407,13 +420,13 @@ export const PANTALLA_CATALOGO = {
   },
   // Ficha del proveedor (su ventana al agregarlo o editarlo, y columnas de la tabla)
   ficha: {
-    ubicacion: 'Ubicación',
+    ubicacion: 'Dirección',
     telefonos: 'Teléfonos',
     telefono: n => `Teléfono ${n}`,
     agregarTelefono: 'Agregar teléfono',
     quitarTelefono: n => `Quitar teléfono ${n}`,
     contactos: 'Contactos',
-    sinContactos: 'Todavía no hay contactos.',
+    sinContactos: 'Aún no hay contactos.',
     nombre: 'Nombre',
     telefonoOpcional: 'Teléfono (opcional)',
     contactoNombre: n => `Nombre del contacto ${n}`,
@@ -695,6 +708,9 @@ export const CONFIRMAR = {
     titulo: '¿Guardamos los cambios?',
     mensaje: 'Se aplicarán de inmediato.',
     confirmar: 'Sí, guardar',
+    // Al cambiar el nombre de un proveedor, categoría, artículo o producto (ConfirmarCambios)
+    renombre: (anterior, nombre) =>
+      `«${anterior}» pasará a llamarse «${nombre}». Los cambios se aplicarán automáticamente en todas las compras registradas.`,
   },
   descartar: {
     titulo: '¿Descartamos los cambios?',

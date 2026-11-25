@@ -1,10 +1,11 @@
 import { useCallback, useId, useRef, useState } from 'react'
 import { Check, Pencil, Plus, Tags } from 'lucide-react'
 import { AvisoDestacado, Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
+import AvisoParecido from './AvisoParecido'
 import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { getAsignacion, getCategorias, getCategoriasDeProveedor, getComprasDeMaterial, getMateriales, getProductos } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
-import { ASIGNACION, CONFIRMAR, NOMBRE_PARECIDO } from '../utils/mensajes'
+import { ASIGNACION, AVISO_SALIDA, CONFIRMAR } from '../utils/mensajes'
 import { nombreParecido } from '../utils/parecidos'
 import estilos from './AsignarMaterial.module.css'
 
@@ -32,8 +33,10 @@ const mismoNombre = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim(
  *  - alGuardar({ nombre, categoria, productos }): async; si lanza, la ventana sigue abierta
  *  - alOmitir(): «Ahora no» (o Guardar sin nada nuevo); la compra sigue su curso sin estos datos
  *  - alCerrar(): Cancelar, la X, Esc o el clic fuera
+ *  - alUsarExistente(nombre): en el aviso de nombre parecido se eligió el artículo ya registrado;
+ *    la compra lo usa y no se crea ni cambia nada (opcional: sin él el aviso no ofrece elegir)
  */
-export default function AsignarMaterial({ material, proveedor, alGuardar, alOmitir, alCerrar }) {
+export default function AsignarMaterial({ material, proveedor, alGuardar, alOmitir, alCerrar, alUsarExistente }) {
   const nombreRef = useRef(null)
   const primerBuscadorRef = useRef(null)
   const { intentarCerrar, cierreRef } = useCierreConAviso(alCerrar)
@@ -56,6 +59,7 @@ export default function AsignarMaterial({ material, proveedor, alGuardar, alOmit
           proveedor={proveedor}
           alGuardar={alGuardar}
           alSalir={material.pedido ? alOmitir : alCerrar}
+          alUsarExistente={alUsarExistente}
           nombreRef={nombreRef}
           primerBuscadorRef={primerBuscadorRef}
           cierreRef={cierreRef}
@@ -65,7 +69,7 @@ export default function AsignarMaterial({ material, proveedor, alGuardar, alOmit
   )
 }
 
-function Formulario({ material, proveedor, alGuardar, alSalir, nombreRef, primerBuscadorRef, cierreRef }) {
+function Formulario({ material, proveedor, alGuardar, alSalir, alUsarExistente, nombreRef, primerBuscadorRef, cierreRef }) {
   const completando = material.modo === 'completar'
   // Al completar, lo que ya tiene se muestra y no se cambia (eso es editar el catálogo)
   const pideCategoria = !completando || !material.categoria
@@ -87,7 +91,9 @@ function Formulario({ material, proveedor, alGuardar, alSalir, nombreRef, primer
     productos.join('\n') !== (material.productos ?? []).join('\n')
   const formRef = useRef(null)
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
-  const avisoSalida = useDatosSinGuardar({ sucio: cambiado, registrar: registrarDesdeAviso, cierreRef })
+  const avisoSalida = useDatosSinGuardar({
+    sucio: cambiado, registrar: registrarDesdeAviso, cierreRef, etiqueta: AVISO_SALIDA.guardar.articulo,
+  })
 
   // Sin cambios no hay nada que descartar: se cierra sin preguntar
   function pedirCancelar() {
@@ -180,9 +186,15 @@ function Formulario({ material, proveedor, alGuardar, alSalir, nombreRef, primer
                   }}
                   error={errores.nombre}
                 />
-                <AvisoDestacado
+                <AvisoParecido
                   id="asignar-material-parecido"
-                  texto={parecido && NOMBRE_PARECIDO.aviso(nombre, parecido, 'material')}
+                  escrito={nombre}
+                  parecido={parecido}
+                  tipo="material"
+                  alUsar={alUsarExistente && (existente => {
+                    avisoSalida.descartar()
+                    alUsarExistente(existente)
+                  })}
                 />
               </div>
             </fieldset>
@@ -298,6 +310,22 @@ export function SelectorOpciones({
     buscadorRef.current?.focus()
   }
 
+  /** «Usar» en el aviso: se elige la opción registrada en vez de lo escrito (o de lo último agregado como nuevo) */
+  function usarParecida(existente) {
+    if (puedeAgregar) {
+      if (!estaElegida(existente)) alternar(existente)
+      setBusqueda('')
+    } else {
+      const ultima = textoBusqueda(nuevas[nuevas.length - 1] ?? '')
+      if (!multiple) onCambiar(existente)
+      else {
+        const sinNueva = elegidas.filter(e => textoBusqueda(e) !== ultima)
+        onCambiar(sinNueva.some(e => textoBusqueda(e) === textoBusqueda(existente)) ? sinNueva : [...sinNueva, existente])
+      }
+    }
+    buscadorRef.current?.focus()
+  }
+
   function alTeclear(e) {
     if (e.key !== 'Enter') return
     e.preventDefault()
@@ -331,9 +359,13 @@ export function SelectorOpciones({
           onChange={e => setBusqueda(e.target.value)}
           onKeyDown={alTeclear}
         />
-        <AvisoDestacado
+        <AvisoParecido
           id={`${id}-parecido`}
-          texto={parecida && NOMBRE_PARECIDO.aviso(porRevisar, parecida, nombre === 'categoría' ? 'categoria' : 'producto')}
+          escrito={porRevisar}
+          parecido={parecida}
+          tipo={nombre === 'categoría' ? 'categoria' : nombre === 'proveedor' ? 'proveedor' : 'producto'}
+          alUsar={usarParecida}
+          alMantener={() => { if (puedeAgregar) agregar() }}
         />
       </div>
 

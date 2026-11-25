@@ -6,12 +6,13 @@ import { DatosSinGuardarProvider, useCierreConAviso, useDatosSinGuardar, usePedi
 import { AVISO_SALIDA } from '../utils/mensajes'
 
 /** Un formulario de mentira: escribir lo ensucia; registrar valida, pide confirmar y guarda */
-function Formulario({ nombre, resultadoRef, sinRegistrar = false }) {
+function Formulario({ nombre, resultadoRef, sinRegistrar = false, etiqueta }) {
   const [texto, setTexto] = useState('')
   const [confirmando, setConfirmando] = useState(false)
   const registro = useDatosSinGuardar({
     sucio: Boolean(texto),
     registrar: sinRegistrar ? undefined : () => setConfirmando(true),
+    etiqueta,
   })
   return (
     <div>
@@ -39,7 +40,7 @@ function Dondeestoy() {
   return <p data-testid="ruta">{useLocation().pathname}</p>
 }
 
-function Pagina({ resultadoRef, sinRegistrar, dos = false }) {
+function Pagina({ resultadoRef, sinRegistrar, dos = false, etiqueta }) {
   const pedirSalida = usePedirSalida()
   const [salio, setSalio] = useState(false)
   return (
@@ -48,7 +49,7 @@ function Pagina({ resultadoRef, sinRegistrar, dos = false }) {
       <Link to="/otra">Ir a otra</Link>
       <button onClick={() => pedirSalida(() => setSalio(true))}>Cerrar sesión</button>
       {salio && <p>Pidió confirmar la salida</p>}
-      <Formulario nombre="Uno" resultadoRef={resultadoRef} sinRegistrar={sinRegistrar} />
+      <Formulario nombre="Uno" resultadoRef={resultadoRef} sinRegistrar={sinRegistrar} etiqueta={etiqueta} />
       {dos && <Formulario nombre="Dos" resultadoRef={resultadoRef} />}
     </>
   )
@@ -104,6 +105,14 @@ describe('DatosSinGuardarContext', () => {
     await usuario.clear(screen.getByLabelText('Uno'))
     await usuario.click(screen.getByRole('link', { name: 'Ir a otra' }))
     await waitFor(() => expect(ruta()).toBe('/otra'))
+  })
+
+  it('el botón que guarda dice qué se guarda («Guardar compra»); sin etiqueta, «Guardar»', async () => {
+    const usuario = montar({ etiqueta: AVISO_SALIDA.guardar.compra })
+    await usuario.type(screen.getByLabelText('Uno'), 'x')
+    await usuario.click(screen.getByRole('link', { name: 'Ir a otra' }))
+    expect(await screen.findByRole('button', { name: AVISO_SALIDA.guardar.compra })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Registrar' })).not.toBeInTheDocument()
   })
 
   it('«Registrar» que guarda bien sigue a donde iba', async () => {

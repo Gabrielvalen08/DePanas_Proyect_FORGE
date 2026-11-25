@@ -3,14 +3,15 @@ import { AnimatePresence, motion } from 'motion/react'
 import { AlertCircle, Pencil, Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import AsignarMaterial from './AsignarMaterial'
-import { AvisoDestacado, Boton, Campo, CampoMoneda, ConfirmDialog, Selector } from './common'
+import { Boton, Campo, CampoMoneda, ConfirmDialog, Selector } from './common'
+import AvisoParecido from './AvisoParecido'
 import ResumenCompra from './ResumenCompra'
 import { asignarMaterial, editarEnCatalogo, getAsignacion, getIvaPorProveedor, getMaterialesPorProveedor, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
 import { aCentavos, calcularIva, ivaDe } from '../../../shared/iva.js'
 import { useToast } from '../context/ToastContext'
 import { useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
-import { ASIGNACION, COMPRA, NOMBRE_PARECIDO, VALIDACION } from '../utils/mensajes'
+import { ASIGNACION, COMPRA, VALIDACION } from '../utils/mensajes'
 import { nombreParecido } from '../utils/parecidos'
 import { fechaHoyISO, formatearPrecio, textoBusqueda } from '../utils/formato'
 import { springSuave } from '../styles/movimiento'
@@ -108,6 +109,7 @@ const filaCompleta = fila => Object.keys(validarFila(fila)).length === 0
 function validarEncabezado(campo, valor) {
   if (campo === 'proveedor' && !valor.trim()) return VALIDACION.proveedor
   if (campo === 'fecha' && !valor) return VALIDACION.fecha
+  if (campo === 'fecha' && valor > fechaHoyISO()) return VALIDACION.fechaFutura
   return undefined
 }
 
@@ -196,7 +198,7 @@ export default function BloqueCompra({
   const hayDatos = Boolean(proveedor.trim()) || filas.some(f => !estaVacia(f))
   const sucio = inicial ? firmaCompra(proveedor, fecha, filas, conIva) !== firmaInicial : hayDatos
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
-  const registro = useDatosSinGuardar({ sucio, registrar: registrarDesdeAviso, cierreRef })
+  const registro = useDatosSinGuardar({ sucio, registrar: registrarDesdeAviso, cierreRef, etiqueta: textoGuardar })
 
   useEffect(() => {
     if (enfocarAlMontar) document.getElementById(`${id}-proveedor`)?.focus()
@@ -423,6 +425,17 @@ export default function BloqueCompra({
     seguirGuardando()
   }
 
+  /** «Usar» en el aviso de nombre parecido: la fila se queda con el artículo ya registrado y no se crea otro */
+  function usarExistente(nombre) {
+    const { filaId } = porAsignar
+    setFilas(prev => prev.map(f => (f.id === filaId ? { ...f, material: nombre } : f)))
+    fijarError(clave(filaId, 'material'), undefined)
+    sugerirPrecio(filaId, nombre)
+    setPorAsignar(null)
+    setBloqueado(false)
+    seguirGuardando()
+  }
+
   /** La ventana se abrió al guardar: si otro artículo también falta, se pide; si no, sigue la compra */
   function seguirGuardando() {
     if (!guardarDespues.current) return
@@ -597,6 +610,7 @@ export default function BloqueCompra({
                 id={`${id}-fecha`}
                 etiqueta="Fecha"
                 tipo="date"
+                max={fechaHoyISO()}
                 value={fecha}
                 onChange={e => cambiarEncabezado('fecha', e.target.value)}
                 onBlur={() => salirDeEncabezado('fecha')}
@@ -614,9 +628,12 @@ export default function BloqueCompra({
                   error={errores.proveedor}
                   aria-describedby={proveedorParecido ? `${id}-proveedor-parecido` : undefined}
                 />
-                <AvisoDestacado
+                <AvisoParecido
                   id={`${id}-proveedor-parecido`}
-                  texto={proveedorParecido && NOMBRE_PARECIDO.aviso(proveedor, proveedorParecido, 'proveedor')}
+                  escrito={proveedor}
+                  parecido={proveedorParecido}
+                  tipo="proveedor"
+                  alUsar={nombre => cambiarEncabezado('proveedor', nombre)}
                 />
               </div>
             </div>
@@ -845,6 +862,7 @@ export default function BloqueCompra({
         alGuardar={asignar}
         alOmitir={omitirAsignacion}
         alCerrar={cerrarAsignacion}
+        alUsarExistente={usarExistente}
       />
 
       <ConfirmDialog

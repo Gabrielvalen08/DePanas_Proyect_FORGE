@@ -1,8 +1,9 @@
-import { useEffect, useId, useLayoutEffect, useRef } from 'react'
+import { useId, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 import Boton from './Boton'
+import { useBloqueoScroll } from '../../hooks/useBloqueoScroll'
 import { useFocoAtrapado } from '../../hooks/useFocoAtrapado'
 import { fundido, springSuave, variantesModal, variantesScrim } from '../../styles/movimiento'
 import estilos from './Modal.module.css'
@@ -48,11 +49,7 @@ function ContenidoModal({ alCerrar, titulo, icono, rol = 'dialog', anchoMax = 'm
     return () => window.removeEventListener('resize', ajustar)
   }, [])
 
-  useEffect(() => {
-    const previo = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = previo }
-  }, [])
+  useBloqueoScroll()
 
   return (
     <div ref={capaRef} className={estilos.capa}>

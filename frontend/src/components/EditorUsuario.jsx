@@ -5,7 +5,7 @@ import { tituloDeRuta } from './navegacion'
 import { FUNCIONES, FUNCIONES_POR_PANTALLA, ROLES_ASIGNABLES, RUTAS_ASIGNABLES, permisosDeRol } from '../utils/permisos'
 import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { revisarContrasena } from '../../../shared/usuarios.js'
-import { CONFIRMAR, USUARIOS } from '../utils/mensajes'
+import { AVISO_SALIDA, CONFIRMAR, USUARIOS } from '../utils/mensajes'
 import estilos from './EditorUsuario.module.css'
 
 const FORMATO_USUARIO = /^[A-Za-z0-9_.-]{3,30}$/
@@ -82,7 +82,9 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
   const rolRef = useRef(null)
   const formRef = useRef(null)
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
-  const avisoSalida = useDatosSinGuardar({ sucio: cambiado, registrar: registrarDesdeAviso, cierreRef })
+  const avisoSalida = useDatosSinGuardar({
+    sucio: cambiado, registrar: registrarDesdeAviso, cierreRef, etiqueta: AVISO_SALIDA.guardar.usuario,
+  })
 
   const revision = revisarContrasena(contrasena.trim(), requisitos)
 

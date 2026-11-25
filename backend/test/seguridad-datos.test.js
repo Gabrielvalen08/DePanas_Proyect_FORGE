@@ -15,6 +15,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { CLAVE_CESAR, CLAVE_MARTA, cabeceras, entrar } from './ayudantes.js'
 import { crearApp } from '../app.js'
 import { MENSAJE_ERROR_INTERNO } from '../routes/responder.js'
+import { FECHA_FUTURA, hoyISO } from '../../shared/fechas.js'
 
 const SCHEMA = join(dirname(fileURLToPath(import.meta.url)), '..', 'db', 'schema.sql')
 
@@ -96,6 +97,9 @@ test('entradas: compras con datos inválidos responden 400 con un mensaje claro 
     [compra({ materiales: [{ ...fila, monto: 0 }] }), /monto debe ser mayor a 0/],
     [compra({ materiales: [{ ...fila, material: 'y'.repeat(121) }] }), /muy largo/],
     [compra({ iva: -5 }), /IVA/],
+    // Solo compras ya hechas: mañana (y cualquier día después de hoy) se rechaza
+    [compra({ fecha: hoyISO(new Date(Date.now() + 86_400_000)) }), FECHA_FUTURA],
+    [compra({ fecha: '2099-01-01' }), FECHA_FUTURA],
   ]
   for (const [cuerpo, esperado] of casos) {
     const r = await pedir(`${base}/compras`, { metodo: 'POST', cuerpo })
@@ -237,4 +241,14 @@ test('respaldo: importar sin la pantalla Cargar datos responde 403 y no toca la 
   const r = await fetch(`${base}/db/importar`, { method: 'POST', headers: { Authorization: `Bearer ${ana}` }, body: formulario })
   assert.equal(r.status, 403)
   assert.equal((await pedir(`${base}/compras`)).cuerpo.length, 1)
+})
+
+test('fechas: una compra de hoy se guarda; editarla a una fecha futura se rechaza', async t => {
+  const { base } = await levantar(t)
+  const creada = await pedir(`${base}/compras`, { metodo: 'POST', cuerpo: compra({ fecha: hoyISO() }) })
+  assert.equal(creada.status, 201)
+  const editada = await pedir(`${base}/compras/${creada.cuerpo.id}`, { metodo: 'PUT', cuerpo: compra({ fecha: '2099-01-01' }) })
+  assert.equal(editada.status, 400)
+  assert.equal(editada.cuerpo.error, FECHA_FUTURA)
+  assert.equal((await pedir(`${base}/compras/${creada.cuerpo.id}`)).cuerpo.fecha, hoyISO())
 })
