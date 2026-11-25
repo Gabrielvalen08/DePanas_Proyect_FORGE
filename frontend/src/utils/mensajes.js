@@ -164,6 +164,9 @@ export const NOMBRE_PARECIDO = {
     return `«${escrito.trim()}» se parece a «${parecido}», que ya está ${femenino ? 'registrada' : 'registrado'}. ` +
       `Revisa si es ${femenino ? 'la misma' : 'el mismo'}.`
   },
+  // Las dos salidas del aviso (AvisoParecido)
+  usar: nombre => `Usar «${nombre}»`,
+  mantener: nombre => `Mantener «${nombre}»`,
 }
 
 /** Dónde va un artículo: «Limpieza · Cachitos», o solo la categoría si no lleva productos */
