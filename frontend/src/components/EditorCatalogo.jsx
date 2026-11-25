@@ -8,7 +8,7 @@ import { getCategorias, getProductos, ordenarMaterialesPorCategoria as ordenarPo
 import { textoBusqueda } from '../utils/formato'
 import { listaProductos, sinProducto, tieneProducto } from '../../../shared/productos.js'
 import { normalizarFicha } from '../../../shared/proveedores.js'
-import { CONFIRMAR, NOMBRE_PARECIDO, PANTALLA_CATALOGO } from '../utils/mensajes'
+import { AVISO_SALIDA, CONFIRMAR, NOMBRE_PARECIDO, PANTALLA_CATALOGO } from '../utils/mensajes'
 import { nombreParecido } from '../utils/parecidos'
 import estilos from './EditorCatalogo.module.css'
 
@@ -84,7 +84,9 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
     [...proveedores].sort().join('\n') !== inicial.proveedores
   const formRef = useRef(null)
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
-  const avisoSalida = useDatosSinGuardar({ sucio: cambiado, registrar: registrarDesdeAviso, cierreRef })
+  const avisoSalida = useDatosSinGuardar({
+    sucio: cambiado, registrar: registrarDesdeAviso, cierreRef, etiqueta: AVISO_SALIDA.guardar.catalogo(tipo),
+  })
 
   // Solo una sugerencia: los nombres ya registrados de este tipo, sin contar el que se edita
   const yaRegistrados = esMaterial ? todos.map(m => m.nombre) : esProveedor ? todosProveedores : esCategoria ? getCategorias() : getProductos()

@@ -4,7 +4,7 @@ import { AvisoDestacado, Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Mod
 import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { getAsignacion, getCategorias, getCategoriasDeProveedor, getComprasDeMaterial, getMateriales, getProductos } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
-import { ASIGNACION, CONFIRMAR, NOMBRE_PARECIDO } from '../utils/mensajes'
+import { ASIGNACION, AVISO_SALIDA, CONFIRMAR, NOMBRE_PARECIDO } from '../utils/mensajes'
 import { nombreParecido } from '../utils/parecidos'
 import estilos from './AsignarMaterial.module.css'
 
@@ -87,7 +87,9 @@ function Formulario({ material, proveedor, alGuardar, alSalir, nombreRef, primer
     productos.join('\n') !== (material.productos ?? []).join('\n')
   const formRef = useRef(null)
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
-  const avisoSalida = useDatosSinGuardar({ sucio: cambiado, registrar: registrarDesdeAviso, cierreRef })
+  const avisoSalida = useDatosSinGuardar({
+    sucio: cambiado, registrar: registrarDesdeAviso, cierreRef, etiqueta: AVISO_SALIDA.guardar.articulo,
+  })
 
   // Sin cambios no hay nada que descartar: se cierra sin preguntar
   function pedirCancelar() {

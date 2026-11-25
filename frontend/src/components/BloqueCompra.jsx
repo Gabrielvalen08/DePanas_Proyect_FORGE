@@ -196,7 +196,7 @@ export default function BloqueCompra({
   const hayDatos = Boolean(proveedor.trim()) || filas.some(f => !estaVacia(f))
   const sucio = inicial ? firmaCompra(proveedor, fecha, filas, conIva) !== firmaInicial : hayDatos
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
-  const registro = useDatosSinGuardar({ sucio, registrar: registrarDesdeAviso, cierreRef })
+  const registro = useDatosSinGuardar({ sucio, registrar: registrarDesdeAviso, cierreRef, etiqueta: textoGuardar })
 
   useEffect(() => {
     if (enfocarAlMontar) document.getElementById(`${id}-proveedor`)?.focus()

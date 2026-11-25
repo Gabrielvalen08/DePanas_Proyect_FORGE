@@ -14,11 +14,11 @@ const Contexto = createContext(null)
  *  - Cerrar sesión y Apagar, antes de su propia confirmación: usePedirSalida;
  *  - recargar o cerrar la pestaña: la ventana genérica del navegador (beforeunload).
  *
- * «Registrar» corre el flujo normal del formulario (validación y «¿Guardamos…?»). Si guarda
+ * «Guardar …» corre el flujo normal del formulario (validación y «¿Guardamos…?»). Si guarda
  * bien se sigue a donde iba, salvo que quede otro formulario sucio: entonces el aviso vuelve.
  */
 export function DatosSinGuardarProvider({ children }) {
-  const entradasRef = useRef(new Map()) // id → { sucio, registrar, soltada }
+  const entradasRef = useRef(new Map()) // id → { sucio, registrar, etiqueta, soltada }
   const [sucias, setSucias] = useState([]) // copia para dibujar: [[id, entrada]]
   const [pedido, setPedido] = useState(null) // { continuar, soloId } fuera de la navegación
   const [registrando, setRegistrando] = useState(false)
@@ -118,6 +118,7 @@ export function DatosSinGuardarProvider({ children }) {
       <AvisoSalida
         abierto={Boolean(activo) && relevantes.length > 0 && !registrando}
         conRegistrar={Boolean(paraRegistrar)}
+        etiquetaRegistrar={paraRegistrar?.[1].etiqueta}
         alSalir={salirSinGuardar}
         alRegistrar={registrar}
         alSeguir={cancelar}
@@ -132,7 +133,9 @@ export function DatosSinGuardarProvider({ children }) {
  *
  *  - sucio: hay cambios que se perderían.
  *  - registrar: arranca el flujo normal de guardar (p. ej. formRef.current.requestSubmit());
- *    sin ella, el aviso ofrece «Seguir aquí» en vez de «Registrar».
+ *    sin ella, el aviso ofrece «Seguir aquí» en vez de guardar.
+ *  - etiqueta: el texto de ese botón, diciendo qué se guarda («Guardar compra», ver
+ *    AVISO_SALIDA.guardar). Sin ella dice «Guardar».
  *  - cierreRef: para una ventana. Su Modal llama a cierreRef.current(alCerrar) en la X, Esc y
  *    el clic fuera (ver useCierreConAviso).
  *
@@ -141,7 +144,7 @@ export function DatosSinGuardarProvider({ children }) {
  * descartar() es para cuando la persona ya confirmó que desecha los datos. Tras terminar(true)
  * o descartar(), el formulario no vuelve a contar hasta que cambie `sucio`.
  */
-export function useDatosSinGuardar({ sucio, registrar, cierreRef }) {
+export function useDatosSinGuardar({ sucio, registrar, cierreRef, etiqueta }) {
   const contexto = useContext(Contexto)
   const id = useId()
   const resolverRef = useRef(null)
@@ -182,9 +185,9 @@ export function useDatosSinGuardar({ sucio, registrar, cierreRef }) {
       resolverRef.current = resolve
       registrarRef.current?.()
     })
-    anotar(id, { sucio, registrar: conRegistrar ? iniciar : null })
+    anotar(id, { sucio, registrar: conRegistrar ? iniciar : null, etiqueta })
     return () => quitar(id)
-  }, [anotar, quitar, id, sucio, conRegistrar])
+  }, [anotar, quitar, id, sucio, conRegistrar, etiqueta])
 
   // Si el formulario desaparece a media operación (p. ej. venció la sesión), el aviso no queda esperando
   useEffect(() => () => {
