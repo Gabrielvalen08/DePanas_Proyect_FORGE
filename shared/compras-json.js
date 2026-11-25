@@ -1,3 +1,4 @@
+import { esFechaFutura } from './fechas.js'
 import { ivaValido } from './iva.js'
 
 const recortar = v => (typeof v === 'string' ? v.trim() : v)
@@ -40,6 +41,7 @@ export function validarComprasJSON(entrada) {
     if (!texto(c.fecha) || !/^\d{4}-\d{2}-\d{2}$/.test(c.fecha)) fallo('fecha inválida')
     const fecha = new Date(`${c.fecha}T00:00:00Z`)
     if (!Number.isFinite(fecha.getTime()) || fecha.toISOString().slice(0, 10) !== c.fecha) fallo('fecha inválida')
+    if (esFechaFutura(c.fecha)) fallo('la fecha es posterior a hoy')
     if (!texto(c.categoria)) fallo('categoría inválida')
     // Los respaldos anteriores al IVA no lo traen: cuentan como sin IVA
     if (c.iva !== undefined && !ivaValido(c.iva)) fallo('IVA inválido')

@@ -114,9 +114,10 @@ export function rangoRapido(clave, hoy = new Date()) {
   const iso = fecha => fechaHoyISO(fecha)
   const y = hoy.getFullYear()
   const m = hoy.getMonth()
-  if (clave === 'mes') return { desde: iso(new Date(y, m, 1)), hasta: iso(new Date(y, m + 1, 0)) }
+  // Solo hay compras hasta hoy: el mes y el año en curso terminan hoy, no en un día futuro
+  if (clave === 'mes') return { desde: iso(new Date(y, m, 1)), hasta: iso(hoy) }
   if (clave === 'mesAnterior') return { desde: iso(new Date(y, m - 1, 1)), hasta: iso(new Date(y, m, 0)) }
-  if (clave === 'ano') return { desde: iso(new Date(y, 0, 1)), hasta: iso(new Date(y, 11, 31)) }
+  if (clave === 'ano') return { desde: iso(new Date(y, 0, 1)), hasta: iso(hoy) }
   return { desde: '', hasta: '' }
 }
 
