@@ -1,11 +1,12 @@
 # Pruebas de usuario
 
-Registro de las dos sesiones de prueba con el cliente de De Panas SV y de las decisiones que salieron de cada una. Este documento recoge lo que se decidió en las reuniones; no lleva el estado de cada cambio.
+Registro de las tres sesiones de prueba con el cliente de De Panas SV y de las decisiones que salieron de cada una. Este documento recoge lo que se decidió en las reuniones; no lleva el estado de cada cambio.
 
 | Sesión | Fecha | Equipo FORGE | Cliente | Forma de trabajo |
 |---|---|---|---|---|
 | 1 | 13/10/2026 | Pedro, Alejandro, Gabriel y Soham | César | Le mostramos el programa a César y nos dio su opinión sobre cómo funcionaba y cómo se veía. |
 | 2 | 29/10/2026 | Pedro, Alejandro, Gabriel y Soham | César y Marta | Le dimos el programa a César para que lo usara, con una factura real. |
+| 3 | 12/11/2026 | Pedro, Alejandro, Gabriel y Soham | César y Marta | Revisamos con ellos los cambios de la sesión 2 y salió la ronda de cambios de noviembre. |
 
 ## Sesión 1: 13 de octubre de 2026
 
@@ -98,3 +99,44 @@ En esta sesión César usó el programa y entre todos fuimos señalando errores 
 - Esta versión deja solo «Apagar De Panas SV» y no lleva «Cerrar sesión».
 - Cerrar la pestaña o ventana pide confirmación y apaga el sistema. Una recarga no lo apaga.
 - Al cerrar, el navegador muestra su propia ventana genérica, porque no permite poner texto ni botones propios.
+
+## Sesión 3: 12 de noviembre de 2026
+
+César y Marta revisaron los cambios de la sesión 2. De aquí salió la ronda de cambios de noviembre, repartida entre Gabriel (catálogo y guardado de compras), Alejandro (artículo, unidades y usuarios) y Pedro (errores, avisos y textos).
+
+**Lo que descubrimos:** con varias filas en Agregar compra, la página dejó de bajar y no se llegaba a «Guardar compra». Luego pasó también en el Catálogo.
+
+**Lo que no hicimos:** en el Checkpoint 2 dijimos que en esta reunión mediríamos la usabilidad (tiempo por factura y errores por tarea). No se midió.
+
+### Agregar compra
+
+- Arreglar el error que no deja bajar la página.
+- Al guardar una compra, el artículo queda ligado a su proveedor en el catálogo, sin repetirse. Así, en la siguiente compra a Pepsi aparece Gatorade como sugerido.
+- Cuando un nombre se parece a uno registrado (por ejemplo «Bandeja Bisagrado» y «Bandeja Bisagrada»), dejar elegir entre usar el existente o mantener el nuevo.
+- Solo se guardan compras ya hechas: la fecha no puede ser posterior a hoy, ni en el selector ni en el servidor.
+- En el aviso de salir sin guardar, decir «Guardar compra» (o «Guardar» y lo que se esté editando) en vez de «Registrar».
+
+### Editar artículo (dentro de Agregar compra)
+
+- Que todo el formulario quepa sin bajar. Solo se permite scroll si hay demasiadas categorías o productos.
+- Quitar la línea «Proveedor: …» y el texto «¿No aparece la categoría o el producto? Escríbelo en el buscador y lo agregamos.».
+- Reducir el espacio entre el título, el campo «Artículo» y «Categoría», y hacer más bajos los botones de categoría y producto.
+- Mantener el aviso «Este artículo aún no tiene categoría ni producto asociados.».
+- Las unidades se definen en las propiedades del artículo, con el selector a la derecha del campo «Artículo». En la compra solo se elige entre las permitidas.
+- Cada artículo que ya existe recibe las unidades con que se ha comprado antes.
+
+### Catálogo
+
+- Cambiar la abreviatura «g» por «gr» y agregar la unidad «Otros».
+- Agregar la categoría «Gastos personales» y el producto «Ninguno», para compras que no son para producir nada.
+- Una categoría puede tener varios proveedores. Elegir un proveedor marca los artículos que ese proveedor tiene en esa categoría, y quitarlo los desmarca. Después se puede marcar o desmarcar a mano.
+- Se mantiene la regla de una sola categoría por artículo.
+- Quitar los textos de ayuda de Editar categoría.
+- Editar proveedor: decir «Dirección» en vez de «Ubicación» y «Aún no hay contactos.» en vez de «Todavía no hay contactos.», y quitar «Si cambias el nombre, también se cambia en N compras.».
+- Al cambiar el nombre de un proveedor, categoría, artículo o producto, confirmar que el cambio se aplicará en todas las compras registradas.
+
+### Usuarios
+
+- César es el único administrador principal.
+- Agregar el rol de subadministrador, con todos los permisos: crear usuarios, cambiar contraseñas y gestionar todo.
+- Un subadministrador no puede editar ni eliminar a César. El servidor lo rechaza, no solo la interfaz.
