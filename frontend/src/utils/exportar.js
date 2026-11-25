@@ -124,7 +124,7 @@ export function rangoRapido(clave, hoy = new Date()) {
 // Secciones del Catálogo
 // ---------------------------------------------------------------------------
 const COLUMNAS_CATALOGO = {
-  proveedor: ['Proveedor', 'Ubicación', 'Teléfonos', 'Contactos'],
+  proveedor: ['Proveedor', 'Dirección', 'Teléfonos', 'Contactos'],
   material: ['Artículo', 'Categoría', 'Productos'],
   categoria: ['Categoría', 'Proveedores', 'Artículos'],
   producto: ['Producto', 'Artículos'],

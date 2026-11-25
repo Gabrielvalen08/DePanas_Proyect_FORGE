@@ -94,7 +94,7 @@ describe('exportar: secciones del Catálogo', () => {
       { nombre: 'La Pulpería', ubicacion: 'Santa Tecla, La Libertad', telefonos: ['7123-4567', '2222-3333'], contactos: [{ nombre: 'Ana', telefono: '7000-1111' }, { nombre: 'Luis', telefono: '' }] },
     ]))
     expect(proveedores).toEqual([
-      ['Proveedor', 'Ubicación', 'Teléfonos', 'Contactos'],
+      ['Proveedor', 'Dirección', 'Teléfonos', 'Contactos'],
       ['La Pulpería', 'Santa Tecla, La Libertad', '7123-4567; 2222-3333', 'Ana (7000-1111); Luis'],
     ])
 

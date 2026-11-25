@@ -17,7 +17,7 @@ const FORMATO_TELEFONO = /^\+?[0-9][0-9\s()-]{5,18}[0-9]$/
 const texto = v => (typeof v === 'string' ? v.trim().replace(/\s+/g, ' ') : '')
 
 export const MENSAJES_FICHA = {
-  ubicacionLarga: `La ubicación es muy larga (máximo ${MAX_UBICACION} caracteres)`,
+  ubicacionLarga: `La dirección es muy larga (máximo ${MAX_UBICACION} caracteres)`,
   telefono: t => `El teléfono «${t}» no es válido: usa números, espacios, guiones o +`,
   contactoSinNombre: 'Cada contacto necesita un nombre',
   contactoLargo: `El nombre del contacto es muy largo (máximo ${MAX_NOMBRE_CONTACTO} caracteres)`,
