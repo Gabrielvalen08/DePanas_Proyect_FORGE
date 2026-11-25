@@ -1,6 +1,6 @@
 import { readSheet } from 'read-excel-file/node'
 import { test, expect, entrar, menu, confirmar, CESAR } from './ayudantes.js'
-import { COMPRA, CONFIRMAR, ESTADOS, EXPORTAR, LISTA_COMPRAS, PANTALLA_CATALOGO, VALIDACION } from '../src/utils/mensajes.js'
+import { COMPRA, CONFIRMAR, ESTADOS, EXPORTAR, LISTA_COMPRAS, VALIDACION } from '../src/utils/mensajes.js'
 
 /** Llena la fila n de una compra con un artículo del catálogo (ya tiene categoría y producto) */
 async function llenarFila(page, formulario, n, { material, cantidad, precio }) {
@@ -57,42 +57,35 @@ test.describe('Compras', () => {
     await expect(formulario.getByText('$2.50').last()).toBeVisible()
   })
 
-  test('al elegir un proveedor solo se sugieren los artículos de las categorías que surte', async ({ page }) => {
-    // En Catálogo, Bebidas queda surtida por Pepsi (si ya lo estaba, se deja igual)
-    await page.goto('/catalogo/categorias')
-    const fila = page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: 'Bebidas', exact: true }) })
-    await fila.getByRole('button', { name: 'Editar categoría Bebidas' }).click()
-    const ventana = page.getByRole('dialog', { name: 'Editar categoría' })
-    const pepsi = ventana.getByRole('group', { name: PANTALLA_CATALOGO.etiquetaProveedores }).getByRole('button', { name: 'Pepsi', exact: true })
-    if ((await pepsi.getAttribute('aria-pressed')) !== 'true') await pepsi.click()
-    await ventana.getByRole('button', { name: 'Guardar' }).click()
-    await confirmar(page, CONFIRMAR.guardarCambios.confirmar)
-    await expect(fila.getByRole('cell').filter({ hasText: 'Pepsi' }).first()).toBeVisible()
+  test('una compra registra los artículos que se sugerirán al volver a elegir el proveedor', async ({ page }) => {
+    const proveedor = `Mercado e2e ${crypto.randomUUID()}`
+    await llenarCompra(page, { proveedor, material: 'Gatorade', cantidad: 1, precio: 2.5 })
+    await page.getByRole('button', { name: 'Guardar compra' }).click()
+    await confirmar(page, COMPRA.confirmarGuardar.confirmar)
+    await expect(page.getByText(COMPRA.guardada)).toBeVisible()
 
-    // En Agregar compra, con Pepsi solo salen los artículos de Bebidas
-    await page.goto('/')
     const formulario = page.getByRole('form', { name: 'Detalle de compra' }).first()
-    await formulario.getByRole('combobox', { name: 'Proveedor' }).fill('Pepsi')
+    await formulario.getByRole('combobox', { name: 'Proveedor' }).fill(proveedor)
     await page.keyboard.press('Escape')
     await formulario.getByRole('combobox', { name: 'Artículo, fila 1' }).fill('a')
     const sugerencias = page.getByRole('listbox', { name: 'Artículo, fila 1' })
-    await expect(sugerencias.getByRole('option', { name: 'Agua' })).toBeVisible()
-    await expect(sugerencias.getByRole('option', { name: 'Azucar' })).toHaveCount(0)
+    await expect(sugerencias.getByRole('option', { name: 'Gatorade' })).toBeVisible()
+    await expect(sugerencias.getByRole('option', { name: 'Agua' })).toHaveCount(0)
     // El cuadro de sugerencias se ve completo (nada lo recorta): se puede tocar una opción
-    await sugerencias.getByRole('option', { name: 'Agua' }).click()
-    await expect(formulario.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveValue('Agua')
+    await sugerencias.getByRole('option', { name: 'Gatorade' }).click()
+    await expect(formulario.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveValue('Gatorade')
   })
 
   test('al escribir, la sugerencia que más coincide queda marcada y Enter la completa', async ({ page }) => {
     const formulario = page.getByRole('form', { name: 'Detalle de compra' }).first()
-    await formulario.getByRole('combobox', { name: 'Proveedor' }).fill('Selec')
+    await formulario.getByRole('combobox', { name: 'Proveedor' }).fill('Pep')
     await page.keyboard.press('Enter')
-    await expect(formulario.getByRole('combobox', { name: 'Proveedor' })).toHaveValue('Selectos')
+    await expect(formulario.getByRole('combobox', { name: 'Proveedor' })).toHaveValue('Pepsi')
     const articulo = formulario.getByRole('combobox', { name: 'Artículo, fila 1' })
-    await articulo.fill('azu')
+    await articulo.fill('gat')
     await expect(page.getByRole('listbox', { name: 'Artículo, fila 1' }).getByRole('option').first()).toHaveAttribute('aria-selected', 'true')
     await page.keyboard.press('Enter')
-    await expect(articulo).toHaveValue('Azucar')
+    await expect(articulo).toHaveValue('Gatorade')
   })
 
   test('"Nueva compra" aparece con una fila completa y agrega otro bloque para registrar otra compra', async ({ page }) => {

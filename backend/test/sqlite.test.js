@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url'
 import { DatabaseSync } from 'node:sqlite'
 import { cabeceras, entrar } from './ayudantes.js'
 import { crearApp } from '../app.js'
+import { abrirDB } from '../db.js'
 
 const SCHEMA = join(dirname(fileURLToPath(import.meta.url)), '..', 'db', 'schema.sql')
 
@@ -70,4 +71,31 @@ test('editar una fila suelta valida monto, cantidad y fecha como una compra', as
   assert.equal(bien.cuerpo.monto, 2.5)
   assert.equal(bien.cuerpo.unidad, 'kg')
   assert.equal((await pedir(`${base}/ingresos/999999`, 'PUT', datos)).status, 404)
+})
+
+test('migra una sola vez las relaciones artículo-proveedor de las compras conservadas', async t => {
+  const { carpeta } = await levantar(t)
+  const ruta = join(carpeta, 'anterior.db')
+  let db = abrirDB(ruta, SCHEMA)
+  db.exec(`
+    PRAGMA user_version = 2;
+    DROP TABLE proveedor_material;
+    INSERT INTO ingresos (fecha, material, monto, proveedor) VALUES
+      ('2026-10-01', 'Azucar', 2, 'Selectos'),
+      ('2026-10-02', 'AZUCAR', 3, 'SELECTOS'),
+      ('2026-10-03', 'Artículo eliminado', 5, 'Selectos');
+  `)
+  db.close()
+
+  db = abrirDB(ruta, SCHEMA)
+  const leer = conexion => conexion.prepare(
+    "SELECT m.nombre FROM proveedor_material r JOIN catalogo p ON p.id = r.proveedor_id JOIN catalogo m ON m.id = r.material_id WHERE p.nombre = 'Selectos'"
+  ).all().map(f => f.nombre)
+  assert.deepEqual(leer(db), ['Azucar'])
+  db.exec("DELETE FROM catalogo WHERE nombre = 'Azucar' AND tipo = 'material'")
+  db.close()
+
+  db = abrirDB(ruta, SCHEMA)
+  assert.deepEqual(leer(db), [])
+  db.close()
 })
