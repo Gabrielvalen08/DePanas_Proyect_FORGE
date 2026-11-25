@@ -899,6 +899,74 @@ describe('AgregarCompra', () => {
     expect(screen.queryByText(/se parece a/)).not.toBeInTheDocument()
   })
 
+  it('en el aviso del proveedor se elige el registrado o se mantiene el escrito', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const campo = screen.getByRole('combobox', { name: 'Proveedor' })
+    await usuario.type(campo, 'Walmar')
+    await usuario.tab()
+    await usuario.click(await screen.findByRole('button', { name: NOMBRE_PARECIDO.usar('Walmart') }))
+    expect(campo).toHaveValue('Walmart')
+    expect(screen.queryByText(/se parece a/)).not.toBeInTheDocument()
+
+    await usuario.clear(campo)
+    await usuario.type(campo, 'Walmar')
+    await usuario.tab()
+    await usuario.click(await screen.findByRole('button', { name: NOMBRE_PARECIDO.mantener('Walmar') }))
+    expect(campo).toHaveValue('Walmar')
+    expect(screen.queryByText(/se parece a/)).not.toBeInTheDocument()
+  })
+
+  it('en el artículo nuevo, «Usar» deja la compra con el registrado y no crea otro', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    const fila = screen.getByRole('combobox', { name: 'Artículo, fila 1' })
+    await usuario.type(fila, 'Tocino La Riojo')
+    await usuario.tab()
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await usuario.click(within(ventana).getByRole('button', { name: NOMBRE_PARECIDO.usar('Tocino La Rioja') }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(fila).toHaveValue('Tocino La Rioja')
+    expect(asignarMaterial).not.toHaveBeenCalled()
+  })
+
+  it('en el artículo nuevo, «Mantener» quita el aviso y se guarda con el nombre escrito', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Riojo')
+    await usuario.tab()
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await usuario.click(within(ventana).getByRole('button', { name: NOMBRE_PARECIDO.mantener('Tocino La Riojo') }))
+    expect(within(ventana).queryByText(/se parece a/)).not.toBeInTheDocument()
+
+    await usuario.click(within(ventana).getByRole('button', { name: 'Materia Prima' }))
+    await guardarArticulo(usuario, ventana)
+    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Tocino La Riojo', expect.anything()))
+  })
+
+  it('en categoría y producto, «Usar» elige la opción registrada', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await elegirProveedor(usuario)
+    await usuario.click(screen.getByRole('button', { name: COMPRA.agregarArticulo('') }))
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+
+    await usuario.type(within(ventana).getByRole('textbox', { name: 'Buscar o agregar categoría' }), 'Bebida')
+    await usuario.click(within(ventana).getByRole('button', { name: NOMBRE_PARECIDO.usar('Bebidas') }))
+    expect(within(ventana).getByRole('button', { name: 'Bebidas' })).toHaveAttribute('aria-pressed', 'true')
+
+    // Ya agregado como nuevo, «Usar» lo cambia por el registrado
+    const producto = within(ventana).getByRole('textbox', { name: 'Buscar o agregar producto' })
+    await usuario.type(producto, 'Cachito')
+    await usuario.click(within(ventana).getByRole('button', { name: 'Agregar «Cachito»' }))
+    await usuario.click(within(ventana).getByRole('button', { name: NOMBRE_PARECIDO.usar('Cachitos') }))
+    expect(within(ventana).getByRole('button', { name: 'Cachitos' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(ventana).queryByRole('button', { name: 'Cachito' })).not.toBeInTheDocument()
+  })
+
   it('al guardar la compra con un artículo nuevo, lo pide y después guarda la compra', async () => {
     const usuario = userEvent.setup()
     renderizar()
