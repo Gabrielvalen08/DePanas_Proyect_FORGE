@@ -61,12 +61,18 @@ export async function confirmar(page, etiqueta) {
  * La unidad de la fila n es la del artículo y no se cambia en la fila: se elige en el formulario
  * del artículo (su botón, «+» o lápiz). Si el sistema ya abrió el formulario (el artículo no tenía
  * unidad), se usa ese. Elige la unidad, guarda y confirma si hubo cambios; termina con la fila mostrándola.
+ * Sin permiso para editar un artículo que ya está completo (su botón sale apagado), se queda con la que tiene.
  */
 export async function unidadDelArticulo(page, formulario, n, unidad) {
   const ventana = page.getByRole('dialog').filter({ has: page.getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }) })
   if (!(await ventana.isVisible())) {
     const fila = formulario.getByRole('row').filter({ has: page.getByRole('combobox', { name: `Artículo, fila ${n}` }) })
-    await fila.getByRole('button').first().click()
+    const boton = fila.getByRole('button').first()
+    if (await boton.isDisabled()) {
+      await expect(formulario.getByLabel(`Unidad, fila ${n}`)).not.toHaveText(/^—/)
+      return
+    }
+    await boton.click()
   }
   await expect(ventana).toBeVisible()
   await ventana.getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }).selectOption(unidad)
