@@ -73,8 +73,8 @@ async function salirSinGuardar(page) {
 }
 
 ;(async () => {
-  const browser = await chromium.launch()
-  const page = await browser.newPage({ viewport: { width: 1280, height: 760 }, deviceScaleFactor: 1 })
+  const browser = await chromium.launch({ args: ['--lang=es-SV'] })
+  const page = await browser.newPage({ viewport: { width: 1280, height: 760 }, deviceScaleFactor: 1, locale: 'es-SV' })
   await page.goto(base + '/')
   await page.waitForTimeout(800)
 
@@ -99,7 +99,7 @@ async function salirSinGuardar(page) {
   await form.getByRole('combobox', { name: 'Artículo, fila 1' }).fill('Harina PAN')
   await page.keyboard.press('Enter')
   await form.getByLabel('Cantidad, fila 1').fill('6')
-  await form.getByLabel('Unidad, fila 1').selectOption('unidad')
+  // La unidad viene del artículo: la fila solo la muestra
   await page.mouse.click(5, 5)
   await page.waitForTimeout(700)
   const guardar = form.getByRole('button', { name: 'Guardar compra' })
@@ -129,9 +129,10 @@ async function salirSinGuardar(page) {
   await page.waitForTimeout(500)
   await foto(page, '03-articulo-nuevo', [
     { loc: ventana.getByLabel('Nombre del artículo'), n: 1, pos: 'izq' },
-    { loc: ventana.getByRole('group', { name: 'Categoría' }), n: 2, pos: 'izq' },
-    { loc: ventana.getByRole('group', { name: /Productos/ }), n: 3, pos: 'izq' },
-    { loc: ventana.getByRole('button', { name: 'Guardar' }), n: 4, pos: 'izq' },
+    { loc: ventana.getByRole('combobox', { name: 'Unidad' }), n: 2 },
+    { loc: ventana.getByRole('group', { name: 'Categoría' }), n: 3, pos: 'izq' },
+    { loc: ventana.getByRole('group', { name: /Productos/ }), n: 4, pos: 'izq' },
+    { loc: ventana.getByRole('button', { name: 'Guardar' }), n: 5, pos: 'izq' },
   ])
   await recorte(page, ventana.getByRole('button', { name: 'Ahora no' }), 'ahora-no')
   await ventana.getByRole('button', { name: 'Ahora no' }).click()
