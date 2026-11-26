@@ -13,8 +13,9 @@
  *   GET    /api/requisitos-contrasena   → { minimo, mayuscula, minuscula, numero, especial }
  *   PUT    /api/requisitos-contrasena   → los cambia (los usa toda contraseña nueva)
  *
- * Toda la API (salvo /api/health y entrar) exige sesión, y estas rutas son solo del
- * administrador (app.js, permisos.js). Los errores de un campo llevan { error, campo }.
+ * Toda la API (salvo /api/health y entrar) exige sesión, y estas rutas son del administrador
+ * y del subadministrador (app.js, permisos.js); lo que el subadministrador no puede hacer con
+ * otros usuarios lo decide dao/usuarios.js con req.usuario. Los errores de un campo llevan { error, campo }.
  */
 
 import { Router } from 'express'
@@ -37,10 +38,10 @@ export function crearRutasUsuarios(getDb, sesiones) {
   const dao = () => usuariosDAO(getDb())
 
   router.get('/', (_req, res) => responder(res, () => dao().listar()))
-  router.post('/', (req, res) => responder(res, () => dao().crear(req.body), 201))
-  router.put('/:usuario', (req, res) => responder(res, () => dao().editar(req.params.usuario, req.body)))
+  router.post('/', (req, res) => responder(res, () => dao().crear(req.body, req.usuario), 201))
+  router.put('/:usuario', (req, res) => responder(res, () => dao().editar(req.params.usuario, req.body, req.usuario)))
   router.delete('/:usuario', (req, res) => responder(res, () => {
-    const usuario = dao().eliminar(req.params.usuario)
+    const usuario = dao().eliminar(req.params.usuario, req.usuario)
     // Si estaba dentro, su sesión deja de servir
     sesiones?.cerrarDeUsuario(usuario)
     return { usuario }

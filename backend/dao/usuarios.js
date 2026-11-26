@@ -4,12 +4,14 @@
  * Reglas (iguales al modo local de frontend/src/services/api.js, ver shared/usuarios.js):
  * no se repite el usuario (sin distinguir mayúsculas); toda contraseña nueva cumple los
  * requisitos (no se compara con las de los demás: eso revelaría la de otro); hay un solo
- * administrador (permisos ["*"]), que no se elimina ni cambia de rol; nadie más recibe el
- * Gestor de usuarios. Las contraseñas se guardan como hash (contrasenas.js) y nunca salen
- * de aquí: lo que se devuelve es el usuario público.
+ * administrador (permisos ["*"]), que no se elimina ni cambia de rol; el subadministrador
+ * también entra a todo, pero no crea ni edita subadministradores ni edita al administrador
+ * (`actor` es quien hace el cambio); nadie más recibe el Gestor de usuarios. Las contraseñas
+ * se guardan como hash (contrasenas.js) y nunca salen de aquí: lo que se devuelve es el
+ * usuario público.
  *
  *   const dao = usuariosDAO(db)
- *   dao.buscar(usuario) · dao.listar() · dao.crear(cuerpo) · dao.editar(usuario, cuerpo) · dao.eliminar(usuario)
+ *   dao.buscar(usuario) · dao.listar() · dao.crear(cuerpo, actor) · dao.editar(usuario, cuerpo, actor) · dao.eliminar(usuario, actor)
  *   dao.autenticar(usuario, contrasena)   → registro o null (recalcula un hash viejo)
  *   dao.requisitos() · dao.guardarRequisitos(cuerpo)
  */
@@ -18,7 +20,8 @@ import { enTransaccion } from '../db.js'
 import { hashear, necesitaRehash, verificar } from '../contrasenas.js'
 import {
   FUNCIONES, RUTAS_ASIGNABLES, RUTA_USUARIOS, ROLES_ASIGNABLES, ROL_ADMIN,
-  faltaEnContrasena, funcionesEfectivas, normalizarRequisitos, pantallaDeFuncion, permisosDeRol, validarRequisitos,
+  esSuPropioPerfil, faltaEnContrasena, funcionesEfectivas, normalizarRequisitos, pantallaDeFuncion, permisosDeRol,
+  puedeGestionar, rolesQueAsigna, tieneAccesoTotal, validarRequisitos,
 } from '../../shared/usuarios.js'
 import { comoNoValido, conflicto, noEncontrado, noValido, prohibido } from './errores.js'
 
@@ -39,10 +42,25 @@ function validarNombre(nombre) {
   if (nombre.length > 60) throw noValido('El nombre es muy largo (máximo 60 caracteres)', 'nombre')
 }
 
-function validarRol(rol) {
+/** Un rol que `actor` puede dar (sin actor, como el administrador) */
+function validarRol(rol, actor) {
   if (rol === ROL_ADMIN) throw prohibido('Solo puede haber un administrador', 'rol')
   if (!ROLES_ASIGNABLES.includes(rol)) throw noValido('Elige un rol', 'rol')
+  if (!rolesQueAsigna(actor?.rol ?? ROL_ADMIN).includes(rol)) {
+    throw prohibido('Solo el administrador puede dar el rol de subadministrador', 'rol')
+  }
   return rol
+}
+
+/**
+ * Pantallas y funciones que se guardan para un rol: con acceso total, ['*'] y sin lista;
+ * si no, las del cuerpo validadas (o las de partida del rol).
+ */
+function accesoDe(rol, cuerpo, permisosActuales) {
+  if (tieneAccesoTotal(rol)) return { permisos: ['*'], funciones: null }
+  const base = permisosDeRol(rol)
+  const permisos = validarPermisos(cuerpo?.permisos ?? permisosActuales ?? base.permisos)
+  return { permisos, funciones: validarFunciones(cuerpo?.funciones ?? base.funciones, permisos) }
 }
 
 /** Pantallas sin repetir, todas asignables y al menos una, en el orden del menú */
@@ -96,11 +114,11 @@ export function usuariosDAO(db) {
 
     /** El administrador primero; después por usuario */
     listar() {
-      return db.prepare("SELECT * FROM usuarios ORDER BY rol = 'admin' DESC, usuario COLLATE NOCASE").all().map(publico)
+      return db.prepare("SELECT * FROM usuarios ORDER BY rol = 'admin' DESC, rol = 'subadmin' DESC, usuario COLLATE NOCASE").all().map(publico)
     },
 
     /** { usuario, nombre, contrasena, rol, permisos?, funciones? }: lo que no se manda sale del rol */
-    crear(cuerpo) {
+    crear(cuerpo, actor) {
       return enTransaccion(db, () => {
         const usuario = texto(cuerpo?.usuario)
         const nombre = texto(cuerpo?.nombre)
@@ -112,20 +130,25 @@ export function usuariosDAO(db) {
         if (repetido) throw conflicto(`Ya existe el usuario «${repetido.usuario}». Elige otro`, 'usuario')
         validarNombre(nombre)
         validarContrasena(contrasena)
-        const rol = validarRol(cuerpo?.rol ?? 'operador')
-        const base = permisosDeRol(rol)
-        const permisos = validarPermisos(cuerpo?.permisos ?? base.permisos)
-        const funciones = validarFunciones(cuerpo?.funciones ?? base.funciones, permisos)
+        const rol = validarRol(cuerpo?.rol ?? 'operador', actor)
+        const { permisos, funciones } = accesoDe(rol, cuerpo)
         db.prepare('INSERT INTO usuarios (usuario, nombre, contrasena, rol, permisos, funciones) VALUES (?, ?, ?, ?, ?, ?)')
-          .run(usuario, nombre, hashear(contrasena), rol, JSON.stringify(permisos), JSON.stringify(funciones))
+          .run(usuario, nombre, hashear(contrasena), rol, JSON.stringify(permisos), funciones && JSON.stringify(funciones))
         return publico(buscar(usuario))
       })
     },
 
-    /** { nombre?, contrasena?, rol?, permisos?, funciones? }; al administrador solo se le cambian nombre y contraseña */
-    editar(usuario, cuerpo) {
+    /**
+     * { nombre?, contrasena?, rol?, permisos?, funciones? }. Al administrador y a quien se edita a
+     * sí mismo solo se les cambian nombre y contraseña. El subadministrador no edita al
+     * administrador ni a otros subadministradores (403).
+     */
+    editar(usuario, cuerpo, actor) {
       return enTransaccion(db, () => {
         const registro = existente(usuario)
+        const propio = esSuPropioPerfil(actor, registro)
+        if (registro.rol === ROL_ADMIN && actor && actor.rol !== ROL_ADMIN) throw prohibido('No puedes editar al administrador')
+        if (!propio && !puedeGestionar(actor, registro)) throw prohibido('No puedes editar a otro subadministrador')
         if (cuerpo?.nombre !== undefined) {
           const nombre = texto(cuerpo.nombre)
           validarNombre(nombre)
@@ -137,27 +160,26 @@ export function usuariosDAO(db) {
           validarContrasena(contrasena)
           db.prepare('UPDATE usuarios SET contrasena = ? WHERE id = ?').run(hashear(contrasena), registro.id)
         }
-        // El administrador siempre entra a todo: su rol, pantallas y funciones no se editan
-        if (registro.rol !== ROL_ADMIN) {
-          if (cuerpo?.rol !== undefined) db.prepare('UPDATE usuarios SET rol = ? WHERE id = ?').run(validarRol(cuerpo.rol), registro.id)
-          let permisos = JSON.parse(registro.permisos)
-          if (cuerpo?.permisos !== undefined) {
-            permisos = validarPermisos(cuerpo.permisos)
-            db.prepare('UPDATE usuarios SET permisos = ? WHERE id = ?').run(JSON.stringify(permisos), registro.id)
-          }
-          if (cuerpo?.funciones !== undefined) {
-            const funciones = validarFunciones(cuerpo.funciones, permisos)
-            db.prepare('UPDATE usuarios SET funciones = ? WHERE id = ?').run(JSON.stringify(funciones), registro.id)
-          }
+        // El administrador siempre entra a todo y nadie cambia su propio rol: ahí solo nombre y contraseña
+        const cambiaAcceso = cuerpo?.rol !== undefined || cuerpo?.permisos !== undefined || cuerpo?.funciones !== undefined
+        if (registro.rol !== ROL_ADMIN && !propio && cambiaAcceso) {
+          const rol = cuerpo?.rol !== undefined ? validarRol(cuerpo.rol, actor) : registro.rol
+          // Con el mismo rol se conservan sus pantallas; con otro, se parte de las del rol nuevo
+          const actuales = rol === registro.rol && !tieneAccesoTotal(rol) ? JSON.parse(registro.permisos) : undefined
+          const conservar = rol === registro.rol && cuerpo?.funciones === undefined && registro.funciones !== null
+          const { permisos, funciones } = accesoDe(rol, conservar ? { ...cuerpo, funciones: JSON.parse(registro.funciones) } : cuerpo, actuales)
+          db.prepare('UPDATE usuarios SET rol = ?, permisos = ?, funciones = ? WHERE id = ?')
+            .run(rol, JSON.stringify(permisos), funciones && JSON.stringify(funciones), registro.id)
         }
         return publico(buscar(registro.usuario))
       })
     },
 
-    /** Devuelve el nombre de usuario eliminado. El administrador no se elimina */
-    eliminar(usuario) {
+    /** Devuelve el nombre de usuario eliminado. El administrador no se elimina; el subadministrador no elimina a otro */
+    eliminar(usuario, actor) {
       const registro = existente(usuario)
       if (registro.rol === ROL_ADMIN) throw prohibido('El administrador no se puede eliminar')
+      if (!puedeGestionar(actor, registro)) throw prohibido('No puedes eliminar a un subadministrador')
       db.prepare('DELETE FROM usuarios WHERE id = ?').run(registro.id)
       return registro.usuario
     },

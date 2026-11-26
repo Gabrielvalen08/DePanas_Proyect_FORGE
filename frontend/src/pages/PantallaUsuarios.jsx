@@ -10,19 +10,21 @@ import {
 } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { FUNCIONES_POR_PANTALLA, RUTAS_ASIGNABLES } from '../utils/permisos'
+import { FUNCIONES_POR_PANTALLA, ROL_ADMIN, RUTAS_ASIGNABLES, esSuPropioPerfil, puedeGestionar, tieneAccesoTotal } from '../utils/permisos'
 import { USUARIOS } from '../utils/mensajes'
 import estilos from './PantallaUsuarios.module.css'
 
 /**
- * Gestor de usuarios (/usuarios). Solo entra el administrador (App.jsx).
+ * Gestor de usuarios (/usuarios). Entran el administrador y los subadministradores (App.jsx).
+ * El subadministrador no ve el lápiz ni el bote del administrador ni de otros
+ * subadministradores (shared/usuarios.js, puedeGestionar); su propio perfil sí lo edita.
  * Lista los usuarios con su rol, sus pantallas y cuántas funciones tienen bloqueadas;
  * permite crear uno nuevo (con un rol que trae sus permisos), cambiar nombre, contraseña,
  * rol, pantallas y funciones, y eliminar a los que no son administrador. Abajo, el botón para
  * editar los requisitos de contraseña (se ven en su ventana y al crear o editar un usuario).
  */
 export default function PantallaUsuarios() {
-  const { usuario: actual } = useAuth()
+  const { usuario: actual, sesion } = useAuth()
   const { addToast } = useToast()
   const [usuarios, setUsuarios] = useState(null)
   const [requisitos, setRequisitos] = useState(null)
@@ -107,12 +109,15 @@ export default function PantallaUsuarios() {
               </thead>
               <tbody>
                 {usuarios.map(u => {
-                  const admin = u.rol === 'admin'
+                  const admin = u.rol === ROL_ADMIN
+                  const propio = esSuPropioPerfil(sesion, u)
+                  const editable = propio || (admin ? sesion?.rol === ROL_ADMIN : puedeGestionar(sesion, u))
+                  const eliminable = !admin && !propio && puedeGestionar(sesion, u)
                   return (
                     <tr key={u.usuario}>
                       <th scope="row" className={estilos.usuario}>
                         <span>{u.usuario}</span>
-                        <Insignia tono={admin ? 'marca' : 'neutro'}>{USUARIOS.roles[u.rol]}</Insignia>
+                        <Insignia tono={tieneAccesoTotal(u.rol) ? 'marca' : 'neutro'}>{USUARIOS.roles[u.rol]}</Insignia>
                         {u.usuario === actual && <Insignia tono="neutro">{USUARIOS.tu}</Insignia>}
                       </th>
                       <td data-etiqueta={USUARIOS.columnas.nombre}>{u.nombre}</td>
@@ -121,14 +126,16 @@ export default function PantallaUsuarios() {
                       </td>
                       <td className={estilos.colAcciones}>
                         <div className={estilos.acciones}>
-                          <Boton
-                            variante="icono"
-                            icono={<Pencil />}
-                            aria-label={USUARIOS.editar(u.usuario)}
-                            onClick={() => setEdicion({ registro: u })}
-                            disabled={!requisitos}
-                          />
-                          {!admin && (
+                          {editable && (
+                            <Boton
+                              variante="icono"
+                              icono={<Pencil />}
+                              aria-label={USUARIOS.editar(u.usuario)}
+                              onClick={() => setEdicion({ registro: u })}
+                              disabled={!requisitos}
+                            />
+                          )}
+                          {eliminable && (
                             <Boton
                               variante="icono"
                               icono={<Trash2 />}
@@ -162,6 +169,7 @@ export default function PantallaUsuarios() {
         edicion={edicion}
         usuarios={usuarios ?? []}
         requisitos={requisitos}
+        actor={sesion}
         alGuardar={guardar}
         alCerrar={() => setEdicion(null)}
       />
@@ -186,9 +194,9 @@ export default function PantallaUsuarios() {
   )
 }
 
-/** "Todas" para el administrador; si no, cuántas de cuántas, cuáles y cuántas funciones tiene bloqueadas */
+/** "Todas" para el administrador y el subadministrador; si no, cuántas de cuántas, cuáles y cuántas funciones tiene bloqueadas */
 function Pantallas({ usuario }) {
-  if (usuario.rol === 'admin') return <span className={estilos.todas}>{USUARIOS.todas}</span>
+  if (tieneAccesoTotal(usuario.rol)) return <span className={estilos.todas}>{USUARIOS.todas}</span>
   const bloqueadas = usuario.permisos
     .flatMap(ruta => FUNCIONES_POR_PANTALLA[ruta] ?? [])
     .filter(f => !usuario.funciones?.includes(f)).length

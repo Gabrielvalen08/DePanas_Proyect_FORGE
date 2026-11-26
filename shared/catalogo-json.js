@@ -4,7 +4,7 @@
  *   { tipo: 'proveedor' | 'categoria' | 'material' | 'producto', version: 1, filas: [...] }
  * Filas según el tipo:
  *   proveedor  { nombre, ubicacion, telefonos: [], contactos: [{ nombre, telefono }] }
- *   material   { nombre, categoria, productos: [] }        (en la interfaz: artículo)
+ *   material   { nombre, categoria, productos: [], unidad } (en la interfaz: artículo; unidad es opcional: respaldos anteriores)
  *   categoria  { nombre, articulos: [], proveedores: [] }  (proveedores es opcional: respaldos anteriores)
  *   producto   { nombre, articulos: [] }
  * Lo usan igual el backend (POST /api/catalogo/:tipo/importar) y el frontend (services/api.js).
@@ -12,6 +12,7 @@
 
 import { listaProductos, nombreProductoValido } from './productos.js'
 import { normalizarFicha } from './proveedores.js'
+import { normalizarUnidad, unidadValida } from './unidades.js'
 
 export const TIPOS_CATALOGO = ['proveedor', 'categoria', 'material', 'producto']
 export const VERSION_CATALOGO_JSON = 1
@@ -47,7 +48,9 @@ function normalizarFila(tipo, fila, n) {
   }
   if (tipo === 'material') {
     // Un artículo puede estar incompleto (se dijo «Ahora no» al comprarlo): su respaldo también debe cargar
-    return { nombre, categoria: texto(fila.categoria), productos: listaProductos(fila.productos ?? fila.producto) }
+    // Una unidad que no está en la lista se ignora: el artículo conserva la suya
+    const unidad = unidadValida(fila.unidad) ? normalizarUnidad(fila.unidad) : ''
+    return { nombre, categoria: texto(fila.categoria), productos: listaProductos(fila.productos ?? fila.producto), unidad }
   }
   if (tipo === 'producto' && !nombreProductoValido(nombre)) {
     throw fallo(MENSAJES_CATALOGO_JSON.fila(n, MENSAJES_CATALOGO_JSON.productoConComa))
@@ -119,7 +122,9 @@ export function filasDelCatalogo(tipo, catalogo) {
     }))
   }
   if (tipo === 'material') {
-    return ordenarFilas('material', catalogo.materiales.map(m => ({ nombre: m.nombre, categoria: m.categoria || '', productos: listaProductos(m.producto) })))
+    return ordenarFilas('material', catalogo.materiales.map(m => ({
+      nombre: m.nombre, categoria: m.categoria || '', productos: listaProductos(m.producto), unidad: m.unidad || '',
+    })))
   }
   if (tipo === 'categoria') {
     return ordenar(catalogo.categorias.map(nombre => ({

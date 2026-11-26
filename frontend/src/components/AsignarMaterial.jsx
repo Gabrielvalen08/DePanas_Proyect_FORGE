@@ -1,21 +1,27 @@
 import { useCallback, useId, useRef, useState } from 'react'
 import { Check, Pencil, Plus, Tags } from 'lucide-react'
-import { AvisoDestacado, Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
+import { AvisoDestacado, Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal, Selector } from './common'
 import AvisoParecido from './AvisoParecido'
 import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { getAsignacion, getCategorias, getCategoriasDeProveedor, getComprasDeMaterial, getMateriales, getProductos } from '../services/api'
 import { textoBusqueda } from '../utils/formato'
 import { ASIGNACION, AVISO_SALIDA, CONFIRMAR } from '../utils/mensajes'
 import { nombreParecido } from '../utils/parecidos'
+import { UNIDADES } from '../../../shared/unidades.js'
 import estilos from './AsignarMaterial.module.css'
+
+// La primera opción, vacía, hace de indicación: la unidad se elige a propósito
+const OPCIONES_UNIDAD = [{ valor: '', texto: ASIGNACION.elegirUnidad }, ...UNIDADES]
 
 const mismoNombre = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase()
 
 /**
  * AsignarMaterial
- * Ventana para crear un artículo o editar su nombre, su categoría y sus productos,
- * como las columnas del Excel (un artículo puede ir en varios productos). Las opciones
+ * Ventana para crear un artículo o editar su nombre, su unidad, su categoría y sus productos,
+ * como las columnas del Excel (un artículo puede ir en varios productos). La unidad va a la
+ * derecha del nombre: las compras la toman de aquí y no se cambia en la fila. Las opciones
  * son botones; al escribir se filtran, y si lo escrito no existe se puede agregar como nuevo.
+ * Todo cabe en la pantalla sin desplazarse (botones de opción compactos, sin textos de ayuda).
  *
  * Según material.modo:
  *  - nuevo: aún no está registrado; todo se llena (el nombre viene de lo escrito en la fila).
@@ -23,14 +29,14 @@ const mismoNombre = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim(
  *  - completar: ya registrado y sin permiso para editar; solo se pide lo que le falta.
  *
  * Props:
- * La categoría es obligatoria al guardar; los productos no (no todo artículo va en un producto).
+ * La categoría y la unidad son obligatorias al guardar; los productos no (no todo artículo va en un producto).
  *
  * Props:
- *  - material: { nombre, existe, categoria, producto, productos, modo, pedido, marcado } o null para cerrar.
+ *  - material: { nombre, existe, categoria, producto, productos, unidad, modo, pedido, marcado } o null para cerrar.
  *    pedido: la ventana la abrió el sistema o el «+» (ofrece «Ahora no»); si no, el lápiz (ofrece «Cancelar»).
  *    marcado: ya se dijo «Ahora no»; se recuerda qué le falta
  *  - proveedor: el de la compra (sus categorías van primero)
- *  - alGuardar({ nombre, categoria, productos }): async; si lanza, la ventana sigue abierta
+ *  - alGuardar({ nombre, categoria, productos, unidad }): async; si lanza, la ventana sigue abierta
  *  - alOmitir(): «Ahora no» (o Guardar sin nada nuevo); la compra sigue su curso sin estos datos
  *  - alCerrar(): Cancelar, la X, Esc o el clic fuera
  *  - alUsarExistente(nombre): en el aviso de nombre parecido se eligió el artículo ya registrado;
@@ -74,7 +80,9 @@ function Formulario({ material, proveedor, alGuardar, alSalir, alUsarExistente, 
   // Al completar, lo que ya tiene se muestra y no se cambia (eso es editar el catálogo)
   const pideCategoria = !completando || !material.categoria
   const pideProducto = !completando || !material.productos?.length
+  const pideUnidad = !completando || !material.unidad
   const [nombre, setNombre] = useState(material.nombre)
+  const [unidad, setUnidad] = useState(material.unidad ?? '')
   const [categoria, setCategoria] = useState(material.categoria)
   const [productos, setProductos] = useState(material.productos ?? [])
   const [errores, setErrores] = useState({})
@@ -88,7 +96,7 @@ function Formulario({ material, proveedor, alGuardar, alSalir, alUsarExistente, 
   })
 
   const cambiado = nombre.trim() !== material.nombre.trim() || categoria.trim() !== material.categoria ||
-    productos.join('\n') !== (material.productos ?? []).join('\n')
+    productos.join('\n') !== (material.productos ?? []).join('\n') || unidad !== (material.unidad ?? '')
   const formRef = useRef(null)
   const registrarDesdeAviso = useCallback(() => formRef.current?.requestSubmit(), [])
   const avisoSalida = useDatosSinGuardar({
@@ -112,6 +120,7 @@ function Formulario({ material, proveedor, alGuardar, alSalir, alUsarExistente, 
     else if (!mismoNombre(limpio, material.nombre) && getAsignacion(limpio).existe) {
       nuevos.nombre = ASIGNACION.yaExiste(getAsignacion(limpio).nombre)
     }
+    if (!unidad) nuevos.unidad = ASIGNACION.faltaUnidad
     if (!categoria.trim()) nuevos.categoria = ASIGNACION.faltaCategoria
     setErrores(nuevos)
     if (Object.keys(nuevos).length > 0) {
@@ -131,7 +140,7 @@ function Formulario({ material, proveedor, alGuardar, alSalir, alUsarExistente, 
     avisoSalida.aceptar()
     setGuardando(true)
     try {
-      await alGuardar({ nombre: nombre.trim(), categoria: categoria.trim(), productos })
+      await alGuardar({ nombre: nombre.trim(), categoria: categoria.trim(), productos, unidad })
       avisoSalida.terminar(true)
     } catch (err) {
       // El padre muestra el error; la ventana queda abierta para corregir el campo que lo causó
@@ -144,23 +153,38 @@ function Formulario({ material, proveedor, alGuardar, alSalir, alUsarExistente, 
 
   function elegir(campo, valor) {
     if (campo === 'categoria') setCategoria(valor)
+    else if (campo === 'unidad') setUnidad(valor)
     else setProductos(valor)
     setErrores(prev => ({ ...prev, [campo]: undefined }))
   }
+
+  const selectorUnidad = (
+    <Selector
+      id="asignar-material-unidad"
+      etiqueta={ASIGNACION.etiquetaUnidad}
+      etiquetaOculta={!completando}
+      opciones={OPCIONES_UNIDAD}
+      value={unidad}
+      onChange={e => elegir('unidad', e.target.value)}
+      error={errores.unidad}
+      className={estilos.unidad}
+    />
+  )
 
   return (
     <>
       <form ref={formRef} onSubmit={guardar} noValidate>
         <CuerpoModal>
           {material.marcado && (
-            <AvisoDestacado texto={ASIGNACION.faltaInformacion(!material.categoria, !material.productos?.length)} />
-          )}
-          {proveedor && (
-            <p className={estilos.asignado}>Proveedor: <strong>{proveedor}</strong></p>
+            <AvisoDestacado texto={ASIGNACION.faltaInformacion(!material.categoria, !material.productos?.length, !material.unidad)} />
           )}
           {completando && (
             <p className={estilos.asignado}>{ASIGNACION.etiquetaArticulo}: <strong>{material.nombre}</strong></p>
           )}
+          {completando && !pideUnidad && (
+            <p className={estilos.asignado}>{ASIGNACION.etiquetaUnidad}: <strong>{material.unidad}</strong></p>
+          )}
+          {completando && pideUnidad && selectorUnidad}
           {!pideCategoria && (
             <p className={estilos.asignado}>Categoría: <strong>{material.categoria}</strong></p>
           )}
@@ -170,8 +194,10 @@ function Formulario({ material, proveedor, alGuardar, alSalir, alUsarExistente, 
 
           {!completando && (
             <fieldset className={estilos.grupo}>
-              <legend className={estilos.titulo}>{ASIGNACION.etiquetaArticulo}</legend>
-              <div>
+              <legend className={estilos.titulo}>{ASIGNACION.etiquetaArticuloYUnidad}</legend>
+              {/* El nombre y, a su derecha, la unidad en que se compra */}
+              <div className={estilos.nombreYUnidad}>
+                <div className={estilos.nombre}>
                 <Campo
                   ref={nombreRef}
                   id="asignar-material-nombre"
@@ -196,10 +222,11 @@ function Formulario({ material, proveedor, alGuardar, alSalir, alUsarExistente, 
                     alUsarExistente(existente)
                   })}
                 />
+                </div>
+                {selectorUnidad}
               </div>
             </fieldset>
           )}
-          {(pideCategoria || pideProducto) && <p className={estilos.ayuda}>{ASIGNACION.ayudaBuscador}</p>}
           {pideCategoria && (
             <SelectorOpciones
               titulo="Categoría"
@@ -247,6 +274,7 @@ function Formulario({ material, proveedor, alGuardar, alSalir, alUsarExistente, 
           nombre: nombre.trim(),
           categoria: categoria.trim(),
           productos,
+          unidad,
           compras: material.existe ? getComprasDeMaterial(material.nombre) : 0,
         })}
         confirmLabel={ASIGNACION.confirmar.confirmar}
@@ -378,7 +406,7 @@ export function SelectorOpciones({
             className={[estilos.opcion, estilos.elegida].join(' ')}
             onClick={() => multiple && alternar(n)}
           >
-            <Check size={14} aria-hidden="true" />
+            <Check size={13} aria-hidden="true" />
             {n}
             <Insignia tono="marca" className={estilos.nueva}>Nueva</Insignia>
           </button>
@@ -393,14 +421,14 @@ export function SelectorOpciones({
               className={[estilos.opcion, elegida && estilos.elegida].filter(Boolean).join(' ')}
               onClick={() => alternar(o)}
             >
-              {elegida && <Check size={14} aria-hidden="true" />}
+              {elegida && <Check size={13} aria-hidden="true" />}
               {o}
             </button>
           )
         })}
         {puedeAgregar && !conComa && (
           <button type="button" className={[estilos.opcion, estilos.agregar].join(' ')} onClick={agregar}>
-            <Plus size={14} aria-hidden="true" />
+            <Plus size={13} aria-hidden="true" />
             Agregar «{busqueda.trim()}»
           </button>
         )}

@@ -5,7 +5,7 @@
  *
  *   GET    /api/catalogo                    → { proveedores, categorias, productos, fichas, materiales,
  *                                               uso, precios, ivaPorProveedor, proveedoresPorCategoria }
- *   PUT    /api/catalogo/materiales/:nombre → asigna { categoria, productos, proveedor?, nuevo? } a un
+ *   PUT    /api/catalogo/materiales/:nombre → asigna { categoria, productos, unidad?, proveedor?, nuevo? } a un
  *                                             artículo (lo crea si no existe; usado al registrar compras).
  *                                             Sin catalogo.editar solo se completa lo que le falte (403)
  *   POST   /api/catalogo/:tipo              → agrega { nombre, … }

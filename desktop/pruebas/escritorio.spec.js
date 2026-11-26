@@ -15,7 +15,7 @@ import { tmpdir } from 'os'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { readSheet } from 'read-excel-file/node'
-import { ACCESO, APAGADO, COMPRA, CONFIRMAR, EXPORTAR, LISTA_COMPRAS } from '../../frontend/src/utils/mensajes.js'
+import { ACCESO, APAGADO, ASIGNACION, COMPRA, CONFIRMAR, EXPORTAR, LISTA_COMPRAS } from '../../frontend/src/utils/mensajes.js'
 
 const CARPETA = join(dirname(dirname(fileURLToPath(import.meta.url))), 'salida', 'De Panas SV')
 const CESAR = { usuario: 'Cesar_01', contrasena: 'DePanas#2026' }
@@ -140,8 +140,15 @@ test('el .zip: se abre con el .cmd, funciona en el navegador, se apaga desde el 
     // Registrar una compra
     await formulario.getByRole('combobox', { name: 'Artículo, fila 1' }).fill('Agua')
     await pagina.keyboard.press('Escape')
+    // La unidad es del artículo: se elige en su formulario (el lápiz) y la fila la toma
+    await formulario.getByRole('button', { name: COMPRA.editarArticulo('Agua') }).click()
+    const articulo = pagina.getByRole('dialog', { name: ASIGNACION.tituloEditar })
+    await articulo.getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }).selectOption('caja')
+    await articulo.getByRole('button', { name: ASIGNACION.guardar }).click()
+    await confirmar(pagina, ASIGNACION.confirmar.confirmar)
+    await expect(articulo).toBeHidden()
+    await expect(formulario.getByLabel('Unidad, fila 1')).toHaveText('caja')
     await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('2')
-    await formulario.getByRole('combobox', { name: 'Unidad, fila 1' }).selectOption('caja')
     await formulario.getByRole('textbox', { name: 'Precio unitario, fila 1' }).fill('3.54')
     await pagina.getByRole('button', { name: 'Guardar compra' }).click()
     await confirmar(pagina, COMPRA.confirmarGuardar.confirmar)

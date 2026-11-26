@@ -4,15 +4,16 @@
  * sus productos) y productos. El catálogo es la única fuente de las opciones de los
  * buscadores; cada compra guardada registra lo suyo (db.js, registrarCompra).
  *
- * Cada material tiene una sola categoría y uno o varios productos (en `producto`, como texto
- * «Arepas, Empanadas»; ver shared/productos.js). `materiales` en una categoría o un producto es
+ * Cada material tiene una sola categoría, uno o varios productos (en `producto`, como texto
+ * «Arepas, Empanadas»; ver shared/productos.js) y la unidad en que se compra (shared/unidades.js;
+ * las compras la toman de aquí y cada compra guardada conserva la suya). `materiales` en una categoría o un producto es
  * la lista completa de los que la llevan; `proveedores` en una categoría, la de los que la surten
  * (tabla proveedor_categoria). Renombrar actualiza también las compras; eliminar deja a las
  * compras con su texto. Todo cambio va en una transacción y los errores son ErrorDatos.
  *
  *   const dao = catalogoDAO(db)
  *   dao.leer()
- *   dao.asignarMaterial(nombre, { categoria, productos, proveedor?, nuevo? }, { puedeEditar })
+ *   dao.asignarMaterial(nombre, { categoria, productos, unidad?, proveedor?, nuevo? }, { puedeEditar })
  *   dao.agregar(tipo, cuerpo, { puedeCrearProveedor }) · dao.editar(tipo, nombre, cuerpo, { puedeCrearProveedor })
  *   dao.eliminar(tipo, nombre) · dao.importar(tipo, filas)
  *
@@ -25,6 +26,7 @@ import {
 } from '../../shared/productos.js'
 import { fichaVacia, leerFicha, normalizarFicha } from '../../shared/proveedores.js'
 import { validarCatalogoJSON } from '../../shared/catalogo-json.js'
+import { UNIDAD_NO_VALIDA, normalizarUnidad, unidadValida } from '../../shared/unidades.js'
 import { ErrorDatos } from './errores.js'
 
 export const TIPOS = ['proveedor', 'categoria', 'material', 'producto']
@@ -121,7 +123,7 @@ export function leerCatalogo(db) {
     proveedores: nombres('proveedor'),
     categorias: nombres('categoria'),
     productos: nombres('producto'),
-    materiales: db.prepare("SELECT nombre, categoria, producto FROM catalogo WHERE tipo = 'material'").all()
+    materiales: db.prepare("SELECT nombre, categoria, producto, unidad FROM catalogo WHERE tipo = 'material'").all()
       .map(m => ({ ...m, productos: listaProductos(m.producto) }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
     uso: leerUso(db),
@@ -142,6 +144,18 @@ function leerProductos(cuerpo) {
   const lista = Array.isArray(cuerpo?.productos) ? cuerpo.productos.filter(p => typeof p === 'string') : cuerpo?.producto
   if (Array.isArray(lista) && lista.some(p => !nombreProductoValido(p))) throw fallo(400, PRODUCTO_CON_COMA)
   return listaProductos(lista)
+}
+
+/** `unidad` del cuerpo: undefined (no se toca) o una de la lista; 400 si no es válida */
+function leerUnidad(cuerpo) {
+  if (cuerpo?.unidad === undefined || cuerpo.unidad === '') return undefined
+  if (!unidadValida(cuerpo.unidad)) throw fallo(400, UNIDAD_NO_VALIDA, 'unidad')
+  return normalizarUnidad(cuerpo.unidad)
+}
+
+/** Cambia la unidad del artículo. Las compras ya guardadas conservan la suya */
+function fijarUnidad(db, material, unidad) {
+  if (unidad !== undefined) db.prepare("UPDATE catalogo SET unidad = ? WHERE tipo = 'material' AND nombre = ?").run(unidad, material)
 }
 
 /**
@@ -299,6 +313,7 @@ function importarFilas(db, tipo, filas) {
     } else if (tipo === 'material') {
       const actual = buscar(db, 'material', nombre)
       asignar(db, nombre, fila.categoria || actual?.categoria || '', [...listaProductos(actual?.producto), ...fila.productos])
+      if (fila.unidad) fijarUnidad(db, nombre, fila.unidad)
     } else {
       if (tipo === 'categoria') {
         // Suma los proveedores del archivo; los que no existen se omiten
@@ -354,21 +369,28 @@ export function catalogoDAO(db) {
 
       return enTransaccion(db, () => {
         const productos = leerProductos(cuerpo)
+        const unidad = leerUnidad(cuerpo)
         const existente = buscar(db, 'material', material)
         // Crear un artículo nuevo nunca se funde con otro que ya se llame igual
         if (cuerpo?.nuevo === true && existente) throw fallo(409, `Ya existe un artículo llamado «${existente.nombre}»`, 'nombre')
         if (existente && !puedeEditar) {
           const cambiaCategoria = existente.categoria && existente.categoria.toLowerCase() !== categoria.toLowerCase()
           const cambiaProductos = existente.producto && existente.producto.toLowerCase() !== textoProductos(productos).toLowerCase()
-          if (cambiaCategoria || cambiaProductos) throw fallo(403, 'No tienes permiso para hacer esto.')
+          const cambiaUnidad = existente.unidad && unidad !== undefined && existente.unidad !== unidad
+          if (cambiaCategoria || cambiaProductos || cambiaUnidad) throw fallo(403, 'No tienes permiso para hacer esto.')
         }
         const mat = registrarEnCatalogo(db, 'material', material)
         const { categoria: c, producto, productos: lista, ...nuevos } = respuestaAsignacion(asignar(db, mat.nombre, categoria, productos))
+        fijarUnidad(db, mat.nombre, unidad)
+        const unidadFinal = buscar(db, 'material', mat.nombre).unidad
         // El artículo se le compra a este proveedor: su categoría pasa a ser de él
         const vinculo = proveedor
           ? { proveedorVinculado: vincularProveedorCategoria(db, proveedor, c), proveedor: buscar(db, 'proveedor', proveedor).nombre }
           : {}
-        return { material: { nombre: mat.nombre, categoria: c, producto, productos: lista }, materialNuevo: mat.nuevo, ...nuevos, ...vinculo }
+        return {
+          material: { nombre: mat.nombre, categoria: c, producto, productos: lista, unidad: unidadFinal },
+          materialNuevo: mat.nuevo, ...nuevos, ...vinculo,
+        }
       })
     },
 
@@ -394,6 +416,7 @@ export function catalogoDAO(db) {
 
       return enTransaccion(db, () => {
         const productos = tipo === 'material' ? leerProductos(cuerpo) : []
+        const unidad = tipo === 'material' ? leerUnidad(cuerpo) : undefined
         const materiales = conMateriales(tipo) ? leerMateriales(cuerpo) : undefined
         const proveedores = tipo === 'categoria' ? leerProveedores(cuerpo) : undefined
         const existente = buscar(db, tipo, nombre)
@@ -410,7 +433,9 @@ export function catalogoDAO(db) {
           const extra = tipo === 'categoria' ? { proveedores: proveedoresDe(db, nombre) } : {}
           return { nombre, materiales: cambiados, ...extra, categoriaNueva: false, productoNuevo: false, productosNuevos: [] }
         }
-        return { nombre, ...respuestaAsignacion(asignar(db, nombre, categoria, productos)) }
+        const asignacion = respuestaAsignacion(asignar(db, nombre, categoria, productos))
+        fijarUnidad(db, nombre, unidad)
+        return { nombre, ...asignacion, unidad: unidad ?? '' }
       })
     },
 
@@ -428,6 +453,7 @@ export function catalogoDAO(db) {
 
       return enTransaccion(db, () => {
         const productos = tipo === 'material' ? leerProductos(cuerpo) : []
+        const unidad = tipo === 'material' ? leerUnidad(cuerpo) : undefined
         // Los productos son opcionales; sin categoría ni productos solo cambia el nombre
         if (tipo === 'material' && !categoria && productos.length > 0) throw fallo(400, 'Elige una categoría')
         const materiales = conMateriales(tipo) ? leerMateriales(cuerpo) : undefined
@@ -463,6 +489,7 @@ export function catalogoDAO(db) {
           const proveedor = texto(cuerpo?.proveedor)
           if (proveedor) vincularProveedorCategoria(db, proveedor, asignacion.categoria)
         }
+        if (tipo === 'material') fijarUnidad(db, nuevo, unidad)
         const cambiados = materiales ? fijarMateriales(db, tipo, nuevo, materiales) : 0
         if (proveedores) fijarProveedores(db, nuevo, proveedores, puedeCrearProveedor)
         if (ficha) guardarFicha(db, nuevo, ficha)

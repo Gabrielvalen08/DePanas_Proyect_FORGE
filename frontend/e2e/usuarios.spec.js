@@ -1,4 +1,4 @@
-import { test, expect, entrar, menu, confirmar, salir, CESAR } from './ayudantes.js'
+import { test, expect, entrar, menu, confirmar, salir, unidadDelArticulo, CESAR } from './ayudantes.js'
 import { COMPRA, CONFIRMAR, USUARIOS } from '../src/utils/mensajes.js'
 
 // Cumple los requisitos iniciales: 8 caracteres, mayúscula, minúscula, número y carácter especial
@@ -100,8 +100,9 @@ test.describe('Gestor de usuarios', () => {
     await page.keyboard.press('Escape')
     await formulario.getByRole('combobox', { name: 'Artículo, fila 1' }).fill('Gatorade')
     await page.keyboard.press('Escape')
+    // Sin catalogo.editar solo completa lo que le falta al artículo: aquí, la unidad
+    await unidadDelArticulo(page, formulario, 1, 'unidad')
     await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('2')
-    await formulario.getByRole('combobox', { name: 'Unidad, fila 1' }).selectOption('unidad')
     await formulario.getByRole('textbox', { name: 'Precio unitario, fila 1' }).fill('1.50')
     await page.getByRole('button', { name: 'Guardar compra' }).click()
     await confirmar(page, COMPRA.confirmarGuardar.confirmar)
@@ -182,5 +183,27 @@ test.describe('Gestor de usuarios', () => {
     const otra = await abrirNuevo(page)
     await expect(otra.locator('#editor-usuario-requisitos')).toContainText('Al menos 8 caracteres')
     await otra.getByRole('button', { name: USUARIOS.cancelar }).click()
+  })
+})
+
+test.describe('Subadministrador', () => {
+  test('entra al Gestor de usuarios, no edita a César y no da el rol de subadministrador', async ({ page, request }, info) => {
+    const sub = { usuario: `Sub_${info.project.name}`, nombre: 'Sofía', contrasena: 'Sofia#2026' }
+    const { token } = await (await request.post('/api/sesion', { data: { usuario: CESAR.usuario, contrasena: CESAR.contrasena } })).json()
+    const headers = { Authorization: `Bearer ${token}` }
+    await request.post('/api/usuarios', { headers, data: { ...sub, rol: 'subadmin' } })
+
+    await entrar(page, sub)
+    await page.goto('/usuarios')
+    await expect(page.getByRole('heading', { name: 'Gestor de usuarios', level: 1 })).toBeVisible()
+    const cesar = page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: /Cesar_01/ }) })
+    await expect(cesar.getByRole('button', { name: USUARIOS.editar('Cesar_01') })).toHaveCount(0)
+    await expect(cesar.getByRole('button', { name: USUARIOS.eliminar('Cesar_01') })).toHaveCount(0)
+
+    const ventana = await abrirNuevo(page)
+    await expect(ventana.getByRole('radio', { name: new RegExp(USUARIOS.roles.subadmin) })).toBeDisabled()
+    await expect(ventana.getByRole('radio', { name: new RegExp(USUARIOS.roles.empleado) })).toBeEnabled()
+
+    await request.delete(`/api/usuarios/${sub.usuario}`, { headers })
   })
 })

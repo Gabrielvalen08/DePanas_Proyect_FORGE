@@ -8,7 +8,9 @@
  *    usuario también tiene la pantalla.
  *  - Roles: el administrador (único, entra a todo) y los roles que se asignan al crear
  *    un usuario. Cada rol trae sus pantallas y funciones; el administrador puede
- *    ajustarlas después usuario por usuario.
+ *    ajustarlas después usuario por usuario. El subadministrador también entra a todo
+ *    (Gestor de usuarios incluido), pero no crea ni edita subadministradores y no edita
+ *    al administrador (rolesQueAsigna, puedeGestionar).
  *  - Requisitos de las contraseñas, que el administrador configura.
  *
  * Un usuario guarda `permisos` (rutas) y `funciones` (ids). `funciones` null o ausente
@@ -18,7 +20,7 @@
 /** Pantallas que el administrador puede dar a los demás usuarios (rutas del frontend) */
 export const RUTAS_ASIGNABLES = ['/', '/compras', '/catalogo', '/exportar', '/cargar']
 
-/** El Gestor de usuarios: solo el administrador entra, nunca se asigna */
+/** El Gestor de usuarios: entran el administrador y los subadministradores; no se asigna suelto */
 export const RUTA_USUARIOS = '/usuarios'
 
 /** Funciones de cada pantalla, en el orden en que se muestran */
@@ -34,11 +36,45 @@ export const pantallaDeFuncion = funcion =>
   Object.keys(FUNCIONES_POR_PANTALLA).find(ruta => FUNCIONES_POR_PANTALLA[ruta].includes(funcion))
 
 export const ROL_ADMIN = 'admin'
+export const ROL_SUBADMIN = 'subadmin'
 
 /** Roles que se asignan al crear un usuario, con sus pantallas y funciones de partida */
-export const ROLES_ASIGNABLES = ['operador', 'empleado']
+export const ROLES_ASIGNABLES = [ROL_SUBADMIN, 'operador', 'empleado']
+
+/**
+ * El administrador y el subadministrador entran a todas las pantallas (también a las que
+ * se agreguen) y pueden hacer todo: guardan permisos ['*'] y no se les eligen pantallas.
+ */
+export const tieneAccesoTotal = rol => rol === ROL_ADMIN || rol === ROL_SUBADMIN
+
+/**
+ * Roles que `rolActor` puede dar al crear o editar un usuario: el administrador, todos; el
+ * subadministrador, los de menos permisos (no crea otro subadministrador); nadie más.
+ */
+export function rolesQueAsigna(rolActor) {
+  if (rolActor === ROL_ADMIN) return [...ROLES_ASIGNABLES]
+  if (rolActor === ROL_SUBADMIN) return ROLES_ASIGNABLES.filter(r => r !== ROL_SUBADMIN)
+  return []
+}
+
+/**
+ * ¿`actor` puede editar o eliminar a `objetivo`? El administrador, a todos. El
+ * subadministrador, solo a los roles que puede dar (ni al administrador ni a otros
+ * subadministradores). Su propio perfil sí lo edita, pero solo nombre y contraseña
+ * (esSuPropioPerfil). Sin actor (pruebas, datos de antes) se aplica como administrador.
+ */
+export function puedeGestionar(actor, objetivo) {
+  if (!actor || actor.rol === ROL_ADMIN) return true
+  return rolesQueAsigna(actor.rol).includes(objetivo?.rol)
+}
+
+/** ¿Se está editando a sí mismo? Entonces solo cambia su nombre y su contraseña, nunca su rol */
+export const esSuPropioPerfil = (actor, objetivo) =>
+  Boolean(actor && objetivo) && actor.usuario.toLowerCase() === objetivo.usuario.toLowerCase()
 
 export const PERMISOS_POR_ROL = {
+  // Entra a todo (Gestor de usuarios incluido), como el administrador
+  [ROL_SUBADMIN]: { permisos: ['*'], funciones: [] },
   // Todo menos el Gestor de usuarios
   operador: { permisos: [...RUTAS_ASIGNABLES], funciones: [...FUNCIONES] },
   // Registra compras y las consulta y corrige; sin Catálogo, sin eliminar compras y sin exportar ni cargar
@@ -54,12 +90,12 @@ export function permisosDeRol(rol) {
 }
 
 /**
- * Funciones que de verdad tiene un usuario: el administrador, todas ('*'); un usuario sin
+ * Funciones que de verdad tiene un usuario: el administrador y el subadministrador, todas ('*'); un usuario sin
  * lista (de antes de las funciones), todas las de sus pantallas; si no, las de su lista cuya
  * pantalla tiene.
  */
 export function funcionesEfectivas({ rol, permisos = [], funciones }) {
-  if (rol === ROL_ADMIN) return ['*']
+  if (tieneAccesoTotal(rol)) return ['*']
   const lista = Array.isArray(funciones) ? funciones : FUNCIONES
   return FUNCIONES.filter(f => lista.includes(f) && permisos.includes(pantallaDeFuncion(f)))
 }

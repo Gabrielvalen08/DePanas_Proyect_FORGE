@@ -6,6 +6,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { readFileSync } from 'fs'
 import { CATALOGO_INICIAL } from './db/catalogo.js'
 import { listaProductos } from '../shared/productos.js'
+import { UNIDADES_RENOMBRADAS, normalizarUnidad, unidadValida } from '../shared/unidades.js'
 import { CONTRASENA_MARTA_ANTERIOR, HASH_CESAR_ANTERIOR, USUARIOS_INICIALES } from './db/usuarios.js'
 import { verificar } from './contrasenas.js'
 
@@ -15,7 +16,8 @@ export const COLUMNAS_REQUERIDAS = ['fecha', 'material', 'cantidad', 'monto', 'p
 // Versión del catálogo (PRAGMA user_version). La siembra corre una sola vez por
 // base: si corriera en cada arranque, lo que el usuario elimina volvería a aparecer.
 // 1: catálogo sembrado y completado con las compras. 2: proveedores de cada categoría.
-const VERSION_CATALOGO = 2
+// 3: unidad de cada artículo (la de su última compra) y «Gastos personales» / «Ninguno».
+const VERSION_CATALOGO = 3
 
 /** Abre la base, aplica el esquema y migra bases del esquema anterior */
 export function abrirDB(dbPath, schemaPath) {
@@ -59,8 +61,26 @@ export function prepararCatalogo(db) {
       completarDesdeCompras(db)
     }
     if (version < 2) completarProveedorCategoria(db)
+    if (version < 3) {
+      completarUnidades(db)
+      // Para registrar un gasto personal que no va en ningún producto
+      registrarEnCatalogo(db, 'categoria', 'Gastos personales')
+      registrarEnCatalogo(db, 'producto', 'Ninguno')
+    }
   })
   db.exec(`PRAGMA user_version = ${VERSION_CATALOGO}`)
+}
+
+/** Cada artículo sin unidad toma la de su última compra (la de fecha más reciente y, a igual fecha, la registrada después) */
+function completarUnidades(db) {
+  const ultima = db.prepare(
+    "SELECT unidad FROM ingresos WHERE material = ? COLLATE NOCASE AND unidad != '' ORDER BY fecha DESC, id DESC LIMIT 1"
+  )
+  const fijar = db.prepare("UPDATE catalogo SET unidad = ? WHERE tipo = 'material' AND nombre = ?")
+  for (const { nombre } of db.prepare("SELECT nombre FROM catalogo WHERE tipo = 'material' AND unidad = ''").all()) {
+    const unidad = normalizarUnidad(ultima.get(nombre)?.unidad)
+    if (unidadValida(unidad)) fijar.run(unidad, nombre)
+  }
 }
 
 /** Cada proveedor queda ligado a las categorías de lo que ya se le compró */
@@ -134,13 +154,14 @@ function migrarContrasenaMarta(db) {
 }
 
 /**
- * Bases de antes de los roles y las funciones: la tabla `usuarios` solo aceptaba
- * 'admin' y 'operador' (un CHECK no se cambia en SQLite) y no tenía `funciones`.
- * Se rehace copiando los usuarios; sus `funciones` quedan en NULL (las tienen todas).
+ * Bases de antes de un rol: el CHECK de `usuarios` no admitía 'empleado' o 'subadmin' (un
+ * CHECK no se cambia en SQLite), y las más viejas tampoco tenían `funciones`. Se rehace la
+ * tabla copiando los usuarios; sin `funciones`, quedan en NULL (las tienen todas).
  */
 function migrarUsuarios(db) {
   const { sql } = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuarios'").get()
-  if (sql.includes("'empleado'")) return
+  if (sql.includes("'subadmin'")) return
+  const conFunciones = db.prepare('PRAGMA table_info(usuarios)').all().some(c => c.name === 'funciones')
   enTransaccion(db, () => {
     db.exec('ALTER TABLE usuarios RENAME TO usuarios_anterior')
     db.exec(`CREATE TABLE usuarios (
@@ -148,22 +169,25 @@ function migrarUsuarios(db) {
       usuario    TEXT NOT NULL UNIQUE COLLATE NOCASE,
       nombre     TEXT NOT NULL,
       contrasena TEXT NOT NULL,
-      rol        TEXT NOT NULL DEFAULT 'operador' CHECK (rol IN ('admin', 'operador', 'empleado')),
+      rol        TEXT NOT NULL DEFAULT 'operador' CHECK (rol IN ('admin', 'subadmin', 'operador', 'empleado')),
       permisos   TEXT NOT NULL DEFAULT '[]',
       funciones  TEXT
     )`)
-    db.exec('INSERT INTO usuarios (id, usuario, nombre, contrasena, rol, permisos) SELECT id, usuario, nombre, contrasena, rol, permisos FROM usuarios_anterior')
+    const columnas = `id, usuario, nombre, contrasena, rol, permisos${conFunciones ? ', funciones' : ''}`
+    db.exec(`INSERT INTO usuarios (${columnas}) SELECT ${columnas} FROM usuarios_anterior`)
     db.exec('DROP TABLE usuarios_anterior')
   })
 }
 
-/** Completa la categoría o el producto vacíos de un material (no pisa lo asignado) */
-function completarMaterial(db, nombre, categoria, producto) {
+/** Completa la categoría, el producto o la unidad vacíos de un material (no pisa lo asignado) */
+function completarMaterial(db, nombre, categoria, producto, unidad) {
+  const valida = unidadValida(unidad) ? normalizarUnidad(unidad) : ''
   db.prepare(
     "UPDATE catalogo SET categoria = CASE WHEN categoria = '' THEN ? ELSE categoria END, " +
-    "producto = CASE WHEN producto = '' THEN ? ELSE producto END " +
+    "producto = CASE WHEN producto = '' THEN ? ELSE producto END, " +
+    "unidad = CASE WHEN unidad = '' THEN ? ELSE unidad END " +
     "WHERE tipo = 'material' AND nombre = ? COLLATE NOCASE"
-  ).run(categoria || '', producto || '', nombre)
+  ).run(categoria || '', producto || '', valida, nombre)
 }
 
 /** Opciones del Excel (db/catalogo.js) */
@@ -205,10 +229,10 @@ function completarDesdeCompras(db) {
  */
 export function buscarEnCatalogo(db, tipo, nombre) {
   const limpio = nombre.trim()
-  const directo = db.prepare('SELECT nombre, categoria, producto FROM catalogo WHERE tipo = ? AND nombre = ? COLLATE NOCASE').get(tipo, limpio)
+  const directo = db.prepare('SELECT nombre, categoria, producto, unidad FROM catalogo WHERE tipo = ? AND nombre = ? COLLATE NOCASE').get(tipo, limpio)
   if (directo) return directo
   const clave = limpio.toLowerCase()
-  return db.prepare('SELECT nombre, categoria, producto FROM catalogo WHERE tipo = ?').all(tipo)
+  return db.prepare('SELECT nombre, categoria, producto, unidad FROM catalogo WHERE tipo = ?').all(tipo)
     .find(f => f.nombre.toLowerCase() === clave)
 }
 
@@ -243,7 +267,8 @@ export function registrarCompra(db, compra) {
     if (categoria) registrarEnCatalogo(db, 'categoria', categoria)
     // Una fila puede llevar varios productos («Arepas, Empanadas»): se registra cada uno
     for (const nombre of listaProductos(producto)) registrarEnCatalogo(db, 'producto', nombre)
-    completarMaterial(db, m.material, categoria, producto)
+    // La unidad de la compra completa la del artículo si aún no tiene
+    completarMaterial(db, m.material, categoria, producto, m.unidad)
     // La categoría con que quedó el material (la del catálogo manda) pasa a ser del proveedor
     const asignada = db.prepare("SELECT categoria FROM catalogo WHERE tipo = 'material' AND nombre = ? COLLATE NOCASE").get(m.material)?.categoria
     if (asignada || categoria) vincularProveedorCategoria(db, compra.proveedor, asignada || categoria)
@@ -273,11 +298,14 @@ export function migrar(db) {
   // Las compras anteriores al IVA quedan sin IVA
   if (!columnas.includes('compra_iva')) db.exec('ALTER TABLE ingresos ADD COLUMN compra_iva REAL NOT NULL DEFAULT 0')
   db.exec('CREATE INDEX IF NOT EXISTS idx_ingresos_fecha ON ingresos(fecha)')
+  // Unidades que cambiaron de nombre («g» → «gr»)
+  const renombrar = db.prepare('UPDATE ingresos SET unidad = ? WHERE unidad = ?')
+  for (const [vieja, nueva] of Object.entries(UNIDADES_RENOMBRADAS)) renombrar.run(nueva, vieja)
 
   // Catálogos creados antes de que los materiales guardaran categoría y producto,
   // o de que los proveedores tuvieran su ficha
   const columnasCatalogo = db.prepare('PRAGMA table_info(catalogo)').all().map(c => c.name)
-  for (const columna of ['categoria', 'producto', 'ficha']) {
+  for (const columna of ['categoria', 'producto', 'ficha', 'unidad']) {
     if (!columnasCatalogo.includes(columna)) {
       db.exec(`ALTER TABLE catalogo ADD COLUMN ${columna} TEXT NOT NULL DEFAULT ''`)
     }

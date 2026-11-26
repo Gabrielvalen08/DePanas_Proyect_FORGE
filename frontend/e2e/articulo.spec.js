@@ -1,4 +1,4 @@
-import { test, expect, entrar, confirmar, CESAR } from './ayudantes.js'
+import { test, expect, entrar, confirmar, unidadDelArticulo, CESAR } from './ayudantes.js'
 import { ASIGNACION, COMPRA, NOMBRE_PARECIDO } from '../src/utils/mensajes.js'
 
 const formularioCompra = page => page.getByRole('form', { name: 'Detalle de compra' }).first()
@@ -8,8 +8,9 @@ async function elegirProveedor(page, nombre = 'Selectos') {
   await page.keyboard.press('Escape')
 }
 
-/** Elige categoría y producto, guarda y confirma el resumen */
+/** Elige unidad, categoría y producto, guarda y confirma el resumen */
 async function completarYGuardar(page, ventana) {
+  await ventana.getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }).selectOption('lb')
   await ventana.getByRole('group', { name: 'Categoría' }).getByRole('button', { name: 'Limpieza', exact: true }).click()
   await ventana.getByRole('group', { name: ASIGNACION.etiquetaProductos }).getByRole('button', { name: 'Cachitos', exact: true }).click()
   await ventana.getByRole('button', { name: ASIGNACION.guardar }).click()
@@ -60,7 +61,6 @@ test.describe('Formulario de artículo en Agregar compra', () => {
     // Quedó en el catálogo con el nombre nuevo, y el viejo ya no existe.
     // Cancelar aparece con la fila completa
     await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('1')
-    await formulario.getByRole('combobox', { name: 'Unidad, fila 1' }).selectOption('lb')
     await formulario.getByRole('textbox', { name: 'Precio unitario, fila 1' }).fill('1.00')
     await page.getByRole('button', { name: 'Cancelar' }).first().click()
     await confirmar(page, COMPRA.confirmarCancelar.confirmar)
@@ -148,11 +148,10 @@ test.describe('Formulario de artículo en Agregar compra', () => {
 
     async function llenarResto(formulario) {
       await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('2')
-      await formulario.getByRole('combobox', { name: 'Unidad, fila 1' }).selectOption('lb')
       await formulario.getByRole('textbox', { name: 'Precio unitario, fila 1' }).fill('3.00')
     }
 
-    // Primera compra: pregunta; con «Ahora no» la fila queda en rojo y aun así se guarda
+    // Primera compra: pregunta; con «Ahora no» la fila queda en rojo
     const { formulario, fila } = await escribirArticulo()
     const ventana = page.getByRole('dialog', { name: ASIGNACION.tituloNuevo })
     await ventana.getByRole('button', { name: ASIGNACION.ahoraNo }).click()
@@ -160,10 +159,15 @@ test.describe('Formulario de artículo en Agregar compra', () => {
     await expect(fila).toHaveAccessibleDescription(COMPRA.articuloIncompleto)
     await expect(formulario.getByTitle(COMPRA.articuloIncompleto)).toBeVisible()
 
+    // La unidad sí hace falta para comprar: el «+» recuerda lo que falta y se elige con la categoría, sin producto
     await formulario.getByRole('button', { name: COMPRA.agregarArticulo(articulo) }).click()
-    await expect(ventana.getByText(ASIGNACION.faltaInformacion(true, true))).toBeVisible()
-    await ventana.getByRole('button', { name: ASIGNACION.ahoraNo }).click()
+    await expect(ventana.getByText(ASIGNACION.faltaInformacion(true, true, true))).toBeVisible()
+    await ventana.getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }).selectOption('lb')
+    await ventana.getByRole('group', { name: 'Categoría' }).getByRole('button', { name: 'Limpieza', exact: true }).click()
+    await ventana.getByRole('button', { name: ASIGNACION.guardar }).click()
+    await confirmar(page, ASIGNACION.confirmar.confirmar)
     await expect(ventana).toBeHidden()
+    await expect(formulario.getByLabel('Unidad, fila 1')).toHaveText('lb')
 
     await llenarResto(formulario)
     await formulario.getByRole('button', { name: 'Guardar compra' }).click()
@@ -198,6 +202,7 @@ test.describe('Formulario de artículo en Agregar compra', () => {
 
     const ventana = page.getByRole('dialog', { name: ASIGNACION.tituloNuevo })
     await ventana.getByRole('group', { name: 'Categoría' }).getByRole('button', { name: 'Limpieza', exact: true }).click()
+    await ventana.getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }).selectOption('lb')
     await ventana.getByRole('button', { name: ASIGNACION.guardar }).click()
     await confirmar(page, ASIGNACION.confirmar.confirmar)
     await expect(ventana).toBeHidden()
@@ -207,7 +212,6 @@ test.describe('Formulario de artículo en Agregar compra', () => {
     await expect(formulario.getByTitle(COMPRA.articuloIncompleto)).toBeVisible()
 
     await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('2')
-    await formulario.getByRole('combobox', { name: 'Unidad, fila 1' }).selectOption('lb')
     await formulario.getByRole('textbox', { name: 'Precio unitario, fila 1' }).fill('3.00')
     await formulario.getByRole('button', { name: 'Guardar compra' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -228,11 +232,77 @@ test.describe('Formulario de artículo en Agregar compra', () => {
       data: { usuario, nombre: 'Empleado', contrasena, rol: 'empleado' },
     })
 
+    // Azúcar completo (con su unidad): así el botón es el lápiz
+    await request.put('/api/catalogo/material/Azucar', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { nombre: 'Azucar', categoria: 'Materia Prima', productos: ['Todos'], unidad: 'lb' },
+    })
+
     await entrar(page, { usuario, contrasena })
     await elegirProveedor(page)
     const formulario = formularioCompra(page)
     await formulario.getByRole('combobox', { name: 'Artículo, fila 1' }).fill('Azucar')
     await page.keyboard.press('Escape')
     await expect(formulario.getByRole('button', { name: COMPRA.sinPermisoEditarArticulo('Azucar') })).toBeDisabled()
+  })
+
+  test('la unidad es del artículo: la fila la muestra sin poder cambiarla y el lápiz la cambia', async ({ page, request }, info) => {
+    await entrar(page, CESAR)
+    const articulo = `Leche e2e ${info.project.name}`
+    await elegirProveedor(page)
+    const formulario = formularioCompra(page)
+    const fila = formulario.getByRole('combobox', { name: 'Artículo, fila 1' })
+    await fila.fill(articulo)
+    await page.keyboard.press('Escape')
+    await formulario.getByRole('button', { name: COMPRA.agregarArticulo(articulo) }).click()
+
+    // Nuevo: la unidad, a la derecha del nombre, con «gr» y «otros»
+    const ventana = page.getByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    const unidad = ventana.getByRole('group', { name: ASIGNACION.etiquetaArticuloYUnidad })
+      .getByRole('combobox', { name: ASIGNACION.etiquetaUnidad })
+    await expect(unidad.getByRole('option', { name: 'gr', exact: true })).toHaveCount(1)
+    await expect(unidad.getByRole('option', { name: 'otros', exact: true })).toHaveCount(1)
+    await expect(unidad.getByRole('option', { name: 'g', exact: true })).toHaveCount(0)
+    await completarYGuardar(page, ventana)
+
+    // En la fila es solo texto: no hay un selector de unidad
+    await expect(formulario.getByLabel('Unidad, fila 1')).toHaveText('lb')
+    await expect(formulario.getByRole('combobox', { name: 'Unidad, fila 1' })).toHaveCount(0)
+
+    // El lápiz la cambia y la fila la toma
+    await unidadDelArticulo(page, formulario, 1, 'litro')
+    await expect(formulario.getByLabel('Unidad, fila 1')).toHaveText('litro')
+    await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('2')
+    await formulario.getByRole('textbox', { name: 'Precio unitario, fila 1' }).fill('1.00')
+    await formulario.getByRole('button', { name: 'Guardar compra' }).click()
+    await confirmar(page, COMPRA.confirmarGuardar.confirmar)
+    await expect(page.getByText(COMPRA.guardada)).toBeVisible()
+
+    await borrarComprasDe(request, articulo)
+  })
+
+  test('el formulario del artículo cabe en la pantalla sin desplazarse', async ({ page }, info) => {
+    test.skip(info.project.name !== 'escritorio', 'En el teléfono la ventana sí puede desplazarse')
+    await page.setViewportSize({ width: 1366, height: 768 })
+    await entrar(page, CESAR)
+    await elegirProveedor(page)
+    const formulario = formularioCompra(page)
+    await formulario.getByRole('combobox', { name: 'Artículo, fila 1' }).fill('Tocino La Rioja')
+    await page.keyboard.press('Escape')
+    // Sin unidad todavía, el sistema abre el formulario él solo; si ya la tiene, se abre con el lápiz
+    const ventana = page.getByRole('dialog')
+    await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).click()
+    await ventana.waitFor({ timeout: 1500 }).catch(() => {})
+    if (!(await ventana.isVisible())) await formulario.getByRole('button', { name: COMPRA.editarArticulo('Tocino La Rioja') }).click()
+    await expect(ventana).toBeVisible()
+    // Ni «Proveedor: …» ni la ayuda del buscador
+    await expect(ventana.getByText(/Proveedor:/)).toHaveCount(0)
+    await expect(ventana.getByText(/¿No aparece la categoría/)).toHaveCount(0)
+    const desborde = await ventana.evaluate(v => [v, ...v.querySelectorAll('*')]
+      // Los textos solo para lectores de pantalla (1 px) y la lista de opciones, que tiene su propio límite, no cuentan
+      .some(el => getComputedStyle(el).overflowY !== 'visible' && el.scrollHeight > el.clientHeight + 1 &&
+        !el.matches('.solo-lector, [class*="opciones"]')))
+    expect(desborde).toBe(false)
+    await expect(ventana.getByRole('button', { name: ASIGNACION.guardar })).toBeInViewport()
   })
 })

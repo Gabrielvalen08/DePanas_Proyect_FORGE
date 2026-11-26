@@ -1,6 +1,6 @@
 import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { Check, Pencil, Plus, Search, X } from 'lucide-react'
-import { AvisoDestacado, Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal } from './common'
+import { AvisoDestacado, Boton, Campo, ConfirmDialog, CuerpoModal, Insignia, Modal, PieModal, Selector } from './common'
 import { SelectorOpciones } from './AsignarMaterial'
 import ConfirmarCambios from './ConfirmarCambios'
 import FichaProveedor, { fichaInicial } from './FichaProveedor'
@@ -9,14 +9,15 @@ import { getCategorias, getProductos, ordenarMaterialesPorCategoria as ordenarPo
 import { textoBusqueda } from '../utils/formato'
 import { listaProductos, sinProducto, tieneProducto } from '../../../shared/productos.js'
 import { normalizarFicha } from '../../../shared/proveedores.js'
-import { AVISO_SALIDA, CONFIRMAR, NOMBRE_PARECIDO, PANTALLA_CATALOGO } from '../utils/mensajes'
+import { UNIDADES } from '../../../shared/unidades.js'
+import { ASIGNACION, AVISO_SALIDA, CONFIRMAR, NOMBRE_PARECIDO, PANTALLA_CATALOGO } from '../utils/mensajes'
 import { nombreParecido } from '../utils/parecidos'
 import estilos from './EditorCatalogo.module.css'
 
 /**
  * EditorCatalogo
  * Ventana para agregar o editar una opción del catálogo (Catálogo).
- * Un material también lleva su categoría y su producto: se eligen con botones
+ * Un material también lleva su unidad (las compras la toman de aquí), su categoría y su producto: se eligen con botones
  * y, si se escribe uno que no existe, se agrega. Una categoría o un producto
  * eligen con casillas qué materiales llevan.
  *
@@ -25,7 +26,7 @@ import estilos from './EditorCatalogo.module.css'
  *  - edicion: null (cerrado) | { registro: null } (agregar) | { registro: { nombre, categoria, producto }, uso }
  *  - materiales: todos los materiales del catálogo [{ nombre, categoria, producto }]
  *  - proveedores: nombres de los proveedores (una categoría elige los que la surten)
- *  - alGuardar({ nombre, categoria?, producto?, materiales?, proveedores? }): async; si lanza, la ventana sigue abierta
+ *  - alGuardar({ nombre, categoria?, producto?, unidad?, materiales?, proveedores? }): async; si lanza, la ventana sigue abierta
  *  - alCerrar()
  */
 export default function EditorCatalogo({ tipo, edicion, materiales = [], proveedores = [], alGuardar, alCerrar }) {
@@ -66,6 +67,7 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
   const [nombre, setNombre] = useState(registro?.nombre ?? '')
   const [ficha, setFicha] = useState(() => fichaInicial(registro?.ficha))
   const [categoria, setCategoria] = useState(registro?.categoria ?? '')
+  const [unidad, setUnidad] = useState(registro?.unidad ?? '')
   const [productos, setProductos] = useState(() => listaProductos(registro?.producto))
   // Categoría: los proveedores que la surten (filtran los artículos en Agregar compra)
   const [proveedores, setProveedores] = useState(() => registro?.proveedores ?? [])
@@ -77,10 +79,11 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
   const [guardando, setGuardando] = useState(false)
   const [confirmando, setConfirmando] = useState(null) // null | 'guardar' | 'descartar'
   const [inicial] = useState(() => ({
-    nombre, categoria, productos: productos.join('\n'), elegidos: [...elegidos].sort().join('\n'), ficha: JSON.stringify(ficha),
+    nombre, categoria, unidad, productos: productos.join('\n'), elegidos: [...elegidos].sort().join('\n'), ficha: JSON.stringify(ficha),
     proveedores: [...proveedores].sort().join('\n'),
   }))
-  const cambiado = nombre !== inicial.nombre || categoria !== inicial.categoria || productos.join('\n') !== inicial.productos ||
+  const cambiado = nombre !== inicial.nombre || categoria !== inicial.categoria || unidad !== inicial.unidad ||
+    productos.join('\n') !== inicial.productos ||
     [...elegidos].sort().join('\n') !== inicial.elegidos || JSON.stringify(ficha) !== inicial.ficha ||
     [...proveedores].sort().join('\n') !== inicial.proveedores
   const formRef = useRef(null)
@@ -125,7 +128,7 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
     setGuardando(true)
     try {
       if (esMaterial) {
-        await alGuardar({ nombre: nombre.trim(), categoria: categoria.trim(), productos })
+        await alGuardar({ nombre: nombre.trim(), categoria: categoria.trim(), productos, ...(unidad ? { unidad } : {}) })
       } else if (conMateriales) {
         // En el orden del catálogo
         const materiales = todos.map(m => m.nombre).filter(m => elegidos.has(m))
@@ -180,6 +183,17 @@ function Formulario({ tipo, edicion, todos, todosProveedores, alGuardar, alCerra
           )}
           {esMaterial && (
             <div className={estilos.asignacion}>
+              <Selector
+                id="editor-catalogo-unidad"
+                etiqueta={ASIGNACION.etiquetaUnidad}
+                opciones={[{ valor: '', texto: ASIGNACION.elegirUnidad }, ...UNIDADES]}
+                value={unidad}
+                onChange={e => {
+                  setUnidad(e.target.value)
+                  setErrores(prev => ({ ...prev, unidad: undefined }))
+                }}
+                error={errores.unidad}
+              />
               <SelectorOpciones
                 titulo="Categoría"
                 nombre="categoría"

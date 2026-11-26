@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import BloqueCompra from '../components/BloqueCompra'
-import { fetchListas, reiniciarModo } from '../services/api'
+import { asignarMaterial, fetchListas, reiniciarModo } from '../services/api'
 import { fechaHoyISO } from '../utils/formato'
 import { VALIDACION } from '../utils/mensajes'
 
@@ -26,6 +26,8 @@ describe('Fecha de la compra: solo días ya pasados', () => {
     reiniciarModo()
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Sin servidor')))
     await fetchListas()
+    // La unidad de la fila sale del artículo: el de la prueba ya la tiene
+    await asignarMaterial('Tocino La Rioja', { categoria: 'Materia Prima', productos: ['Cachitos'], unidad: 'lb' })
   })
   afterEach(() => vi.unstubAllGlobals())
 
@@ -40,7 +42,6 @@ describe('Fecha de la compra: solo días ya pasados', () => {
     await usuario.type(screen.getByRole('combobox', { name: 'Proveedor' }), 'Tienda Nueva')
     await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
-    await usuario.selectOptions(screen.getByLabelText('Unidad, fila 1'), 'lb')
     await usuario.type(screen.getByLabelText('Precio unitario, fila 1'), '500')
     fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2099-01-01' } })
 

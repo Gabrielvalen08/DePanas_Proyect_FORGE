@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import { AuthProvider } from '../context/AuthContext'
-import { fetchRequisitosContrasena, iniciarSesion, reiniciarModo } from '../services/api'
+import { crearUsuario, fetchRequisitosContrasena, iniciarSesion, reiniciarModo } from '../services/api'
 import { CONFIRMAR, USUARIOS } from '../utils/mensajes'
 import PantallaUsuarios from './PantallaUsuarios'
 
@@ -274,5 +274,68 @@ describe('PantallaUsuarios', () => {
     expect(await screen.findByText(USUARIOS.eliminado('Marta_02'))).toBeInTheDocument()
     expect(screen.queryByRole('rowheader', { name: /Marta_02/ })).not.toBeInTheDocument()
     await expect(iniciarSesion('Marta_02', 'DePanas#2026')).rejects.toThrow()
+  })
+})
+
+describe('PantallaUsuarios: subadministrador', () => {
+  const SOFIA = { usuario: 'Sofia_06', nombre: 'Sofía', contrasena: 'Sofia#2026', rol: 'subadmin' }
+
+  beforeEach(async () => {
+    sessionStorage.clear()
+    localStorage.clear()
+    reiniciarModo()
+    // Lo crea el administrador (sin sesión fijada, api.js lo trata como administrador)
+    await crearUsuario(SOFIA)
+  })
+
+  function renderizarComo(sesion) {
+    sessionStorage.setItem('depanas_sesion', JSON.stringify(sesion))
+    return render(
+      <MemoryRouter>
+        <ToastProvider>
+          <AuthProvider>
+            <PantallaUsuarios />
+          </AuthProvider>
+        </ToastProvider>
+      </MemoryRouter>
+    )
+  }
+
+  const comoSofia = () => renderizarComo({ usuario: 'Sofia_06', nombre: 'Sofía', rol: 'subadmin', permisos: ['*'], funciones: ['*'] })
+
+  it('el administrador ve el rol Subadministrador para darlo', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    const sofia = (await screen.findByRole('rowheader', { name: /Sofia_06/ })).closest('tr')
+    expect(within(sofia).getByText(USUARIOS.roles.subadmin)).toBeInTheDocument()
+    expect(within(sofia).getByText(USUARIOS.todas)).toBeInTheDocument()
+    const ventana = await abrirNuevo(usuario)
+    expect(within(ventana).getByRole('radio', { name: new RegExp(USUARIOS.roles.subadmin) })).toBeEnabled()
+  })
+
+  it('entra al gestor, pero no edita ni elimina al administrador; su perfil solo cambia nombre y contraseña', async () => {
+    const usuario = userEvent.setup()
+    comoSofia()
+    const cesar = (await screen.findByRole('rowheader', { name: /Cesar_01/ })).closest('tr')
+    expect(within(cesar).queryByRole('button', { name: USUARIOS.editar('Cesar_01') })).not.toBeInTheDocument()
+    expect(within(cesar).queryByRole('button', { name: USUARIOS.eliminar('Cesar_01') })).not.toBeInTheDocument()
+    // A Marta (operadora) sí
+    expect(await boton(USUARIOS.editar('Marta_02'))).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: USUARIOS.eliminar('Marta_02') })).toBeInTheDocument()
+
+    // Su propio perfil: sin elegir rol ni pantallas
+    await usuario.click(await boton(USUARIOS.editar('Sofia_06')))
+    const ventana = screen.getByRole('dialog', { name: USUARIOS.tituloEditar('Sofia_06') })
+    expect(within(ventana).queryByRole('radio')).not.toBeInTheDocument()
+    expect(within(ventana).getByText(USUARIOS.permisosPropios)).toBeInTheDocument()
+  })
+
+  it('al crear un usuario no puede darle el rol de subadministrador', async () => {
+    const usuario = userEvent.setup()
+    comoSofia()
+    const ventana = await abrirNuevo(usuario)
+    expect(within(ventana).getByRole('radio', { name: new RegExp(USUARIOS.roles.subadmin) })).toBeDisabled()
+    expect(within(ventana).getByRole('radio', { name: new RegExp(USUARIOS.roles.operador) })).toBeEnabled()
+    expect(within(ventana).getByRole('radio', { name: new RegExp(USUARIOS.roles.empleado) })).toBeChecked()
   })
 })

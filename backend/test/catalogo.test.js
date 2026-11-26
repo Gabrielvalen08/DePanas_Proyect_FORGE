@@ -98,7 +98,7 @@ test('cambiar el nombre, la categoría y el producto de un material se refleja e
   assert.equal(r.cuerpo.categoriaNueva, true)
   const fila = (await pedir(`${base}/compras`)).cuerpo[0].materiales[0]
   assert.deepEqual([fila.material, fila.categoria, fila.producto], ['Tocino ahumado', 'Carnes', 'Tequeños'])
-  assert.deepEqual(material(await catalogo(base), 'Tocino ahumado'), { nombre: 'Tocino ahumado', categoria: 'Carnes', producto: 'Tequeños', productos: ['Tequeños'] })
+  assert.deepEqual(material(await catalogo(base), 'Tocino ahumado'), { nombre: 'Tocino ahumado', categoria: 'Carnes', producto: 'Tequeños', productos: ['Tequeños'], unidad: 'lb' })
 })
 
 test('renombrar una categoría la cambia en sus materiales y en las compras', async t => {
@@ -133,7 +133,7 @@ test('una compra con un proveedor o material nuevo los registra en el catálogo'
   })
   const cat = await catalogo(base)
   assert.ok(cat.proveedores.includes('Walmart'))
-  assert.deepEqual(material(cat, 'Servilletas'), { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'] })
+  assert.deepEqual(material(cat, 'Servilletas'), { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'], unidad: 'caja' })
 })
 
 test('lo que se elimina no reaparece al reabrir la base', t => {

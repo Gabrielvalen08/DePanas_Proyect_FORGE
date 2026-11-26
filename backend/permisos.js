@@ -1,13 +1,15 @@
 /**
  * permisos.js — Qué hace falta para cada ruta de la API y si un usuario lo tiene.
  *
- * Las mismas reglas que el frontend (shared/usuarios.js): el administrador entra a todo;
+ * Las mismas reglas que el frontend (shared/usuarios.js): el administrador y el subadministrador
+ * entran a todo (lo que el subadministrador no puede hacer con otros usuarios lo decide
+ * dao/usuarios.js);
  * los demás, a las pantallas de su lista y a las funciones que tengan de esas pantallas.
  * Una regla { pantallas, funciones } se cumple con cualquiera de sus pantallas o funciones;
- * 'admin' es solo el administrador; null, cualquier sesión.
+ * 'admin' es el administrador o el subadministrador; null, cualquier sesión.
  */
 
-import { ROL_ADMIN } from '../shared/usuarios.js'
+import { tieneAccesoTotal } from '../shared/usuarios.js'
 
 // Las compras se leen desde Agregar compra (precios), Lista de compras, Exportar y Cargar
 const LEER_COMPRAS = { pantallas: ['/', '/compras', '/exportar', '/cargar'] }
@@ -63,7 +65,7 @@ export function permisoRequerido(metodo, ruta) {
  */
 export function cumple(usuario, regla) {
   if (regla === null) return true
-  if (usuario.rol === ROL_ADMIN) return true
+  if (tieneAccesoTotal(usuario.rol)) return true
   if (regla === 'admin') return false
   return (regla.pantallas ?? []).some(p => usuario.permisos.includes(p)) ||
     (regla.funciones ?? []).some(f => usuario.funciones.includes(f))

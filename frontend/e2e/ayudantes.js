@@ -8,7 +8,7 @@
  */
 
 import { test as base, expect } from '@playwright/test'
-import { ACCESO, CONFIRMAR } from '../src/utils/mensajes.js'
+import { ACCESO, ASIGNACION, CONFIRMAR } from '../src/utils/mensajes.js'
 
 export const CESAR = { usuario: 'Cesar_01', contrasena: 'DePanas#2026', nombre: 'César' }
 export const MARTA = { usuario: 'Marta_02', contrasena: 'DePanas#2026', nombre: 'Marta' }
@@ -55,6 +55,32 @@ export const menu = page => page.getByRole('complementary')
 /** Acepta el diálogo de confirmación abierto (toda acción se confirma) */
 export async function confirmar(page, etiqueta) {
   await page.getByRole('alertdialog').getByRole('button', { name: etiqueta }).click()
+}
+
+/**
+ * La unidad de la fila n es la del artículo y no se cambia en la fila: se elige en el formulario
+ * del artículo (su botón, «+» o lápiz). Si el sistema ya abrió el formulario (el artículo no tenía
+ * unidad), se usa ese. Elige la unidad, guarda y confirma si hubo cambios; termina con la fila mostrándola.
+ */
+export async function unidadDelArticulo(page, formulario, n, unidad) {
+  const ventana = page.getByRole('dialog').filter({ has: page.getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }) })
+  if (!(await ventana.isVisible())) {
+    const fila = formulario.getByRole('row').filter({ has: page.getByRole('combobox', { name: `Artículo, fila ${n}` }) })
+    await fila.getByRole('button').first().click()
+  }
+  await expect(ventana).toBeVisible()
+  await ventana.getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }).selectOption(unidad)
+  // Un artículo que aún no tiene categoría (catálogo del Excel) también la pide
+  const categorias = ventana.getByRole('group', { name: 'Categoría' })
+  if (await categorias.count() && !(await categorias.getByRole('button', { pressed: true }).count())) {
+    await categorias.getByRole('button').first().click()
+  }
+  await ventana.getByRole('button', { name: ASIGNACION.guardar }).click()
+  const si = page.getByRole('alertdialog').getByRole('button', { name: ASIGNACION.confirmar.confirmar })
+  await expect.poll(async () => (await si.isVisible()) || !(await ventana.isVisible())).toBe(true)
+  if (await si.isVisible()) await si.click()
+  await expect(ventana).toBeHidden()
+  await expect(formulario.getByLabel(`Unidad, fila ${n}`)).toHaveText(unidad)
 }
 
 /** Cierra la sesión desde el menú lateral y confirma; termina en la pantalla de acceso */

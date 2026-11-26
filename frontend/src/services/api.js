@@ -34,9 +34,11 @@ import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
 import { catalogoAJson, catalogoAXlsx, comprasAJson, comprasAXlsx, nombreArchivo, nombreArchivoCatalogo } from '../utils/exportar'
 import { MENSAJES_CATALOGO_JSON, filasDelCatalogo, validarCatalogoJSON } from '../../../shared/catalogo-json.js'
 import { migrarPermisos } from '../utils/permisos'
+import { UNIDAD_NO_VALIDA, normalizarUnidad, unidadValida } from '../../../shared/unidades.js'
 import {
-  FUNCIONES, ROLES_ASIGNABLES, ROL_ADMIN, RUTAS_ASIGNABLES, RUTA_USUARIOS, faltaEnContrasena, funcionesEfectivas,
-  normalizarRequisitos, pantallaDeFuncion, permisosDeRol, validarRequisitos,
+  FUNCIONES, ROLES_ASIGNABLES, ROL_ADMIN, ROL_SUBADMIN, RUTAS_ASIGNABLES, RUTA_USUARIOS, esSuPropioPerfil, faltaEnContrasena,
+  funcionesEfectivas, normalizarRequisitos, pantallaDeFuncion, permisosDeRol, puedeGestionar, rolesQueAsigna, tieneAccesoTotal,
+  validarRequisitos,
 } from '../../../shared/usuarios.js'
 import { USUARIOS as MENSAJES_USUARIOS } from '../utils/mensajes'
 
@@ -57,10 +59,11 @@ const CLAVE_REQUISITOS      = 'depanas_requisitos_contrasena'
 // ---------------------------------------------------------------------------
 export const CATALOGO = {
   proveedores: ['Selectos', 'MMAG', 'Pepsi', 'Desechables Diver.'],
-  categorias:  ['Materia Prima', 'Limpieza', 'Desechables', 'Servicios', 'Material Común', 'Bebidas'],
+  // «Gastos personales» y «Ninguno» no vienen del Excel: son para un gasto personal que no va en un producto
+  categorias:  ['Materia Prima', 'Limpieza', 'Desechables', 'Servicios', 'Material Común', 'Bebidas', 'Gastos personales'],
   productos: [
     'Cachitos', 'Pan Guayaba', 'Golfeados', 'Panadería', 'Arepas', 'Empanadas', 'Todos',
-    'Arepas/Empanadas', 'Tequeños', 'Salsa', 'Gaseosas', 'Hidratantes',
+    'Arepas/Empanadas', 'Tequeños', 'Salsa', 'Gaseosas', 'Hidratantes', 'Ninguno',
   ],
   materiales: [
     ['Tocino La Rioja', 'Materia Prima', 'Cachitos'],
@@ -99,7 +102,7 @@ export const CATALOGO = {
     ['Tapadera Cristal', 'Desechables', ''],
     ['Portion Cup Cuadrada', 'Desechables', ''],
     ['Tapa Portion Cup Cuadrado', 'Desechables', ''],
-  ].map(([nombre, categoria, producto]) => ({ nombre, categoria, producto })),
+  ].map(([nombre, categoria, producto]) => ({ nombre, categoria, producto, unidad: '' })),
   // [proveedor, categoría]: qué categorías surte cada proveedor, según las filas de compras del Excel
   proveedorCategoria: [
     ['Selectos', 'Materia Prima'],
@@ -162,24 +165,48 @@ function catalogoLocalInicial() {
   return cat
 }
 
+/**
+ * Versión del catálogo guardado (como PRAGMA user_version en el backend). 3: unidad de cada
+ * artículo (la de su última compra) y «Gastos personales» / «Ninguno».
+ */
+const VERSION_CATALOGO_LOCAL = 3
+
 /** Catálogo local completo (las listas de nombres sin repetir) */
 function getCatalogoLocal() {
   try {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(CLAVE_CATALOGO) : null
     const datos = raw ? JSON.parse(raw) : null
-    if (datos?.version === 2) {
+    if (datos?.version === 2 || datos?.version === VERSION_CATALOGO_LOCAL) {
+      let cambio = false
       // Catálogos guardados antes de los proveedores de cada categoría: se ligan una vez con las compras
       if (!datos.proveedoresPorCategoria) {
         datos.proveedoresPorCategoria = {}
         for (const lista of getListas()) registrarCompraEn(datos, lista)
-        setCatalogoLocal(datos)
+        cambio = true
       }
-      return datos
+      if (datos.version === 2) {
+        completarUnidadesLocal(datos)
+        registrarEn(datos, 'categoria', 'Gastos personales')
+        registrarEn(datos, 'producto', 'Ninguno')
+        cambio = true
+      }
+      if (cambio) setCatalogoLocal(datos)
+      return { ...datos, version: VERSION_CATALOGO_LOCAL }
     }
   } catch {
     // Catálogo guardado ilegible: se vuelve a armar
   }
   return catalogoLocalInicial()
+}
+
+/** Cada artículo sin unidad toma la de su última compra (la de fecha más reciente y, a igual fecha, la registrada después) */
+function completarUnidadesLocal(cat) {
+  const ultima = {}
+  const listas = getListas().map((l, i) => ({ l, i })).sort((a, b) => a.l.fecha.localeCompare(b.l.fecha) || a.i - b.i)
+  for (const { l } of listas) {
+    for (const m of l.materiales) if (unidadValida(m.unidad)) ultima[clave(m.material)] = normalizarUnidad(m.unidad)
+  }
+  for (const m of cat.materiales) if (!m.unidad && ultima[clave(m.nombre)]) m.unidad = ultima[clave(m.nombre)]
 }
 
 /** Guarda (o quita, con null o vacía) la ficha de un proveedor en el catálogo local */
@@ -192,7 +219,7 @@ function fijarFichaLocal(cat, nombre, ficha) {
 
 function setCatalogoLocal(cat) {
   if (typeof localStorage === 'undefined') return
-  localStorage.setItem(CLAVE_CATALOGO, JSON.stringify({ version: 2, ...cat }))
+  localStorage.setItem(CLAVE_CATALOGO, JSON.stringify({ ...cat, version: VERSION_CATALOGO_LOCAL }))
 }
 
 /** Nombre ya registrado (sin distinguir mayúsculas) o lo agrega. { nombre, nuevo } */
@@ -201,7 +228,7 @@ function registrarEn(cat, tipo, nombre) {
   if (tipo === 'material') {
     const existente = cat.materiales.find(m => clave(m.nombre) === clave(limpio))
     if (existente) return { nombre: existente.nombre, nuevo: false }
-    cat.materiales.push({ nombre: limpio, categoria: '', producto: '' })
+    cat.materiales.push({ nombre: limpio, categoria: '', producto: '', unidad: '' })
     return { nombre: limpio, nuevo: true }
   }
   const existente = cat[LISTA[tipo]].find(n => clave(n) === clave(limpio))
@@ -236,6 +263,8 @@ function registrarCompraEn(cat, lista) {
     // Solo completa lo vacío: lo asignado en el catálogo manda
     if (m.categoria && !destino.categoria) destino.categoria = registrarEn(cat, 'categoria', m.categoria).nombre
     if (m.producto && !destino.producto) destino.producto = registrarProductos(cat, m.producto).texto
+    // La unidad de la compra completa la del artículo si aún no tiene
+    if (!destino.unidad && unidadValida(m.unidad)) destino.unidad = normalizarUnidad(m.unidad)
     // La categoría con que quedó el artículo pasa a ser del proveedor
     const categoria = destino.categoria || m.categoria || lista.categoria
     if (lista.proveedor?.trim() && categoria?.trim()) vincularLocal(cat, lista.proveedor, categoria)
@@ -371,16 +400,19 @@ export function getProductos() {
 }
 
 /**
- * Categoría y productos asignados a un material.
- * { existe, nombre, categoria, producto (texto «Arepas, Empanadas»), productos (lista) }; '' o [] en lo que falte.
+ * Categoría, productos y unidad de un material.
+ * { existe, nombre, categoria, producto (texto «Arepas, Empanadas»), productos (lista), unidad }; '' o [] en lo que falte.
  */
 export function getAsignacion(material) {
   const m = catalogo().materiales.find(x => clave(x.nombre) === clave(material))
   if (m) {
     const producto = textoProductos(m.producto)
-    return { existe: true, nombre: m.nombre, categoria: m.categoria || '', producto, productos: listaProductos(producto) }
+    return {
+      existe: true, nombre: m.nombre, categoria: m.categoria || '', producto, productos: listaProductos(producto),
+      unidad: normalizarUnidad(m.unidad),
+    }
   }
-  return { existe: false, nombre: (material || '').trim(), categoria: '', producto: '', productos: [] }
+  return { existe: false, nombre: (material || '').trim(), categoria: '', producto: '', productos: [], unidad: '' }
 }
 
 /**
@@ -403,7 +435,7 @@ export function getPrecioSugerido(material) {
       const monto = Number(m.monto !== undefined ? m.monto : m.precio)
       const cantidad = Number(m.cantidad)
       if (clave(m.material) === k && cantidad > 0 && monto > 0) {
-        sugerido = { precio: Math.round((monto / cantidad) * 10000) / 10000, unidad: m.unidad || 'unidad' }
+        sugerido = { precio: Math.round((monto / cantidad) * 10000) / 10000, unidad: normalizarUnidad(m.unidad) || 'unidad' }
       }
     }
   }
@@ -432,11 +464,11 @@ export function necesitaAsignacion(material) {
   return articuloIncompleto(material) && getComprasDeMaterial(material) === 0
 }
 
-/** ¿Al material le falta la categoría o el producto? */
+/** ¿Al material le falta la categoría, el producto o la unidad? */
 export function articuloIncompleto(material) {
   if (!(material || '').trim()) return false
-  const { categoria, producto } = getAsignacion(material)
-  return !categoria || !producto
+  const { categoria, producto, unidad } = getAsignacion(material)
+  return !categoria || !producto || !unidad
 }
 
 /** En cuántas compras guardadas está un material. Igual en los dos modos */
@@ -450,19 +482,21 @@ export function getComprasDeMaterial(material) {
 /**
  * Asigna categoría y productos a un material; lo agrega al catálogo si es nuevo,
  * igual que la categoría o los productos escritos que aún no existían.
- * eleccion: { categoria, productos: [] } (o `producto` como texto «Arepas, Empanadas»).
+ * eleccion: { categoria, productos: [] } (o `producto` como texto «Arepas, Empanadas») y `unidad`
+ * (opcional: sin ella no se toca; una que no está en la lista falla con error.campo = 'unidad').
  * Con `proveedor` (el de la compra), la categoría queda ligada a ese proveedor.
  * Con `nuevo`, falla (error.campo = 'nombre') si ya hay un artículo con ese nombre.
- * Devuelve { material: { nombre, categoria, producto, productos }, materialNuevo, categoriaNueva,
+ * Devuelve { material: { nombre, categoria, producto, productos, unidad }, materialNuevo, categoriaNueva,
  *   productoNuevo, productosNuevos } (+ proveedor y proveedorVinculado si vino `proveedor`)
  */
-export async function asignarMaterial(material, { categoria, productos, producto, proveedor, nuevo = false }) {
+export async function asignarMaterial(material, { categoria, productos, producto, unidad, proveedor, nuevo = false }) {
   const elegidos = listaProductos(productos ?? producto)
   const deProveedor = (proveedor || '').trim()
+  const conUnidad = unidad ? { unidad } : {}
   if ((await detectarModo()) === 'servidor') {
     const resultado = await pedirJSON(
       `/catalogo/materiales/${encodeURIComponent(material.trim())}`, 'PUT',
-      { categoria, productos: elegidos, ...(deProveedor ? { proveedor: deProveedor } : {}), ...(nuevo ? { nuevo: true } : {}) }
+      { categoria, productos: elegidos, ...conUnidad, ...(deProveedor ? { proveedor: deProveedor } : {}), ...(nuevo ? { nuevo: true } : {}) }
     )
     // Se aplica en el acto para que el formulario lo vea sin esperar la recarga
     if (catalogoServidor) {
@@ -484,6 +518,7 @@ export async function asignarMaterial(material, { categoria, productos, producto
 
   const cat = (categoria || '').trim()
   if (!cat) throw new Error('Elige una categoría')
+  const unidadElegida = validarUnidadLocal(unidad)
 
   const catalogoLocal = getCatalogoLocal()
   const repetido = nuevo && buscarLocal(catalogoLocal, 'material', material)
@@ -491,7 +526,8 @@ export async function asignarMaterial(material, { categoria, productos, producto
   const mat = registrarEn(catalogoLocal, 'material', material)
   const c = registrarEn(catalogoLocal, 'categoria', cat)
   const p = registrarProductos(catalogoLocal, elegidos)
-  Object.assign(catalogoLocal.materiales.find(x => x.nombre === mat.nombre), { categoria: c.nombre, producto: p.texto })
+  const destino = catalogoLocal.materiales.find(x => x.nombre === mat.nombre)
+  Object.assign(destino, { categoria: c.nombre, producto: p.texto }, unidadElegida ? { unidad: unidadElegida } : {})
   const vinculo = deProveedor
     ? { proveedorVinculado: vincularLocal(catalogoLocal, deProveedor, c.nombre), proveedor: registrarEn(catalogoLocal, 'proveedor', deProveedor).nombre }
     : {}
@@ -499,13 +535,20 @@ export async function asignarMaterial(material, { categoria, productos, producto
   propagarAsignacionLocal(mat.nombre, c.nombre, p.texto)
 
   return {
-    material: { nombre: mat.nombre, categoria: c.nombre, producto: p.texto, productos: listaProductos(p.texto) },
+    material: { nombre: mat.nombre, categoria: c.nombre, producto: p.texto, productos: listaProductos(p.texto), unidad: destino.unidad || '' },
     materialNuevo: mat.nuevo,
     categoriaNueva: c.nuevo,
     productoNuevo: p.nuevos.length > 0,
     productosNuevos: p.nuevos,
     ...vinculo,
   }
+}
+
+/** Unidad elegida, al día («g» → «gr»); undefined si no viene; lanza con campo 'unidad' si no es de la lista */
+function validarUnidadLocal(unidad) {
+  if (unidad === undefined || unidad === '') return undefined
+  if (!unidadValida(unidad)) throw Object.assign(new Error(UNIDAD_NO_VALIDA), { campo: 'unidad' })
+  return normalizarUnidad(unidad)
 }
 
 /** Las compras locales de ese material toman su nueva categoría y producto */
@@ -706,13 +749,14 @@ export async function agregarAlCatalogo(tipo, datos) {
   }
   const productos = listaProductos(datos.productos ?? datos.producto)
   if (!datos.categoria?.trim()) throw new Error('Elige una categoría')
+  const unidad = validarUnidadLocal(datos.unidad) ?? ''
   registrarEn(cat, 'material', nombre)
   const c = registrarEn(cat, 'categoria', datos.categoria)
   const p = registrarProductos(cat, productos)
-  Object.assign(cat.materiales.find(m => m.nombre === nombre), { categoria: c.nombre, producto: p.texto })
+  Object.assign(cat.materiales.find(m => m.nombre === nombre), { categoria: c.nombre, producto: p.texto, unidad })
   setCatalogoLocal(cat)
   return {
-    nombre, categoria: c.nombre, producto: p.texto, productos: listaProductos(p.texto),
+    nombre, categoria: c.nombre, producto: p.texto, productos: listaProductos(p.texto), unidad,
     categoriaNueva: c.nuevo, productoNuevo: p.nuevos.length > 0, productosNuevos: p.nuevos,
   }
 }
@@ -720,7 +764,7 @@ export async function agregarAlCatalogo(tipo, datos) {
 /**
  * Cambia el nombre de una opción (y, en un material, su categoría y producto; en una
  * categoría o un producto, sus materiales) y lo actualiza en todas las compras.
- * datos: { nombre, categoria?, producto?, materiales? }.
+ * datos: { nombre, categoria?, producto?, unidad?, materiales? }.
  * Devuelve { anterior, nombre, compras, materiales, categoriaNueva, productoNuevo }
  */
 export async function editarEnCatalogo(tipo, nombreActual, datos) {
@@ -746,10 +790,14 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
   if (conMateriales(tipo) && datos.materiales !== undefined) resolverMateriales(cat, datos.materiales)
   if (tipo === 'categoria' && datos.proveedores !== undefined) validarListaProveedores(datos.proveedores)
   const ficha = tipo === 'proveedor' && datos.ficha !== undefined ? normalizarFicha(datos.ficha) : undefined
+  const unidad = tipo === 'material' ? validarUnidadLocal(datos.unidad) : undefined
 
   // Catálogo
   if (tipo === 'material') {
-    cat.materiales.find(m => m.nombre === anterior).nombre = nuevo
+    const registro = cat.materiales.find(m => m.nombre === anterior)
+    registro.nombre = nuevo
+    // Las compras ya guardadas conservan su unidad
+    if (unidad) registro.unidad = unidad
   } else {
     cat[LISTA[tipo]] = cat[LISTA[tipo]].map(n => (n === anterior ? nuevo : n))
     if (tipo === 'proveedor') {
@@ -820,7 +868,7 @@ export async function editarEnCatalogo(tipo, nombreActual, datos) {
     setCatalogoLocal(cat)
   }
   const extra = tipo === 'material'
-    ? { categoria: asignado.categoria, producto: asignado.producto, productos: listaProductos(asignado.producto) }
+    ? { categoria: asignado.categoria, producto: asignado.producto, productos: listaProductos(asignado.producto), unidad: asignado.unidad || '' }
     : tipo === 'proveedor' ? { ficha: leerFicha(cat.fichas?.[clave(nuevo)]) }
       : tipo === 'categoria' ? { proveedores: [...(cat.proveedoresPorCategoria?.[clave(nuevo)] ?? [])] } : {}
   const resultado = {
@@ -899,6 +947,7 @@ export async function eliminarDelCatalogo(tipo, nombre) {
 let modoPromesa = null
 let modoActual = null       // 'servidor' | 'local' una vez detectado (lo leen las funciones síncronas)
 let tokenSesion = null      // modo servidor: token de la sesión (Authorization: Bearer); lo fija AuthContext
+let usuarioSesion = null    // modo local: quién está dentro, para las reglas del Gestor de usuarios; lo fija AuthContext
 let apagable = false        // el servidor se puede apagar desde el sistema (versión del .zip, /api/health)
 
 /** true si el sistema se puede apagar desde la interfaz (la versión del .zip; nunca en desarrollo ni en local) */
@@ -943,6 +992,14 @@ export const EVENTO_SESION_VENCIDA = 'depanas:sesion-vencida'
 export function fijarTokenSesion(token) {
   tokenSesion = token || null
   if (tokenSesion && modoActual === 'servidor') refrescarCache()
+}
+
+/**
+ * Usuario que está dentro (o null al salir). En modo local decide qué puede hacer en el Gestor
+ * de usuarios (con servidor lo decide el backend con el token).
+ */
+export function fijarUsuarioSesion(usuario) {
+  usuarioSesion = usuario || null
 }
 
 /** Cierra la sesión en el servidor (si la hay) y olvida el token */
@@ -993,6 +1050,7 @@ export function reiniciarModo() {
   modoActual = null
   catalogoServidor = null
   tokenSesion = null
+  usuarioSesion = null
   apagable = false
 }
 
@@ -1141,7 +1199,7 @@ function enriquecerLista(lista) {
     ...m,
     material: m.material || m.producto || '',
     cantidad: Number(m.cantidad) || 1,
-    unidad:   m.unidad || 'unidad',
+    unidad:   normalizarUnidad(m.unidad) || 'unidad',
     monto:    Number(m.monto !== undefined ? m.monto : m.precio) || 0,
     categoria: m.categoria || '',
     producto: m.productoDestino || (m.material ? (m.producto || '') : ''),
@@ -1195,7 +1253,7 @@ function normalizar({ proveedor, fecha, categoria, iva, materiales, productos })
   const mat = items.map(m => ({
     material:  (m.material ?? m.producto ?? '').trim(),
     cantidad:  parseFloat(m.cantidad) || 1,
-    unidad:    m.unidad || 'unidad',
+    unidad:    normalizarUnidad(m.unidad) || 'unidad',
     monto:     parseFloat(m.monto !== undefined ? m.monto : m.precio) || 0,
     categoria: (m.categoria ?? '').trim(),
     producto:  (m.material !== undefined ? m.producto ?? '' : m.productoDestino ?? '').trim(),
@@ -1512,7 +1570,7 @@ export async function importarCatalogo(tipo, filas) {
       const categoria = fila.categoria || destino.categoria
       const c = categoria ? registrarEn(cat, 'categoria', categoria).nombre : ''
       const p = registrarProductos(cat, [...listaProductos(destino.producto), ...fila.productos])
-      Object.assign(destino, { categoria: c, producto: p.texto })
+      Object.assign(destino, { categoria: c, producto: p.texto }, fila.unidad ? { unidad: fila.unidad } : {})
       propagar(nombre, { categoria: c, producto: p.texto })
     } else {
       if (tipo === 'categoria') {
@@ -1547,13 +1605,14 @@ export async function importarCatalogo(tipo, filas) {
 // ---------------------------------------------------------------------------
 // Usuarios: inicio de sesión, Gestor de usuarios y requisitos de contraseña
 // ---------------------------------------------------------------------------
-// Un usuario es { usuario, nombre, rol: 'admin' | 'operador' | 'empleado', permisos: [rutas],
+// Un usuario es { usuario, nombre, rol: 'admin' | 'subadmin' | 'operador' | 'empleado', permisos: [rutas],
 // funciones: [ids] } (shared/usuarios.js). Lo que devuelven estas funciones trae las
 // funciones efectivas. La contraseña nunca sale de aquí: se guarda como hash PBKDF2,
 // con el mismo formato que el backend (backend/contrasenas.js). Reglas (iguales en los
 // dos modos): el usuario y la contraseña no se repiten, toda contraseña nueva cumple los
-// requisitos, hay un solo administrador (permisos ['*'], no se elimina) y nadie más
-// recibe el Gestor de usuarios.
+// requisitos, hay un solo administrador (permisos ['*'], no se elimina), el subadministrador
+// entra a todo pero no crea ni edita subadministradores ni edita al administrador, y nadie
+// más recibe el Gestor de usuarios.
 
 /**
  * Contraseña anterior de Marta_02: si aún entra con ella, pasa a la nueva una sola vez por
@@ -1654,10 +1713,23 @@ function validarContrasena(contrasena) {
   if (falta) throw falloCampo(falta, 'contrasena')
 }
 
-function validarRol(rol) {
+/** Un rol que `actor` puede dar (sin actor, como el administrador) */
+function validarRol(rol, actor) {
   if (rol === ROL_ADMIN) throw falloCampo(V.unAdmin, 'rol')
   if (!ROLES_ASIGNABLES.includes(rol)) throw falloCampo(V.rol, 'rol')
+  if (!rolesQueAsigna(actor?.rol ?? ROL_ADMIN).includes(rol)) throw falloCampo(V.soloAdminDaSubadmin, 'rol')
   return rol
+}
+
+/** Quien está dentro (modo local); null si no se sabe, y entonces se aplica como administrador */
+const actorLocal = usuarios => (usuarioSesion ? buscarUsuarioLocal(usuarios, usuarioSesion) ?? null : null)
+
+/** Pantallas y funciones que se guardan para un rol: con acceso total, ['*'] y sin lista */
+function accesoDe(rol, datos, permisosActuales) {
+  if (tieneAccesoTotal(rol)) return { permisos: ['*'], funciones: null }
+  const base = permisosDeRol(rol)
+  const permisos = validarPermisos(datos?.permisos ?? permisosActuales ?? base.permisos)
+  return { permisos, funciones: validarFunciones(datos?.funciones ?? base.funciones, permisos) }
 }
 
 /** Pantallas sin repetir, todas asignables, al menos una y en el orden del menú */
@@ -1711,7 +1783,8 @@ export async function fetchUsuarios() {
   if ((await detectarModo()) === 'servidor') return (await pedir('/usuarios')).json()
   return getUsuariosLocal()
     .map(publico)
-    .sort((a, b) => (b.rol === ROL_ADMIN) - (a.rol === ROL_ADMIN) || a.usuario.localeCompare(b.usuario, 'es', { sensitivity: 'base' }))
+    .sort((a, b) => (b.rol === ROL_ADMIN) - (a.rol === ROL_ADMIN) || (b.rol === ROL_SUBADMIN) - (a.rol === ROL_SUBADMIN) ||
+      a.usuario.localeCompare(b.usuario, 'es', { sensitivity: 'base' }))
 }
 
 /**
@@ -1729,10 +1802,8 @@ export async function crearUsuario(datos) {
   if (existente) throw falloCampo(V.usuarioRepetido(existente.usuario), 'usuario')
   validarNombre(nombre)
   validarContrasena(contrasena)
-  const rol = validarRol(datos.rol ?? 'operador')
-  const base = permisosDeRol(rol)
-  const permisos = validarPermisos(datos.permisos ?? base.permisos)
-  const funciones = validarFunciones(datos.funciones ?? base.funciones, permisos)
+  const rol = validarRol(datos.rol ?? 'operador', actorLocal(usuarios))
+  const { permisos, funciones } = accesoDe(rol, datos)
   const nuevo = { usuario, nombre, rol, permisos, funciones, contrasena: await hashear(contrasena) }
   setUsuariosLocal([...usuarios, nuevo])
   return publico(nuevo)
@@ -1740,7 +1811,8 @@ export async function crearUsuario(datos) {
 
 /**
  * Cambia { nombre?, contrasena?, rol?, permisos?, funciones? }. La contraseña vacía no se
- * toca y el administrador conserva su rol, sus pantallas y sus funciones (siempre todo).
+ * toca; al administrador y a quien se edita a sí mismo solo se les cambian nombre y
+ * contraseña. El subadministrador no edita al administrador ni a otros subadministradores.
  */
 export async function editarUsuario(usuario, datos) {
   if ((await detectarModo()) === 'servidor') {
@@ -1749,6 +1821,10 @@ export async function editarUsuario(usuario, datos) {
   const usuarios = getUsuariosLocal()
   const registro = buscarUsuarioLocal(usuarios, usuario)
   if (!registro) throw falloCampo(V.noExiste(usuario))
+  const actor = actorLocal(usuarios)
+  const propio = esSuPropioPerfil(actor, registro)
+  if (registro.rol === ROL_ADMIN && actor && actor.rol !== ROL_ADMIN) throw falloCampo(V.noEditarAdmin)
+  if (!propio && !puedeGestionar(actor, registro)) throw falloCampo(V.noEditarSubadmin)
   const cambios = {}
   if (datos.nombre !== undefined) {
     cambios.nombre = recortado(datos.nombre)
@@ -1759,11 +1835,13 @@ export async function editarUsuario(usuario, datos) {
     validarContrasena(contrasena)
     cambios.contrasena = await hashear(contrasena)
   }
-  if (registro.rol !== ROL_ADMIN) {
-    if (datos.rol !== undefined) cambios.rol = validarRol(datos.rol)
-    const permisos = datos.permisos !== undefined ? validarPermisos(datos.permisos) : registro.permisos
-    if (datos.permisos !== undefined) cambios.permisos = permisos
-    if (datos.funciones !== undefined) cambios.funciones = validarFunciones(datos.funciones, permisos)
+  const cambiaAcceso = datos.rol !== undefined || datos.permisos !== undefined || datos.funciones !== undefined
+  if (registro.rol !== ROL_ADMIN && !propio && cambiaAcceso) {
+    const rol = datos.rol !== undefined ? validarRol(datos.rol, actor) : registro.rol
+    // Con el mismo rol se conservan sus pantallas y funciones; con otro, se parte de las del rol nuevo
+    const mismo = rol === registro.rol && !tieneAccesoTotal(rol)
+    const funcionesActuales = mismo && datos.funciones === undefined && Array.isArray(registro.funciones) ? registro.funciones : undefined
+    Object.assign(cambios, { rol }, accesoDe(rol, { ...datos, funciones: datos.funciones ?? funcionesActuales }, mismo ? registro.permisos : undefined))
   }
   Object.assign(registro, cambios)
   setUsuariosLocal(usuarios)
@@ -1779,6 +1857,7 @@ export async function eliminarUsuario(usuario) {
   const registro = buscarUsuarioLocal(usuarios, usuario)
   if (!registro) throw falloCampo(V.noExiste(usuario))
   if (registro.rol === ROL_ADMIN) throw falloCampo(V.adminNoSeElimina)
+  if (!puedeGestionar(actorLocal(usuarios), registro)) throw falloCampo(V.noEliminarSubadmin)
   setUsuariosLocal(usuarios.filter(u => u !== registro))
   return { usuario: registro.usuario }
 }

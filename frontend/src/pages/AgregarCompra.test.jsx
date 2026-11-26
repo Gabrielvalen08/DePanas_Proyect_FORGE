@@ -9,16 +9,16 @@ import BloqueCompra from '../components/BloqueCompra'
 import { EVENTO_ARTICULO_RENOMBRADO } from '../utils/eventos'
 import { ASIGNACION, COMPRA, CONFIRMAR, NOMBRE_PARECIDO, VALIDACION } from '../utils/mensajes'
 
-// Catálogo de prueba: categoría y producto por material (como en el Excel)
+// Catálogo de prueba: categoría, producto y unidad por material (como en el Catálogo)
 const asignaciones = vi.hoisted(() => new Map())
 // Precio unitario de la última compra de cada material (como lo calcula el backend)
 const precios = vi.hoisted(() => new Map())
 // En cuántas compras guardadas está cada artículo
 const comprasPorArticulo = vi.hoisted(() => new Map())
 const ASIGNACIONES_INICIALES = [
-  ['tocino la rioja', { nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos' }],
-  ['pechugas de pollo', { nombre: 'Pechugas de Pollo', categoria: 'Materia Prima', producto: 'Arepas/Empanadas' }],
-  ['mr músculo antigrasa', { nombre: 'Mr Músculo Antigrasa', categoria: 'Limpieza', producto: '' }],
+  ['tocino la rioja', { nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', unidad: 'kg' }],
+  ['pechugas de pollo', { nombre: 'Pechugas de Pollo', categoria: 'Materia Prima', producto: 'Arepas/Empanadas', unidad: 'lb' }],
+  ['mr músculo antigrasa', { nombre: 'Mr Músculo Antigrasa', categoria: 'Limpieza', producto: '', unidad: 'unidad' }],
 ]
 
 vi.mock('../services/api', () => {
@@ -26,8 +26,8 @@ vi.mock('../services/api', () => {
     const a = asignaciones.get((m || '').trim().toLowerCase())
     // Un artículo puede ir en varios productos: «Arepas, Empanadas»
     return a
-      ? { existe: true, ...a, productos: a.producto ? a.producto.split(', ') : [] }
-      : { existe: false, nombre: (m || '').trim(), categoria: '', producto: '', productos: [] }
+      ? { existe: true, unidad: '', ...a, productos: a.producto ? a.producto.split(', ') : [] }
+      : { existe: false, nombre: (m || '').trim(), categoria: '', producto: '', productos: [], unidad: '' }
   }
   return {
   guardarLista:         vi.fn(lista => Promise.resolve({ id: 99, ...lista })),
@@ -45,20 +45,21 @@ vi.mock('../services/api', () => {
   getAsignacion:        asignacion,
   getPrecioSugerido:    m => precios.get((m || '').trim().toLowerCase()) ?? null,
   getIvaPorProveedor:   () => false,
-  necesitaAsignacion:   m => Boolean((m || '').trim()) && (!asignacion(m).categoria || !asignacion(m).producto) && !comprasPorArticulo.get(m.trim().toLowerCase()),
-  asignarMaterial:      vi.fn(async (nombre, { categoria, productos }) => {
+  necesitaAsignacion:   m => Boolean((m || '').trim()) &&
+    (!asignacion(m).categoria || !asignacion(m).producto || !asignacion(m).unidad) && !comprasPorArticulo.get(m.trim().toLowerCase()),
+  asignarMaterial:      vi.fn(async (nombre, { categoria, productos, unidad }) => {
     const previo = asignacion(nombre)
-    const material = { nombre: previo.nombre, categoria, producto: productos.join(', ') }
+    const material = { nombre: previo.nombre, categoria, producto: productos.join(', '), unidad: unidad || previo.unidad }
     asignaciones.set(nombre.trim().toLowerCase(), material)
     const productosNuevos = productos.filter(p => p === 'Arepas Rellenas')
     return { material, materialNuevo: !previo.existe, categoriaNueva: categoria === 'Lácteos', productoNuevo: productosNuevos.length > 0, productosNuevos }
   }),
   getComprasDeMaterial: m => comprasPorArticulo.get((m || '').trim().toLowerCase()) ?? 0,
-  editarEnCatalogo:     vi.fn(async (_tipo, anterior, { nombre, categoria, productos }) => {
+  editarEnCatalogo:     vi.fn(async (_tipo, anterior, { nombre, categoria, productos, unidad }) => {
     const producto = productos.join(', ')
     asignaciones.delete(anterior.trim().toLowerCase())
-    asignaciones.set(nombre.trim().toLowerCase(), { nombre, categoria, producto })
-    return { anterior, nombre, categoria, producto, productos, compras: 3, categoriaNueva: false, productosNuevos: [] }
+    asignaciones.set(nombre.trim().toLowerCase(), { nombre, categoria, producto, unidad })
+    return { anterior, nombre, categoria, producto, productos, unidad, compras: 3, categoriaNueva: false, productosNuevos: [] }
   }),
   }
 })
@@ -73,8 +74,10 @@ function renderizar(props) {
   )
 }
 
-/** Guarda el formulario del artículo y confirma el resumen */
+/** Guarda el formulario del artículo y confirma el resumen. Si aún no tiene unidad, elige kg */
 async function guardarArticulo(usuario, ventana) {
+  const unidad = within(ventana).queryByRole('combobox', { name: ASIGNACION.etiquetaUnidad })
+  if (unidad && !unidad.value) await usuario.selectOptions(unidad, 'kg')
   await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.guardar }))
   await usuario.click(await screen.findByRole('button', { name: ASIGNACION.confirmar.confirmar }))
 }
@@ -94,7 +97,6 @@ async function llenarFila(usuario, n, { material = 'Tocino La Rioja', cantidad =
   await elegirProveedor(usuario)
   await usuario.type(screen.getByRole('combobox', { name: `Artículo, fila ${n}` }), material)
   await usuario.type(screen.getByLabelText(`Cantidad, fila ${n}`), cantidad)
-  await usuario.selectOptions(screen.getByLabelText(`Unidad, fila ${n}`), 'kg')
   await usuario.type(screen.getByLabelText(`Precio unitario, fila ${n}`), monto)
 }
 
@@ -109,7 +111,6 @@ async function llenarCompraValida(usuario, bloque = document.body) {
   await usuario.type(en.getByRole('combobox', { name: 'Proveedor' }), 'Walmart')
   await usuario.type(en.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
   await usuario.type(en.getByLabelText('Cantidad, fila 1'), '2')
-  await usuario.selectOptions(en.getByLabelText('Unidad, fila 1'), 'kg')
   await usuario.type(en.getByLabelText('Precio unitario, fila 1'), '350')
 }
 
@@ -129,7 +130,8 @@ describe('AgregarCompra', () => {
     const usuario = userEvent.setup()
     renderizar()
     await elegirProveedor(usuario)
-    expect(screen.getByLabelText('Unidad, fila 1')).toHaveValue('')
+    // Sin artículo, la fila no tiene unidad: la trae el artículo
+    expect(screen.getByLabelText('Unidad, fila 1')).toHaveTextContent(COMPRA.sinUnidad)
     expect(screen.getByLabelText('Precio unitario, fila 1')).not.toHaveAttribute('placeholder')
     expect(screen.getByLabelText('Monto, fila 1')).not.toHaveAttribute('placeholder')
     expect(screen.getByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
@@ -207,7 +209,6 @@ describe('AgregarCompra', () => {
     await elegirProveedor(usuario)
     await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '3')
-    await usuario.selectOptions(screen.getByLabelText('Unidad, fila 1'), 'kg')
     await usuario.type(screen.getByLabelText('Monto, fila 1'), '1000') // cajero: $10.00
 
     expect(screen.getByLabelText('Precio unitario, fila 1')).toHaveValue('3.33')
@@ -385,7 +386,7 @@ describe('AgregarCompra', () => {
     expect(await screen.findByText(COMPRA.errorGuardar('Fila 1: el monto debe ser mayor a 0'))).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /guardar compra/i })).toBeDisabled()
 
-    await usuario.selectOptions(screen.getByLabelText('Unidad, fila 1'), 'lb')
+    await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '1')
     expect(screen.getByRole('button', { name: /guardar compra/i })).toBeEnabled()
   })
 
@@ -439,7 +440,7 @@ describe('AgregarCompra', () => {
     expect(screen.getByRole('heading', { name: 'Detalle de compra' })).toBeInTheDocument()
   })
 
-  it('al elegir un material trae el precio unitario y la unidad de su última compra, y calcula el monto', async () => {
+  it('al elegir un material trae su unidad del Catálogo y el precio unitario de su última compra, y calcula el monto', async () => {
     precios.set('tocino la rioja', { precio: 1, unidad: 'bolsa' })
     const usuario = userEvent.setup()
     renderizar()
@@ -449,7 +450,8 @@ describe('AgregarCompra', () => {
 
     const precio = screen.getByLabelText('Precio unitario, fila 1')
     expect(precio).toHaveValue('1.00')
-    expect(screen.getByLabelText('Unidad, fila 1')).toHaveValue('bolsa')
+    // La unidad es la del artículo, no la de su última compra
+    expect(screen.getByLabelText('Unidad, fila 1')).toHaveTextContent('kg')
     expect(precio).not.toHaveAccessibleDescription() // el precio ya se ve: sin mensaje debajo
     expect(screen.queryByText(/Última compra/)).not.toBeInTheDocument()
 
@@ -473,8 +475,9 @@ describe('AgregarCompra', () => {
 
     await guardarYConfirmar(usuario)
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
+    // La unidad es la del artículo (kg), no la de su última compra (bolsa)
     expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({
-      material: 'Tocino La Rioja', cantidad: 5, unidad: 'bolsa', monto: 6,
+      material: 'Tocino La Rioja', cantidad: 5, unidad: 'kg', monto: 6,
     })
   })
 
@@ -530,7 +533,6 @@ describe('AgregarCompra', () => {
 
     await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
     await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
-    await usuario.selectOptions(screen.getByLabelText('Unidad, fila 1'), 'kg')
     expect(agregar()).not.toBeInTheDocument()
 
     await usuario.type(screen.getByLabelText('Precio unitario, fila 1'), '350')
@@ -576,8 +578,11 @@ describe('AgregarCompra', () => {
 
     const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
     // El nombre viene de lo escrito en la fila; sin los mensajes de antes
-    expect(within(ventana).getByRole('group', { name: ASIGNACION.etiquetaArticulo })).toBeInTheDocument()
+    expect(within(ventana).getByRole('group', { name: ASIGNACION.etiquetaArticuloYUnidad })).toBeInTheDocument()
     expect(within(ventana).getByRole('textbox', { name: ASIGNACION.nombreArticulo })).toHaveValue('Harina PAN')
+    // Sin «Proveedor: …» ni la ayuda del buscador: la ventana cabe sin desplazarse
+    expect(within(ventana).queryByText(/Proveedor:/)).not.toBeInTheDocument()
+    expect(within(ventana).queryByText(/¿No aparece la categoría/)).not.toBeInTheDocument()
     expect(within(ventana).queryByText(/es nuevo por aquí/)).not.toBeInTheDocument()
     expect(within(ventana).queryByText(/Primero van las categorías/)).not.toBeInTheDocument()
     expect(within(ventana).getByRole('textbox', { name: 'Buscar o agregar categoría' })).toHaveFocus()
@@ -593,12 +598,20 @@ describe('AgregarCompra', () => {
     await usuario.click(within(ventana).getByRole('button', { name: 'Agregar «Arepas Rellenas»' }))
     expect(within(ventana).getByRole('button', { name: /Arepas Rellenas/ })).toHaveAttribute('aria-pressed', 'true')
 
+    // Sin unidad no se guarda: va a la derecha del nombre
+    const unidad = within(ventana).getByRole('combobox', { name: ASIGNACION.etiquetaUnidad })
+    await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.guardar }))
+    expect(unidad).toHaveAccessibleDescription(ASIGNACION.faltaUnidad)
+    await usuario.selectOptions(unidad, 'kg')
+
     await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.guardar }))
     // Antes de guardar se confirma, con un resumen de lo que se va a hacer
     expect(asignarMaterial).not.toHaveBeenCalled()
-    expect(await screen.findByText('Se agregará «Harina PAN» al catálogo, en Materia Prima · Arepas Rellenas.')).toBeInTheDocument()
+    expect(await screen.findByText('Se agregará «Harina PAN» al catálogo, en Materia Prima · Arepas Rellenas. Se compra por kg.')).toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: ASIGNACION.confirmar.confirmar }))
-    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas Rellenas'], proveedor: 'Walmart', nuevo: true }))
+    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas Rellenas'], unidad: 'kg', proveedor: 'Walmart', nuevo: true }))
+    // La fila toma la unidad del artículo
+    await waitFor(() => expect(screen.getByLabelText('Unidad, fila 1')).toHaveTextContent('kg'))
     expect(await screen.findByText('¡Anotado! «Harina PAN» va a Materia Prima · Arepas Rellenas. Ya quedó en el catálogo. Y estrenamos el producto «Arepas Rellenas».')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
@@ -617,8 +630,11 @@ describe('AgregarCompra', () => {
     expect(within(ventana).getByText('Limpieza')).toBeInTheDocument()
 
     await usuario.click(within(ventana).getByRole('button', { name: 'Cachitos' }))
-    await guardarArticulo(usuario, ventana)
-    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Mr Músculo Antigrasa', { categoria: 'Limpieza', productos: ['Cachitos'], proveedor: 'Walmart' }))
+    await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.guardar }))
+    await usuario.click(await screen.findByRole('button', { name: ASIGNACION.confirmar.confirmar }))
+    // Ya tenía unidad: no se pide y se conserva
+    expect(within(ventana).queryByRole('combobox', { name: ASIGNACION.etiquetaUnidad })).not.toBeInTheDocument()
+    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Mr Músculo Antigrasa', { categoria: 'Limpieza', productos: ['Cachitos'], unidad: 'unidad', proveedor: 'Walmart' }))
     expect(editarEnCatalogo).not.toHaveBeenCalled()
   })
 
@@ -653,7 +669,7 @@ describe('AgregarCompra', () => {
     await usuario.click(within(ventana).getByRole('button', { name: 'Cachitos' }))
 
     await guardarArticulo(usuario, ventana)
-    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas/Empanadas', 'Cachitos'], proveedor: 'Walmart', nuevo: true }))
+    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Harina PAN', { categoria: 'Materia Prima', productos: ['Arepas/Empanadas', 'Cachitos'], unidad: 'kg', proveedor: 'Walmart', nuevo: true }))
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveAccessibleDescription('Materia Prima · Arepas/Empanadas, Cachitos')
   })
@@ -680,29 +696,56 @@ describe('AgregarCompra', () => {
     return material
   }
 
+  // Registrado con su unidad pero sin categoría ni producto (p. ej. creado en el Catálogo) y nunca comprado
+  const quesoSinAsignar = () => asignaciones.set('queso', { nombre: 'Queso', categoria: '', producto: '', unidad: 'lb' })
+
   it('«Ahora no» al guardar: la compra se guarda igual, sin categoría ni producto', async () => {
+    quesoSinAsignar()
     const usuario = userEvent.setup()
     renderizar()
     await compraConArticuloNuevo(usuario)
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
 
-    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloExistente })
     await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.ahoraNo }))
     const confirmar = await screen.findByRole('alertdialog', { name: COMPRA.confirmarGuardar.titulo })
     await usuario.click(within(confirmar).getByRole('button', { name: COMPRA.confirmarGuardar.confirmar }))
 
     await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
-    expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({ material: 'Queso', categoria: '', producto: '' })
+    expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({ material: 'Queso', categoria: '', producto: '', unidad: 'lb' })
     expect(asignarMaterial).not.toHaveBeenCalled()
   })
 
+  it('un artículo nuevo sin unidad deja la fila incompleta: su botón pide la unidad y después se guarda', async () => {
+    const usuario = userEvent.setup()
+    renderizar()
+    await compraConArticuloNuevo(usuario)
+
+    // Sin unidad la fila no está completa: aún no hay Guardar compra
+    expect(screen.getByLabelText('Unidad, fila 1')).toHaveTextContent(COMPRA.sinUnidad)
+    expect(screen.queryByRole('button', { name: /guardar compra/i })).not.toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: COMPRA.agregarArticulo('Queso') }))
+    const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await usuario.click(within(ventana).getByRole('button', { name: 'Bebidas' }))
+    await usuario.click(within(ventana).getByRole('button', { name: 'Todos' }))
+    await guardarArticulo(usuario, ventana)
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByLabelText('Unidad, fila 1')).toHaveTextContent('kg')
+
+    await guardarYConfirmar(usuario)
+    await waitFor(() => expect(guardarLista).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(guardarLista).mock.calls[0][0].materiales[0]).toMatchObject({ material: 'Queso', unidad: 'kg', categoria: 'Bebidas', producto: 'Todos' })
+  })
+
   it('la X al guardar cierra la ventana sin guardar la compra, y la fila queda marcada', async () => {
+    quesoSinAsignar()
     const usuario = userEvent.setup()
     renderizar()
     await compraConArticuloNuevo(usuario)
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
 
-    await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    await screen.findByRole('dialog', { name: ASIGNACION.tituloExistente })
     await usuario.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
@@ -719,7 +762,7 @@ describe('AgregarCompra', () => {
     await usuario.tab()
 
     const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
-    expect(within(ventana).queryByText(ASIGNACION.faltaInformacion(true, true))).not.toBeInTheDocument()
+    expect(within(ventana).queryByText(ASIGNACION.faltaInformacion(true, true, true))).not.toBeInTheDocument()
     await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.ahoraNo }))
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 
@@ -731,7 +774,7 @@ describe('AgregarCompra', () => {
 
     await usuario.click(screen.getByRole('button', { name: COMPRA.agregarArticulo('Harina Nueva') }))
     const otra = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
-    expect(within(otra).getByText(ASIGNACION.faltaInformacion(true, true))).toBeInTheDocument()
+    expect(within(otra).getByText(ASIGNACION.faltaInformacion(true, true, true))).toBeInTheDocument()
 
     await usuario.click(within(otra).getByRole('button', { name: 'Materia Prima' }))
     await usuario.click(within(otra).getByRole('button', { name: 'Cachitos' }))
@@ -750,11 +793,12 @@ describe('AgregarCompra', () => {
 
     const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
     await usuario.click(within(ventana).getByRole('button', { name: 'Materia Prima' }))
+    await usuario.selectOptions(within(ventana).getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }), 'lb')
     await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.guardar }))
-    expect(await screen.findByText('Se agregará «Sal de mar» al catálogo, en Materia Prima.')).toBeInTheDocument()
+    expect(await screen.findByText('Se agregará «Sal de mar» al catálogo, en Materia Prima. Se compra por lb.')).toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: ASIGNACION.confirmar.confirmar }))
 
-    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Sal de mar', { categoria: 'Materia Prima', productos: [], proveedor: 'Walmart', nuevo: true }))
+    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Sal de mar', { categoria: 'Materia Prima', productos: [], unidad: 'lb', proveedor: 'Walmart', nuevo: true }))
     expect(await screen.findByText(/va a Materia Prima\. Ya quedó en el catálogo\./)).toBeInTheDocument()
   })
 
@@ -967,13 +1011,14 @@ describe('AgregarCompra', () => {
     expect(within(ventana).queryByRole('button', { name: 'Cachito' })).not.toBeInTheDocument()
   })
 
-  it('al guardar la compra con un artículo nuevo, lo pide y después guarda la compra', async () => {
+  it('al guardar la compra con un artículo sin categoría, lo pide y después guarda la compra', async () => {
+    quesoSinAsignar()
     const usuario = userEvent.setup()
     renderizar()
     await compraConArticuloNuevo(usuario)
     await usuario.click(screen.getByRole('button', { name: /guardar compra/i }))
 
-    const otra = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
+    const otra = await screen.findByRole('dialog', { name: ASIGNACION.tituloExistente })
     await usuario.click(within(otra).getByRole('button', { name: 'Bebidas' }))
     await usuario.click(within(otra).getByRole('button', { name: 'Todos' }))
     await guardarArticulo(usuario, otra)
@@ -1006,7 +1051,7 @@ describe('AgregarCompra', () => {
     await guardarArticulo(usuario, ventana)
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-    expect(asignarMaterial).toHaveBeenCalledWith('Sal de mar', { categoria: 'Materia Prima', productos: ['Cachitos'], proveedor: 'Walmart', nuevo: true })
+    expect(asignarMaterial).toHaveBeenCalledWith('Sal de mar', { categoria: 'Materia Prima', productos: ['Cachitos'], unidad: 'kg', proveedor: 'Walmart', nuevo: true })
     expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveValue('Sal de mar')
   })
 
@@ -1044,7 +1089,7 @@ describe('AgregarCompra', () => {
     await usuario.click(within(ventana).getByRole('button', { name: 'Cachitos' }))
     await guardarArticulo(usuario, ventana)
 
-    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Harina Especial', { categoria: 'Materia Prima', productos: ['Cachitos'], proveedor: 'Walmart', nuevo: true }))
+    await waitFor(() => expect(asignarMaterial).toHaveBeenCalledWith('Harina Especial', { categoria: 'Materia Prima', productos: ['Cachitos'], unidad: 'kg', proveedor: 'Walmart', nuevo: true }))
     await waitFor(() => expect(screen.getByRole('combobox', { name: 'Artículo, fila 1' })).toHaveValue('Harina Especial'))
   })
 
@@ -1078,17 +1123,19 @@ describe('AgregarCompra', () => {
     expect(nombre).toHaveValue('Tocino La Rioja')
     expect(within(ventana).getByRole('button', { name: /Materia Prima/ })).toHaveAttribute('aria-pressed', 'true')
     expect(within(ventana).getByRole('button', { name: /Cachitos/ })).toHaveAttribute('aria-pressed', 'true')
+    // La unidad del artículo va a la derecha del nombre
+    expect(within(ventana).getByRole('combobox', { name: ASIGNACION.etiquetaUnidad })).toHaveValue('kg')
     expect(within(ventana).getByRole('button', { name: ASIGNACION.cancelar })).toBeInTheDocument()
 
     await usuario.clear(nombre)
     await usuario.type(nombre, 'Tocino Ahumado')
     await usuario.click(within(ventana).getByRole('button', { name: ASIGNACION.guardar }))
     // La confirmación dice qué va a pasar y cuántas compras toca
-    expect(await screen.findByText('«Tocino La Rioja» pasará a llamarse «Tocino Ahumado». «Tocino Ahumado» quedará en Materia Prima · Cachitos. También se actualizará en 3 compras.')).toBeInTheDocument()
+    expect(await screen.findByText('«Tocino La Rioja» pasará a llamarse «Tocino Ahumado». «Tocino Ahumado» quedará en Materia Prima · Cachitos. Se compra por kg. También se actualizará en 3 compras.')).toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: ASIGNACION.confirmar.confirmar }))
 
     await waitFor(() => expect(editarEnCatalogo).toHaveBeenCalledWith('material', 'Tocino La Rioja', {
-      nombre: 'Tocino Ahumado', categoria: 'Materia Prima', productos: ['Cachitos'], proveedor: 'Walmart',
+      nombre: 'Tocino Ahumado', categoria: 'Materia Prima', productos: ['Cachitos'], unidad: 'kg', proveedor: 'Walmart',
     }))
     expect(await screen.findByText('¡Chévere! «Tocino La Rioja» ahora se llama «Tocino Ahumado» y va a Materia Prima · Cachitos. Se actualizó en 3 compras.')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
@@ -1173,7 +1220,7 @@ describe('AgregarCompra', () => {
     expect(await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })).toBeInTheDocument()
   })
 
-  it('si se descarta la asignación ("Ahora no"), aparece el botón "+" para reabrirla y muestra el proveedor', async () => {
+  it('si se descarta la asignación ("Ahora no"), aparece el botón "+" para reabrirla', async () => {
     const usuario = userEvent.setup()
     renderizar()
     await elegirProveedor(usuario)
@@ -1183,9 +1230,8 @@ describe('AgregarCompra', () => {
 
     // Se abre la ventana emergente
     const ventana = await screen.findByRole('dialog', { name: ASIGNACION.tituloNuevo })
-    // Muestra el proveedor seleccionado
-    expect(within(ventana).getByText(/Proveedor:/)).toBeInTheDocument()
-    expect(within(ventana).getByText('Walmart')).toBeInTheDocument()
+    // Ya no muestra «Proveedor: …»: ocupaba espacio y la ventana debe caber sin desplazarse
+    expect(within(ventana).queryByText(/Proveedor:/)).not.toBeInTheDocument()
 
     // Omitimos la asignación ("Ahora no")
     await usuario.click(within(ventana).getByRole('button', { name: 'Ahora no' }))
