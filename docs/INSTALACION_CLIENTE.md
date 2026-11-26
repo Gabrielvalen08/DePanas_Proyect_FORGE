@@ -5,7 +5,7 @@ Programa para registrar las compras de la cocina y administrar el catálogo (pro
 - Se usa **en el navegador** (Chrome, Edge…), como una página web.
 - Todo se guarda **en esta computadora** y **no necesita internet**.
 - Funciona en **Windows 10 u 11 de 64 bits**.
-- **No se instala:** se entrega en un archivo **`De Panas SV 1.2.0.zip`**.
+- **No se instala:** se entrega en un archivo **`De Panas SV 1.3.0.zip`**.
 
 ## Lista para el día de la instalación
 
@@ -121,7 +121,9 @@ En cada sección del Catálogo, el menú **⋮** también permite exportar a Exc
 2. Borra la carpeta `De Panas SV` vieja.
 3. Haz los pasos del punto 1 con el `.zip` nuevo, en el mismo lugar.
 
-Los datos se conservan, y el acceso directo del escritorio se actualiza solo la primera vez que se abre la versión nueva.
+Los datos se conservan, y el acceso directo del escritorio se actualiza solo la primera vez que se abre la versión nueva. Al abrir la 1.3.0 por primera vez, cada artículo toma la unidad de su última compra y aparece el rol de subadministrador; no hace falta hacer nada.
+
+> **Antes de actualizar, haz un respaldo** (punto 5).
 
 ## 7. Quitar el sistema
 
