@@ -142,7 +142,7 @@ test('el .zip: se abre con el .cmd, funciona en el navegador, se apaga desde el 
     await pagina.keyboard.press('Escape')
     // La unidad es del artículo: se elige en su formulario (el lápiz) y la fila la toma
     await formulario.getByRole('button', { name: COMPRA.editarArticulo('Agua') }).click()
-    const articulo = pagina.getByRole('dialog', { name: ASIGNACION.tituloEditar })
+    const articulo = pagina.getByRole('dialog').filter({ has: pagina.getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }) })
     await articulo.getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }).selectOption('caja')
     await articulo.getByRole('button', { name: ASIGNACION.guardar }).click()
     await confirmar(pagina, ASIGNACION.confirmar.confirmar)
