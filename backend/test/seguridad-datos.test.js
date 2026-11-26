@@ -182,6 +182,25 @@ test('exportar: sin sesión 401; sin la pantalla Exportar 403 (un empleado no se
   assert.equal((await pedir(`${base}/db/exportar-json`, { token: marta })).status, 200)
 })
 
+test('la base completa (.db) solo la exporta o reemplaza el administrador: ni un operador ni un subadministrador', async t => {
+  const { base } = await levantar(t)
+  await pedir(`${base}/usuarios`, { metodo: 'POST', cuerpo: { usuario: 'Sub_05', nombre: 'Sub', contrasena: 'Arepa#2026', rol: 'subadmin' } })
+  const marta = await tokenDe(base, 'Marta_02', CLAVE_MARTA)
+  const sub = await tokenDe(base, 'Sub_05', 'Arepa#2026')
+  for (const token of [marta, sub]) {
+    // Reemplazar la base dejaría poner otra contraseña al administrador
+    const form = new FormData()
+    form.append('db', new Blob(['no importa']), 'otra.db')
+    const res = await fetch(`${base}/db/importar`, { method: 'POST', body: form, headers: { Authorization: `Bearer ${token}` } })
+    assert.equal(res.status, 403, await res.text())
+    // La base lleva los hashes de todas las contraseñas
+    assert.equal((await pedir(`${base}/db/exportar`, { token })).status, 403)
+    // Las compras en JSON siguen disponibles con la pantalla Exportar
+    assert.equal((await pedir(`${base}/db/exportar-json`, { token })).status, 200)
+  }
+  assert.equal((await fetch(`${base}/db/exportar`, { headers: cabeceras(`${base}/db/exportar`) })).status, 200)
+})
+
 test('exportar: el JSON de compras no lleva usuarios ni contraseñas; la base .db solo guarda hashes', async t => {
   const { base, carpeta } = await levantar(t)
   await pedir(`${base}/compras`, { metodo: 'POST', cuerpo: compra() })
