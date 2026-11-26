@@ -8,7 +8,8 @@
     "preparar": "node scripts/preparar.mjs",
     "dist": "node scripts/preparar.mjs --zip",
     "capturas:manual": "node scripts/capturas-manual.cjs",
-    "test:escritorio": "playwright test"
+    "test:escritorio": "playwright test",
+    "reporte:pruebas": "node scripts/reporte-pruebas.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
