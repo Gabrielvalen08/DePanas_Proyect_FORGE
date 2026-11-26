@@ -137,7 +137,7 @@ test('permisos: sin catalogo.editar se crean artículos y se completa lo que fal
 test('permisos: un operador tiene todo menos el Gestor de usuarios y los requisitos de contraseña', async t => {
   const { base } = await levantar(t)
   const marta = await tokenDe(base, 'Marta_02', CLAVE_MARTA)
-  assert.equal((await pedir(`${base}/db/exportar`, { token: marta })).status, 200)
+  assert.equal((await pedir(`${base}/db/exportar-json`, { token: marta })).status, 200)
   assert.equal((await pedir(`${base}/catalogo/proveedor`, { metodo: 'POST', token: marta, cuerpo: { nombre: 'La Colonia' } })).status, 200)
   assert.equal((await pedir(`${base}/usuarios`, { token: marta })).status, 403)
   assert.equal((await pedir(`${base}/requisitos-contrasena`, { metodo: 'PUT', token: marta, cuerpo: { minimo: 4 } })).status, 403)
@@ -147,9 +147,9 @@ test('permisos: quitarle una pantalla a un usuario se aplica en el acto, sin que
   const { base } = await levantar(t)
   const admin = await tokenDe(base, 'Cesar_01', CLAVE_CESAR)
   const marta = await tokenDe(base, 'Marta_02', CLAVE_MARTA)
-  assert.equal((await pedir(`${base}/db/exportar`, { token: marta })).status, 200)
+  assert.equal((await pedir(`${base}/db/exportar-json`, { token: marta })).status, 200)
   await pedir(`${base}/usuarios/Marta_02`, { metodo: 'PUT', token: admin, cuerpo: { permisos: ['/', '/compras'] } })
-  assert.equal((await pedir(`${base}/db/exportar`, { token: marta })).status, 403)
+  assert.equal((await pedir(`${base}/db/exportar-json`, { token: marta })).status, 403)
 
   // Y si lo eliminan, su sesión deja de servir
   await pedir(`${base}/usuarios/Marta_02`, { metodo: 'DELETE', token: admin })

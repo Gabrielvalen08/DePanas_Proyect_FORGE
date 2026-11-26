@@ -31,10 +31,10 @@
     </div>
 
     <div class="cifras" role="list" aria-label="Pruebas automáticas">
-      <div class="cifra" role="listitem"><strong>136</strong><span>pruebas del backend</span></div>
-      <div class="cifra" role="listitem"><strong>376</strong><span>pruebas del frontend</span></div>
-      <div class="cifra" role="listitem"><strong>91</strong><span>recorridos en navegador</span></div>
-      <div class="cifra" role="listitem"><strong>31</strong><span>pruebas de seguridad</span></div>
+      <div class="cifra" role="listitem"><strong>151</strong><span>pruebas del backend</span></div>
+      <div class="cifra" role="listitem"><strong>402</strong><span>pruebas del frontend</span></div>
+      <div class="cifra" role="listitem"><strong>102</strong><span>recorridos en navegador</span></div>
+      <div class="cifra" role="listitem"><strong>33</strong><span>pruebas de seguridad</span></div>
     </div>
 
     <section aria-labelledby="t-auto">
@@ -48,11 +48,12 @@
             <tr><td><code>calculos.test.js</code></td><td>IVA y redondeo a centavos, subtotal y total, reporte de gastos y filtros por proveedor, artículo y fechas</td><td class="numero">12</td></tr>
             <tr><td><code>api.test.js</code></td><td>Compras completas, validación, exportar e importar la base y los respaldos JSON</td><td class="numero">18</td></tr>
             <tr><td><code>lote.test.js</code></td><td>Eliminar varias compras: todo o nada, validación, permisos y la ruta de archivar ya no existe</td><td class="numero">4</td></tr>
-            <tr><td><code>catalogo.test.js</code></td><td>Agregar, renombrar (también en las compras), eliminar, fichas, proveedores por categoría, respaldos</td><td class="numero">26</td></tr>
-            <tr><td><code>usuarios.test.js</code></td><td>Gestor de usuarios, roles, requisitos de contraseña y migraciones de usuarios</td><td class="numero">20</td></tr>
+            <tr><td><code>catalogo.test.js</code></td><td>Agregar, renombrar (también en las compras), eliminar, fichas, proveedores por categoría, artículos por proveedor, respaldos</td><td class="numero">28</td></tr>
+            <tr><td><code>usuarios.test.js</code></td><td>Gestor de usuarios, roles (también el subadministrador), requisitos de contraseña y migraciones de usuarios</td><td class="numero">25</td></tr>
+            <tr><td><code>unidades.test.js</code></td><td>Unidad del artículo, «gr» y «otros», migración de la versión 4 y respaldos con unidad</td><td class="numero">8</td></tr>
             <tr><td><code>seguridad.test.js</code></td><td>Sesión, permisos, bloqueo por intentos, hash, hosts permitidos y apagado del .zip</td><td class="numero">19</td></tr>
-            <tr><td><code>seguridad-datos.test.js</code></td><td>Validación de entradas, inyección SQL, errores sin detalles, cabeceras de seguridad, exportados y respaldo</td><td class="numero">12</td></tr>
-            <tr><td><code>iva.test.js</code>, <code>carga.test.js</code>, <code>sqlite.test.js</code>, <code>demo.test.js</code></td><td>IVA de cada compra, carga de respaldos, conexión SQLite y datos de demostración</td><td class="numero">20</td></tr>
+            <tr><td><code>seguridad-datos.test.js</code></td><td>Validación de entradas, inyección SQL, errores sin detalles, cabeceras de seguridad, exportados, la base completa solo para el administrador y respaldo</td><td class="numero">14</td></tr>
+            <tr><td><code>iva.test.js</code>, <code>carga.test.js</code>, <code>sqlite.test.js</code>, <code>demo.test.js</code></td><td>IVA de cada compra, carga de respaldos, conexión SQLite y datos de demostración</td><td class="numero">22</td></tr>
           </tbody>
         </table>
       </div>
@@ -83,7 +84,7 @@ npm run test:escritorio</code></pre>
 
     <section aria-labelledby="t-seg">
       <h2 id="t-seg">Seguridad</h2>
-      <p>Cada control tiene su prueba: contraseñas con hash, bloqueo por intentos fallidos, sesión que vence, permisos en cada petición, validación de entradas, SQL con parámetros, errores sin detalles internos, exportar solo con permiso y respaldo antes de reemplazar la base. La tabla completa está en <a href="../SEGURIDAD.md">docs/SEGURIDAD.md</a>.</p>
+      <p>Cada control tiene su prueba: contraseñas con hash, bloqueo por intentos fallidos, sesión que vence, permisos en cada petición, validación de entradas, SQL con parámetros, errores sin detalles internos, exportar solo con permiso y respaldo antes de reemplazar la base. La tabla completa está en <a href="../SEGURIDAD.md">docs/SEGURIDAD.md</a>. La última revisión (25 de noviembre, con el subadministrador) encontró y corrigió que un operador podía reemplazar la base completa: está en <a href="../revisiones/seguridad.md">docs/revisiones/seguridad.md</a>. Las salidas de cada prueba están en el <a href="../pruebas/index.html">reporte de pruebas</a>.</p>
     </section>
 
     <section aria-labelledby="t-privacidad">
@@ -97,7 +98,7 @@ npm run test:escritorio</code></pre>
             <tr><td>Nada sale de la computadora</td><td>El servidor escucha solo en <code>127.0.0.1</code> y <code>::1</code>; sin analítica ni servicios externos; las fuentes de la marca van dentro de la app (antes se pedían a Google Fonts)</td><td><code>navegacion.spec.js</code>: ningún pedido fuera de la computadora</td></tr>
             <tr><td>Contraseñas</td><td>PBKDF2-SHA256 con 600 000 iteraciones; nunca salen del backend y no se comparan con las de otros usuarios</td><td><a href="../SEGURIDAD.md">Seguridad</a></td></tr>
             <tr><td>Quién ve qué</td><td>Roles y permisos por pantalla y función, revisados en cada petición</td><td><code>seguridad.test.js</code></td></tr>
-            <tr><td>Respaldos</td><td>Exportar descarga un archivo con las compras completas: se avisa al usuario que lo guarde en un lugar seguro</td><td><code>seguridad-datos.test.js</code></td></tr>
+            <tr><td>Respaldos</td><td>Exportar descarga un archivo con las compras completas: se avisa al usuario que lo guarde en un lugar seguro. La base completa (con los hashes) solo la descarga el administrador</td><td><code>seguridad-datos.test.js</code></td></tr>
             <tr><td>Borrar</td><td>Eliminar una compra o un dato del catálogo; borrar todo es borrar la carpeta de datos con la app apagada</td><td><a href="../manual/index.html#privacidad">Manual de uso</a></td></tr>
           </tbody>
         </table>

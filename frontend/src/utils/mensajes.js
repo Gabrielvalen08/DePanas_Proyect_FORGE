@@ -534,7 +534,7 @@ export const USUARIOS = {
   ayudas: {
     usuario: 'Con esto inicia sesión. De 3 a 30 letras, números, _ . o -, sin espacios. No se cambia después.',
     usuarioFijo: 'El usuario no se puede cambiar.',
-    contrasena: 'Distinta a la de los demás usuarios.',
+    contrasena: 'Debe cumplir los requisitos de la lista de abajo.',
     contrasenaEditar: 'Déjala en blanco para no cambiarla.',
   },
   requisitosLista: 'La contraseña necesita:',

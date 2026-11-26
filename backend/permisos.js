@@ -6,17 +6,18 @@
  * dao/usuarios.js);
  * los demás, a las pantallas de su lista y a las funciones que tengan de esas pantallas.
  * Una regla { pantallas, funciones } se cumple con cualquiera de sus pantallas o funciones;
- * 'admin' es el administrador o el subadministrador; null, cualquier sesión.
+ * 'admin' es el administrador o el subadministrador; 'principal', solo el administrador;
+ * null, cualquier sesión.
  */
 
-import { tieneAccesoTotal } from '../shared/usuarios.js'
+import { ROL_ADMIN, tieneAccesoTotal } from '../shared/usuarios.js'
 
 // Las compras se leen desde Agregar compra (precios), Lista de compras, Exportar y Cargar
 const LEER_COMPRAS = { pantallas: ['/', '/compras', '/exportar', '/cargar'] }
 
 /**
  * Lo que exige `metodo` en `ruta` (relativa a /api, p. ej. '/compras/abc').
- * @returns {null | 'admin' | { pantallas?: string[], funciones?: string[] }}
+ * @returns {null | 'admin' | 'principal' | { pantallas?: string[], funciones?: string[] }}
  */
 export function permisoRequerido(metodo, ruta) {
   const partes = ruta.split('?')[0].split('/').filter(Boolean)
@@ -52,6 +53,9 @@ export function permisoRequerido(metodo, ruta) {
   }
 
   if (recurso === 'db') {
+    // La base completa (.db) lleva los hashes de todas las contraseñas, y reemplazarla cambiaría
+    // la del administrador: solo él la exporta o la reemplaza. Las compras en JSON siguen abajo.
+    if ((metodo === 'GET' && segundo === 'exportar') || (metodo === 'POST' && segundo === 'importar')) return 'principal'
     if (metodo === 'GET' && segundo?.startsWith('exportar')) return { pantallas: ['/exportar'] }
     if (metodo === 'POST' && segundo?.startsWith('importar')) return { pantallas: ['/cargar'] }
   }
@@ -65,6 +69,7 @@ export function permisoRequerido(metodo, ruta) {
  */
 export function cumple(usuario, regla) {
   if (regla === null) return true
+  if (regla === 'principal') return usuario.rol === ROL_ADMIN
   if (tieneAccesoTotal(usuario.rol)) return true
   if (regla === 'admin') return false
   return (regla.pantallas ?? []).some(p => usuario.permisos.includes(p)) ||

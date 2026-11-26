@@ -236,7 +236,7 @@
         <li>Revisa la <b>fecha</b>: empieza en hoy.</li>
         <li>Escribe el <b>proveedor</b>. Si lo que escribes empieza igual que uno guardado, queda marcado y <kbd>Enter</kbd> lo completa.</li>
         <li>Escribe el <b>artículo</b>. Salen los que vende ese proveedor y los que ya le compraste.</li>
-        <li>Pon la <b>cantidad</b> y elige la <b>unidad</b>.</li>
+        <li>Pon la <b>cantidad</b>. La <b>unidad</b> viene del artículo; para cambiarla, toca el <img class="boton" src="img/botones/lapiz-articulo.png" alt="lápiz (editar artículo)"> de la fila.</li>
         <li>Revisa el <b>monto</b>: el precio de la última compra se pone solo. Si cambió, escribe el monto o el precio unitario y el otro se calcula.</li>
         <li>Toca <img class="boton" src="img/botones/guardar-compra.png" alt="Guardar compra"> y confirma.</li>
       </ol>
@@ -252,15 +252,17 @@
       <h2 id="t-articulo">3. Un artículo nuevo</h2>
       <p>Si el artículo no está en el catálogo, toca <img class="boton" src="img/botones/mas-articulo.png" alt="+ (agregar artículo nuevo)"> junto a la fila. Se abre este formulario:</p>
       <figure>
-        <img src="img/03-articulo-nuevo.png" alt="Ventana Artículo nuevo con el nombre (1), la categoría (2), los productos (3) y el botón Guardar (4)" loading="lazy">
+        <img src="img/03-articulo-nuevo.png" alt="Ventana Artículo nuevo con el nombre (1), la unidad (2), la categoría (3), los productos (4) y el botón Guardar (5)" loading="lazy">
       </figure>
       <ol class="marcas">
         <li>Revisa el <b>nombre</b>: viene de lo que escribiste en la fila.</li>
+        <li>Elige su <b>unidad</b> (lb, caja, galón, gr, otros…). Cada vez que lo compres, la fila la pondrá sola.</li>
         <li>Elige su <b>categoría</b> (por ejemplo, Materia Prima). Si no está, escríbela.</li>
         <li>Elige en qué <b>productos</b> se usa (Arepas, Tequeños…). Es opcional.</li>
         <li>Toca <b>Guardar</b> y confirma. Desde ahora sale en el buscador.</li>
       </ol>
-      <p>Con <img class="boton" src="img/botones/ahora-no.png" alt="Ahora no"> la compra se guarda igual y la fila queda marcada en rojo con un «!», para completarlo después. Para corregir un artículo que ya existe, toca el <img class="boton" src="img/botones/lapiz-articulo.png" alt="lápiz (editar artículo)"> junto a la fila.</p>
+      <p>Si la compra no es para cocinar (algo personal, por ejemplo), usa la categoría <b>Gastos personales</b> y el producto <b>Ninguno</b>.</p>
+      <p>Con <img class="boton" src="img/botones/ahora-no.png" alt="Ahora no"> la fila queda marcada en rojo con un «!», para completarlo después; la <b>unidad</b> sí hace falta para guardar la compra. Para corregir un artículo que ya existe, toca el <img class="boton" src="img/botones/lapiz-articulo.png" alt="lápiz (editar artículo)"> junto a la fila.</p>
       <a class="volver" href="#titulo-indice">↑ Volver al índice</a>
     </section>
 
@@ -347,12 +349,12 @@
 
     <section id="usuarios" aria-labelledby="t-usuarios">
       <h2 id="t-usuarios">7. Usuarios y contraseñas</h2>
-      <p>Solo el administrador (César) ve el <b>Gestor de usuarios</b>, al pie del menú.</p>
+      <p>El administrador (César) y los subadministradores ven el <b>Gestor de usuarios</b>, al pie del menú.</p>
       <figure>
         <img src="img/10-usuarios.png" alt="Gestor de usuarios con el botón Agregar usuario (1), el lápiz de Marta (2) y Editar requisitos (3)" loading="lazy">
       </figure>
       <ol class="marcas">
-        <li><img class="boton" src="img/botones/agregar-usuario.png" alt="Agregar usuario">: nombre, usuario, contraseña y rol. El <b>operador</b> puede todo menos el gestor; el <b>empleado</b>, registrar, ver y corregir compras.</li>
+        <li><img class="boton" src="img/botones/agregar-usuario.png" alt="Agregar usuario">: nombre, usuario, contraseña y rol. El <b>subadministrador</b> puede todo, también el gestor, pero no edita a César ni crea otros subadministradores; el <b>operador</b> puede todo menos el gestor; el <b>empleado</b>, registrar, ver y corregir compras.</li>
         <li>Con el <img class="boton" src="img/botones/lapiz-usuario.png" alt="lápiz"> se cambian la contraseña, las pantallas y lo que puede hacer cada persona.</li>
         <li><img class="boton" src="img/botones/editar-requisitos.png" alt="Editar requisitos"> define cómo deben ser las contraseñas nuevas.</li>
       </ol>

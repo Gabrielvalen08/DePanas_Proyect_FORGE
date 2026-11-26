@@ -60,7 +60,7 @@ Si el backend no está encendido, el frontend trabaja en **modo local** y guarda
 | **Proveedor** | A quién se le compra, con su ficha (ubicación, teléfonos, contactos) | Selectos, MMAG, Pepsi |
 | **Categoría** | Tipo de insumo; sabe qué proveedores la surten | Materia Prima, Desechables, Bebidas |
 | **Producto** | Lo que vende De Panas y en lo que se usa el artículo | Cachitos, Tequeños, Arepas |
-| **Usuario** | Quién entra, con su rol, sus pantallas y funciones | Cesar_01 (administrador), Marta_02 (operadora) |
+| **Usuario** | Quién entra, con su rol (administrador, subadministrador, operador o empleado), sus pantallas y funciones | Cesar_01 (administrador), Marta_02 (operadora) |
 
 En la interfaz se dice **artículo**; en el código, la API y la base, `material`. Así no se rompieron los respaldos ni el trabajo del equipo.
 
@@ -96,7 +96,8 @@ Una fila por artículo comprado. Las filas de una misma compra comparten `compra
 | `nombre` | Único por tipo, sin distinguir mayúsculas |
 | `categoria`, `producto` | Solo artículos: su categoría y sus productos |
 | `categoria_anterior` | Solo artículos sin categoría: la categoría de la que se quitaron al editarla |
-| `ficha` | Solo proveedores: JSON con ubicación, teléfonos y contactos |
+| `ficha` | Solo proveedores: JSON con dirección, teléfonos y contactos |
+| `unidad` | Solo artículos: su unidad (`shared/unidades.js`: lb, kg, gr, oz, galón, litro, ml, unidad, caja, bolsa, otros). La fila de la compra la toma de aquí; las compras guardadas conservan la suya |
 
 ### `proveedor_categoria`: quién surte qué
 
@@ -113,7 +114,7 @@ Relación muchos a muchos por `id` (`proveedor_id`, `material_id`) con clave com
 | `usuario` | Único, sin distinguir mayúsculas |
 | `nombre` | Nombre de la persona |
 | `contrasena` | Hash PBKDF2-SHA256 `pbkdf2$600000$<sal>$<hash>`, nunca el texto |
-| `rol` | `admin` (uno solo), `operador` o `empleado` |
+| `rol` | `admin` (uno solo), `subadmin`, `operador` o `empleado` |
 | `permisos` | JSON con las pantallas (`["*"]` para el administrador) |
 | `funciones` | JSON con las acciones permitidas (editar o eliminar compras, agregar al catálogo…) |
 
@@ -165,9 +166,9 @@ Las reglas de `shared/` se usan **igual** en el backend y en el modo local del f
 Una base vieja del cliente debe abrir con el código nuevo sin perder nada. `db.js` revisa al abrir:
 
 - **Columnas nuevas** (`unidad`, `compra_id`, `origen_id`, `compra_categoria`, `compra_iva`, `ficha`…): se agregan si faltan. Las bases de desarrollo que llegaron a tener `compra_archivo` (el Archivo de compras, que se quitó) la conservan sin uso: las inserciones nombran sus columnas, así que no estorba.
-- **Datos que se completan una vez** (catálogo desde las compras, relación proveedor-categoría): `PRAGMA user_version`.
+- **Datos que se completan una vez** (`PRAGMA user_version`): 1, catálogo desde las compras; 2, relación proveedor-categoría; 3, artículos de cada proveedor; 4, la unidad de cada artículo, tomada de su última compra (los que nunca se compraron la piden la primera vez). Las compras y respaldos con «g» pasan a «gr», y el catálogo suma «Gastos personales» y «Ninguno».
 - **Cambios de usuarios que corren una vez** (contraseña nueva de Marta si seguía en la anterior): una marca en `ajustes`.
-- **Tabla de usuarios con el CHECK anterior**: se rehace copiando los usuarios.
+- **Tabla de usuarios con el CHECK anterior** (sin `empleado` o sin `subadmin`): se rehace copiando los usuarios y sus funciones.
 
 Cada migración tiene su prueba en `backend/test/`.
 

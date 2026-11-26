@@ -202,6 +202,7 @@ Una compra agrupa un proveedor, una fecha y sus artículos: en la base, sus fila
 | Hash | PBKDF2-SHA256 de 100 000 a 600 000 iteraciones (OWASP); los hashes viejos se recalculan al entrar. En pruebas, `DEPANAS_ITERACIONES_HASH` (backend) y 1000 en Vitest | Más costoso de romper si alguien copia la base |
 | Contraseñas repetidas | Ya no se comparan con las de los demás usuarios | El aviso «Esa contraseña ya la usa otro usuario» revelaba la contraseña de otro |
 | Modo local | Sin cambios: sigue siendo una barrera de interfaz | No hay servidor que proteja los datos; la app del cliente usa siempre el servidor |
+| Base completa (.db) | Descargarla o reemplazarla es solo del administrador (regla `'principal'` en `permisos.js`), aunque el operador tenga Exportar y Cargar | Reemplazarla dejaba a un operador o a un subadministrador ponerle otra contraseña al administrador; descargarla daba los hashes de todos. La interfaz usa solo los respaldos JSON (revisión del 25/11) |
 
 ## Entrega al cliente: .zip con Node.js oficial (sitio web local)
 
@@ -218,6 +219,24 @@ Una compra agrupa un proveedor, una fecha y sus artículos: en la base, sus fila
 | Cerrar la pestaña | La última pestaña con sesión apaga el sistema tras 5 s (`backend/pestanas.js`). Se avisa con `pagehide` y `fetch` keepalive; `GET /api/health` cancela la espera para que F5 no apague. La ventana «¿Salir del sitio?» es del navegador y no admite texto propio. Sin «Cerrar sesión» en esta versión |
 | Pruebas | `desktop/pruebas/escritorio.spec.js`: abre el `.cmd` de la carpeta armada (`DEPANAS_PRUEBA=1`, datos y puerto temporales) y usa un Chromium de Playwright | Prueba lo que recibe el cliente: abrir, guardar, exportar, apagar y conservar los datos |
 
+## Ronda de noviembre (sesión del 12/11 con el cliente)
+
+| Tema | Decisión | Por qué |
+| ---- | -------- | ------- |
+| Subadministrador | Rol nuevo con acceso total, también al Gestor de usuarios. No edita ni elimina al administrador (lo pidió el cliente) y además no crea ni edita otros subadministradores (`rolesQueAsigna`, `puedeGestionar` en `shared/usuarios.js`) | César es el único administrador principal. Si un subadministrador pudiera crear o editar a otros, podría darse más poder que el acordado |
+| Unidad del artículo | La unidad se define en el artículo (a la derecha del nombre) y la fila de la compra solo la muestra; se cambia con el lápiz. Las compras guardadas conservan la suya | Lo pidió el cliente: el mismo artículo siempre se compra en la misma unidad. Así no se equivoca de unidad en cada compra |
+| Unidades | «g» pasa a «gr» y se agrega «otros» | Así lo escriben en el local |
+| Gastos personales | Categoría «Gastos personales» y producto «Ninguno» en el catálogo inicial | Para compras que no son para producir nada |
+| Fechas | Una compra no puede tener fecha futura, ni en el selector ni en el servidor (`shared/fechas.js`) | Solo se registran compras ya hechas |
+| Error del scroll | Un solo contador de ventanas abiertas (`useBloqueoScroll`) libera el scroll cuando se cierra la última | Con dos ventanas que se cerraban en otro orden, la página se quedaba sin poder bajar |
+
+## Respaldos JSON: editar y eliminar (pendiente 4 del Checkpoint 2)
+
+| Tema | Decisión | Por qué |
+| ---- | -------- | ------- |
+| Editar un respaldo | El archivo .json no se edita dentro de la app. Lo que se carga queda como compras normales, que se editan y eliminan desde la Lista de compras; los ítems del catálogo, desde el Catálogo | Un editor de archivos duplicaría pantallas que ya existen y abriría la puerta a respaldos inválidos. Cargar ya deja elegir qué compras entran y compara las modificadas |
+| Eliminar un respaldo | Los respaldos son archivos del usuario (memoria USB, Documentos); se borran como cualquier archivo. La app no guarda copias propias que haya que limpiar | No hay un lugar en la app donde se acumulen respaldos |
+
 ## Mensajes del sistema
 
 - Todo texto que el sistema le dice al usuario vive en `frontend/src/utils/mensajes.js`, agrupado por tema (`ACCESO`, `COMPRA`, `LISTA_COMPRAS`, `VALIDACION`, `ASIGNACION`, `ESTADOS`, `PANTALLA_CATALOGO`, `USUARIOS`, `EXPORTAR`, `CARGAR`, `CONFIRMAR`). Los mensajes con datos son funciones (`COMPRA.confirmarGuardar.mensaje(proveedor, n, total)`).
@@ -226,6 +245,5 @@ Una compra agrupa un proveedor, una fecha y sus artículos: en la base, sus fila
 
 ## Pendientes
 - **Bundle:** el JS pasó de ~193 kB a ~339 kB (sin gzip), sobre todo por `motion`. Si importa, se puede cargar Motion de forma diferida.
-- `npm audit` reporta vulnerabilidades en `esbuild` (dev) y `react-router` 6. Arreglarlas implica subir versiones mayores (fuera del alcance).
-- **Backend (va en la app del cliente):** `body-parser` (alta) y `qs` (moderada) tienen arreglo compatible con `npm audit fix`, pero esas versiones se publicaron a fines de octubre de 2026. Aplicarlo cuando tengan al menos 2 semanas (desde el 12 de noviembre) en `backend/` y `desktop/`, y volver a armar el instalador.
+- `npm audit` reporta los avisos de `react-router` 6 (no explotables aquí). Arreglarlos implica pasar a React Router 7. `body-parser` y `qs` ya se corrigieron (revisión del 11/11).
 - Drawer móvil con gestos (`springConImpulso`, proyección de inercia) para una fase futura.

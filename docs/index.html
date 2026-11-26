@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Documentación · De Panas SV</title>
+  <meta name="description" content="Documentación del sistema de compras de De Panas SV: sitio del proyecto, manual de uso y reporte de pruebas.">
+  <link rel="icon" href="pruebas/assets/logo-badge.png">
+  <link rel="stylesheet" href="manual/fuentes/fuentes.css">
+  <style>
+    :root {
+      --crema: #FEEECC; --crema-claro: #FFF7E3; --blanco: #FFFDF7;
+      --verde: #144428; --verde-prof: #0F331E; --verde-75: #3D6149;
+      --naranja: #EF7D05; --vino: #911C0D; --borde: #E8D3A3;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--crema); color: var(--verde); font-family: 'Cardo', Georgia, serif; font-size: 18px; line-height: 1.55; }
+    body::before { content: ''; position: fixed; inset: 0; background: url(pruebas/assets/patron.webp) center / 600px; opacity: .1; pointer-events: none; z-index: -1; }
+    header { background: var(--naranja); color: var(--verde-prof); padding: 28px 16px; }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+    header .wrap { display: flex; align-items: center; gap: 18px; padding: 0; }
+    header img { width: 72px; height: 72px; border-radius: 50%; }
+    h1, h2, .boton { font-family: 'Josefin Sans', 'Trebuchet MS', sans-serif; }
+    h1 { margin: 0; font-size: 1.9rem; text-transform: uppercase; letter-spacing: .05em; }
+    header p { margin: 2px 0 0; font-family: 'Josefin Sans', sans-serif; font-weight: 600; }
+    main { padding: 32px 0 48px; }
+    .intro { max-width: 720px; color: var(--verde); }
+    .sitios { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-top: 24px; }
+    .sitio { display: flex; flex-direction: column; gap: 10px; background: var(--blanco); border: 1px solid var(--borde); border-radius: 18px; padding: 24px; color: var(--verde); text-decoration: none; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+    .sitio:hover { border-color: var(--naranja); box-shadow: 0 8px 22px rgba(20, 68, 40, .14); transform: translateY(-2px); }
+    .sitio:focus-visible { outline: 3px solid var(--vino); outline-offset: 3px; }
+    .sitio svg { width: 40px; height: 40px; color: var(--naranja); }
+    .sitio h2 { margin: 0; font-size: 1.25rem; text-transform: uppercase; letter-spacing: .05em; }
+    .sitio p { margin: 0; color: var(--verde-75); }
+    .boton { margin-top: auto; font-weight: 700; font-size: .9rem; text-transform: uppercase; letter-spacing: .06em; color: var(--verde-prof); }
+    footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--borde); color: var(--verde-75); font-size: .95rem; }
+    footer a { color: var(--verde); }
+    @media (prefers-reduced-motion: reduce) { .sitio { transition: none; } .sitio:hover { transform: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <img src="pruebas/assets/logo-badge.png" alt="Logo De Panas">
+      <div>
+        <h1>De Panas SV</h1>
+        <p>Sistema de compras · documentación</p>
+      </div>
+    </div>
+  </header>
+  <main>
+    <div class="wrap">
+      <p class="intro">Todo lo que acompaña al sistema de compras de De Panas: cómo está hecho y por qué, cómo se usa, y la evidencia de que funciona. Proyecto del equipo Forge, Programación Orientada a Objetos.</p>
+      <div class="sitios">
+        <a class="sitio" href="sitio/index.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <h2>Documentación</h2>
+          <p>Módulos, arquitectura, decisiones, calidad y el equipo.</p>
+          <span class="boton">Abrir el sitio →</span>
+        </a>
+        <a class="sitio" href="manual/index.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M8 7h6M8 11h8"/></svg>
+          <h2>Manual de uso</h2>
+          <p>Paso a paso para César y Marta, con capturas de la versión de demostración.</p>
+          <span class="boton">Abrir el manual →</span>
+        </a>
+        <a class="sitio" href="pruebas/index.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+          <h2>Reporte de pruebas</h2>
+          <p>Backend, interfaz, punta a punta, la versión .zip, dependencias y la revisión de seguridad.</p>
+          <span class="boton">Abrir el reporte →</span>
+        </a>
+      </div>
+      <footer>Los textos en Markdown (decisiones, modelo de datos, seguridad, instalación) están en la carpeta <code>docs/</code> del repositorio. Las capturas y los datos son de la versión de demostración.</footer>
+    </div>
+  </main>
+</body>
+</html>
