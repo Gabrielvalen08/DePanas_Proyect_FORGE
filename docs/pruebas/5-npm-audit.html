@@ -1,0 +1,47 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditoría de dependencias · De Panas SV</title><link rel="icon" href="assets/logo-badge.png"><link rel="stylesheet" href="../manual/fuentes/fuentes.css"><style>:root{--crema:#FEEECC;--crema-claro:#FFF7E3;--blanco:#FFFDF7;--verde:#144428;--verde-prof:#0F331E;--verde-75:#3d6149;--naranja:#EF7D05;--amarillo:#F8A914;--vino:#911C0D;--fresco:#6DAD28;--borde:#E8D3A3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--crema);color:var(--verde);font-family:'Cardo',Georgia,serif;font-size:17px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0;background:url(assets/patron.webp) center/600px;opacity:.1;pointer-events:none;z-index:-1}
+h1,h2,h3,.ui{font-family:'Josefin Sans','Trebuchet MS',sans-serif}
+header.top{background:var(--naranja);color:var(--verde-prof);padding:20px 16px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+header.top .wrap{display:flex;align-items:center;gap:16px;padding:0}
+header.top img{width:56px;height:56px;border-radius:50%}
+header.top h1{margin:0;font-size:1.5rem;text-transform:uppercase;letter-spacing:.06em}
+header.top p{margin:0;font-family:'Josefin Sans',sans-serif;font-weight:600}
+main{padding:24px 0 48px}
+h2{text-transform:uppercase;letter-spacing:.06em;font-size:1.15rem;margin:32px 0 12px;border-bottom:3px solid var(--naranja);padding-bottom:6px}
+.tarjetas{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.tarjeta{background:var(--blanco);border:1px solid var(--borde);border-radius:14px;padding:16px;color:var(--verde);text-decoration:none;display:block}
+a.tarjeta:hover{border-color:var(--naranja);box-shadow:0 4px 14px rgba(20,68,40,.14)}
+a.tarjeta:focus-visible,a:focus-visible{outline:3px solid var(--vino);outline-offset:2px}
+.tarjeta h3{margin:0 0 4px;font-size:1.05rem}
+.num{font-family:'Josefin Sans',sans-serif;font-size:2.4rem;font-weight:700;line-height:1}
+.chip{display:inline-block;font-family:'Josefin Sans',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:999px}
+.ok{background:var(--fresco);color:var(--verde-prof)}
+.mal{background:var(--vino);color:#fff}
+.aviso{background:var(--amarillo);color:var(--verde-prof)}
+.nar{background:var(--naranja);color:var(--verde-prof)}
+table{width:100%;border-collapse:collapse;background:var(--blanco);border:1px solid var(--borde);font-size:.95rem}
+th{background:var(--naranja);color:var(--verde-prof);font-family:'Josefin Sans',sans-serif;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:8px 10px;font-size:.85rem}
+td{padding:7px 10px;border-top:1px solid var(--borde);vertical-align:top}
+td.der,th.der{text-align:right;white-space:nowrap}
+pre{background:var(--verde);color:var(--crema);padding:16px;border-radius:12px;overflow:auto;font-size:13px;line-height:1.45;max-height:640px}
+details{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;padding:10px 14px;margin-top:14px}
+summary{cursor:pointer;font-family:'Josefin Sans',sans-serif;font-weight:700}
+.meta{color:var(--verde-75)}
+nav.volver{margin-bottom:12px;font-family:'Josefin Sans',sans-serif;font-weight:600}
+nav.volver a{color:var(--verde)}
+footer{padding:20px 0;color:var(--verde-75);font-size:.9rem;border-top:1px solid var(--borde)}
+@media(max-width:600px){table,thead,tbody,tr,td,th{font-size:.85rem}}
+</style></head><body>
+<header class="top"><div class="wrap"><img src="assets/logo-badge.png" alt="Logo De Panas"><div><h1>Auditoría de dependencias</h1><p>npm audit --omit=dev · backend, frontend y desktop</p></div></div></header>
+<main><div class="wrap"><nav class="volver"><a href="index.html">← Volver al resumen</a></nav><div class="tarjetas"><div class="tarjeta"><h3>backend</h3><div class="num">0</div><p class="meta">—</p><span class="chip ok">Limpio</span></div><div class="tarjeta"><h3>frontend</h3><div class="num">0</div><p class="meta">—</p><span class="chip ok">Limpio</span></div><div class="tarjeta"><h3>desktop</h3><div class="num">0</div><p class="meta">—</p><span class="chip ok">Limpio</span></div></div>
+<h2>Cómo leerlo</h2><p>Se revisan solo las dependencias que llegan a la app del cliente (<code>--omit=dev</code>). Lo del frontend son los avisos de <code>react-router</code> 6 (redirección abierta con barra invertida y SSR): la app navega solo a rutas fijas del código y no usa renderizado en servidor. El arreglo pide pasar a React Router 7, un cambio mayor que queda documentado en el <a href="0-informe-seguridad.html">informe de seguridad</a>.</p>
+<h2>Salida completa</h2><pre>
+
+
+
+</pre>
+<footer>De Panas SV · Corrida del 26 de noviembre de 2026 · Generado por <code>desktop/scripts/reporte-pruebas.mjs</code> a partir de la salida real de cada prueba (archivos en la carpeta «crudo»).</footer></div></main></body></html>

@@ -1,0 +1,8 @@
+> npx playwright test --reporter=list,html
+
+
+Running 1 test using 1 worker
+
+  ok 1 pruebas\escritorio.spec.js:106:1 › el .zip: se abre con el .cmd, funciona en el navegador, se apaga desde el sistema y conserva los datos (35.8s)
+
+  1 passed (36.4s)

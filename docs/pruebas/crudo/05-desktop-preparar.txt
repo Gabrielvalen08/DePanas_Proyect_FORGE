@@ -1,0 +1,39 @@
+> npm run preparar
+
+
+> depanas-zip@1.3.0 preparar
+> node scripts/preparar.mjs
+
+Compilando el frontend…
+
+> depanas-frontend@0.1.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 2169 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                             0.99 kB │ gzip:   0.49 kB
+dist/assets/josefin-sans-latin-700-normal-dFmzeJn3.woff2   12.07 kB
+dist/assets/josefin-sans-latin-600-normal-DXjG1Gv0.woff2   12.33 kB
+dist/assets/josefin-sans-latin-400-normal-Bw73c5y2.woff2   12.37 kB
+dist/assets/cardo-latin-400-normal-CFoX0N4J.woff2          15.50 kB
+dist/assets/josefin-sans-latin-700-normal-DDiyraUl.woff    15.72 kB
+dist/assets/josefin-sans-latin-600-normal-CcMFZ0n5.woff    16.08 kB
+dist/assets/josefin-sans-latin-400-normal-OLNf33Pm.woff    16.16 kB
+dist/assets/cardo-latin-400-italic-DS-zTz6l.woff2          18.97 kB
+dist/assets/cardo-latin-700-normal-C0AJnwFQ.woff2          19.19 kB
+dist/assets/cardo-latin-400-normal-DBrrJcp6.woff           19.38 kB
+dist/assets/cardo-latin-400-italic-4xrlgVMP.woff           22.68 kB
+dist/assets/cardo-latin-700-normal-lRoFMtMe.woff           22.82 kB
+dist/assets/index-BRFvXyBL.css                             82.40 kB │ gzip:  13.85 kB
+dist/assets/index-DI7cIN7r.js                              71.70 kB │ gzip:  19.94 kB
+dist/assets/index-Sr-ITjPU.js                             578.23 kB │ gzip: 182.64 kB
+✓ built in 3.42s
+Listo: desktop\salida\De Panas SV (Node v24.16.0, firmado por OpenJS Foundation).
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
