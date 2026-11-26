@@ -95,12 +95,12 @@ Una fila por artículo comprado. Las filas de una misma compra comparten `compra
 | `tipo` | `proveedor`, `categoria`, `material` o `producto` |
 | `nombre` | Único por tipo, sin distinguir mayúsculas |
 | `categoria`, `producto` | Solo artículos: su categoría y sus productos |
-| `categoria_anterior` | Solo artículos sin categoría: la categoría de la que se quitaron al editarla |
+| `categoria_anterior` | Dato histórico: conserva la categoría de la que se quitó el artículo al editarla |
 | `ficha` | Solo proveedores: JSON con ubicación, teléfonos y contactos |
 
 ### `proveedor_categoria`: quién surte qué
 
-Relación muchos a muchos por `id` (`proveedor_id`, `categoria_id`) con `ON DELETE CASCADE`. Renombrar no la rompe y borrar la limpia. En Agregar compra, elegir un proveedor sugiere los artículos de sus categorías y los que ya se le compraron. En el editor de la categoría, seleccionar un proveedor marca los artículos suyos que están en ella, o que se quitaron de ella y siguen sin categoría (`catalogo.categoria_anterior`). Al quitar el proveedor se desmarcan, salvo los compartidos con otro proveedor que siga seleccionado.
+Relación muchos a muchos por `id` (`proveedor_id`, `categoria_id`) con `ON DELETE CASCADE`. Renombrar no la rompe y borrar la limpia. En Agregar compra, elegir un proveedor sugiere los artículos de sus categorías y los que ya se le compraron. En Editar categoría, la selección abre vacía y las casillas automáticas se calculan solo con la categoría actual del artículo (`catalogo.categoria`) y sus relaciones en `proveedor_material`. Los clics en las casillas ajustan la pertenencia de los artículos al guardar. Si se tocó algún proveedor, se guarda la selección completa, que puede quedar vacía. Si los botones quedaron intactos, se conservan las relaciones guardadas.
 
 ### `proveedor_material`: artículos de cada proveedor
 

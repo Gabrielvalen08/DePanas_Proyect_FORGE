@@ -31,10 +31,10 @@
     </div>
 
     <div class="cifras" role="list" aria-label="Pruebas automáticas">
-      <div class="cifra" role="listitem"><strong>136</strong><span>pruebas del backend</span></div>
-      <div class="cifra" role="listitem"><strong>376</strong><span>pruebas del frontend</span></div>
-      <div class="cifra" role="listitem"><strong>91</strong><span>recorridos en navegador</span></div>
-      <div class="cifra" role="listitem"><strong>31</strong><span>pruebas de seguridad</span></div>
+      <div class="cifra" role="listitem"><strong>137</strong><span>comprobaciones del backend</span></div>
+      <div class="cifra" role="listitem"><strong>401</strong><span>pruebas del frontend</span></div>
+      <div class="cifra" role="listitem"><strong>103</strong><span>recorridos en navegador</span></div>
+      <div class="cifra" role="listitem"><strong>32</strong><span>pruebas de seguridad del backend</span></div>
     </div>
 
     <section aria-labelledby="t-auto">
@@ -48,14 +48,15 @@
             <tr><td><code>calculos.test.js</code></td><td>IVA y redondeo a centavos, subtotal y total, reporte de gastos y filtros por proveedor, artículo y fechas</td><td class="numero">12</td></tr>
             <tr><td><code>api.test.js</code></td><td>Compras completas, validación, exportar e importar la base y los respaldos JSON</td><td class="numero">18</td></tr>
             <tr><td><code>lote.test.js</code></td><td>Eliminar varias compras: todo o nada, validación, permisos y la ruta de archivar ya no existe</td><td class="numero">4</td></tr>
-            <tr><td><code>catalogo.test.js</code></td><td>Agregar, renombrar (también en las compras), eliminar, fichas, proveedores por categoría, respaldos</td><td class="numero">26</td></tr>
+            <tr><td><code>catalogo.test.js</code></td><td>Agregar, renombrar (también en las compras), eliminar, fichas, proveedores por categoría, respaldos</td><td class="numero">28</td></tr>
             <tr><td><code>usuarios.test.js</code></td><td>Gestor de usuarios, roles, requisitos de contraseña y migraciones de usuarios</td><td class="numero">20</td></tr>
             <tr><td><code>seguridad.test.js</code></td><td>Sesión, permisos, bloqueo por intentos, hash, hosts permitidos y apagado del .zip</td><td class="numero">19</td></tr>
-            <tr><td><code>seguridad-datos.test.js</code></td><td>Validación de entradas, inyección SQL, errores sin detalles, cabeceras de seguridad, exportados y respaldo</td><td class="numero">12</td></tr>
-            <tr><td><code>iva.test.js</code>, <code>carga.test.js</code>, <code>sqlite.test.js</code>, <code>demo.test.js</code></td><td>IVA de cada compra, carga de respaldos, conexión SQLite y datos de demostración</td><td class="numero">20</td></tr>
+            <tr><td><code>seguridad-datos.test.js</code></td><td>Validación de entradas, inyección SQL, errores sin detalles, cabeceras de seguridad, exportados y respaldo</td><td class="numero">13</td></tr>
+            <tr><td><code>iva.test.js</code>, <code>carga.test.js</code>, <code>sqlite.test.js</code>, <code>demo.test.js</code></td><td>IVA de cada compra, carga de respaldos, conexión SQLite y datos de demostración</td><td class="numero">22</td></tr>
           </tbody>
         </table>
       </div>
+      <p>El total del backend incluye los 136 casos de la tabla y la carga de <code>ayudantes.js</code>, que también cuenta el runner de Node.</p>
       <h3>Frontend (<code>frontend/src/**/*.test.jsx</code>, Vitest)</h3>
       <p>Cada pantalla y componente con Testing Library: el formulario por pasos de Agregar compra, la Lista de compras con casillas y páginas, el Catálogo, los usuarios, el aviso antes de perder datos, el Excel con su hoja Resumen y <code>api.js</code> en sus dos modos (servidor con <code>fetch</code> simulado, y local).</p>
       <h3>De punta a punta (<code>frontend/e2e/</code>, Playwright)</h3>
