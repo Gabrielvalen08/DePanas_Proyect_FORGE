@@ -50,6 +50,7 @@ test('después de crear un artículo con «+» se llega a «Guardar compra»', a
   const ventana = page.getByRole('dialog', { name: ASIGNACION.tituloNuevo })
   await ventana.getByRole('textbox', { name: ASIGNACION.nombreArticulo }).fill(`Servilleta scroll ${info.project.name}`)
   await ventana.getByRole('group', { name: 'Categoría' }).getByRole('button', { name: 'Desechables', exact: true }).click()
+  await ventana.getByRole('combobox', { name: ASIGNACION.etiquetaUnidad }).selectOption('caja')
   await ventana.getByRole('button', { name: ASIGNACION.guardar }).click()
   await confirmar(page, ASIGNACION.confirmar.confirmar)
   await expect(ventana).toBeHidden()
@@ -57,7 +58,6 @@ test('después de crear un artículo con «+» se llega a «Guardar compra»', a
 
   // Con la fila completa aparecen el resumen y «Guardar compra», más abajo de lo que se ve
   await formulario.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('2')
-  await formulario.getByRole('combobox', { name: 'Unidad, fila 1' }).selectOption('lb')
   await formulario.getByRole('textbox', { name: 'Precio unitario, fila 1' }).fill('1.50')
   const guardar = page.getByRole('button', { name: 'Guardar compra' }).first()
   await expect(guardar).not.toBeInViewport()

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { ToastProvider } from '../context/ToastContext'
 import BloqueCompra from '../components/BloqueCompra'
-import { fetchListas, guardarLista, reiniciarModo } from '../services/api'
+import { asignarMaterial, fetchListas, guardarLista, reiniciarModo } from '../services/api'
 import { COMPRA, IVA } from '../utils/mensajes'
 import { TASA_IVA } from '../../../shared/iva.js'
 
@@ -29,7 +29,6 @@ function montar(props = {}) {
 async function llenarFila(usuario) {
   await usuario.type(screen.getByRole('combobox', { name: 'Artículo, fila 1' }), 'Tocino La Rioja')
   await usuario.type(screen.getByLabelText('Cantidad, fila 1'), '2')
-  await usuario.selectOptions(screen.getByLabelText('Unidad, fila 1'), 'lb')
   await usuario.type(screen.getByLabelText('Precio unitario, fila 1'), '5000') // cajero: $50.00
 }
 
@@ -44,6 +43,8 @@ describe('IVA en la compra', () => {
     reiniciarModo()
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Sin servidor')))
     await fetchListas()
+    // La unidad de la fila sale del artículo: el de la prueba ya la tiene
+    await asignarMaterial('Tocino La Rioja', { categoria: 'Materia Prima', productos: ['Cachitos'], unidad: 'lb' })
   })
   afterEach(() => vi.unstubAllGlobals())
 

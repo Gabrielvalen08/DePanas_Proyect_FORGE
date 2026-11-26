@@ -2,7 +2,10 @@ import { useCallback, useRef, useState } from 'react'
 import { AlertCircle, Check, Pencil, ShieldCheck, UserPlus, X } from 'lucide-react'
 import { Boton, Campo, ConfirmDialog, CuerpoModal, Modal, PieModal } from './common'
 import { tituloDeRuta } from './navegacion'
-import { FUNCIONES, FUNCIONES_POR_PANTALLA, ROLES_ASIGNABLES, RUTAS_ASIGNABLES, permisosDeRol } from '../utils/permisos'
+import {
+  FUNCIONES, FUNCIONES_POR_PANTALLA, ROLES_ASIGNABLES, ROL_ADMIN, ROL_SUBADMIN, RUTAS_ASIGNABLES, esSuPropioPerfil, permisosDeRol, rolesQueAsigna,
+  tieneAccesoTotal,
+} from '../utils/permisos'
 import { useCierreConAviso, useDatosSinGuardar } from '../context/DatosSinGuardarContext'
 import { revisarContrasena } from '../../../shared/usuarios.js'
 import { AVISO_SALIDA, CONFIRMAR, USUARIOS } from '../utils/mensajes'
@@ -20,16 +23,19 @@ const firma = lista => [...new Set(lista)].sort().join('\n')
  * nombre de usuario para ingresar, contraseña (con confirmación y los requisitos a la
  * vista), rol, y las pantallas y funciones a las que entra. Elegir un rol aplica sus
  * pantallas y funciones de partida (shared/usuarios.js); después se pueden ajustar.
- * El administrador entra a todo: su rol, pantallas y funciones no se eligen.
+ * El administrador entra a todo: su rol, pantallas y funciones no se eligen. El
+ * subadministrador también entra a todo; solo el administrador da ese rol. Quien se
+ * edita a sí mismo solo cambia su nombre y su contraseña.
  *
  * Props:
  *  - edicion: null (cerrado) | { registro: null } (crear) | { registro: { usuario, nombre, rol, permisos, funciones } }
  *  - usuarios: los que ya existen (para avisar de un usuario repetido sin ir al servidor)
+ *  - actor: la sesión de quien edita ({ usuario, rol }); decide qué roles puede dar
  *  - requisitos: { minimo, mayuscula, minuscula, numero, especial } de las contraseñas
  *  - alGuardar(datos): async; si lanza un error con `campo`, se marca ese campo y la ventana sigue abierta
  *  - alCerrar()
  */
-export default function EditorUsuario({ edicion, usuarios, requisitos, alGuardar, alCerrar }) {
+export default function EditorUsuario({ edicion, usuarios, requisitos, actor, alGuardar, alCerrar }) {
   const primerCampoRef = useRef(null)
   const nuevo = !edicion?.registro
   const { intentarCerrar, cierreRef } = useCierreConAviso(alCerrar)
@@ -47,6 +53,7 @@ export default function EditorUsuario({ edicion, usuarios, requisitos, alGuardar
           registro={edicion.registro}
           usuarios={usuarios}
           requisitos={requisitos}
+          actor={actor}
           alGuardar={alGuardar}
           alCerrar={alCerrar}
           primerCampoRef={primerCampoRef}
@@ -57,9 +64,12 @@ export default function EditorUsuario({ edicion, usuarios, requisitos, alGuardar
   )
 }
 
-function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, primerCampoRef, cierreRef }) {
+function Formulario({ registro, usuarios, requisitos, actor, alGuardar, alCerrar, primerCampoRef, cierreRef }) {
   const nuevo = !registro
-  const esAdmin = registro?.rol === 'admin'
+  const esAdmin = registro?.rol === ROL_ADMIN
+  // El administrador y quien se edita a sí mismo: solo nombre y contraseña
+  const soloSusDatos = esAdmin || esSuPropioPerfil(actor, registro)
+  const rolesPosibles = rolesQueAsigna(actor?.rol ?? ROL_ADMIN)
   const [usuario, setUsuario] = useState(registro?.usuario ?? '')
   const [nombre, setNombre] = useState(registro?.nombre ?? '')
   const [contrasena, setContrasena] = useState('')
@@ -140,7 +150,7 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
       if (faltan.length) nuevos.contrasena = `${USUARIOS.requisitosLista} ${faltan.join(', ').toLowerCase()}`
       else if (clave !== confirmacion.trim()) nuevos.confirmacion = V.noCoinciden
     }
-    if (!esAdmin && permisos.length === 0) nuevos.permisos = V.permisos
+    if (!soloSusDatos && !tieneAccesoTotal(rol) && permisos.length === 0) nuevos.permisos = V.permisos
     return nuevos
   }
 
@@ -171,8 +181,8 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
         ...(nuevo ? { usuario: usuario.trim() } : {}),
         nombre: nombre.trim(),
         contrasena: contrasena.trim(),
-        // Solo las funciones de las pantallas que tiene
-        ...(esAdmin ? {} : {
+        // Solo las funciones de las pantallas que tiene; con acceso total, solo el rol
+        ...(soloSusDatos ? {} : tieneAccesoTotal(rol) ? { rol } : {
           rol,
           permisos: pantallas,
           funciones: FUNCIONES.filter(f => funciones.includes(f) && pantallas.some(r => FUNCIONES_POR_PANTALLA[r]?.includes(f))),
@@ -255,29 +265,27 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
             </div>
 
             <div className={estilos.permisosColumna}>
-              {esAdmin ? (
+              {soloSusDatos ? (
                 <>
                   <p className={estilos.leyenda}>{USUARIOS.rolTitulo}</p>
-                  <p className={estilos.aviso}>
-                    <ShieldCheck size={18} aria-hidden="true" />
-                    <span>
-                      <strong>{USUARIOS.roles.admin}.</strong> {USUARIOS.permisosAdmin}
-                    </span>
-                  </p>
+                  <AccesoTotal rol={registro.rol} />
+                  {!esAdmin && <p className={estilos.nota}>{USUARIOS.permisosPropios}</p>}
                 </>
               ) : (
                 <>
                   <fieldset className={estilos.grupo} aria-describedby="editor-usuario-rol-ayuda">
                     <legend className={estilos.leyenda}>{USUARIOS.rolTitulo}</legend>
                     <div className={estilos.roles}>
-                      {ROLES_ASIGNABLES.map((r, i) => (
+                      {/* Los roles que no puede dar se ven apagados (el subadministrador no crea otro) */}
+                      {ROLES_ASIGNABLES.map(r => (
                         <label key={r} className={estilos.opcion}>
                           <input
-                            ref={i === 0 ? rolRef : undefined}
+                            ref={r === rolesPosibles[0] ? rolRef : undefined}
                             type="radio"
                             name="editor-usuario-rol"
                             className={estilos.casilla}
                             checked={rol === r}
+                            disabled={!rolesPosibles.includes(r)}
                             onChange={() => elegirRol(r)}
                           />
                           <span className={estilos.opcionTitulo}>{USUARIOS.roles[r]}</span>
@@ -289,6 +297,7 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
                     {errores.rol && <Error id="editor-usuario-rol-error" texto={errores.rol} />}
                   </fieldset>
 
+                  {rol === ROL_SUBADMIN ? <AccesoTotal rol={rol} /> : (
                   <fieldset
                     className={estilos.grupo}
                     aria-describedby={errores.permisos ? 'editor-usuario-permisos-error' : undefined}
@@ -335,6 +344,7 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
                     {errores.permisos && <Error id="editor-usuario-permisos-error" texto={errores.permisos} />}
                     {errores.funciones && <Error id="editor-usuario-funciones-error" texto={errores.funciones} />}
                   </fieldset>
+                  )}
                 </>
               )}
             </div>
@@ -371,6 +381,18 @@ function Formulario({ registro, usuarios, requisitos, alGuardar, alCerrar, prime
         danger
       />
     </>
+  )
+}
+
+/** Administrador o subadministrador: entra a todo, no se eligen pantallas */
+function AccesoTotal({ rol }) {
+  return (
+    <p className={estilos.aviso}>
+      <ShieldCheck size={18} aria-hidden="true" />
+      <span>
+        <strong>{USUARIOS.roles[rol]}.</strong> {rol === ROL_ADMIN ? USUARIOS.permisosAdmin : USUARIOS.permisosSubadmin}
+      </span>
+    </p>
   )
 }
 

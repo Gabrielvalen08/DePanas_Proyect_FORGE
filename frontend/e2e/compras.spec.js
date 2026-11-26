@@ -1,13 +1,13 @@
 import { readSheet } from 'read-excel-file/node'
-import { test, expect, entrar, menu, confirmar, CESAR } from './ayudantes.js'
+import { test, expect, entrar, menu, confirmar, unidadDelArticulo, CESAR } from './ayudantes.js'
 import { COMPRA, CONFIRMAR, ESTADOS, EXPORTAR, LISTA_COMPRAS, PANTALLA_CATALOGO, VALIDACION } from '../src/utils/mensajes.js'
 
-/** Llena la fila n de una compra con un artículo del catálogo (ya tiene categoría y producto) */
+/** Llena la fila n de una compra con un artículo del catálogo (ya tiene categoría y producto; la unidad se le fija) */
 async function llenarFila(page, formulario, n, { material, cantidad, precio }) {
   await formulario.getByRole('combobox', { name: `Artículo, fila ${n}` }).fill(material)
   await page.keyboard.press('Escape')
+  await unidadDelArticulo(page, formulario, n, 'lb')
   await formulario.getByRole('spinbutton', { name: `Cantidad, fila ${n}` }).fill(String(cantidad))
-  await formulario.getByRole('combobox', { name: `Unidad, fila ${n}` }).selectOption('lb')
   // Con centavos: el campo de precio llena de derecha a izquierda, como una caja registradora
   await formulario.getByRole('textbox', { name: `Precio unitario, fila ${n}` }).fill(Number(precio).toFixed(2))
 }

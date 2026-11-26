@@ -99,7 +99,7 @@ test('cambiar el nombre, la categoría y el producto de un material se refleja e
   const fila = (await pedir(`${base}/compras`)).cuerpo[0].materiales[0]
   assert.deepEqual([fila.material, fila.categoria, fila.producto], ['Tocino ahumado', 'Carnes', 'Tequeños'])
   assert.deepEqual(material(await catalogo(base), 'Tocino ahumado'), {
-    nombre: 'Tocino ahumado', categoria: 'Carnes', producto: 'Tequeños', productos: ['Tequeños'], proveedores: [COMPRA.proveedor],
+    nombre: 'Tocino ahumado', categoria: 'Carnes', producto: 'Tequeños', productos: ['Tequeños'], proveedores: [COMPRA.proveedor], unidad: 'lb',
   })
 })
 
@@ -136,7 +136,7 @@ test('una compra con un proveedor o material nuevo los registra en el catálogo'
   const cat = await catalogo(base)
   assert.ok(cat.proveedores.includes('Walmart'))
   assert.deepEqual(material(cat, 'Servilletas'), {
-    nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'], proveedores: ['Walmart'],
+    nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'], proveedores: ['Walmart'], unidad: 'caja',
   })
 })
 

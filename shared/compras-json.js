@@ -1,4 +1,5 @@
 import { esFechaFutura } from './fechas.js'
+import { normalizarUnidad } from './unidades.js'
 import { ivaValido } from './iva.js'
 
 const recortar = v => (typeof v === 'string' ? v.trim() : v)
@@ -17,6 +18,8 @@ function recortarCompra(c) {
       for (const campo of ['material', 'unidad', 'categoria', 'producto']) {
         if (campo in material) material[campo] = recortar(material[campo])
       }
+      // «g» de respaldos anteriores pasa a «gr», como en la base
+      if (typeof material.unidad === 'string') material.unidad = normalizarUnidad(material.unidad)
       return material
     })
   }

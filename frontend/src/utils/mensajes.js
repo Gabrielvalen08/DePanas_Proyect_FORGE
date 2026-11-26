@@ -90,6 +90,8 @@ export const COMPRA = {
   asignarArticulo: material => `Asignar categoría y producto${material ? ` a ${material}` : ''}`,
   sinPermisoEditarArticulo: material => `No tienes permiso para editar el artículo ${material}`,
   articuloIncompleto: 'A este artículo le falta información. Toca el botón de al lado para completarla.',
+  unidadDelArticulo: 'Es la unidad del artículo. Para cambiarla, toca el botón del artículo.',
+  sinUnidad: 'Sin unidad',
 }
 
 // ---------------------------------------------------------------------------
@@ -140,7 +142,8 @@ export const VALIDACION = {
   fecha: 'Elige el día de la compra',
   material: 'Escribe qué compraste',
   cantidad: 'Debe ser mayor a 0',
-  unidad: 'Elige la unidad',
+  // La unidad la trae el artículo: se elige o se cambia en su formulario (botón de al lado)
+  unidad: 'Falta la unidad: tócale el botón al artículo',
   precio: 'Debe ser mayor a 0',
   rangoFechas: 'La fecha final debe ser igual o posterior a la inicial',
   // Solo compras ya hechas: el mismo texto que da el backend (shared/fechas.js)
@@ -189,17 +192,22 @@ export const ASIGNACION = {
   tituloExistente: 'Categoría y producto',
   tituloEditar: 'Editar artículo',
   etiquetaArticulo: 'Artículo',
+  etiquetaArticuloYUnidad: 'Artículo y unidad',
   nombreArticulo: 'Nombre del artículo',
+  etiquetaUnidad: 'Unidad',
+  elegirUnidad: 'Unidad…',
+  faltaUnidad: 'Elige la unidad',
   faltaNombre: 'Escribe el nombre del artículo',
   yaExiste: nombre => `Ya existe un artículo llamado «${nombre}»`,
   noExiste: (texto, esCategoria, esProveedor = false) =>
     `«${texto}» todavía no existe. Pulsa Enter o «Agregar» para crear ${esCategoria ? 'una categoría nueva' : esProveedor ? 'un proveedor nuevo' : 'un producto nuevo'}.`,
-  ayudaBuscador: '¿No aparece la categoría o el producto? Escríbelo en el buscador y lo agregamos.',
   faltaCategoria: 'Elige o escribe una categoría',
-  faltaInformacion: (sinCategoria, sinProducto) =>
-    sinCategoria && sinProducto
-      ? 'Este artículo aún no tiene categoría ni producto asociados.'
-      : sinCategoria ? 'Este artículo aún no tiene categoría asociada.' : 'Este artículo aún no tiene producto asociado.',
+  faltaInformacion: (sinCategoria, sinProducto, sinUnidad = false) => {
+    const falta = [sinCategoria && 'categoría', sinProducto && 'producto', sinUnidad && 'unidad'].filter(Boolean)
+    if (falta.length === 0) return 'A este artículo no le falta nada.'
+    const lista = falta.length === 1 ? falta[0] : `${falta.slice(0, -1).join(', ')} ni ${falta.at(-1)}`
+    return `Este artículo aún no tiene ${lista}.`
+  },
   etiquetaProductos: 'Productos',
   productoConComa: 'El nombre de un producto no puede llevar comas.',
   sinCoincidencias: 'Nada por aquí con ese nombre',
@@ -209,12 +217,13 @@ export const ASIGNACION = {
   confirmar: {
     titulo: '¿Guardamos este artículo?',
     // modo: 'nuevo' | 'completar' | 'editar'. compras: en cuántas compras ya está el artículo
-    mensaje: ({ modo, anterior, nombre, categoria, productos, compras }) => {
+    mensaje: ({ modo, anterior, nombre, categoria, productos, unidad, compras }) => {
       const destino = destinoArticulo(categoria, productos.join(', '))
-      if (modo === 'nuevo') return `Se agregará «${nombre}» al catálogo, en ${destino}.`
+      const enUnidad = unidad ? ` Se compra por ${unidad}.` : ''
+      if (modo === 'nuevo') return `Se agregará «${nombre}» al catálogo, en ${destino}.${enUnidad}`
       const renombrado = anterior !== nombre ? `«${anterior}» pasará a llamarse «${nombre}». ` : ''
       const enCompras = compras > 0 ? ` También se actualizará en ${compras} ${plural(compras, 'compra', 'compras')}.` : ''
-      return `${renombrado}«${nombre}» quedará en ${destino}.${enCompras}`
+      return `${renombrado}«${nombre}» quedará en ${destino}.${enUnidad}${enCompras}`
     },
     confirmar: 'Sí, guardar',
   },
@@ -498,11 +507,12 @@ export const USUARIOS = {
   cargando: 'Buscando los usuarios…',
   errorCargar: 'No pudimos traer los usuarios. Recarga la página para intentarlo de nuevo.',
   columnas: { usuario: 'Usuario', nombre: 'Nombre', pantallas: 'Pantallas' },
-  roles: { admin: 'Administrador', operador: 'Operador', empleado: 'Empleado' },
+  roles: { admin: 'Administrador', subadmin: 'Subadministrador', operador: 'Operador', empleado: 'Empleado' },
   rolTitulo: 'Rol',
   rolAyuda: 'Cada rol trae sus pantallas y funciones. Al cambiarlo se aplican las suyas; después puedes ajustarlas.',
   /** Qué trae cada rol al elegirlo */
   descripcionRol: {
+    subadmin: 'Todo, como el administrador, también el Gestor de usuarios. No crea subadministradores ni edita al administrador',
     operador: 'Todas las pantallas y funciones, menos el Gestor de usuarios',
     empleado: 'Registra compras y las corrige. Sin Catálogo, sin eliminar compras y sin exportar ni cargar',
   },
@@ -532,6 +542,9 @@ export const USUARIOS = {
   requisitoFalta: 'falta',
   permisosTitulo: 'Pantallas y funciones',
   permisosAdmin: 'El administrador entra a todas las pantallas y puede hacer todo, también en las que se agreguen más adelante.',
+  permisosSubadmin: 'Entra a todas las pantallas y puede hacer todo, también en el Gestor de usuarios. No crea subadministradores ni edita al administrador.',
+  /** Al editarse a sí mismo: solo nombre y contraseña */
+  permisosPropios: 'Tu rol y tus pantallas solo los cambia el administrador.',
   funcionesDe: titulo => `Qué puede hacer en ${titulo}`,
   /** Cada función que se puede quitar dentro de una pantalla */
   funciones: {
@@ -543,7 +556,7 @@ export const USUARIOS = {
     'catalogo.exportar': 'Exportar',
     'catalogo.cargar': 'Cargar respaldos',
   },
-  permisosNota: 'El Gestor de usuarios es solo del administrador.',
+  permisosNota: 'El Gestor de usuarios es del administrador y de los subadministradores.',
   /** Lo que se hace en cada pantalla asignable (el título sale de navegacion.js) */
   pantallas: {
     '/': 'Registrar lo que llega a la cocina',
@@ -559,10 +572,14 @@ export const USUARIOS = {
     nombreLargo: 'El nombre es muy largo (máximo 60 caracteres)',
     noCoinciden: 'Las contraseñas no coinciden',
     permisos: 'Elige al menos una pantalla',
-    gestor: 'El Gestor de usuarios es solo del administrador',
+    gestor: 'El Gestor de usuarios no se asigna suelto: viene con el rol de subadministrador',
     pantallaDesconocida: ruta => `La pantalla «${ruta}» no existe`,
     rol: 'Elige un rol',
     unAdmin: 'Solo puede haber un administrador',
+    soloAdminDaSubadmin: 'Solo el administrador puede dar el rol de subadministrador',
+    noEditarAdmin: 'No puedes editar al administrador',
+    noEditarSubadmin: 'No puedes editar a otro subadministrador',
+    noEliminarSubadmin: 'No puedes eliminar a un subadministrador',
     funciones: 'Las funciones deben ser una lista',
     funcionDesconocida: f => `La función «${f}» no existe`,
     adminNoSeElimina: 'El administrador no se puede eliminar',

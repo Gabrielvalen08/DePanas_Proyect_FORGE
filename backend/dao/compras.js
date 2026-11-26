@@ -13,6 +13,7 @@
  *   dao.todas() · dao.cargarRespaldo(compras, decisiones)
  */
 
+import { normalizarUnidad } from '../../shared/unidades.js'
 import { randomUUID } from 'crypto'
 import { enTransaccion, registrarCompra } from '../db.js'
 import { FECHA_FUTURA, esFechaFutura } from '../../shared/fechas.js'
@@ -98,7 +99,7 @@ export function validarCompra(cuerpo) {
     normalizados.push({
       material,
       cantidad,
-      unidad: typeof m.unidad === 'string' && m.unidad.trim() ? m.unidad.trim() : 'unidad',
+      unidad: normalizarUnidad(m.unidad) || 'unidad',
       monto,
       // Solo si viene: así el id derivado al importar JSON antiguos no cambia
       ...(typeof m.categoria === 'string' && m.categoria.trim() ? { categoria: m.categoria.trim() } : {}),

@@ -433,8 +433,9 @@ describe('PantallaCatalogo', () => {
 
   it('una sección vacía ofrece agregar el primero (si el usuario puede agregar)', async () => {
     const usuario = userEvent.setup()
+    // Versión 4: las anteriores se migran sumando «Gastos personales» y «Ninguno»
     localStorage.setItem('depanas_catalogo', JSON.stringify({
-      version: 2, proveedores: [], categorias: [], materiales: [], productos: [], proveedoresPorCategoria: {}, fichas: {},
+      version: 4, proveedores: [], categorias: [], materiales: [], productos: [], proveedoresPorCategoria: {}, fichas: {},
     }))
     renderizar('/catalogo/productos')
     expect(await screen.findByText(PANTALLA_CATALOGO.vacio('producto'))).toBeInTheDocument()

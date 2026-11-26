@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react'
-import { EVENTO_SESION_VENCIDA, cerrarSesionServidor, fijarTokenSesion, iniciarSesion } from '../services/api'
+import { EVENTO_SESION_VENCIDA, cerrarSesionServidor, fijarTokenSesion, fijarUsuarioSesion, iniciarSesion } from '../services/api'
 import { useToast } from './ToastContext'
 import { esAdmin, migrarPermisos, puedeAcceder, puedeHacer } from '../utils/permisos'
 import { ACCESO } from '../utils/mensajes'
@@ -35,6 +35,7 @@ export function AuthProvider({ children }) {
   const [sesion, setSesion] = useState(() => {
     const guardada = leerSesion()
     fijarTokenSesion(guardada?.token)
+    fijarUsuarioSesion(guardada?.usuario)
     return guardada
   })
 
@@ -61,6 +62,7 @@ export function AuthProvider({ children }) {
       ...(datos.token ? { token: datos.token } : {}),
     }
     fijarTokenSesion(nueva.token)
+    fijarUsuarioSesion(nueva.usuario)
     try {
       window.sessionStorage.setItem(CLAVE_SESION, JSON.stringify(nueva))
     } catch {
@@ -72,6 +74,7 @@ export function AuthProvider({ children }) {
 
   const salir = useCallback(() => {
     cerrarSesionServidor()
+    fijarUsuarioSesion(null)
     try {
       window.sessionStorage.removeItem(CLAVE_SESION)
     } catch {

@@ -2,8 +2,9 @@
  * permisos.js — Qué pantallas y qué funciones tiene cada usuario.
  *
  *  - El administrador (rol 'admin', permisos ['*']) entra a todas las pantallas,
- *    también a las que se creen en el futuro, puede hacer todo y es el único que ve
- *    el Gestor de usuarios.
+ *    también a las que se creen en el futuro, y puede hacer todo. El subadministrador
+ *    también (Gestor de usuarios incluido); lo que no puede hacer con otros usuarios
+ *    está en shared/usuarios.js (rolesQueAsigna, puedeGestionar).
  *  - Los demás usuarios entran solo a las rutas de su lista de permisos y, dentro de
  *    ellas, hacen solo las funciones de su lista (p. ej. 'compras.eliminar').
  *
@@ -12,10 +13,11 @@
  * usuarios; si tiene acciones que se puedan quitar, a FUNCIONES_POR_PANTALLA.
  */
 
-import { ROL_ADMIN, RUTAS_ASIGNABLES, RUTA_USUARIOS, funcionesEfectivas } from '../../../shared/usuarios.js'
+import { ROL_ADMIN, RUTAS_ASIGNABLES, RUTA_USUARIOS, funcionesEfectivas, tieneAccesoTotal } from '../../../shared/usuarios.js'
 
 export {
-  FUNCIONES, FUNCIONES_POR_PANTALLA, PERMISOS_POR_ROL, ROLES_ASIGNABLES, RUTAS_ASIGNABLES, RUTA_USUARIOS, permisosDeRol,
+  FUNCIONES, FUNCIONES_POR_PANTALLA, PERMISOS_POR_ROL, ROLES_ASIGNABLES, ROL_ADMIN, ROL_SUBADMIN, RUTAS_ASIGNABLES, RUTA_USUARIOS,
+  esSuPropioPerfil, permisosDeRol, puedeGestionar, rolesQueAsigna, tieneAccesoTotal,
 } from '../../../shared/usuarios.js'
 
 /** Rutas que cambiaron de nombre: los permisos guardados con la vieja pasan a la nueva */
@@ -32,7 +34,7 @@ export const esAdmin = sesion => sesion?.rol === ROL_ADMIN
 /** true si la sesión ({ rol, permisos }) puede abrir la ruta (las subrutas heredan el permiso) */
 export function puedeAcceder(ruta, sesion) {
   if (!sesion) return false
-  if (esAdmin(sesion)) return true
+  if (tieneAccesoTotal(sesion.rol)) return true
   const limpia = String(ruta || '').split('?')[0]
   if (limpia === RUTA_USUARIOS || limpia.startsWith(`${RUTA_USUARIOS}/`)) return false
   return (sesion.permisos ?? []).some(p => p === limpia || (p !== '/' && limpia.startsWith(`${p}/`)))
@@ -44,7 +46,7 @@ export function puedeAcceder(ruta, sesion) {
  */
 export function puedeHacer(funcion, sesion) {
   if (!sesion) return false
-  if (esAdmin(sesion)) return true
+  if (tieneAccesoTotal(sesion.rol)) return true
   return funcionesEfectivas(sesion).includes(funcion)
 }
 

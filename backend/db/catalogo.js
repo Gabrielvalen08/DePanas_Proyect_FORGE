@@ -2,16 +2,17 @@
  * catalogo.js — Opciones iniciales de los desplegables (de "Datos De Panas.xlsx",
  * hoja INGRESOS): las listas de Proveedor, Categoría, Material y Producto, y la
  * categoría y el producto de cada material según las filas de compras del Excel.
- * db.js las siembra en la tabla `catalogo` cada vez que abre la base.
+ * db.js las siembra en la tabla `catalogo` una sola vez por base. «Gastos personales» y
+ * «Ninguno» no vienen del Excel: son para registrar un gasto personal que no va en un producto.
  * El frontend tiene una copia en src/services/api.js (CATALOGO), para el modo local.
  */
 
 export const CATALOGO_INICIAL = {
   proveedor: ['Selectos', 'MMAG', 'Pepsi', 'Desechables Diver.'],
-  categoria: ['Materia Prima', 'Limpieza', 'Desechables', 'Servicios', 'Material Común', 'Bebidas'],
+  categoria: ['Materia Prima', 'Limpieza', 'Desechables', 'Servicios', 'Material Común', 'Bebidas', 'Gastos personales'],
   producto: [
     'Cachitos', 'Pan Guayaba', 'Golfeados', 'Panadería', 'Arepas', 'Empanadas', 'Todos',
-    'Arepas/Empanadas', 'Tequeños', 'Salsa', 'Gaseosas', 'Hidratantes',
+    'Arepas/Empanadas', 'Tequeños', 'Salsa', 'Gaseosas', 'Hidratantes', 'Ninguno',
   ],
   // [nombre, categoría, producto]; '' = el Excel aún no se lo asigna
   material: [

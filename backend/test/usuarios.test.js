@@ -334,3 +334,93 @@ test('si Marta ya cambió su contraseña, abrir la base no la toca; y la migraci
   db.close()
   assert.equal(verificar('5678', contrasena), true)
 })
+
+// ---- Subadministrador: entra a todo, pero no crea ni edita subadministradores ni edita al administrador ----
+
+const SOFIA = { usuario: 'Sofia_06', nombre: 'Sofía', contrasena: 'Sofia#2026', rol: 'subadmin' }
+const LUCAS = { usuario: 'Lucas_07', nombre: 'Lucas', contrasena: 'Lucas#2026', rol: 'empleado' }
+
+test('subadministrador: lo crea el administrador y entra a todo, también al Gestor de usuarios', async t => {
+  const { base } = await levantar(t)
+  // Aunque lleguen pantallas, el subadministrador guarda acceso total
+  const creado = await pedir(`${base}/usuarios`, 'POST', { ...SOFIA, permisos: ['/'] })
+  assert.equal(creado.status, 201)
+  assert.deepEqual([creado.cuerpo.rol, creado.cuerpo.permisos, creado.cuerpo.funciones], ['subadmin', ['*'], ['*']])
+
+  await entrar(base, SOFIA.usuario, SOFIA.contrasena)
+  for (const ruta of ['/usuarios', '/requisitos-contrasena', '/compras', '/catalogo', '/db/exportar-json']) {
+    assert.equal((await pedir(`${base}${ruta}`)).status, 200, ruta)
+  }
+  const requisitos = { minimo: 8, mayuscula: true, minuscula: true, numero: true, especial: true }
+  assert.equal((await pedir(`${base}/requisitos-contrasena`, 'PUT', requisitos)).status, 200)
+})
+
+test('subadministrador: crea y edita roles menores, pero no subadministradores ni al administrador', async t => {
+  const { base } = await levantar(t)
+  await pedir(`${base}/usuarios`, 'POST', SOFIA)
+  await pedir(`${base}/usuarios`, 'POST', { ...SOFIA, usuario: 'Raul_08', nombre: 'Raúl' })
+  await entrar(base, SOFIA.usuario, SOFIA.contrasena)
+
+  // Crear: empleados y operadores sí; otro subadministrador no
+  const otro = await pedir(`${base}/usuarios`, 'POST', { ...SOFIA, usuario: 'Otra_09' })
+  assert.equal(otro.status, 403)
+  assert.equal(otro.cuerpo.campo, 'rol')
+  assert.equal((await pedir(`${base}/usuarios`, 'POST', LUCAS)).status, 201)
+
+  // Editar al empleado: sí, pero no subirlo a subadministrador
+  const operador = await pedir(`${base}/usuarios/${LUCAS.usuario}`, 'PUT', { rol: 'operador' })
+  assert.equal(operador.status, 200)
+  assert.equal(operador.cuerpo.rol, 'operador')
+  assert.equal((await pedir(`${base}/usuarios/${LUCAS.usuario}`, 'PUT', { rol: 'subadmin' })).status, 403)
+
+  // Al administrador y a otro subadministrador: ni editar ni eliminar
+  assert.equal((await pedir(`${base}/usuarios/Cesar_01`, 'PUT', { nombre: 'Otro' })).status, 403)
+  assert.equal((await pedir(`${base}/usuarios/Cesar_01`, 'PUT', { contrasena: 'Robo#2026' })).status, 403)
+  assert.equal((await pedir(`${base}/usuarios/Raul_08`, 'PUT', { nombre: 'Otro' })).status, 403)
+  assert.equal((await pedir(`${base}/usuarios/Raul_08`, 'DELETE')).status, 403)
+  assert.equal((await pedir(`${base}/usuarios/Cesar_01`, 'DELETE')).status, 403)
+  assert.equal((await pedir(`${base}/usuarios/${LUCAS.usuario}`, 'DELETE')).status, 200)
+  assert.equal(await entra(base, 'Cesar_01', CLAVE_CESAR), 200)
+})
+
+test('subadministrador: en su propio perfil cambia nombre y contraseña, pero no su rol', async t => {
+  const { base } = await levantar(t)
+  await pedir(`${base}/usuarios`, 'POST', SOFIA)
+  await entrar(base, SOFIA.usuario, SOFIA.contrasena)
+  const r = await pedir(`${base}/usuarios/${SOFIA.usuario}`, 'PUT', { nombre: 'Sofi', contrasena: 'Nueva#2026', rol: 'empleado', permisos: ['/'] })
+  assert.equal(r.status, 200)
+  assert.deepEqual([r.cuerpo.nombre, r.cuerpo.rol, r.cuerpo.permisos], ['Sofi', 'subadmin', ['*']])
+  assert.equal(await entra(base, SOFIA.usuario, 'Nueva#2026'), 200)
+})
+
+test('el administrador cambia el rol de un subadministrador y de vuelta', async t => {
+  const { base } = await levantar(t)
+  await pedir(`${base}/usuarios`, 'POST', SOFIA)
+  const operador = await pedir(`${base}/usuarios/${SOFIA.usuario}`, 'PUT', { rol: 'operador' })
+  assert.deepEqual([operador.cuerpo.rol, operador.cuerpo.permisos], ['operador', RUTAS_ASIGNABLES])
+  const sub = await pedir(`${base}/usuarios/${SOFIA.usuario}`, 'PUT', { rol: 'subadmin', permisos: ['/'] })
+  assert.deepEqual([sub.cuerpo.rol, sub.cuerpo.permisos, sub.cuerpo.funciones], ['subadmin', ['*'], ['*']])
+  // Un operador sigue sin entrar al gestor
+  await pedir(`${base}/usuarios`, 'POST', { ...LUCAS, rol: 'operador' })
+  await entrar(base, LUCAS.usuario, LUCAS.contrasena)
+  assert.equal((await pedir(`${base}/usuarios`)).status, 403)
+})
+
+test('una base con empleados pero sin subadministrador se migra y conserva las funciones de cada usuario', t => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'depanas-usuarios-'))
+  t.after(() => rmSync(carpeta, { recursive: true, force: true }))
+  const dbPath = join(carpeta, 'depanas.db')
+  const vieja = new DatabaseSync(dbPath)
+  vieja.exec(`CREATE TABLE usuarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, usuario TEXT NOT NULL UNIQUE COLLATE NOCASE, nombre TEXT NOT NULL,
+    contrasena TEXT NOT NULL, rol TEXT NOT NULL DEFAULT 'operador' CHECK (rol IN ('admin', 'operador', 'empleado')),
+    permisos TEXT NOT NULL DEFAULT '[]', funciones TEXT)`)
+  vieja.prepare('INSERT INTO usuarios (usuario, nombre, contrasena, rol, permisos, funciones) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('Ana_04', 'Ana', hashear('Ana#2026'), 'empleado', '["/"]', '["compras.editar"]')
+  vieja.close()
+
+  const db = abrirDB(dbPath, SCHEMA)
+  assert.equal(db.prepare("SELECT funciones FROM usuarios WHERE usuario = 'Ana_04'").get().funciones, '["compras.editar"]')
+  db.prepare("INSERT INTO usuarios (usuario, nombre, contrasena, rol, permisos) VALUES ('Sub_01', 'Sub', 'x', 'subadmin', ?)").run('["*"]')
+  db.close()
+})

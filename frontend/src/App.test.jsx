@@ -13,6 +13,7 @@ vi.mock('./services/api', () => ({
   totalLista: () => 0,
   detectarModo: () => Promise.resolve('local'),
   fijarTokenSesion: () => {},
+  fijarUsuarioSesion: () => {},
   puedeApagar: vi.fn(() => false),
   apagarSistema: vi.fn(async () => {}),
   registrarPestana: vi.fn(async () => {}),

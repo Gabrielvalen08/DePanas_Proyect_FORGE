@@ -37,6 +37,7 @@ import {
   cerrarSesionServidor,
   puedeApagar,
   fijarTokenSesion,
+  fijarUsuarioSesion,
 } from './api'
 import { FUNCIONES, RUTAS_ASIGNABLES } from '../../../shared/usuarios.js'
 import { filasDelCatalogo } from '../../../shared/catalogo-json.js'
@@ -253,16 +254,17 @@ describe('api: modo servidor', () => {
         cuerpo: { proveedores: [], categorias: ['Materia Prima'], productos: ['Todos'], materiales: [{ nombre: 'Queso', categoria: '', producto: '' }] },
       },
       'PUT /catalogo/materiales/Queso': {
-        cuerpo: { material: { nombre: 'Queso', categoria: 'Lácteos', producto: 'Tequeños' }, materialNuevo: false, categoriaNueva: true, productoNuevo: true },
+        cuerpo: { material: { nombre: 'Queso', categoria: 'Lácteos', producto: 'Tequeños', unidad: 'lb' }, materialNuevo: false, categoriaNueva: true, productoNuevo: true },
       },
     })
     await fetchListas()
     await vi.waitFor(() => expect(getAsignacion('queso').existe).toBe(true))
     expect(necesitaAsignacion('Queso')).toBe(true)
 
-    const resultado = await asignarMaterial('Queso', { categoria: 'Lácteos', producto: 'Tequeños' })
+    const resultado = await asignarMaterial('Queso', { categoria: 'Lácteos', producto: 'Tequeños', unidad: 'lb' })
     expect(resultado.categoriaNueva).toBe(true)
-    expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ categoria: 'Lácteos', productos: ['Tequeños'] })
+    expect(llamadas.find(l => l.metodo === 'PUT').cuerpo).toEqual({ categoria: 'Lácteos', productos: ['Tequeños'], unidad: 'lb' })
+    expect(getAsignacion('Queso').unidad).toBe('lb')
     expect(necesitaAsignacion('Queso')).toBe(false)
     expect(getCategorias()).toContain('Lácteos')
     expect(localStorage.getItem('depanas_catalogo')).toBeNull()
@@ -382,7 +384,9 @@ describe('api: listas de compra (modo local)', () => {
     expect(totalLista({ productos: [{ precio: 1.2 }, { precio: 4.25 }] })).toBeCloseTo(5.45)
     expect(getProveedores()).toEqual(expect.arrayContaining(['Selectos', 'MMAG', 'Pepsi', 'Desechables Diver.', 'La Colonia']))
     expect(getMateriales()).toEqual(expect.arrayContaining(['Tocino La Rioja', 'Jamón de Pavo', 'Plátano maduro']))
-    expect(getCategorias()).toHaveLength(6)
+    // Las 6 del Excel y «Gastos personales»
+    expect(getCategorias()).toHaveLength(7)
+    expect(getProductos()).toContain('Ninguno')
     expect(getProductos()).toContain('Tequeños')
     expect(getMateriales().filter(m => m === 'Cebolla')).toHaveLength(1)
   })
@@ -391,11 +395,14 @@ describe('api: listas de compra (modo local)', () => {
 describe('api: categoría y producto de cada material (modo local)', () => {
   beforeEach(() => localStorage.clear())
 
-  it('los materiales del Excel ya traen su categoría y producto', async () => {
+  it('los materiales del Excel ya traen su categoría y producto; la unidad se elige la primera vez', async () => {
     await detectarModo()
     expect(getAsignacion('tocino la rioja')).toEqual({
-      existe: true, nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'],
+      existe: true, nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'], unidad: '',
     })
+    // Sin unidad y nunca comprado: el formulario la pide
+    expect(necesitaAsignacion('Tocino La Rioja')).toBe(true)
+    await asignarMaterial('Tocino La Rioja', { categoria: 'Materia Prima', productos: ['Cachitos'], unidad: 'lb' })
     expect(necesitaAsignacion('Tocino La Rioja')).toBe(false)
     expect(necesitaAsignacion('Queso')).toBe(true) // en el Excel no tiene asignación
     expect(necesitaAsignacion('Mr Músculo Antigrasa')).toBe(true) // tiene categoría pero no producto
@@ -404,9 +411,10 @@ describe('api: categoría y producto de cada material (modo local)', () => {
   })
 
   it('un material nuevo se guarda con su categoría y producto, y crea los que no existían', async () => {
-    const resultado = await asignarMaterial('Harina PAN', { categoria: 'materia prima', producto: 'Arepas Rellenas' })
+    const resultado = await asignarMaterial('Harina PAN', { categoria: 'materia prima', producto: 'Arepas Rellenas', unidad: 'g' })
     expect(resultado).toEqual({
-      material: { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas Rellenas', productos: ['Arepas Rellenas'] },
+      // «g» se guarda como «gr»
+      material: { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas Rellenas', productos: ['Arepas Rellenas'], unidad: 'gr' },
       materialNuevo: true,
       categoriaNueva: false,
       productoNuevo: true,
@@ -852,5 +860,76 @@ describe('api: usuarios (modo local)', () => {
     await expect(eliminarUsuario('Cesar_01')).rejects.toThrow('El administrador no se puede eliminar')
     expect(await eliminarUsuario('marta_02')).toEqual({ usuario: 'Marta_02' })
     await expect(iniciarSesion('Marta_02', 'DePanas#2026')).rejects.toThrow()
+  })
+})
+
+describe('api: subadministrador (modo local)', () => {
+  const SOFIA = { usuario: 'Sofia_06', nombre: 'Sofía', contrasena: 'Sofia#2026', rol: 'subadmin' }
+  const LUCAS = { usuario: 'Lucas_07', nombre: 'Lucas', contrasena: 'Lucas#2026', rol: 'empleado' }
+
+  beforeEach(() => localStorage.clear())
+
+  it('lo crea el administrador con acceso total; él crea roles menores pero no subadministradores', async () => {
+    fijarUsuarioSesion('Cesar_01')
+    const sofia = await crearUsuario({ ...SOFIA, permisos: ['/'] })
+    expect([sofia.rol, sofia.permisos, sofia.funciones]).toEqual(['subadmin', ['*'], ['*']])
+    await crearUsuario({ ...SOFIA, usuario: 'Raul_08' })
+
+    fijarUsuarioSesion('Sofia_06')
+    await expect(crearUsuario({ ...SOFIA, usuario: 'Otra_09' })).rejects.toMatchObject({ campo: 'rol' })
+    expect((await crearUsuario(LUCAS)).rol).toBe('empleado')
+    expect((await editarUsuario('Lucas_07', { rol: 'operador' })).rol).toBe('operador')
+    await expect(editarUsuario('Lucas_07', { rol: 'subadmin' })).rejects.toMatchObject({ campo: 'rol' })
+
+    // Ni al administrador ni a otro subadministrador
+    await expect(editarUsuario('Cesar_01', { nombre: 'Otro' })).rejects.toThrow()
+    await expect(editarUsuario('Raul_08', { nombre: 'Otro' })).rejects.toThrow()
+    await expect(eliminarUsuario('Raul_08')).rejects.toThrow()
+    expect(await eliminarUsuario('Lucas_07')).toEqual({ usuario: 'Lucas_07' })
+
+    // Su propio perfil: nombre sí, rol no
+    const propia = await editarUsuario('Sofia_06', { nombre: 'Sofi', rol: 'empleado' })
+    expect([propia.nombre, propia.rol]).toEqual(['Sofi', 'subadmin'])
+    fijarUsuarioSesion(null)
+  })
+})
+
+describe('api: unidad de cada artículo (modo local)', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('el artículo guarda su unidad («g» pasa a «gr»); una que no está en la lista se rechaza', async () => {
+    await detectarModo()
+    await asignarMaterial('Anis', { categoria: 'Materia Prima', productos: ['Golfeados'], unidad: 'g' })
+    expect(getAsignacion('Anis').unidad).toBe('gr')
+    await expect(asignarMaterial('Anis', { categoria: 'Materia Prima', unidad: 'tonelada' })).rejects.toMatchObject({ campo: 'unidad' })
+    await editarEnCatalogo('material', 'Anis', { nombre: 'Anis', categoria: 'Materia Prima', productos: ['Golfeados'], unidad: 'otros' })
+    expect(getAsignacion('Anis').unidad).toBe('otros')
+  })
+
+  it('una compra con «g» se guarda con «gr» y le da su unidad al artículo que no tenía', async () => {
+    await detectarModo()
+    await guardarLista({
+      proveedor: 'Selectos', fecha: '2026-10-01', categoria: '',
+      materiales: [{ material: 'Cilantro', cantidad: 100, unidad: 'g', monto: 1, categoria: 'Materia Prima', producto: 'Salsa' }],
+    })
+    const [compra] = (await fetchListas()).filter(l => l.proveedor === 'Selectos' && l.fecha === '2026-10-01')
+    expect(compra.materiales[0].unidad).toBe('gr')
+    expect(getAsignacion('Cilantro').unidad).toBe('gr')
+  })
+
+  it('un catálogo guardado antes de las unidades se migra: cada artículo toma la de su última compra y llegan las opciones nuevas', async () => {
+    localStorage.setItem('depanas_listas', JSON.stringify([
+      { id: 1, proveedor: 'Selectos', fecha: '2026-09-01', categoria: '', materiales: [{ material: 'Perejil', cantidad: 1, unidad: 'lb', monto: 1 }] },
+      { id: 2, proveedor: 'Selectos', fecha: '2026-09-05', categoria: '', materiales: [{ material: 'Perejil', cantidad: 1, unidad: 'g', monto: 1 }] },
+    ]))
+    localStorage.setItem('depanas_catalogo', JSON.stringify({
+      version: 2, proveedores: ['Selectos'], categorias: ['Materia Prima'], productos: ['Salsa'],
+      materiales: [{ nombre: 'Perejil', categoria: 'Materia Prima', producto: 'Salsa' }], proveedoresPorCategoria: {}, fichas: {},
+    }))
+    await detectarModo()
+    expect(getAsignacion('Perejil').unidad).toBe('gr')
+    expect(getCategorias()).toContain('Gastos personales')
+    expect(getProductos()).toContain('Ninguno')
+    expect(JSON.parse(localStorage.getItem('depanas_catalogo')).version).toBe(4)
   })
 })

@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS catalogo (
     categoria  TEXT NOT NULL DEFAULT '',   -- Solo materiales
     categoria_anterior TEXT NOT NULL DEFAULT '', -- Solo materiales: de cuál se quitó al editar esa categoría
     producto  TEXT NOT NULL DEFAULT '',   -- Solo materiales: uno o varios, «Arepas, Empanadas»
+    unidad    TEXT NOT NULL DEFAULT '',   -- Solo materiales: unidad en que se compra (shared/unidades.js)
     ficha      TEXT NOT NULL DEFAULT '',   -- Solo proveedores: JSON con ubicación, teléfonos y contactos
     UNIQUE (tipo, nombre COLLATE NOCASE)
 );
@@ -63,13 +64,13 @@ CREATE INDEX IF NOT EXISTS idx_proveedor_material_articulo ON proveedor_material
 -- funciones: JSON con las acciones permitidas dentro de esas pantallas
 -- (shared/usuarios.js); NULL = usuario de antes de las funciones, las tiene todas.
 -- Se siembra con db/usuarios.js cuando está vacía. Las bases con el CHECK
--- anterior (sin 'empleado') se rehacen en db.js (migrarUsuarios).
+-- anterior (sin 'empleado' o sin 'subadmin') se rehacen en db.js (migrarUsuarios).
 CREATE TABLE IF NOT EXISTS usuarios (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     usuario    TEXT NOT NULL UNIQUE COLLATE NOCASE,
     nombre     TEXT NOT NULL,
     contrasena TEXT NOT NULL,
-    rol        TEXT NOT NULL DEFAULT 'operador' CHECK (rol IN ('admin', 'operador', 'empleado')),
+    rol        TEXT NOT NULL DEFAULT 'operador' CHECK (rol IN ('admin', 'subadmin', 'operador', 'empleado')),
     permisos   TEXT NOT NULL DEFAULT '[]',
     funciones  TEXT
 );

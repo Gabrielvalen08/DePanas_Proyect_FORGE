@@ -1,4 +1,4 @@
-import { test, expect, entrar, confirmar, CESAR } from './ayudantes.js'
+import { test, expect, entrar, confirmar, CESAR, unidadDelArticulo } from './ayudantes.js'
 import { AVISO_SALIDA, CARGAR, COMPRA, CONFIRMAR, EXPORTAR, LISTA_COMPRAS, PANTALLA_CATALOGO, USUARIOS, VALIDACION } from '../src/utils/mensajes.js'
 
 // Corre en los dos proyectos (escritorio y movil): el menú cambia, el aviso es el mismo
@@ -36,8 +36,8 @@ async function llenarCompra(page, proveedor) {
   const f = formulario(page)
   await f.getByRole('combobox', { name: 'Artículo, fila 1' }).fill('Azucar')
   await page.keyboard.press('Escape')
+  await unidadDelArticulo(page, f, 1, 'lb')
   await f.getByRole('spinbutton', { name: 'Cantidad, fila 1' }).fill('2')
-  await f.getByRole('combobox', { name: 'Unidad, fila 1' }).selectOption('lb')
   await f.getByRole('textbox', { name: 'Precio unitario, fila 1' }).fill('1.50')
 }
 

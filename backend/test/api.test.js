@@ -123,10 +123,12 @@ test('una base nueva ya trae el catálogo del Excel, sin duplicados', async t =>
   })
   const { cuerpo } = await pedir(`${base}/compras/sugerencias`)
   assert.deepEqual(cuerpo.proveedores, ['Desechables Diver.', 'MMAG', 'Pepsi', 'Selectos'])
-  assert.deepEqual(cuerpo.categorias, ['Bebidas', 'Desechables', 'Limpieza', 'Materia Prima', 'Material Común', 'Servicios'])
+  assert.deepEqual(cuerpo.categorias, ['Bebidas', 'Desechables', 'Gastos personales', 'Limpieza', 'Materia Prima', 'Material Común', 'Servicios'])
   assert.equal(cuerpo.materiales.length, 36)
   assert.ok(cuerpo.materiales.includes('Jamón de Pavo'))
-  assert.equal(cuerpo.productos.length, 12)
+  // Las 12 del Excel y «Ninguno», para un gasto personal que no va en ningún producto
+  assert.equal(cuerpo.productos.length, 13)
+  assert.ok(cuerpo.productos.includes('Ninguno'))
   assert.ok(cuerpo.productos.includes('Tequeños'))
 })
 
@@ -134,10 +136,13 @@ test('el catálogo trae la categoría y el producto de cada material, como en el
   const { base } = await levantar(t)
   const { cuerpo } = await pedir(`${base}/catalogo`)
   const buscar = nombre => cuerpo.materiales.find(m => m.nombre === nombre)
-  assert.deepEqual(buscar('Tocino La Rioja'), { nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'], proveedores: [] })
-  assert.deepEqual(buscar('Queso'), { nombre: 'Queso', categoria: '', producto: '', productos: [], proveedores: [] })
+  // Sin compras todavía, los artículos del Excel no tienen unidad: se elige en su formulario
+  assert.deepEqual(buscar('Tocino La Rioja'), {
+    nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'], proveedores: [], unidad: '',
+  })
+  assert.deepEqual(buscar('Queso'), { nombre: 'Queso', categoria: '', producto: '', productos: [], proveedores: [], unidad: '' })
   assert.equal(buscar('Mr Músculo Antigrasa').categoria, 'Limpieza')
-  assert.equal(cuerpo.categorias.length, 6)
+  assert.equal(cuerpo.categorias.length, 7)
 })
 
 test('asignar un material nuevo crea la categoría y el producto nuevos y no duplica los existentes', async t => {
@@ -148,7 +153,7 @@ test('asignar un material nuevo crea la categoría y el producto nuevos y no dup
   const nuevo = await asignar('Harina PAN', { categoria: 'materia prima', producto: 'Arepas Rellenas' })
   assert.equal(nuevo.status, 200)
   assert.deepEqual(nuevo.cuerpo, {
-    material: { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas Rellenas', productos: ['Arepas Rellenas'] },
+    material: { nombre: 'Harina PAN', categoria: 'Materia Prima', producto: 'Arepas Rellenas', productos: ['Arepas Rellenas'], unidad: '' },
     materialNuevo: true,
     categoriaNueva: false,
     productoNuevo: true,
@@ -180,14 +185,14 @@ test('cada material de una compra guarda su propia categoría', async t => {
   const { cuerpo } = await pedir(`${base}/compras`)
   assert.deepEqual(cuerpo[0].materiales.map(m => m.categoria), ['Bebidas', 'Materia Prima'])
 
-  // Un material que solo está en compras toma la categoría y el producto de su fila
+  // Un material que solo está en compras toma la categoría, el producto y la unidad de su fila
   await crear(base, {
     proveedor: 'MMAG', fecha: '2026-10-02',
     materiales: [{ material: 'Servilletas', cantidad: 1, unidad: 'caja', monto: 3, categoria: 'Desechables', producto: 'Todos' }],
   })
   const catalogo = await pedir(`${base}/catalogo`)
   assert.deepEqual(catalogo.cuerpo.materiales.find(m => m.nombre === 'Servilletas'),
-    { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'], proveedores: ['MMAG'] })
+    { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'], proveedores: ['MMAG'], unidad: 'caja' })
 })
 
 test('exportar descarga una base con todos los datos aunque estén en el WAL', async t => {

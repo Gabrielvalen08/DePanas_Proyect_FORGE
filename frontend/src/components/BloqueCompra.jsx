@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { AlertCircle, Pencil, Plus, Save, Trash2 } from 'lucide-react'
 import AutocompleteInput from './AutocompleteInput'
 import AsignarMaterial from './AsignarMaterial'
-import { Boton, Campo, CampoMoneda, ConfirmDialog, Selector } from './common'
+import { Boton, Campo, CampoMoneda, ConfirmDialog } from './common'
 import AvisoParecido from './AvisoParecido'
 import ResumenCompra from './ResumenCompra'
 import { asignarMaterial, editarEnCatalogo, getAsignacion, getIvaPorProveedor, getMaterialesPorProveedor, getPrecioSugerido, getProveedores, necesitaAsignacion } from '../services/api'
@@ -17,9 +17,6 @@ import { fechaHoyISO, formatearPrecio, textoBusqueda } from '../utils/formato'
 import { springSuave } from '../styles/movimiento'
 import estilos from './BloqueCompra.module.css'
 
-export const UNIDADES = ['lb', 'kg', 'g', 'oz', 'galon', 'litro', 'ml', 'unidad', 'caja', 'bolsa']
-// La unidad arranca en blanco: se elige (o la trae el precio sugerido)
-const OPCIONES_UNIDAD = [{ valor: '', texto: '' }, ...UNIDADES]
 
 // Campos obligatorios de cada fila (en el orden en que aparecen)
 const CAMPOS_FILA = [
@@ -35,8 +32,13 @@ const redondear = (valor, decimales) => Math.round(valor * 10 ** decimales) / 10
 // Como el catálogo: sin distinguir mayúsculas ni espacios en los extremos
 const claveNombre = nombre => (nombre || '').trim().toLowerCase()
 
+/**
+ * Una fila: material, cantidad, unidad, precio. La unidad no se escribe en la fila: es la del
+ * artículo en el Catálogo (se elige con el botón de al lado). `unidadDe` es el artículo del que
+ * salió, para no pisar la de una compra guardada mientras siga siendo el mismo artículo.
+ */
 function filaVacia() {
-  return { id: siguienteIdFila++, material: '', cantidad: '', unidad: '', precio: '' }
+  return { id: siguienteIdFila++, material: '', cantidad: '', unidad: '', unidadDe: '', precio: '' }
 }
 
 /**
@@ -66,7 +68,9 @@ function filasDesde(materiales) {
       id: siguienteIdFila++,
       material: m.material,
       cantidad: String(m.cantidad),
+      // La compra guardada conserva su unidad aunque la del artículo haya cambiado después
       unidad: m.unidad || '',
+      unidadDe: claveNombre(m.material),
       // Precio exacto (puede ser de menos de un centavo, p. ej. por gramo) y monto guardado intacto
       precio: monto > 0 && cantidad > 0 ? String(redondear(monto / cantidad, 4)) : '',
       montoOriginal: monto > 0 ? monto : undefined,
@@ -131,8 +135,10 @@ const filtrar = (lista, texto) => lista.filter(x => textoBusqueda(x).includes(te
  * artículo nunca se ha comprado. Con «Ahora no» la compra se guarda igual y la
  * fila queda en rojo con una señal; la siguiente compra ya no pide nada.
  * Junto a cada artículo hay un botón: «+» si el campo está vacío o el artículo no
- * está registrado (crea uno nuevo); lápiz si ya está registrado (edita su nombre,
- * categoría y productos en el catálogo y en sus compras).
+ * está registrado (crea uno nuevo); lápiz si ya está registrado (edita su nombre, su
+ * unidad, su categoría y sus productos en el catálogo y en sus compras).
+ * La unidad de cada fila es la del artículo: se pone sola y no se cambia en la fila
+ * (se cambia con el lápiz). Una compra guardada conserva la suya.
  *
  * Compra nueva, por pasos (solo se ve lo que toca llenar, nada apagado en gris):
  *  1. Fecha y proveedor.
@@ -289,6 +295,10 @@ export default function BloqueCompra({
     setBloqueado(false)
     const filaActual = filas.find(f => f.id === filaId)
     const actualizada = { ...filaActual, [campo]: valor }
+    // Otro artículo trae su unidad; el mismo de una compra guardada conserva la que tenía
+    if (campo === 'material' && claveNombre(valor) !== filaActual.unidadDe) {
+      Object.assign(actualizada, { unidad: getAsignacion(valor).unidad, unidadDe: claveNombre(valor) })
+    }
     // Se mantiene el último escrito: con un monto escrito, la cantidad recalcula el precio;
     // si no, recalcula el monto. El precio escrito deja de ser el sugerido
     if (campo === 'cantidad') {
@@ -322,7 +332,7 @@ export default function BloqueCompra({
     if (errores[clave(filaId, 'precio')]) fijarError(clave(filaId, 'precio'), validarFila(actualizada).precio)
   }
 
-  /** Pone el precio y la unidad de la última compra del material, salvo que el precio ya lo haya escrito la persona */
+  /** Pone el precio de la última compra del material, salvo que el precio ya lo haya escrito la persona (la unidad es la del artículo) */
   function sugerirPrecio(filaId, material) {
     // El campo es en centavos (tipo cajero): un precio de menos de un centavo no se sugiere
     const encontrado = getPrecioSugerido(material)
@@ -333,7 +343,6 @@ export default function BloqueCompra({
       return {
         ...f,
         precio: String(redondear(sugerido.precio, 2)),
-        unidad: UNIDADES.includes(sugerido.unidad) ? sugerido.unidad : f.unidad,
         precioSugerido: true,
         montoOriginal: undefined,
       }
@@ -387,18 +396,18 @@ export default function BloqueCompra({
     abrirFormulario(fila.id, fila.material.trim(), !lapiz)
   }
 
-  async function asignar({ nombre, categoria, productos }) {
+  async function asignar({ nombre, categoria, productos, unidad }) {
     const { modo, nombre: anterior, filaId } = porAsignar
     let final
     try {
       // Con el proveedor de la compra: la categoría elegida queda como suya
       if (modo === 'editar') {
-        const editado = await editarEnCatalogo('material', anterior, { nombre, categoria, productos, proveedor })
+        const editado = await editarEnCatalogo('material', anterior, { nombre, categoria, productos, unidad, proveedor })
         addToast(ASIGNACION.editado(editado))
         final = editado.nombre
       } else {
         const asignado = await asignarMaterial(nombre, {
-          categoria, productos, proveedor, ...(modo === 'nuevo' ? { nuevo: true } : {}),
+          categoria, productos, unidad, proveedor, ...(modo === 'nuevo' ? { nuevo: true } : {}),
         })
         addToast(ASIGNACION.asignado(asignado))
         final = asignado.material.nombre
@@ -407,11 +416,14 @@ export default function BloqueCompra({
       addToast(ASIGNACION.errorGuardar(error.message), 'error')
       throw error
     }
-    // La fila (y las que llevaban ese nombre) toman el nombre con que quedó
+    // La fila (y las que llevaban ese nombre) toman el nombre y la unidad con que quedó
     setFilas(prev => prev.map(f => (
-      f.id === filaId || (anterior && claveNombre(f.material) === claveNombre(anterior)) ? { ...f, material: final } : f
+      f.id === filaId || (anterior && claveNombre(f.material) === claveNombre(anterior))
+        ? { ...f, material: final, unidad, unidadDe: claveNombre(final) }
+        : f
     )))
     fijarError(clave(filaId, 'material'), undefined)
+    fijarError(clave(filaId, 'unidad'), undefined)
     sugerirPrecio(filaId, final)
     // Guardado sin productos: ya se sabe que le falta y la fila se marca de una vez, sin volver a preguntar
     setOmitidos(prev => {
@@ -428,7 +440,9 @@ export default function BloqueCompra({
   /** «Usar» en el aviso de nombre parecido: la fila se queda con el artículo ya registrado y no se crea otro */
   function usarExistente(nombre) {
     const { filaId } = porAsignar
-    setFilas(prev => prev.map(f => (f.id === filaId ? { ...f, material: nombre } : f)))
+    setFilas(prev => prev.map(f => (
+      f.id === filaId ? { ...f, material: nombre, unidad: getAsignacion(nombre).unidad, unidadDe: claveNombre(nombre) } : f
+    )))
     fijarError(clave(filaId, 'material'), undefined)
     sugerirPrecio(filaId, nombre)
     setPorAsignar(null)
@@ -594,6 +608,8 @@ export default function BloqueCompra({
     if (conError.proveedor) return `${id}-proveedor`
     for (const fila of filas) {
       const campo = CAMPOS_FILA.find(({ clave: c }) => conError[clave(fila.id, c)])
+      // La unidad no se escribe en la fila: el foco va al botón del artículo, que la cambia
+      if (campo?.clave === 'unidad') return `${id}-boton-${fila.id}`
       if (campo) return `${id}-${campo.clave}-${fila.id}`
     }
     return null
@@ -684,6 +700,7 @@ export default function BloqueCompra({
                         {/* Categoría y producto: en un tooltip, para que la fila no crezca */}
                         <div className={estilos.materialConBoton} title={textoAsignacion(fila.material)}>
                           <button
+                            id={`${id}-boton-${fila.id}`}
                             type="button"
                             className={estilos.botonAsignarMini}
                             aria-label={boton.etiqueta}
@@ -740,16 +757,12 @@ export default function BloqueCompra({
                         />
                       </td>
 
-                      {/* Unidad */}
+                      {/* Unidad: la del artículo, de solo lectura (se cambia con el botón del artículo) */}
                       <td>
-                        <Selector
+                        <UnidadFija
                           id={`${id}-unidad-${fila.id}`}
                           etiqueta={`Unidad, fila ${n}`}
-                          etiquetaOculta
-                          opciones={OPCIONES_UNIDAD}
-                          value={fila.unidad}
-                          onChange={e => cambiarFila(fila.id, 'unidad', e.target.value)}
-                          onBlur={() => salirDeCampoFila(fila.id, 'unidad')}
+                          unidad={fila.unidad}
                           error={errores[clave(fila.id, 'unidad')]}
                         />
                       </td>
@@ -895,6 +908,35 @@ export default function BloqueCompra({
         danger
       />
     </>
+  )
+}
+
+/**
+ * La unidad de la fila, como texto: no se edita aquí. Tiene el mismo alto que los campos de al
+ * lado y su etiqueta, oculta en la tabla, aparece en la vista de teléfono como la de los demás.
+ */
+function UnidadFija({ id, etiqueta, unidad, error }) {
+  const idError = error ? `${id}-error` : undefined
+  return (
+    <div className={estilos.unidadCelda}>
+      <span id={`${id}-etiqueta`} className="solo-lector" data-etiqueta-oculta>{etiqueta}</span>
+      <output
+        id={id}
+        aria-labelledby={`${id}-etiqueta`}
+        aria-describedby={idError}
+        title={COMPRA.unidadDelArticulo}
+        className={[estilos.unidadFija, error && estilos.unidadConError].filter(Boolean).join(' ')}
+      >
+        {unidad || <span aria-hidden="true">—</span>}
+        {!unidad && <span className="solo-lector">{COMPRA.sinUnidad}</span>}
+      </output>
+      {error && (
+        <p id={idError} className={estilos.errorUnidad}>
+          <AlertCircle size={14} aria-hidden="true" />
+          {error}
+        </p>
+      )}
+    </div>
   )
 }
 
