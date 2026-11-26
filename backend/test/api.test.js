@@ -137,8 +137,10 @@ test('el catálogo trae la categoría y el producto de cada material, como en el
   const { cuerpo } = await pedir(`${base}/catalogo`)
   const buscar = nombre => cuerpo.materiales.find(m => m.nombre === nombre)
   // Sin compras todavía, los artículos del Excel no tienen unidad: se elige en su formulario
-  assert.deepEqual(buscar('Tocino La Rioja'), { nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'], unidad: '' })
-  assert.deepEqual(buscar('Queso'), { nombre: 'Queso', categoria: '', producto: '', productos: [], unidad: '' })
+  assert.deepEqual(buscar('Tocino La Rioja'), {
+    nombre: 'Tocino La Rioja', categoria: 'Materia Prima', producto: 'Cachitos', productos: ['Cachitos'], proveedores: [], unidad: '',
+  })
+  assert.deepEqual(buscar('Queso'), { nombre: 'Queso', categoria: '', producto: '', productos: [], proveedores: [], unidad: '' })
   assert.equal(buscar('Mr Músculo Antigrasa').categoria, 'Limpieza')
   assert.equal(cuerpo.categorias.length, 7)
 })
@@ -190,7 +192,7 @@ test('cada material de una compra guarda su propia categoría', async t => {
   })
   const catalogo = await pedir(`${base}/catalogo`)
   assert.deepEqual(catalogo.cuerpo.materiales.find(m => m.nombre === 'Servilletas'),
-    { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'], unidad: 'caja' })
+    { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'], proveedores: ['MMAG'], unidad: 'caja' })
 })
 
 test('exportar descarga una base con todos los datos aunque estén en el WAL', async t => {

@@ -20,7 +20,9 @@
  * tipo: proveedor | categoria | material | producto
  */
 
-import { buscarEnCatalogo, enTransaccion, leerProveedoresPorCategoria, registrarEnCatalogo, vincularProveedorCategoria } from '../db.js'
+import {
+  buscarEnCatalogo, enTransaccion, leerProveedoresPorCategoria, registrarEnCatalogo, vincularProveedorCategoria, vincularProveedorMaterial,
+} from '../db.js'
 import {
   PRODUCTO_CON_COMA, conProducto, listaProductos, nombreProductoValido, renombrarProducto, sinProducto, textoProductos, tieneProducto,
 } from '../../shared/productos.js'
@@ -119,12 +121,22 @@ function leerIvaPorProveedor(db) {
 
 export function leerCatalogo(db) {
   const nombres = tipo => ordenar(db.prepare('SELECT nombre FROM catalogo WHERE tipo = ?').all(tipo).map(f => f.nombre))
+  const proveedoresPorMaterial = new Map()
+  for (const { material_id, proveedor } of db.prepare(
+    'SELECT r.material_id, p.nombre AS proveedor FROM proveedor_material r JOIN catalogo p ON p.id = r.proveedor_id'
+  ).all()) {
+    if (!proveedoresPorMaterial.has(material_id)) proveedoresPorMaterial.set(material_id, [])
+    proveedoresPorMaterial.get(material_id).push(proveedor)
+  }
   return {
     proveedores: nombres('proveedor'),
     categorias: nombres('categoria'),
     productos: nombres('producto'),
-    materiales: db.prepare("SELECT nombre, categoria, producto, unidad FROM catalogo WHERE tipo = 'material'").all()
-      .map(m => ({ ...m, productos: listaProductos(m.producto) }))
+    materiales: db.prepare("SELECT id, nombre, categoria, producto, unidad, categoria_anterior FROM catalogo WHERE tipo = 'material'").all()
+      .map(({ id, categoria_anterior: anterior, ...m }) => ({
+        ...m, productos: listaProductos(m.producto), proveedores: ordenar(proveedoresPorMaterial.get(id) ?? []),
+        ...(anterior && !m.categoria ? { categoriaAnterior: anterior } : {}),
+      }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
     uso: leerUso(db),
     precios: leerPrecios(db),
@@ -207,11 +219,12 @@ function fijarMateriales(db, tipo, nombre, materiales) {
   if (tipo === 'producto') return fijarMaterialesDeProducto(db, nombre, registrados)
   const elegidos = new Set(registrados.map(m => m.nombre.toLowerCase()))
   let cambios = 0
-  // Los que ya no van quedan sin asignar (las compras conservan su texto, como al eliminar)
+  // Los que ya no van quedan sin asignar (las compras conservan su texto, como al eliminar) y
+  // recuerdan de cuál salieron: al volver a elegir su proveedor en ella se marcan otra vez
   const actuales = db.prepare(`SELECT nombre FROM catalogo WHERE tipo = 'material' AND ${tipo} = ? COLLATE NOCASE`).all(nombre)
   for (const { nombre: material } of actuales) {
     if (elegidos.has(material.toLowerCase())) continue
-    db.prepare(`UPDATE catalogo SET ${tipo} = '' WHERE tipo = 'material' AND nombre = ?`).run(material)
+    db.prepare(`UPDATE catalogo SET ${tipo} = '', categoria_anterior = ? WHERE tipo = 'material' AND nombre = ?`).run(nombre, material)
     cambios++
   }
   for (const mat of registrados) {
@@ -314,6 +327,8 @@ function importarFilas(db, tipo, filas) {
       const actual = buscar(db, 'material', nombre)
       asignar(db, nombre, fila.categoria || actual?.categoria || '', [...listaProductos(actual?.producto), ...fila.productos])
       if (fila.unidad) fijarUnidad(db, nombre, fila.unidad)
+      // Suma los proveedores del archivo; los que no existen se omiten
+      for (const proveedor of fila.proveedores ?? []) vincularProveedorMaterial(db, proveedor, nombre)
     } else {
       if (tipo === 'categoria') {
         // Suma los proveedores del archivo; los que no existen se omiten
@@ -476,8 +491,10 @@ export function catalogoDAO(db) {
           // Producto: dentro de la lista de cada material y de cada fila de compra
           compras = renombrarEnListas(db, registro.nombre, nuevo)
         } else {
-          // Categoría: también en los materiales que la usan
+          // Categoría: también en los materiales que la usan o que salieron de ella
           db.prepare(`UPDATE catalogo SET ${tipo} = ? WHERE tipo = 'material' AND ${tipo} = ? COLLATE NOCASE`).run(nuevo, registro.nombre)
+          db.prepare("UPDATE catalogo SET categoria_anterior = ? WHERE tipo = 'material' AND categoria_anterior = ? COLLATE NOCASE")
+            .run(nuevo, registro.nombre)
           compras = Number(db.prepare(`SELECT COUNT(DISTINCT compra_id) AS n FROM ingresos WHERE ${tipo} = ? COLLATE NOCASE`).get(registro.nombre).n)
           db.prepare(`UPDATE ingresos SET ${tipo} = ? WHERE ${tipo} = ? COLLATE NOCASE`).run(nuevo, registro.nombre)
         }
@@ -515,8 +532,12 @@ export function catalogoDAO(db) {
         db.prepare('DELETE FROM catalogo WHERE tipo = ? AND nombre = ?').run(tipo, registro.nombre)
         let materiales = 0
         if (tipo === 'categoria') {
-          materiales = Number(db.prepare(`UPDATE catalogo SET ${tipo} = '' WHERE tipo = 'material' AND ${tipo} = ? COLLATE NOCASE`)
-            .run(registro.nombre).changes)
+          // Una categoría eliminada tampoco se recuerda como anterior
+          db.prepare("UPDATE catalogo SET categoria_anterior = '' WHERE tipo = 'material' AND categoria_anterior = ? COLLATE NOCASE")
+            .run(registro.nombre)
+          materiales = Number(db.prepare(
+            "UPDATE catalogo SET categoria = '', categoria_anterior = '' WHERE tipo = 'material' AND categoria = ? COLLATE NOCASE"
+          ).run(registro.nombre).changes)
         } else if (tipo === 'producto') {
           // Sale de la lista de cada material; el que se quede sin productos lo volverá a pedir
           const actualizar = db.prepare("UPDATE catalogo SET producto = ? WHERE tipo = 'material' AND nombre = ?")

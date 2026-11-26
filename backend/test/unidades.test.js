@@ -123,11 +123,11 @@ test('una base anterior: «g» pasa a «gr», cada artículo toma la unidad de s
   const carpeta = mkdtempSync(join(tmpdir(), 'depanas-unidades-'))
   t.after(() => rmSync(carpeta, { recursive: true, force: true }))
   const dbPath = join(carpeta, 'depanas.db')
-  // Base en la versión 2 del catálogo: sin unidad en el catálogo ni las opciones nuevas
+  // Base en la versión 3 del catálogo: sin unidad en el catálogo ni las opciones nuevas
   let db = abrirDB(dbPath, SCHEMA)
   db.close()
   const vieja = new DatabaseSync(dbPath)
-  vieja.exec('PRAGMA user_version = 2')
+  vieja.exec('PRAGMA user_version = 3')
   vieja.exec("DELETE FROM catalogo WHERE nombre IN ('Gastos personales', 'Ninguno')")
   vieja.exec('ALTER TABLE catalogo DROP COLUMN unidad')
   const fila = vieja.prepare(

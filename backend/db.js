@@ -7,6 +7,7 @@ import { readFileSync } from 'fs'
 import { CATALOGO_INICIAL } from './db/catalogo.js'
 import { listaProductos } from '../shared/productos.js'
 import { UNIDADES_RENOMBRADAS, normalizarUnidad, unidadValida } from '../shared/unidades.js'
+import { MATERIALES_INICIALES_POR_PROVEEDOR } from '../shared/proveedor-material.js'
 import { CONTRASENA_MARTA_ANTERIOR, HASH_CESAR_ANTERIOR, USUARIOS_INICIALES } from './db/usuarios.js'
 import { verificar } from './contrasenas.js'
 
@@ -16,8 +17,9 @@ export const COLUMNAS_REQUERIDAS = ['fecha', 'material', 'cantidad', 'monto', 'p
 // Versión del catálogo (PRAGMA user_version). La siembra corre una sola vez por
 // base: si corriera en cada arranque, lo que el usuario elimina volvería a aparecer.
 // 1: catálogo sembrado y completado con las compras. 2: proveedores de cada categoría.
-// 3: unidad de cada artículo (la de su última compra) y «Gastos personales» / «Ninguno».
-const VERSION_CATALOGO = 3
+// 3: artículos de cada proveedor.
+// 4: unidad de cada artículo (la de su última compra) y «Gastos personales» / «Ninguno».
+const VERSION_CATALOGO = 4
 
 /** Abre la base, aplica el esquema y migra bases del esquema anterior */
 export function abrirDB(dbPath, schemaPath) {
@@ -61,14 +63,38 @@ export function prepararCatalogo(db) {
       completarDesdeCompras(db)
     }
     if (version < 2) completarProveedorCategoria(db)
-    if (version < 3) {
+    if (version < 3) completarProveedorMaterial(db)
+    if (version < 4) {
       completarUnidades(db)
       // Para registrar un gasto personal que no va en ningún producto
       registrarEnCatalogo(db, 'categoria', 'Gastos personales')
       registrarEnCatalogo(db, 'producto', 'Ninguno')
     }
+    db.exec(`PRAGMA user_version = ${VERSION_CATALOGO}`)
   })
-  db.exec(`PRAGMA user_version = ${VERSION_CATALOGO}`)
+}
+
+/** Recupera relaciones históricas conservando los artículos y proveedores del catálogo vigente. */
+function completarProveedorMaterial(db) {
+  for (const [proveedor, material] of MATERIALES_INICIALES_POR_PROVEEDOR) {
+    vincularProveedorMaterial(db, proveedor, material)
+  }
+  for (const { proveedor, material } of db.prepare(
+    "SELECT DISTINCT proveedor, material FROM ingresos WHERE trim(proveedor) != '' AND trim(material) != ''"
+  ).all()) {
+    vincularProveedorMaterial(db, proveedor, material)
+  }
+}
+
+/** Liga un artículo con un proveedor, ambos ya registrados (si falta alguno, no hace nada) */
+export function vincularProveedorMaterial(db, proveedor, material) {
+  const p = buscarEnCatalogo(db, 'proveedor', proveedor)
+  const m = buscarEnCatalogo(db, 'material', material)
+  if (!p || !m) return
+  db.prepare(
+    'INSERT OR IGNORE INTO proveedor_material (proveedor_id, material_id) ' +
+    "SELECT p.id, m.id FROM catalogo p, catalogo m WHERE p.tipo = 'proveedor' AND p.nombre = ? AND m.tipo = 'material' AND m.nombre = ?"
+  ).run(p.nombre, m.nombre)
 }
 
 /** Cada artículo sin unidad toma la de su última compra (la de fecha más reciente y, a igual fecha, la registrada después) */
@@ -264,6 +290,7 @@ export function registrarCompra(db, compra) {
     const producto = (m.producto || '').trim()
     const material = registrarEnCatalogo(db, 'material', m.material).nombre
     if (difiereParaSQLite(material, m.material)) m.material = material
+    vincularProveedorMaterial(db, proveedor, material)
     if (categoria) registrarEnCatalogo(db, 'categoria', categoria)
     // Una fila puede llevar varios productos («Arepas, Empanadas»): se registra cada uno
     for (const nombre of listaProductos(producto)) registrarEnCatalogo(db, 'producto', nombre)
@@ -303,9 +330,9 @@ export function migrar(db) {
   for (const [vieja, nueva] of Object.entries(UNIDADES_RENOMBRADAS)) renombrar.run(nueva, vieja)
 
   // Catálogos creados antes de que los materiales guardaran categoría y producto,
-  // o de que los proveedores tuvieran su ficha
+  // de que los proveedores tuvieran su ficha o de que se recordara la categoría anterior
   const columnasCatalogo = db.prepare('PRAGMA table_info(catalogo)').all().map(c => c.name)
-  for (const columna of ['categoria', 'producto', 'ficha', 'unidad']) {
+  for (const columna of ['categoria', 'producto', 'ficha', 'categoria_anterior', 'unidad']) {
     if (!columnasCatalogo.includes(columna)) {
       db.exec(`ALTER TABLE catalogo ADD COLUMN ${columna} TEXT NOT NULL DEFAULT ''`)
     }

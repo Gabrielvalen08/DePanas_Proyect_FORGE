@@ -98,7 +98,9 @@ test('cambiar el nombre, la categoría y el producto de un material se refleja e
   assert.equal(r.cuerpo.categoriaNueva, true)
   const fila = (await pedir(`${base}/compras`)).cuerpo[0].materiales[0]
   assert.deepEqual([fila.material, fila.categoria, fila.producto], ['Tocino ahumado', 'Carnes', 'Tequeños'])
-  assert.deepEqual(material(await catalogo(base), 'Tocino ahumado'), { nombre: 'Tocino ahumado', categoria: 'Carnes', producto: 'Tequeños', productos: ['Tequeños'], unidad: 'lb' })
+  assert.deepEqual(material(await catalogo(base), 'Tocino ahumado'), {
+    nombre: 'Tocino ahumado', categoria: 'Carnes', producto: 'Tequeños', productos: ['Tequeños'], proveedores: [COMPRA.proveedor], unidad: 'lb',
+  })
 })
 
 test('renombrar una categoría la cambia en sus materiales y en las compras', async t => {
@@ -133,7 +135,9 @@ test('una compra con un proveedor o material nuevo los registra en el catálogo'
   })
   const cat = await catalogo(base)
   assert.ok(cat.proveedores.includes('Walmart'))
-  assert.deepEqual(material(cat, 'Servilletas'), { nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'], unidad: 'caja' })
+  assert.deepEqual(material(cat, 'Servilletas'), {
+    nombre: 'Servilletas', categoria: 'Desechables', producto: 'Todos', productos: ['Todos'], proveedores: ['Walmart'], unidad: 'caja',
+  })
 })
 
 test('lo que se elimina no reaparece al reabrir la base', t => {
@@ -550,6 +554,45 @@ test('cargar categorías suma sus proveedores; los que no existen se omiten', as
   assert.equal(res.status, 200)
   assert.equal(res.cuerpo.omitidos, 1)
   assert.ok((await catalogo(base)).proveedoresPorCategoria.bebidas.includes('Pepsi'))
+})
+
+test('cargar artículos suma los proveedores a los que se les compra; los que no existen se omiten', async t => {
+  const base = await levantar(t)
+  const importar = () => pedir(`${base}/catalogo/material/importar`, 'POST', {
+    filas: { tipo: 'material', version: 1, filas: [{ nombre: 'Queso', proveedores: ['mmag', 'MMAG', 'Nadie'] }] },
+  })
+  const res = await importar()
+  assert.equal(res.status, 200)
+  assert.deepEqual(res.cuerpo, { nuevos: 0, actualizados: 1, omitidos: 0 })
+  assert.equal((await importar()).status, 200)
+  const cat = await catalogo(base)
+  assert.deepEqual(material(cat, 'Queso').proveedores, ['MMAG'])
+  assert.ok(!cat.proveedores.includes('Nadie'))
+})
+
+test('un artículo quitado de una categoría la recuerda hasta que se asigna otra o se elimina', async t => {
+  const base = await levantar(t)
+  const agua = async () => material(await catalogo(base), 'Agua')
+  const fijar = (categoria, materiales) => pedir(url(base, 'categoria', categoria), 'PUT', { materiales })
+
+  await fijar('Bebidas', ['Gatorade'])
+  assert.deepEqual([(await agua()).categoria, (await agua()).categoriaAnterior], ['', 'Bebidas'])
+  await pedir(url(base, 'categoria', 'Bebidas'), 'PUT', { nombre: 'Refrescos' })
+  assert.equal((await agua()).categoriaAnterior, 'Refrescos')
+  // Con categoría otra vez ya no se informa
+  await fijar('Refrescos', ['Gatorade', 'Agua'])
+  assert.equal((await agua()).categoriaAnterior, undefined)
+
+  // Salió de una y entró en otra: al eliminar la nueva no reaparece la vieja
+  await fijar('Refrescos', ['Gatorade'])
+  await fijar('Limpieza', ['Agua'])
+  await pedir(url(base, 'categoria', 'Limpieza'), 'DELETE')
+  assert.deepEqual([(await agua()).categoria, (await agua()).categoriaAnterior], ['', undefined])
+  // Eliminar la categoría de la que salió también la olvida
+  await fijar('Refrescos', ['Agua'])
+  assert.equal(material(await catalogo(base), 'Gatorade').categoriaAnterior, 'Refrescos')
+  await pedir(url(base, 'categoria', 'Refrescos'), 'DELETE')
+  assert.equal(material(await catalogo(base), 'Gatorade').categoriaAnterior, undefined)
 })
 
 test('un proveedor nuevo se crea al guardar la categoría, sin duplicar y solo con catalogo.agregar', async t => {

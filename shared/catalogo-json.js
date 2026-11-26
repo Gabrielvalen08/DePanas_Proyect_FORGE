@@ -4,8 +4,9 @@
  *   { tipo: 'proveedor' | 'categoria' | 'material' | 'producto', version: 1, filas: [...] }
  * Filas según el tipo:
  *   proveedor  { nombre, ubicacion, telefonos: [], contactos: [{ nombre, telefono }] }
- *   material   { nombre, categoria, productos: [], unidad } (en la interfaz: artículo; unidad es opcional: respaldos anteriores)
- *   categoria  { nombre, articulos: [], proveedores: [] }  (proveedores es opcional: respaldos anteriores)
+ *   material   { nombre, categoria, productos: [], proveedores?: [], unidad? }  (en la interfaz: artículo;
+ *              proveedores son aquellos a los que se le ha comprado; proveedores y unidad son opcionales)
+ *   categoria{ nombre, articulos: [], proveedores: [] }  (proveedores es opcional: respaldos anteriores)
  *   producto   { nombre, articulos: [] }
  * Lo usan igual el backend (POST /api/catalogo/:tipo/importar) y el frontend (services/api.js).
  */
@@ -20,6 +21,8 @@ export const VERSION_CATALOGO_JSON = 1
 const NOMBRES = { proveedor: 'proveedores', categoria: 'categorías', material: 'artículos', producto: 'productos' }
 const texto = v => (typeof v === 'string' ? v.trim().replace(/\s+/g, ' ') : '')
 const listaTextos = v => (Array.isArray(v) ? v.map(texto).filter(Boolean) : [])
+/** { proveedores } solo si el artículo tiene alguno: los respaldos anteriores no lo traen */
+const conProveedores = lista => (lista.length ? { proveedores: lista } : {})
 
 export const MENSAJES_CATALOGO_JSON = {
   estructura: 'El archivo no es un respaldo del Catálogo de De Panas.',
@@ -50,7 +53,10 @@ function normalizarFila(tipo, fila, n) {
     // Un artículo puede estar incompleto (se dijo «Ahora no» al comprarlo): su respaldo también debe cargar
     // Una unidad que no está en la lista se ignora: el artículo conserva la suya
     const unidad = unidadValida(fila.unidad) ? normalizarUnidad(fila.unidad) : ''
-    return { nombre, categoria: texto(fila.categoria), productos: listaProductos(fila.productos ?? fila.producto), unidad }
+    return {
+      nombre, categoria: texto(fila.categoria), productos: listaProductos(fila.productos ?? fila.producto), unidad,
+      ...conProveedores([...new Set(listaTextos(fila.proveedores))]),
+    }
   }
   if (tipo === 'producto' && !nombreProductoValido(nombre)) {
     throw fallo(MENSAJES_CATALOGO_JSON.fila(n, MENSAJES_CATALOGO_JSON.productoConComa))
@@ -124,6 +130,7 @@ export function filasDelCatalogo(tipo, catalogo) {
   if (tipo === 'material') {
     return ordenarFilas('material', catalogo.materiales.map(m => ({
       nombre: m.nombre, categoria: m.categoria || '', productos: listaProductos(m.producto), unidad: m.unidad || '',
+      ...conProveedores(m.proveedores ?? []),
     })))
   }
   if (tipo === 'categoria') {
